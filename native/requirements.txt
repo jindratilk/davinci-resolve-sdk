@@ -1,0 +1,11 @@
+# Dependencies of the extracted existing native implementation.
+rich==14.3.3
+typer==0.23.2
+click>=8.2.1,<8.5.0
+certifi>=2025.8.3
+PyYAML>=6.0
+cryptography>=50.0.0
+jsonschema>=4.23.0,<5.0.0
+numpy>=1.26.0
+scipy>=1.11.0
+zstandard>=0.22.0

@@ -1,0 +1,3260 @@
+{
+  "command_count": 811,
+  "corpus": "cutagent-cli-public-reference",
+  "files": [
+    {
+      "path": "cards/asset--artifact_index.md",
+      "sha256": "6ebea86219e81fbfda5bdefb2874a53c7af0dcd2f2ac141d7a857bcdb2d38a78"
+    },
+    {
+      "path": "cards/asset--resolve.md",
+      "sha256": "cf1e7956cfa7a73c77d439fe9b827e8b66495fb7c11ab0a739018ce1aa05d541"
+    },
+    {
+      "path": "cards/audio--beat_detect.md",
+      "sha256": "57a9849ec7906a8841ad52b674d8061404c22365af1e52d6171ad9d770733123"
+    },
+    {
+      "path": "cards/audio--duck.md",
+      "sha256": "e731d0e1f490bc194601006516ee6b81688c853ea5cf84654e5a677c630eda1d"
+    },
+    {
+      "path": "cards/audio--info.md",
+      "sha256": "d0923a788aef52c727be0f02717662a6791541c17f117a65389b49c7bf3291e3"
+    },
+    {
+      "path": "cards/audio--probe_subframe.md",
+      "sha256": "7e1cfa81dbc9fd42ca6926f15d1d195badc24ca27b86ac4f6c86319a14da1240"
+    },
+    {
+      "path": "cards/audio--reverb.md",
+      "sha256": "9a4a65064f34d52c01f0512b6ed9f31d74cf0581b0d19c1fa45c9594e1839849"
+    },
+    {
+      "path": "cards/audio--voice_generate.md",
+      "sha256": "c5feb8d3583bc4394e904037d076fb1afe7fd913b9e735b807b9411b609f0d06"
+    },
+    {
+      "path": "cards/audio--voice_list.md",
+      "sha256": "8d336a6bbf8d60e2f0d263cd7d67b4f23f1e5e67e0b9d8a3930f6efd69a6983c"
+    },
+    {
+      "path": "cards/audio--voice_place.md",
+      "sha256": "e3abffe661e1ae8e566510a335b868335b6d057e2d221fd73cd6655337d36c05"
+    },
+    {
+      "path": "cards/audio--waveform_offset.md",
+      "sha256": "0f802564e1e3c99e97f7151c6cbc6cf578c2fe478a07d4f3498ab3a8f1b5d553"
+    },
+    {
+      "path": "cards/auto_edit--multicam.md",
+      "sha256": "8b6f2c04b880784b4b99c4ca68ec7216c5f6bae9e892e519746ca9235c0c07cf"
+    },
+    {
+      "path": "cards/auto_edit--podcast_edit.md",
+      "sha256": "fbc284baee16ab95ca220126efd27baaf54d905d02d280cb8657831c32a7653f"
+    },
+    {
+      "path": "cards/auto_edit--podcast_multicam.md",
+      "sha256": "0ba21e33676d8bb0c86480928630d67ac88d9578125e402c3956e4b0fc850482"
+    },
+    {
+      "path": "cards/auto_edit--run.md",
+      "sha256": "06cbc37b9fc28071dffecc755315097b0c111efcc3af805ceab8abc35fe969ab"
+    },
+    {
+      "path": "cards/auto_edit--silence_cut.md",
+      "sha256": "52b2ca433f85e4869f469beadc41d1ec64bb8a854edd46d263e0c4ae59a02dfd"
+    },
+    {
+      "path": "cards/batch--run.md",
+      "sha256": "512e3152849fa9eee3b66eb532278baf76a1d3261e681f4bbf9e0e6f712073ba"
+    },
+    {
+      "path": "cards/batch--validate.md",
+      "sha256": "0e61572bb78d8bbd501d29ba74b66a45250020a84e018e8a3b8ee05f8598daec"
+    },
+    {
+      "path": "cards/bulk--clip_color_set.md",
+      "sha256": "204e332ebbfe3a67fd7561b27e6fb96b602a08ecb1fa3e1bad7f18bda674ab4d"
+    },
+    {
+      "path": "cards/bulk--disable.md",
+      "sha256": "20c8b52188fd93761e619541531377433c448221100d101a0cdbc7faf6693e47"
+    },
+    {
+      "path": "cards/bulk--enable.md",
+      "sha256": "91fcbd27c3936e74657f0af1cfa783a2d36cf76742b98c776867703be7a0b309"
+    },
+    {
+      "path": "cards/bulk--lut_set.md",
+      "sha256": "bf252cc89fdfe1c78e53384662c529e8a9a71d9df462762eb93504089962c51e"
+    },
+    {
+      "path": "cards/bulk--property_set.md",
+      "sha256": "5b8ae8f663cdc0ab194cca5cbd89062a39484336a2c41d87c4c76dfaf738c21c"
+    },
+    {
+      "path": "cards/bulk--select.md",
+      "sha256": "d59e9658d9fa405f85ece9037a0f51bb50f2ab654da9c3fe68f870a3c994198f"
+    },
+    {
+      "path": "cards/burnin--load.md",
+      "sha256": "99e34309a4abbba44b241b7d9be0caa45edecd85ae6b11fcc0e4cf9606f37ba9"
+    },
+    {
+      "path": "cards/burnin--preset--export.md",
+      "sha256": "46d39e402ac72a89a7649cf6fd20dd89e6076a749fffe3d98601be6a5bfaf457"
+    },
+    {
+      "path": "cards/burnin--preset--import.md",
+      "sha256": "c567b64c029e15d285a00834d44b64ae24ca45288977a897c017bd5579413080"
+    },
+    {
+      "path": "cards/capabilities.md",
+      "sha256": "9710b79d7ef246b83c9466926c39c0f8269281a84e0fe4e340577891a6d5bec5"
+    },
+    {
+      "path": "cards/clip--audio_eq.md",
+      "sha256": "9a8c87a73ba89cf0cb3973c3aa8ac2f2b0c2672e34f987eeffcfff23e155b098"
+    },
+    {
+      "path": "cards/clip--audio_gain.md",
+      "sha256": "9dfbc7a3440621656841f0fa8532001767b5b4674d151721ea4c8afd0c649257"
+    },
+    {
+      "path": "cards/clip--audio_normalize.md",
+      "sha256": "7f702abf6c0cb3199e8f102f8086fd11f34a86606c510033a08d28d8969c12c6"
+    },
+    {
+      "path": "cards/clip--audio_pan.md",
+      "sha256": "cbcbbe9608d104f508a396011c8a130648d2a89e4698287770d173d838281e60"
+    },
+    {
+      "path": "cards/clip--audio_pitch.md",
+      "sha256": "d76d81e90b4321cde2c80bb15c44ac81512b5d59a3d83548bbaac6eded3b918f"
+    },
+    {
+      "path": "cards/clip--burnin--load.md",
+      "sha256": "28c3eb6883301e9e814356d29b549f4c85858ee1030e16e7b5f14ecdaab83ac5"
+    },
+    {
+      "path": "cards/clip--cache.md",
+      "sha256": "c04ef36a9460e8e9e373652e9877386d2fbf98397af06c839c2d04ec89ff65c5"
+    },
+    {
+      "path": "cards/clip--cache_set.md",
+      "sha256": "ff606da0232381b510d12ab48edc4239dc578914e0a204fb9e7195ef87ec173e"
+    },
+    {
+      "path": "cards/clip--cache_state.md",
+      "sha256": "9dbabe1e1f579a0ad5295e3f2db172dacf91bee0d1170cfd86cc6896695a5277"
+    },
+    {
+      "path": "cards/clip--color.md",
+      "sha256": "9777041ad70d36b0e6389aef92d6db00b343515bc561cd9639d2179ca9657ee6"
+    },
+    {
+      "path": "cards/clip--composite.md",
+      "sha256": "6a04745ae5a6bfd0e5b7f9bc221ec5fc5d37c5a95a24832bc1f2372bc084f823"
+    },
+    {
+      "path": "cards/clip--current.md",
+      "sha256": "ccb70fcdf273ec990b30cf876396907a84c706ce0eae83d0650c7df181f165cc"
+    },
+    {
+      "path": "cards/clip--disable.md",
+      "sha256": "d3bd624ed0a209c884afeaf76930a78715bd6ba009547d31d7cc267fd228cc92"
+    },
+    {
+      "path": "cards/clip--dynamic_zoom.md",
+      "sha256": "b71d49865acb158cfe04aee2abd65e6dfb88bdab80b8384ab039459fa8a52dc3"
+    },
+    {
+      "path": "cards/clip--enable.md",
+      "sha256": "810e3c523e576a17c983f07701713e53c5d82e2ec7b833900c18d26f6b4ba91e"
+    },
+    {
+      "path": "cards/clip--fade_in.md",
+      "sha256": "0908e4852828cffcd9d4ade2c72a4e54a22eb48f7162b46fb0a87a31e3a0ff56"
+    },
+    {
+      "path": "cards/clip--flag.md",
+      "sha256": "195e0b3f5663f7e66649ceb2f30fcd03311b41e1f1c2f8edcb39c40badea0260"
+    },
+    {
+      "path": "cards/clip--freeze.md",
+      "sha256": "5aa49843519e01e49d7a9db0074767ab803da691b8039647b210f6168706c880"
+    },
+    {
+      "path": "cards/clip--fusion--add.md",
+      "sha256": "321dc6a450a7975c1df0ec55820f5ad5496a81ef75bfe42f0c60fe5e09599be6"
+    },
+    {
+      "path": "cards/clip--fusion--by_name.md",
+      "sha256": "ea81a846945fb27a2bc71776ed853d0146ad53698b9dd6a741c00c603ad3d63a"
+    },
+    {
+      "path": "cards/clip--fusion--delete.md",
+      "sha256": "4f333bfb234ec3db9950ba0ea47e82381533177d18d0780bc88fefe1897a64c1"
+    },
+    {
+      "path": "cards/clip--fusion--export.md",
+      "sha256": "a8fc13cdfbb68f93c9d637d1f042f348269bf179d1ffe6c14e340d18e33dfc9c"
+    },
+    {
+      "path": "cards/clip--fusion--import.md",
+      "sha256": "510d2f2f5fb90a2edea3a024bc10085b9e7399e84a4babcd0f4ec39213a82a38"
+    },
+    {
+      "path": "cards/clip--fusion--list.md",
+      "sha256": "d3a8aa6b3b059831125bd255a1e946346c5052e0eb51ddfc256dd6081ed30bfc"
+    },
+    {
+      "path": "cards/clip--fusion--load.md",
+      "sha256": "499b8d104837936d4b6b4a334ea4ef2df9c03482c3efa8fe49982c9999374ef6"
+    },
+    {
+      "path": "cards/clip--fusion--tool_get.md",
+      "sha256": "2d84ba560199593d454a6fe17962edd076b89a4483bbad3128a7a5895ef32e22"
+    },
+    {
+      "path": "cards/clip--fusion--tool_set.md",
+      "sha256": "995419039cfd5342c868575be81d4679aa246815de281854a33b274d07f94205"
+    },
+    {
+      "path": "cards/clip--fusion--tools.md",
+      "sha256": "17f90ebb21f85fb541737eae00ca761254eacaa9a8108f7427ea9c0fd3250963"
+    },
+    {
+      "path": "cards/clip--info.md",
+      "sha256": "79675f7e36861cf49c3bc894af6b4fdca3e7954588f6fa91f4b433e0a4784b09"
+    },
+    {
+      "path": "cards/clip--keyframe--add.md",
+      "sha256": "3ca4a8577d2a03447feab210c8b681ff9865bb7b6efab383f6ee4c2ca005edac"
+    },
+    {
+      "path": "cards/clip--keyframe--delete.md",
+      "sha256": "58795ac3a9c523f5789158719ab2d90a254f25c5e27758bb1a19702a2647ce7f"
+    },
+    {
+      "path": "cards/clip--keyframe--get.md",
+      "sha256": "39cf38a74590c740c74d725ca0b76c5bebea77c712baa166f7eac41db1e09b36"
+    },
+    {
+      "path": "cards/clip--keyframe--set_interpolation.md",
+      "sha256": "1b8dae7bbde0ae1cabc47a853f94453ce862ec4cb88ec816668a9182cdd34f82"
+    },
+    {
+      "path": "cards/clip--link.md",
+      "sha256": "141981b6330196384506af8613a8aedf20dfafd40d48051cee45883d265060ad"
+    },
+    {
+      "path": "cards/clip--linked--list.md",
+      "sha256": "28fe099951a2cddee524cf53d4c26a8b691c809a85704a67de37009282743364"
+    },
+    {
+      "path": "cards/clip--list.md",
+      "sha256": "cbdd5984233a6c1543405e6c6727099961ecfac017131def973a59b72b0f3794"
+    },
+    {
+      "path": "cards/clip--magic_mask.md",
+      "sha256": "1dcab3973a26fc9d5d97a67ad5b53f41aee87bdbf77a222535f00aec362250b2"
+    },
+    {
+      "path": "cards/clip--marker--add.md",
+      "sha256": "d16e2ab5b52b586f71e0163c23e43f19bf9d9c3b738ccd937ddfcff3572b84ec"
+    },
+    {
+      "path": "cards/clip--marker--custom_data.md",
+      "sha256": "c534005f82bad2c830e9242ce905c8253259e810d8332be42ccc7041260513fe"
+    },
+    {
+      "path": "cards/clip--marker--delete.md",
+      "sha256": "1c25d4a542a6356e84b7c54cab6778c6969ab5fd6f560c3a5f80184790b3473a"
+    },
+    {
+      "path": "cards/clip--marker--delete_custom.md",
+      "sha256": "97d3cf53152c9740328744cb79d7f3251d3c6d8cf7be12bad88916d8917b8a64"
+    },
+    {
+      "path": "cards/clip--marker--get_custom.md",
+      "sha256": "a402c275ac4f762ba861f8c47a358eb4ccfc94632c02dac3124039b0cc4abc54"
+    },
+    {
+      "path": "cards/clip--marker--list.md",
+      "sha256": "7e1b1d588998b2d7aafa357cdd4f8c9166392b04fd2122772715712d0bfb5985"
+    },
+    {
+      "path": "cards/clip--offset.md",
+      "sha256": "b59f2f26a4c84e19013a2c8c95b93d2ec45d32607dbc02704626864a30778894"
+    },
+    {
+      "path": "cards/clip--properties.md",
+      "sha256": "5e84e55e98e696070c4caf1c78a52827b88c4213882b48ad32a8ce05ae91a95b"
+    },
+    {
+      "path": "cards/clip--rename.md",
+      "sha256": "57a7854ba9c65dfe7f91c55fb8a507d866edaf37de5f474bafed6997778bf09d"
+    },
+    {
+      "path": "cards/clip--reset_node_colors.md",
+      "sha256": "cc10bace860a7509e9eaa755d1e9730231c866250cabc53af669a0f416eac250"
+    },
+    {
+      "path": "cards/clip--reverse.md",
+      "sha256": "a284e8938a076a2c162175aff37382b8f770a99faa55cc044e70c67d7d851d6a"
+    },
+    {
+      "path": "cards/clip--smart_reframe.md",
+      "sha256": "bd9c5a10f436d4d4a6bfc4d6eac1ed4bf74cd2fe1bcf684ba9b91c481f658fe2"
+    },
+    {
+      "path": "cards/clip--source_audio_mapping.md",
+      "sha256": "7464afa0acb8d97c363324489cd20d35610fde245200ba64571a4a3e3d4f1c12"
+    },
+    {
+      "path": "cards/clip--source_range.md",
+      "sha256": "63cf10f5baebda81a6b72f7b3bc84faeee9d7b97f4a2c5896373ac3216ddffb3"
+    },
+    {
+      "path": "cards/clip--speed.md",
+      "sha256": "2ad8050e3c100a63595115213615cb512c8f0e672181bbb3221c8d605b08b488"
+    },
+    {
+      "path": "cards/clip--speed_ramp.md",
+      "sha256": "33372e6a99f4d762f7636d30f3c76b8c9af593631add2e3f958c388571b49adb"
+    },
+    {
+      "path": "cards/clip--stabilize.md",
+      "sha256": "db9b40ca0902a802622437beaf9cb722757b2985c70ec7e0245703bdd8aba283"
+    },
+    {
+      "path": "cards/clip--stereo_values.md",
+      "sha256": "d82d51d8b90f1e0ee3810be9d27cc86556ccfaa6b38f4f861b93e57f18a4c1c2"
+    },
+    {
+      "path": "cards/clip--take--add.md",
+      "sha256": "8860ff4fddc67fe02a44ebda63eccb88677d77eecb5911c932551b1a6263b9e1"
+    },
+    {
+      "path": "cards/clip--take--delete.md",
+      "sha256": "5f92cac9b95801219c6d6406887df9fa65832b5a151cd7fe0423440a8b9c5549"
+    },
+    {
+      "path": "cards/clip--take--finalize.md",
+      "sha256": "113382441284a25fd93f0d825eb661ad2415b670147c4676a7c319b16a342566"
+    },
+    {
+      "path": "cards/clip--take--list.md",
+      "sha256": "541525dd6f4bedca80e55ba2e46b51819cee014f0be6823154b09b62f5376df2"
+    },
+    {
+      "path": "cards/clip--take--select.md",
+      "sha256": "9617cb8ee59ea77ba355c095718bb8e4a5edffd69fc9ccd22eabc729647d6382"
+    },
+    {
+      "path": "cards/clip--track_info.md",
+      "sha256": "4c067444449f8da6def535560e92a5fdf04ee7da2edf318dacbd311a3c59fd9e"
+    },
+    {
+      "path": "cards/clip--transform.md",
+      "sha256": "fcf2e9d9e65730f432f5867e3622428db7cab8966072ca2511cb8a96e802714d"
+    },
+    {
+      "path": "cards/clip--unlink.md",
+      "sha256": "cb07aabe92c71c05a27fa619e65e791ba6946537e3e1e6953d9c66772e129298"
+    },
+    {
+      "path": "cards/clip--update_sidecar.md",
+      "sha256": "8e5264e54fbe45b4bce4a19ca66df97f355fad8ddbff18894a7d38fb879b4806"
+    },
+    {
+      "path": "cards/clip--voice_isolation.md",
+      "sha256": "2516036cfba82548185f578a69760c6376904d824b4348020d963203673a843d"
+    },
+    {
+      "path": "cards/codec--build.md",
+      "sha256": "efbd246e93920ad74562ec653f87e246973a4c8d65cd0dcb0d8d7e1f6027011a"
+    },
+    {
+      "path": "cards/codec--install.md",
+      "sha256": "26c811583460b65338723dc7b99ad84ff7fa26c85096669e7418da6a9b51ec44"
+    },
+    {
+      "path": "cards/codec--list_installed.md",
+      "sha256": "1ff0c9f0bc75c6232c06fe383be11138b631fc366b87b6eb8dc8f6aed4de8ae4"
+    },
+    {
+      "path": "cards/codec--package.md",
+      "sha256": "4ecf713f3ab6958476eabfab5b3d51aeec1cb5999f6994fcbaebefbe220eb624"
+    },
+    {
+      "path": "cards/codec--sample--copy.md",
+      "sha256": "c59a325d304bc70c3383f7c499d2ccfb30d69998f45091f12c7e78d5abdb33b4"
+    },
+    {
+      "path": "cards/codec--scaffold.md",
+      "sha256": "a568e4b8b441693be6963bf3c5625a76001d99a89f9c19872cad816f3f5bb2c3"
+    },
+    {
+      "path": "cards/codec--uninstall.md",
+      "sha256": "9fb63d4cd7c8d23c5217e4495f1a72823f44cca51622e8619136a86d91cec2c7"
+    },
+    {
+      "path": "cards/codec--validate.md",
+      "sha256": "6671b2cce2d376dc5e1fcc615fdf6a15907dc8f8627d1a148b5ca3858a8563dd"
+    },
+    {
+      "path": "cards/color--arri_cdl_lut.md",
+      "sha256": "a5889c5712ab8e127c89050b0d39b8b565001d5a959e5e09eb30bb120482ce5c"
+    },
+    {
+      "path": "cards/color--auto_color.md",
+      "sha256": "c7cd576e58298eb86055435a840cff81880e1933dab394fe5971266f2b8a8603"
+    },
+    {
+      "path": "cards/color--cdl.md",
+      "sha256": "b339e8d6b103e9e890746c663b07029c00a6f6c4a5e4e3806242ff46697a42cd"
+    },
+    {
+      "path": "cards/color--comp--doctor.md",
+      "sha256": "00ac9a681d9b23beca4690f1e2d40c6d48c081947c3b780ca26e0ee66f06dac6"
+    },
+    {
+      "path": "cards/color--comp--export.md",
+      "sha256": "e5a14d771996041690d1e78b17f49b33cd0f66a0804298315008af7318d4d6f8"
+    },
+    {
+      "path": "cards/color--comp--flatten.md",
+      "sha256": "621ec65fc057293a50a0843eb6501df6a66ddf61909b30edce6841d29d1bd640"
+    },
+    {
+      "path": "cards/color--comp--repair.md",
+      "sha256": "f9b75af4692125cc2d17a8981109b32f80aeff83c48b68dea5cb5864076ddf6c"
+    },
+    {
+      "path": "cards/color--curves.md",
+      "sha256": "ba1ccada91178882ffd32a5f76d2648e2eb816a5465212d7d29b8f36755fa58e"
+    },
+    {
+      "path": "cards/color--export_lut.md",
+      "sha256": "26a4340fa6ae2880a0117a6a96128b26e97a81a0953d745a43c6ac753f7d096c"
+    },
+    {
+      "path": "cards/color--fx--apply.md",
+      "sha256": "89d5b66669f549cfddc72d0888c389a0e06e393fa3d5520d2f961a16b8557564"
+    },
+    {
+      "path": "cards/color--fx--list.md",
+      "sha256": "8e1419bd862fdb64697e1f2b8cd4596717b5cd5708a43864b34745723a1d7668"
+    },
+    {
+      "path": "cards/color--gallery--album--create.md",
+      "sha256": "1f70e6dde18894e579a2bac24305b8e6a848be364d0b22426778efd33bdbbb7d"
+    },
+    {
+      "path": "cards/color--gallery--album--current.md",
+      "sha256": "66669b400af356caae567713ae597f42249582f2788411f54e624cac12ef2358"
+    },
+    {
+      "path": "cards/color--gallery--album--list.md",
+      "sha256": "7df9dbf8784418ae1d694935893140013cfb76e16296489f29f3fa8a017b25f4"
+    },
+    {
+      "path": "cards/color--gallery--album--rename.md",
+      "sha256": "e2bc9b9a2300cf0f8c836a6dd444b1918f93f36d24de3673461bb48d5a90cc06"
+    },
+    {
+      "path": "cards/color--gallery--album--switch.md",
+      "sha256": "db000d1be22d0763acd94dbffd648aef1548734acdd4903a0dbf93c56fc84ce2"
+    },
+    {
+      "path": "cards/color--gallery--still--apply.md",
+      "sha256": "c85bcf6f03cd46a4b0e9e3a37d14a206174e41aad34cf685cc656c0d7a50eab6"
+    },
+    {
+      "path": "cards/color--gallery--still--delete.md",
+      "sha256": "9703b25268a98a9b802b19a41d3bfeb0c27d00697dcd6d71c12b5549fc064f61"
+    },
+    {
+      "path": "cards/color--gallery--still--export.md",
+      "sha256": "33290f31f2978201e9adbbacbdd050da5844952c7800166e138c91e22cb5aa01"
+    },
+    {
+      "path": "cards/color--gallery--still--grab.md",
+      "sha256": "27831ad80ffbdfc49be35bda9a411a7ea5e49f688bee25ee9f2963166dc064f0"
+    },
+    {
+      "path": "cards/color--gallery--still--import.md",
+      "sha256": "906b2d9fa35f2f93f0c38307f9a0c42650e14a365c149255abb1a2d13798de13"
+    },
+    {
+      "path": "cards/color--gallery--still--label.md",
+      "sha256": "b99ebd6fb6c8d7dc64139fcdce83d755bc79146f8f74cda257a0e06d5192422b"
+    },
+    {
+      "path": "cards/color--gallery--still--list.md",
+      "sha256": "81088a1733669e3a11befaee995417bcfab044a9eb4bbd342a2df497c9ca4ca5"
+    },
+    {
+      "path": "cards/color--grade_apply.md",
+      "sha256": "b8105dc35142066bfa8e66039a6b70a82c1b322469dd65ce0a6c647fb3b7a7d7"
+    },
+    {
+      "path": "cards/color--grade_copy.md",
+      "sha256": "48a8852da03271af45e4da0ccf4a87900a2cc828cec766cf1fd84f9feb02bd3a"
+    },
+    {
+      "path": "cards/color--graph--inspect.md",
+      "sha256": "77aaa08b7c34d50184861f509acf3e5aac7c50ee70789b786a59766e7ecb807d"
+    },
+    {
+      "path": "cards/color--graph--normalize.md",
+      "sha256": "92a1f6ff479a8b878369ceb159990b03fcaad811df44e685e194ebd96ebe1c66"
+    },
+    {
+      "path": "cards/color--graph--validate.md",
+      "sha256": "e827b3ffe6057ae3f310d40e00894b7085e152a676bc3265ae3fd26f149338e0"
+    },
+    {
+      "path": "cards/color--group--add.md",
+      "sha256": "e972d2f0b6ed5be84f7b912cdb50c17cd414f6bb59ddf5e98610192b2b77fd3f"
+    },
+    {
+      "path": "cards/color--group--assign.md",
+      "sha256": "53a0b99e93ddef761647c6a4b3ffea03052e96cf5599dda1653b4986998f8567"
+    },
+    {
+      "path": "cards/color--group--clips.md",
+      "sha256": "8aec0784c161d31140a6be160fcb09ac3157e782f54bc0c562682f50627b316f"
+    },
+    {
+      "path": "cards/color--group--delete.md",
+      "sha256": "372d9a572584e2a7ae087f0c9c25ba89ec974a61c244fa71b419457002e1d465"
+    },
+    {
+      "path": "cards/color--group--graph.md",
+      "sha256": "71eb6ca3c01c063d2c888039bc73308fecd3927efc58ee459588292ebfdcbeb9"
+    },
+    {
+      "path": "cards/color--group--list.md",
+      "sha256": "e06417f0b2cf347849ec6cc55729a88cf0bad4a7d273d5b793f0a830101f29bd"
+    },
+    {
+      "path": "cards/color--group--remove.md",
+      "sha256": "b5cf5b0745ac74a96ba10ef533488889a3a11926f114a53595c1ebaef271e766"
+    },
+    {
+      "path": "cards/color--group--rename.md",
+      "sha256": "96f5365ce5a20dea6049c97543a1e59aa1b3dd20214f98f87a3927644b6cfdd0"
+    },
+    {
+      "path": "cards/color--huesat.md",
+      "sha256": "f5bebe0f5858d59871028db0fb54c2dbb0786e7372fed35b70effe630940e7a5"
+    },
+    {
+      "path": "cards/color--inspect.md",
+      "sha256": "a29e375e869b14634b3966aa02374811b62ef737a0eac1b697d606b96d4adf05"
+    },
+    {
+      "path": "cards/color--lut.md",
+      "sha256": "36efe810816e51f8d5d8b6c05b90e1fbf34de64d299e6cff960d7d8b714bca97"
+    },
+    {
+      "path": "cards/color--lut_refresh.md",
+      "sha256": "05996c4b331207a7eee7bcf50d4978cf11eae89297e02908f44e5335c0281f63"
+    },
+    {
+      "path": "cards/color--mask--inspect.md",
+      "sha256": "24a019a9e06116cb0413d20d242427ec821ebf205e30d4e921a1a6bcaebac088"
+    },
+    {
+      "path": "cards/color--node--cache.md",
+      "sha256": "75ee7b79d753c0c4503fbd3d4101ee49952dbfb7bbd004d03b74b0ec4af45893"
+    },
+    {
+      "path": "cards/color--node--disable.md",
+      "sha256": "c48d4fd1bb341ec4214a677e8cfc21c063be5118ebbee2ba9dc1d457c78b7ebe"
+    },
+    {
+      "path": "cards/color--node--enable.md",
+      "sha256": "b5cc5e5f0aafab0d2aca1de0adaf7ef6a911cfd28b77618bbd4643e8bb591432"
+    },
+    {
+      "path": "cards/color--node--graph.md",
+      "sha256": "c95323b8f8e1780fc2f64dec98bf0dcec29c9697e06c8e956e3ce0074bc72325"
+    },
+    {
+      "path": "cards/color--node--label_get.md",
+      "sha256": "03b4f4960c3e035107fb74a611f0440edab88b3a7d9e89e338f81134b773bee5"
+    },
+    {
+      "path": "cards/color--node--label_set.md",
+      "sha256": "bc44f4518ad969c04b6ea849c3e4df9f553475eb00c70cf15f8b9b17d1768a1c"
+    },
+    {
+      "path": "cards/color--node--list.md",
+      "sha256": "3ebabadf7bdde15bef3141c7b94a4bb7b3b1e823c85dda9722c03c6d5135e051"
+    },
+    {
+      "path": "cards/color--node--lut_get.md",
+      "sha256": "d6d40f5bcf1390ff67b25a32d086624f341963000fb50f05d02bebef6a8b3264"
+    },
+    {
+      "path": "cards/color--node--lut_set.md",
+      "sha256": "1310191b5c8c12c712fe53f364956a9a92800ad143726d209163bb18a28df6ac"
+    },
+    {
+      "path": "cards/color--node--reset.md",
+      "sha256": "05d24e4d85c9844a725ba239dfe67d416879458658b8aa0d1ed0813376c76681"
+    },
+    {
+      "path": "cards/color--node--tools.md",
+      "sha256": "5a69234774e098b4da5551b8fac340b6c3506b46832abda220c4d05057be160a"
+    },
+    {
+      "path": "cards/color--nodes.md",
+      "sha256": "c2b53dd72c8a772dddfb7bc751df938dd2ce3e2827f549e8174737b2119e4147"
+    },
+    {
+      "path": "cards/color--page--alpha_output_connect.md",
+      "sha256": "c9567b7ad473917c5bf0cb49ea5cf01f44303dcef7c5675be8b162808d0a4fc6"
+    },
+    {
+      "path": "cards/color--page--auto_color_ai.md",
+      "sha256": "f6d24b5dfafe478ea4b25fe46a8373214f3130a7b05abeb325bf92d8e72e5b08"
+    },
+    {
+      "path": "cards/color--page--bleach_bypass_intensity_set.md",
+      "sha256": "6d9a8c490d4a3a04ecdbd901675ec936835bdac82d38d37aff57f7d7384b0133"
+    },
+    {
+      "path": "cards/color--page--bleach_bypass_set.md",
+      "sha256": "83f9edf0d38b3d375784ee882e8fbcd95df0774f44df430daf8c0fecb5ac6086"
+    },
+    {
+      "path": "cards/color--page--cat_set.md",
+      "sha256": "7016f937230edbc3b98110cfdc4db49868c8b419d219d7d7edae74f461251cbe"
+    },
+    {
+      "path": "cards/color--page--color_slice_set.md",
+      "sha256": "b4623ce05d60329888bb6b1a3d96e39d371814ce21f60b5156a0116ebbe769cc"
+    },
+    {
+      "path": "cards/color--page--cst_set.md",
+      "sha256": "80390397237162e3aefcdfd6d2df07bb3d6f5a4d357f66f22fbdb162288f3014"
+    },
+    {
+      "path": "cards/color--page--curve_points_set.md",
+      "sha256": "aabec3182df07f9a08b80e19f3c67e30d0715cf98d352d53a754d3a60632cd6c"
+    },
+    {
+      "path": "cards/color--page--curve_set.md",
+      "sha256": "75edae32e1ec582da109367162c9723185a98504ab605b6385bf9b5acb7bd00d"
+    },
+    {
+      "path": "cards/color--page--curve_spline_set.md",
+      "sha256": "46b11abf293659ab01647ea8e0e3cdb6b4628cf2aa2c4b2a19026310f18ae0e7"
+    },
+    {
+      "path": "cards/color--page--dctl_apply.md",
+      "sha256": "3be8eaa6e10559d5028a161f45127cc1ca9f63a726605e3ea3d430b00c4b8f8f"
+    },
+    {
+      "path": "cards/color--page--dctl_remove.md",
+      "sha256": "a3bdbc7404ea59d60654270b517b8959a58b1dcff290d390da43e9c8ec0d72b2"
+    },
+    {
+      "path": "cards/color--page--false_color_read.md",
+      "sha256": "a984e63a7376cafdb83a83c4dbaa7606c7e690fbd2b93d8d785425842b0b6774"
+    },
+    {
+      "path": "cards/color--page--hdr_detail_set.md",
+      "sha256": "65a60fddcc28bf28a59fc01f3d5ffefd7376bce1e0a8f166f5c9d4b336e3fef0"
+    },
+    {
+      "path": "cards/color--page--hdr_global_set.md",
+      "sha256": "9b138bf2ff2e13420485945acfd3247176b00d4024f75e9f7e8f6a7949d5ca40"
+    },
+    {
+      "path": "cards/color--page--hdr_zone_set.md",
+      "sha256": "940e14cd4608a7f551487a632b6eaffc4e8f0853cd580aae5799b9ff0677c958"
+    },
+    {
+      "path": "cards/color--page--hsv_node_set.md",
+      "sha256": "c6320086520540fade167d76cb26b0c590828b7bf6d554140a7e01d16777d3e6"
+    },
+    {
+      "path": "cards/color--page--hue_curve_set.md",
+      "sha256": "eba096c0a82f2c7300d0cb22d8f2c1d8d49b346a83e1c4a2b3d4ad7e77cecfae"
+    },
+    {
+      "path": "cards/color--page--hue_curve_spline_set.md",
+      "sha256": "d55b89475e2616647ea0679effbc72bf345e43052ca4b5a014d5b3c194f32994"
+    },
+    {
+      "path": "cards/color--page--key_output_set.md",
+      "sha256": "514399be8fa6d675e59b1c393041304b12ba0507c2219eb30569de8a257e0eaf"
+    },
+    {
+      "path": "cards/color--page--layer_mixer_set.md",
+      "sha256": "4317453e762135e7c93ae5e9add1ff5a208e1290aa13bb88a7ead66b858e393a"
+    },
+    {
+      "path": "cards/color--page--lut_library_import.md",
+      "sha256": "4f6e9b149ecb635aa1026b59eca60a3f37dce5eee1ce87db0b5c4857a97fa209"
+    },
+    {
+      "path": "cards/color--page--magic_mask.md",
+      "sha256": "08ab6843cf4d9fb1c14bb90176ee4ff3a74ba5fb4f426c665bc816805bddfbfa"
+    },
+    {
+      "path": "cards/color--page--magic_mask_draw_stroke.md",
+      "sha256": "6e4d2430688f376d4cc491baf48775dbbb71f1848277e1c135cc4b95b95f8cb7"
+    },
+    {
+      "path": "cards/color--page--magic_mask_refine.md",
+      "sha256": "bd89d3d505d7ad0b194f81cc08f759ee9b532a8950a1f5e9c33816d06db6fcb4"
+    },
+    {
+      "path": "cards/color--page--node_add.md",
+      "sha256": "3e1739e0bdc8fb35e67b0c593127354538c310ffdcf802de403d59a699bc39e8"
+    },
+    {
+      "path": "cards/color--page--node_add_topology.md",
+      "sha256": "bc2f86e04330cec9363fc12b26238b75f68ea126a4184ea52709d9473555bca6"
+    },
+    {
+      "path": "cards/color--page--node_cleanup.md",
+      "sha256": "4fd7da2212e3809b93b76715cce88663a1c33e5b0c260500718e6215028b7eb3"
+    },
+    {
+      "path": "cards/color--page--node_cleanup_general.md",
+      "sha256": "42c6d2783d45a2b6dc8ef2b944aa138ab6926f9549f06e6c3877822fb60b0d77"
+    },
+    {
+      "path": "cards/color--page--ofx_glow_set.md",
+      "sha256": "d7e0f806dd0adadc74cc3b4b893274533ccc40af0f923a63e02ecf3c66d8723f"
+    },
+    {
+      "path": "cards/color--page--param_delete.md",
+      "sha256": "3197c2da5fb3ade8255970eee32ff6dc6eaeb9c040ebcd9f9417b321462beb9a"
+    },
+    {
+      "path": "cards/color--page--power_window_circle.md",
+      "sha256": "c161849be0bbce4de9e663bd2e897d8e18be9f889e875832fbb27a914649e5bb"
+    },
+    {
+      "path": "cards/color--page--power_window_circle_detail.md",
+      "sha256": "250e3e997131c24b0f31b94920e9a9463ee22152664dda57c49d5ffe2d1a0287"
+    },
+    {
+      "path": "cards/color--page--power_window_curve.md",
+      "sha256": "25cef3cde972f1a8c9581886c7d7df3c7fb4d027221477be05e73b3bbdcf93a9"
+    },
+    {
+      "path": "cards/color--page--power_window_gradient.md",
+      "sha256": "ba0dee555cfa2581a21ac92a30efed8ef421cd6be367c59050f133a1c907ec69"
+    },
+    {
+      "path": "cards/color--page--power_window_gradient_transform.md",
+      "sha256": "37ab95e8b3070fd040593e598d9b0b7a1fe22bc5113399f7ece6947641d3e4e9"
+    },
+    {
+      "path": "cards/color--page--power_window_gui_set.md",
+      "sha256": "5d3f8f93d326368f8359df0ae5e77148ea43234fd37e314e8fc8aa5eb8d52f3f"
+    },
+    {
+      "path": "cards/color--page--power_window_linear.md",
+      "sha256": "71f18d13a2503ae2e7c045b8757ad43441792e9a46e6d637f2ca0308f287871c"
+    },
+    {
+      "path": "cards/color--page--power_window_overlay_transform.md",
+      "sha256": "7a7d970f24f7cd9170fdc903090745e94d17b7b28bebc3620f8d156cf74ddbbc"
+    },
+    {
+      "path": "cards/color--page--power_window_polygon.md",
+      "sha256": "ce7149c50ebe3bec68df03d60f1f531b53852fb8aff50e1b5bf0b1c459af1460"
+    },
+    {
+      "path": "cards/color--page--power_window_rectangle.md",
+      "sha256": "d3956443adf554c71ce6ab033a99c2bda6af09f9fe46d12a07b22ed7877d09d4"
+    },
+    {
+      "path": "cards/color--page--power_window_track.md",
+      "sha256": "fdc79546398b44b0e329440625413917bbc23ce2cdb525df5da34776cab8d79e"
+    },
+    {
+      "path": "cards/color--page--primary_gui_set.md",
+      "sha256": "36c20a7d9dcb7cb84f21ec8834538a3d20be7998d01d8c6bb07554d233e32985"
+    },
+    {
+      "path": "cards/color--page--primary_set.md",
+      "sha256": "5562f7fbb2603f347e00511801221eb25b31af395f30c4774453b0365b925a03"
+    },
+    {
+      "path": "cards/color--page--qualifier_gui_hsl_set.md",
+      "sha256": "0034d04208f742cc9322626fe26aa5998a0e9ab74298a83cb9b7d96778469720"
+    },
+    {
+      "path": "cards/color--page--qualifier_gui_matte_set.md",
+      "sha256": "2550ce41e48fb13726d467989e738977990511e8680da62f535f4e8226ef2614"
+    },
+    {
+      "path": "cards/color--page--qualifier_matte_refine.md",
+      "sha256": "cf873579f71c19bc21116b56322a42f4ca69e137de359283d9211b0a477e892b"
+    },
+    {
+      "path": "cards/color--page--qualifier_panel_probe.md",
+      "sha256": "5fa7b85ef5771bb4b24698ad23861e3727734a089e85f5cfcc0ee11fe247a729"
+    },
+    {
+      "path": "cards/color--page--qualifier_sample.md",
+      "sha256": "6908aae64285e60d0d3246fd6bd4fdf0ba1222a5e219902e0ec29129b92f6ff1"
+    },
+    {
+      "path": "cards/color--page--read.md",
+      "sha256": "0cb97a1135f002bc2de9090d5380941bfb65d736792822be11717405db819699"
+    },
+    {
+      "path": "cards/color--page--resolvefx_add.md",
+      "sha256": "294e8174798f4ad0be331e9e1a25216aee29905675453c5311509facf38fe8f0"
+    },
+    {
+      "path": "cards/color--page--resolvefx_list.md",
+      "sha256": "2e5473759a3eaf726024a0b82003f0c401a4ecd165d17c9fa8383e087bf44ac3"
+    },
+    {
+      "path": "cards/color--page--resolvefx_param_discover.md",
+      "sha256": "3da6a8f6c2a5f1c5184e92d3d6025e39f4e0d8985b67d7af0fac245b9f95728e"
+    },
+    {
+      "path": "cards/color--page--resolvefx_param_list.md",
+      "sha256": "3226cf3ce3c0ede2d60022b758ae381d9051dd7e8522a41df9de14a91e4ed91f"
+    },
+    {
+      "path": "cards/color--page--resolvefx_param_set.md",
+      "sha256": "4ed8f81d69c37b564ad7d06d7a2c5ecea6b7f015510421139acf6b428f2900c5"
+    },
+    {
+      "path": "cards/color--page--resolvefx_remove.md",
+      "sha256": "d14a6ddb6bf6641baf84cd86349b97a6912061f323fdef7c1240b7553e503663"
+    },
+    {
+      "path": "cards/color--page--rgb_mixer_set.md",
+      "sha256": "0feba34729a6dfa671cf7a85e69f9cc09fb000856fd4db19942c96136e3ab797"
+    },
+    {
+      "path": "cards/color--page--sat_curve_set.md",
+      "sha256": "c9787e36e2c8dcc1ab8f53dfabd6e7221fbd1888f7dcce759a2a6c8c829252e2"
+    },
+    {
+      "path": "cards/color--page--sat_curve_spline_set.md",
+      "sha256": "98cbea519f8c4f9bc9b46b0deb39a07a12e913394c7d6bf6ab9a17bc480fa3d8"
+    },
+    {
+      "path": "cards/color--page--scope_read.md",
+      "sha256": "2c7cb223e8ac03efde126e0dbea2a3762bbd06ed5429b211095ca473c14482f8"
+    },
+    {
+      "path": "cards/color--page--scope_set.md",
+      "sha256": "320b8f94ae9538d4549a2dae3351242ef4484b1865035ba71e1cdba3521fb224"
+    },
+    {
+      "path": "cards/color--page--sharpen_set.md",
+      "sha256": "22566664931fe901ad8f50cac2e94ca5c3e255afd3cae24ae9be46d55fe157a1"
+    },
+    {
+      "path": "cards/color--page--shot_match_analyze.md",
+      "sha256": "cc490d507ed92b4af327ba86864e9d00dbd75e52248ef696489dbfb43811d50d"
+    },
+    {
+      "path": "cards/color--page--shot_match_apply.md",
+      "sha256": "38c23b224c211901678fa354fd75c366ab6265e2fcfcbd236dce20e928770fb1"
+    },
+    {
+      "path": "cards/color--page--sky_isolation.md",
+      "sha256": "62f9da451190f8454f298f81d8f8942d9bccb68d139bddd872bb0713c96df33a"
+    },
+    {
+      "path": "cards/color--page--snapshot.md",
+      "sha256": "eebc0048575ee0314bfad28691a0b92f73cb5722eb9955560ad44a6b5bc313d7"
+    },
+    {
+      "path": "cards/color--page--softening_set.md",
+      "sha256": "ad254a9d8aa6f4fb5da796335aac852be95ba4c087a5b40e9ab7178f41333844"
+    },
+    {
+      "path": "cards/color--page--split_tone_set.md",
+      "sha256": "617f82b7d1b6002f5a99d0d51f267654539c70f98fe7fd517c4fba4055b31e7d"
+    },
+    {
+      "path": "cards/color--page--still_match.md",
+      "sha256": "b2e184da40b6f6a0cadf3efc3983da00369fc5e1cd5313e549347181c59efa82"
+    },
+    {
+      "path": "cards/color--page--viewer_before_after.md",
+      "sha256": "c1e48e86f03514ce94f039407775f9a623cf20a769d51ff46cbd4ee294186d45"
+    },
+    {
+      "path": "cards/color--page--warper_set.md",
+      "sha256": "5158cc35800227e3b4923c0865a20cfda2f807e558bc69766c3040e45aa7353d"
+    },
+    {
+      "path": "cards/color--page--wheel_set.md",
+      "sha256": "8139b910961363cc5c6d759148181a5ed5389e0d46fc9f09ab4d820472ec98d6"
+    },
+    {
+      "path": "cards/color--page--white_balance_picker.md",
+      "sha256": "b375004b77db3839f6873aea939962b2b03047da3c3f09cb6449d2bc91d58e1a"
+    },
+    {
+      "path": "cards/color--power_grade--album--create.md",
+      "sha256": "3d209785d2937077cb372a1cf46d223e36d22e4a53e583285c22e78d1cba493f"
+    },
+    {
+      "path": "cards/color--power_grade--apply.md",
+      "sha256": "a99e87beafd5f5ed0a8f70c73e6d07a46146a31cf5ab021dbbdb47290453269b"
+    },
+    {
+      "path": "cards/color--power_grade--list.md",
+      "sha256": "22e01f9630efd04ee9267485fed02785266ffb9afc29b1111c7aee21f0a3cb3f"
+    },
+    {
+      "path": "cards/color--power_grade--template_apply.md",
+      "sha256": "b2073bc3330ba9225466691fe88a0f19ccb0018b7c39bd70f2f526a1997221b5"
+    },
+    {
+      "path": "cards/color--primary--get.md",
+      "sha256": "46ce4f7d2b83a5b5dc1819544b0e832a830dc21272a5fbfb301cadf2538c3215"
+    },
+    {
+      "path": "cards/color--primary--set.md",
+      "sha256": "24d35ae2d6fbec625bfba9e24d9ec710d1a8da1023a31310111ef9208fe9376d"
+    },
+    {
+      "path": "cards/color--qualifier--attach.md",
+      "sha256": "54bd5f81e7bd0f5606889f2c824a6ae2e56442baf8c6df3480c4f760ecaaaaf8"
+    },
+    {
+      "path": "cards/color--qualifier--chroma.md",
+      "sha256": "0993fd79211b8b5d4fa7c3b1e4e3636c62833842383c4381e0da7daeefbd84e5"
+    },
+    {
+      "path": "cards/color--qualifier--detach.md",
+      "sha256": "d420620c9cc8a80f0a9b960fb35231dc6101c3dc897d35d1089e7ae6ef760077"
+    },
+    {
+      "path": "cards/color--qualifier--list.md",
+      "sha256": "2660e3cf3f451d7c30c7aa0dd079dabe7904a37d80f60e91e159e6d8d583391c"
+    },
+    {
+      "path": "cards/color--reset_fusion.md",
+      "sha256": "d5fc26c8a9ebc9bbc137beae4979f39a910830ef636ba61fe7a3d9fdb94566b0"
+    },
+    {
+      "path": "cards/color--secondary--create.md",
+      "sha256": "90569bcabe89ad1afed16082a42a850b31efaed723fddb8ed091b7d751da8736"
+    },
+    {
+      "path": "cards/color--secondary--isolate_green_screen.md",
+      "sha256": "f1b46999abc8f81b4e31a7e82e1e6f0b1188692a5bccf17981124edaef210995"
+    },
+    {
+      "path": "cards/color--secondary--subject_isolation.md",
+      "sha256": "132bd3a14ed1fbdd793f9d70aea54139f2c503643c94fe73956709cf1e259103"
+    },
+    {
+      "path": "cards/color--secondary--tracked_window.md",
+      "sha256": "c65f95508bb8d5c069c44673c2daad0095be6d9e42a01da7158901a730253f54"
+    },
+    {
+      "path": "cards/color--source_grade--apply_cdl.md",
+      "sha256": "71a4c17af4ef236c94702ab6197940cfeced605b61ecb9a8ca7e7ea7debfb46c"
+    },
+    {
+      "path": "cards/color--source_grade--plan.md",
+      "sha256": "e8ff6472e6edf31e42cf79e0e33ee965a4a7eb36a96c1aef6203f9ee82d7d80e"
+    },
+    {
+      "path": "cards/color--source_grade--prepare_remote.md",
+      "sha256": "1e10432ee0895b52259573f8ed8ef062bf2de1fbb334cb0427e775b4167a699d"
+    },
+    {
+      "path": "cards/color--still--grab_all.md",
+      "sha256": "5dbdb2ec1ccaf7933173cac36f424b76504ae078029e853cc51e4190e81f8cd7"
+    },
+    {
+      "path": "cards/color--thumbnail.md",
+      "sha256": "c64872e4c39450d6a9fcde36898caa43191fa2a5586bfae1fcb7800114469c5b"
+    },
+    {
+      "path": "cards/color--tracker--add.md",
+      "sha256": "c0257238628f324109317245a82d8521c6823d6b36fa12b89a3de479e997f2c9"
+    },
+    {
+      "path": "cards/color--tracker--attach_qualifier.md",
+      "sha256": "8d6303c7c248ec339951a0e781d66b94113a6eef720b4eb0a82f41e2f333b440"
+    },
+    {
+      "path": "cards/color--tracker--attach_window.md",
+      "sha256": "5af6f40fc7ba36052eba1527a4ba029130c2ff0e71abdbb97b348371eef588f7"
+    },
+    {
+      "path": "cards/color--tracker--list.md",
+      "sha256": "aa23730d518dfab07ebf2e67b2aa7f6454f155c8f38b82c5077c0675f397d4b2"
+    },
+    {
+      "path": "cards/color--tracker--set_target.md",
+      "sha256": "da7c12110ce26007757556042a9b8a4a83bdcc22cddab2a214e7e9d560e6722c"
+    },
+    {
+      "path": "cards/color--tracker--track_forward.md",
+      "sha256": "41053e386bd7ac0c921c2e46ffeb4fde99b3c8c509d5a7607f629d902d1ba137"
+    },
+    {
+      "path": "cards/color--tracker--track_reverse.md",
+      "sha256": "8a9cb96f8ec3c3f8ffd59d7ec675529023483b5429d494268553137660802c4f"
+    },
+    {
+      "path": "cards/color--version--activate.md",
+      "sha256": "af37b0e773900921259b38a7866a977a9658c83eb9f6541ee2293a5b5975d7d2"
+    },
+    {
+      "path": "cards/color--version--add.md",
+      "sha256": "1ba652c5f69615b8762cedcab2157be96e89767fb89b043909de7c6b9e8bf344"
+    },
+    {
+      "path": "cards/color--version--delete.md",
+      "sha256": "6e90efbbe3ebe7afb732db872dd52ea5b830dfdc59c895cc3c73fa7cfdadbf4c"
+    },
+    {
+      "path": "cards/color--version--duplicate.md",
+      "sha256": "85ee6b00821c46aeca9d4e40b64038d048fbe7ed3da456dfb86d8f4aa61af6f7"
+    },
+    {
+      "path": "cards/color--version--list.md",
+      "sha256": "56a76a1016191d003e0a1582b8637652d5dfd0e38605253da6ca8b1f29fc4244"
+    },
+    {
+      "path": "cards/color--version--load.md",
+      "sha256": "4b44a8ebbdd497d0745379f70d952a010c39dd06d77b774368fe05b12a0b86e3"
+    },
+    {
+      "path": "cards/color--version--rollback.md",
+      "sha256": "628df518c5877e53005dbe20ecf70728dfe952beeb34ba1b195f845517460796"
+    },
+    {
+      "path": "cards/color--wheels--set.md",
+      "sha256": "ac424e2cceb8fd4475127a89f7e92876111bddda2f66ba22c4f67fd936eb026a"
+    },
+    {
+      "path": "cards/color--window--attach.md",
+      "sha256": "bdd9a39a765145648890eb2aecbfa4f2c72e24794cabbaacb28799d24df2bb90"
+    },
+    {
+      "path": "cards/color--window--detach.md",
+      "sha256": "6f7c92c70e79448d085805a8e136b10a3879656ff9d386234dcfb873cc3b3f9b"
+    },
+    {
+      "path": "cards/color--window--ellipse.md",
+      "sha256": "f3993074d25d8a90b4bb3576a0e4dd3961865dfd49ce28a7cf71cadfe17d3ffb"
+    },
+    {
+      "path": "cards/color--window--list.md",
+      "sha256": "7c5f5a5fd5a5bd87c24733bf4d3bed3a53edfc76613dd726abcebd4c1df601fa"
+    },
+    {
+      "path": "cards/color--window--polygon.md",
+      "sha256": "dc66f170e7923bc7c495dc1d123569d4203547142ba541fc8f90f8ea3c6ef094"
+    },
+    {
+      "path": "cards/color--window--rectangle.md",
+      "sha256": "8cc4c3f03a5a7d3b40fa4daeefb6933dcc14706b23edab12f2aca791e9b315cf"
+    },
+    {
+      "path": "cards/color--window--reorder.md",
+      "sha256": "ca776b78929b68848ec5f5fa52896f5e67d7e21a91f65e6471896f212fa22987"
+    },
+    {
+      "path": "cards/connect.md",
+      "sha256": "91a9c254c1408c0ffea4e86e16fe54141ffda139858ec8d177bd38f32bf0cb7a"
+    },
+    {
+      "path": "cards/context.md",
+      "sha256": "7f613bd7b0834a5c9af47e90169f5c8fe0ba5243da4d570ecb710885875f95a0"
+    },
+    {
+      "path": "cards/dctl--apply.md",
+      "sha256": "a234bac42228184366398a86f62e36c50dac7fe11a15aaafaaeb3728922a2e62"
+    },
+    {
+      "path": "cards/dctl--install.md",
+      "sha256": "9ba0ebf606623e6788b573eb97e3c9ecec8ab23bb64d8ca84829fe1a0c607f10"
+    },
+    {
+      "path": "cards/dctl--list.md",
+      "sha256": "44c1c68e6827e6622548340aa27d948c54f69a05c9cdf9e6b864dae00e789062"
+    },
+    {
+      "path": "cards/dctl--scaffold.md",
+      "sha256": "367086e819449cddb01023e36c5b07e93be43049b48a016e64c19af98248b3cb"
+    },
+    {
+      "path": "cards/dctl--validate.md",
+      "sha256": "43ddd73e88f20bece27f4c34bb7e53b0b65e86b41618c2c76789ffe1af3389bb"
+    },
+    {
+      "path": "cards/developer--capability--audit.md",
+      "sha256": "9539e85bbdab3800bb6935bbd5ed6dab61fbe02770ddd6e97d48acff1c173584"
+    },
+    {
+      "path": "cards/developer--capability--diff.md",
+      "sha256": "d5c78f5ed78d6db9a77e42dfbf4d2dfe4fb8b2de94c81917fcda92d5bad98a9d"
+    },
+    {
+      "path": "cards/developer--docs--list.md",
+      "sha256": "75e8da0249ea189e588be8f7a8083760e913965475dcedff41c8d47800597525"
+    },
+    {
+      "path": "cards/developer--docs--open.md",
+      "sha256": "f5cfc1e6ed6d002afb4c71811a2631294ccd128a2060eb9badf877e649f01645"
+    },
+    {
+      "path": "cards/developer--doctor.md",
+      "sha256": "348ddb17791dbd18ca52abe452d94777f89a014096bfeb08f6e351fcf30c9808"
+    },
+    {
+      "path": "cards/developer--examples--copy.md",
+      "sha256": "72b3b88100f069b71001e0f8d522c8418ecebdc24e66a24c938f29abfab37aac"
+    },
+    {
+      "path": "cards/developer--examples--list.md",
+      "sha256": "5641100703ed9aa4db1eda85c4bfeab2378dd748ef0d14641781634fea7cdfa6"
+    },
+    {
+      "path": "cards/developer--sdk--doctor.md",
+      "sha256": "dd3618f06a4538d64d117fa2eb76bdade1b6d88f0971b62d3605785f7dcf2c66"
+    },
+    {
+      "path": "cards/developer--sdk_doctor.md",
+      "sha256": "f473426596953c48231be8ef189a860f6247d36d72a51b91c2e8ecfdb6e4c88a"
+    },
+    {
+      "path": "cards/doctor.md",
+      "sha256": "1468890802d36f2c8fb2827cb5e794488d5ffe93581558ce7227cc237d1aff85"
+    },
+    {
+      "path": "cards/edit--auto_subtitle.md",
+      "sha256": "31352f8f37bef73fc55a0efe80b3df2e8914b1ed91b174edfb48406391bd47a4"
+    },
+    {
+      "path": "cards/edit--blade.md",
+      "sha256": "094c1979a94f98bf4933003112dc43fa0054e16095ba9012d7af6da5829260ec"
+    },
+    {
+      "path": "cards/edit--camera_pip.md",
+      "sha256": "a75920c73f7d699ba44b10aed71bf729188999b69352708f569bccfd85e783bb"
+    },
+    {
+      "path": "cards/edit--delete_through_edit.md",
+      "sha256": "dec702f1451148534260c818f75ff6cb134619505d2b5f640e176ddfe8947414"
+    },
+    {
+      "path": "cards/edit--from_edl.md",
+      "sha256": "d2f0b50ba38bc47c42a2d5ce32a5128825df80ccbcb205fe346e85771dabfa52"
+    },
+    {
+      "path": "cards/edit--fx--add.md",
+      "sha256": "b3667eeb7eeb1b5ad71edeabc216e36e6a1f056da1453d70da23370e00aeb1c6"
+    },
+    {
+      "path": "cards/edit--insert.md",
+      "sha256": "f576f4f1500639a7621b83ed4dc0a3e5fba54b66752a1a6a60f168bc39548400"
+    },
+    {
+      "path": "cards/edit--overwrite.md",
+      "sha256": "652d8f21dcafe4704a6fdbe9eb0c8f2459512f203c1d9bff840946670819f102"
+    },
+    {
+      "path": "cards/edit--remove.md",
+      "sha256": "d5a2fd344a11a2cddd32bcba8cf4e7dff8c35f95ff4c7f9fa6e7e4f0276d39a5"
+    },
+    {
+      "path": "cards/edit--remove_range.md",
+      "sha256": "c8ea08d54414eed074a48a41c42eb967b58281cccd2ef5858a414468b6542014"
+    },
+    {
+      "path": "cards/edit--ripple_delete.md",
+      "sha256": "8406d7c36096fab64a5bd2d183d991c0e44c1a720d108d9079d33a18ef7a332f"
+    },
+    {
+      "path": "cards/edit--ripple_delete_selected.md",
+      "sha256": "1f78811be7bbc6808dcdd48b847b340c64f7b870b6ad642aa9402037243bac8b"
+    },
+    {
+      "path": "cards/edit--scene_detect.md",
+      "sha256": "bfab83c06f24da04f40d8a7af309b0400392ab8b2c1f411906f2f89d28bb9581"
+    },
+    {
+      "path": "cards/edit--slide_selected.md",
+      "sha256": "94c471d0e455e2b9d716ccf219e1036b71221aabdf2d10b4e6e41f3f7f82fef5"
+    },
+    {
+      "path": "cards/edit--slip_selected.md",
+      "sha256": "66f04b9f1cbaab31f10323911c2520bc9900056a6f04e7d4add466dfb9358e2f"
+    },
+    {
+      "path": "cards/edit--social_crop.md",
+      "sha256": "03ebce3894c74207f45c38bec4e403e988ed90426fc3ed61ed5f10f2170e84f5"
+    },
+    {
+      "path": "cards/edit--split.md",
+      "sha256": "e067dd01538a9a7eb33aabe6467cb65611305a317a4ff0489b93a0f83868ff15"
+    },
+    {
+      "path": "cards/edit--transition--add.md",
+      "sha256": "af78ddefc0882a9b9531b6a210f1a93215bd9db912dee78782b9709d4b363854"
+    },
+    {
+      "path": "cards/edit--transition--batch.md",
+      "sha256": "664148f6f1e66612a144754573896d1ffa2ec93b0735cc8ef571a0a8620e5935"
+    },
+    {
+      "path": "cards/edit--trim.md",
+      "sha256": "0871a02ec9cc59c6ca7b131c50028860168b225008abe6011c787a60a6007909"
+    },
+    {
+      "path": "cards/embedded--install.md",
+      "sha256": "7868a5e6078e90a1e2bee8d1ddcc30b6be1bb5dc7bff7ace48e847462d8ffc95"
+    },
+    {
+      "path": "cards/embedded--ping.md",
+      "sha256": "bc569dcecb961e3a710a3d153c180b83c6a4f71e2c8951b164a97c7717a47821"
+    },
+    {
+      "path": "cards/embedded--start_server.md",
+      "sha256": "bc0cee0816c939db58dc9390da44aa05d4569e0e3f0e38cdb3bbe0511e8b0cec"
+    },
+    {
+      "path": "cards/embedded--status.md",
+      "sha256": "345744cd1877ff889eae3cc2be86c56df1d9b52969efc412e3b3d4a7e7012688"
+    },
+    {
+      "path": "cards/embedded--uninstall.md",
+      "sha256": "0dc8228b47743d3b4bf3b16d80022c7cd6300af3e39bdd2b819fd846a5ed6cfa"
+    },
+    {
+      "path": "cards/fairlight--add.md",
+      "sha256": "108291f4064ca570285dcfe2f8c40c063b423ba2238fb2153fcf2652690b8202"
+    },
+    {
+      "path": "cards/fairlight--adr--cue_list.md",
+      "sha256": "f5b8dabe63624806792a4006736e6f4617d6f614efc8bad6ddaed32eec8b5f0c"
+    },
+    {
+      "path": "cards/fairlight--adr--info.md",
+      "sha256": "1159abc170275701d4c92cfe74cf43365ce8f2669ad3d54d6e07769c90a762f4"
+    },
+    {
+      "path": "cards/fairlight--adr--record.md",
+      "sha256": "981c2779a147b21d1971f093a75f6a9845e4a3579e5a7ce0df4fcf54d9e78a6e"
+    },
+    {
+      "path": "cards/fairlight--ai--dialogue_leveler.md",
+      "sha256": "6aafc6c4bc981f4064653669db9557738b6850452741ac16a327f2027049c302"
+    },
+    {
+      "path": "cards/fairlight--ai--music_remixer.md",
+      "sha256": "9f8d36b37ce8211f1014b5f7420b45d0dd7d5dc5939fccf35a5f3d533e1d5e55"
+    },
+    {
+      "path": "cards/fairlight--ai--read.md",
+      "sha256": "c2bc2d45256367dd31cb46394ad687f34a9796053d7752a0a911527bfe01e82b"
+    },
+    {
+      "path": "cards/fairlight--ai--voice_isolation.md",
+      "sha256": "7b51ea225367e2b8ebf33bdeba09492becc4031ec8ac44d96af30f5b8fb78c85"
+    },
+    {
+      "path": "cards/fairlight--api_notes.md",
+      "sha256": "3e13bac88a1d557fd638fb691ba2e3a68c7f566074f0dc3cefa79b2614444102"
+    },
+    {
+      "path": "cards/fairlight--audio_gain--batch.md",
+      "sha256": "3ff67637d268dd90ac36db91eb399e537cb283b2be5c84e76eea47dc5478addb"
+    },
+    {
+      "path": "cards/fairlight--audio_pan--batch.md",
+      "sha256": "f85981a5c4c299cc361c31fbc1be5e59c8b054d0a7c51173c9a306f0b1e27938"
+    },
+    {
+      "path": "cards/fairlight--automation--list.md",
+      "sha256": "656ad6d4e542ef018e52455506bf6834edb1bbf6960db8b2cfd1ea2a7ab74d07"
+    },
+    {
+      "path": "cards/fairlight--automation--write.md",
+      "sha256": "bbdc23a5ab784e17cc9e4a12a759bf6c0e2d551b3e431f90b0f6bbb0829615a3"
+    },
+    {
+      "path": "cards/fairlight--bounce--mix_to_track.md",
+      "sha256": "2fa155a72b64ec12ad44500e28c5fc67f6ae5ed8aca9993e225ab5f11eddd93a"
+    },
+    {
+      "path": "cards/fairlight--bounce--track.md",
+      "sha256": "5513473af251d7b336ee46730fdcc44ebaf57fc21388118c78584e207de7dd8e"
+    },
+    {
+      "path": "cards/fairlight--bus--assign.md",
+      "sha256": "2c46071c62595e5c83f2ad06eec386e97e57cb80fa9990906c9f67a880d18138"
+    },
+    {
+      "path": "cards/fairlight--bus--level.md",
+      "sha256": "b20739194e49dad1b8318d6a8b0692aa7925a8f6797bf049387316fd7879f626"
+    },
+    {
+      "path": "cards/fairlight--bus--list.md",
+      "sha256": "d83c7787922d52d96c1681e7f3a0fd1ab9554b030dcd0b05cc352a42bc7fe31c"
+    },
+    {
+      "path": "cards/fairlight--channel_map--clip.md",
+      "sha256": "6b7483efc9fabd9a863f5206697bf2d7362d178f768d88135f863c0f036b81bb"
+    },
+    {
+      "path": "cards/fairlight--channel_map--media.md",
+      "sha256": "d1bfe9a6881d239d4eb01fc3ca45cba17cef169f1cdcc941540e78f7a7a3ce2f"
+    },
+    {
+      "path": "cards/fairlight--channel_map--set.md",
+      "sha256": "77f3c3e6e67c28c38772db485e211a6fd33f66e0c0efab662a911788ba5d5ff0"
+    },
+    {
+      "path": "cards/fairlight--clip--delete.md",
+      "sha256": "749734f61aa30d8999f28a8e8681ea042662c2dca774c631c5b130af068c66cb"
+    },
+    {
+      "path": "cards/fairlight--clip--info.md",
+      "sha256": "793c7168befe6fb5ce060127724ff825d6c4560909e0bb27b1ecd6872efbe33e"
+    },
+    {
+      "path": "cards/fairlight--clip--link.md",
+      "sha256": "2df14f7831c64463a0dc40ea70f7c46947715c77fdc8e5c2d12a39617c1f28cb"
+    },
+    {
+      "path": "cards/fairlight--clip--linked--list.md",
+      "sha256": "76c37b3efc60acb5f61178d9b4edc23e62942b701fec6c9211ce1eed82ae9e9b"
+    },
+    {
+      "path": "cards/fairlight--clip--move.md",
+      "sha256": "15028ca3cfc4171bba2311c2f4cf4cc520333ec6b01d2e5dfb7dca26f0117762"
+    },
+    {
+      "path": "cards/fairlight--clip--nudge.md",
+      "sha256": "4bd7b26c9050d3341620d605bc1897261ddc1176c87435734cb81a69c091b43e"
+    },
+    {
+      "path": "cards/fairlight--clip--slip.md",
+      "sha256": "c848ea2a5efd7961a0b9d17ef8ecaceb0deca49243749e8a6844feeeed6c9515"
+    },
+    {
+      "path": "cards/fairlight--clip--source_range.md",
+      "sha256": "e6081e5c0eaf6b799e5d247d08950a409802c7c6c4b41ba493d9e37c20b60ef7"
+    },
+    {
+      "path": "cards/fairlight--clip--split.md",
+      "sha256": "453dd792d6d865dcfaf00b26b42449c0d6d405aedeb152e3bc80272a6f8c753c"
+    },
+    {
+      "path": "cards/fairlight--clip--track_info.md",
+      "sha256": "6880b6a8602a632ff4b76ec7138b85e45bcb592c440d85161e7eb009122b5c2e"
+    },
+    {
+      "path": "cards/fairlight--clip--trim.md",
+      "sha256": "313deb37a6c01fac437237e3cbdfbad76ab670946d7f40190d7add043adfddf5"
+    },
+    {
+      "path": "cards/fairlight--clip--unlink.md",
+      "sha256": "4f9933d0548ceb872d844cd74158f1dd9af69f204c69e4ea0cfdc2c1dde84144"
+    },
+    {
+      "path": "cards/fairlight--crossfade--batch.md",
+      "sha256": "108b34abe933e09098a8a90fd64c9a9d3f0be262a7281b6b93afd2f51f18dcec"
+    },
+    {
+      "path": "cards/fairlight--delete.md",
+      "sha256": "676f25100aea601919fee410780f9ab33facd69cd23af90ad2c1922cbc9ff88d"
+    },
+    {
+      "path": "cards/fairlight--dynamics--disable.md",
+      "sha256": "cb57dc96d9dadeca4bb7adcb14c184533a2cbae6eb1c2ec1a57ad74532f5c86e"
+    },
+    {
+      "path": "cards/fairlight--dynamics--enable.md",
+      "sha256": "6aacc43d15287574bc56043ac46f944855053f6f26edec90712c3c639b27a8a2"
+    },
+    {
+      "path": "cards/fairlight--dynamics--read.md",
+      "sha256": "7e26c0adadc3d0650b73358a542c8f176855a88f25d511781c8a8114d6fe29ed"
+    },
+    {
+      "path": "cards/fairlight--dynamics--set.md",
+      "sha256": "85e212ac01b256bb37a92a24abc2696610d1e0c4bf7b09df7f78a8da7bebcd71"
+    },
+    {
+      "path": "cards/fairlight--effect--add.md",
+      "sha256": "bf3b2628add3132efdf589300770e151b9dc00376fddbf49443e8f0f5333c732"
+    },
+    {
+      "path": "cards/fairlight--effect--catalog.md",
+      "sha256": "7b78361012726db9148d9692e189d9525504056a3f8d024cf0f36344249443e3"
+    },
+    {
+      "path": "cards/fairlight--effect--list.md",
+      "sha256": "5b50f5179d00702d76422c7b0e36a45abf9a7e65ce77c5bec63a6e97891db3d3"
+    },
+    {
+      "path": "cards/fairlight--effect--params.md",
+      "sha256": "3d7f62ac610c7781f1cfebc94faae7b535fd37a4dd612a1e32cfe67323c08057"
+    },
+    {
+      "path": "cards/fairlight--effect--plugin_catalog.md",
+      "sha256": "d133b02a251fc80bda4ade338cbc0fbabbb5f9654ce05b18c9a2e72708cd8301"
+    },
+    {
+      "path": "cards/fairlight--effect--remove.md",
+      "sha256": "ba6fe65bc514b96422005c353d5a7f275dadf7a4f5ebb88aebd0b978708c44b1"
+    },
+    {
+      "path": "cards/fairlight--effect--set_param.md",
+      "sha256": "c75b9b7385db764aede2b465acd9076ea2617506cecf26156a55fadadfc4ce44"
+    },
+    {
+      "path": "cards/fairlight--effect--slot_scan.md",
+      "sha256": "9d7b85e02dbdb6decc110be66194fd716b93f8ac12f69886069eb95481bd49ce"
+    },
+    {
+      "path": "cards/fairlight--elastic--enable.md",
+      "sha256": "96a41d0b824fbf742630788dff4250a77e9e89aaa0c0706dec219a20f93f3ab7"
+    },
+    {
+      "path": "cards/fairlight--elastic--info.md",
+      "sha256": "c0e9adb263dab911e5b09e81e1ff0c6c2e972661125a8bce07103049c5eec69f"
+    },
+    {
+      "path": "cards/fairlight--elastic--keyframe.md",
+      "sha256": "bf655bb61f74d049cc085d5e6a5e3689de74c91eb27b8347db5b47a4d0c2fffc"
+    },
+    {
+      "path": "cards/fairlight--ensure_stereo_tracks.md",
+      "sha256": "586da09711d03a0f592a49ca7af20b773300ecfebc7804d3b85d80843ea65948"
+    },
+    {
+      "path": "cards/fairlight--ensure_tracks.md",
+      "sha256": "2f662a11395c5ce66d63320cc96069db3138fb8da5407df8f571b9f5461e58b3"
+    },
+    {
+      "path": "cards/fairlight--eq--read.md",
+      "sha256": "6769b9c9ea616f114993c8aa786d8cb60e8b2c57a0de01879f5e96245d71f75a"
+    },
+    {
+      "path": "cards/fairlight--eq--set.md",
+      "sha256": "8bb67af8a90afcfa5e91e12264155a28f9ea2c7c0334ac925079b48635463253"
+    },
+    {
+      "path": "cards/fairlight--export--audio.md",
+      "sha256": "4ee866797956cc2a1a35cd19c9268a45677779068e1911d66f21ecaba115bcc3"
+    },
+    {
+      "path": "cards/fairlight--external_process--list.md",
+      "sha256": "164592b68107442ffe12802f38bf028ca08ebc7279a30e6836f38e9c1ce344e9"
+    },
+    {
+      "path": "cards/fairlight--external_process--run.md",
+      "sha256": "050be8269fcd243a360afadcea14482b2047d112fb6cc3143b1986d98b275984"
+    },
+    {
+      "path": "cards/fairlight--fade_in--batch.md",
+      "sha256": "567ea9ba5bace368e28dc4f1a60eda202b163c833872116d45961a0c96058499"
+    },
+    {
+      "path": "cards/fairlight--fade_out--batch.md",
+      "sha256": "c38e7c9ddba118b827d10bf4f323ab1a29c4c9191dcc5dfca535fc68c035556f"
+    },
+    {
+      "path": "cards/fairlight--group--assign.md",
+      "sha256": "da5827d4f9816a77be222a09d85aa58b5f64bccc2eba2ec325de0583ea1a5c52"
+    },
+    {
+      "path": "cards/fairlight--group--list.md",
+      "sha256": "3f7d5ae1dbf61b6cdd60015572f9709c334ed94a88532bd09c6f074ff74279b3"
+    },
+    {
+      "path": "cards/fairlight--index--clips.md",
+      "sha256": "b6e6be6d25e953cf19195eb4f83739ce9864128654c615e3468a0407ed9bce57"
+    },
+    {
+      "path": "cards/fairlight--index--markers.md",
+      "sha256": "483864b7ad59ac84df53be6471ed1fe5b18623b4811bb52a8a6a08baeed54afa"
+    },
+    {
+      "path": "cards/fairlight--index--tracks.md",
+      "sha256": "2b92df9a3a719ca4e8630ed2f0efab18979e68b5022cd84bd3326c8cfb114f0c"
+    },
+    {
+      "path": "cards/fairlight--info.md",
+      "sha256": "ed45ff26c06b6f47a046a2444cc2a6d69a1dffc3823f08525b280c3c095e5098"
+    },
+    {
+      "path": "cards/fairlight--insert.md",
+      "sha256": "026de7eb64314badd4af903391b6bf0448e929070b98da108182212c7c094572"
+    },
+    {
+      "path": "cards/fairlight--io--info.md",
+      "sha256": "036d646f59ba8160117a0db112aac4e0f9b73b30426d9eb00273aafc9be42d23"
+    },
+    {
+      "path": "cards/fairlight--io--patch.md",
+      "sha256": "37d634d7422ab562d4d32490c2379772209591b5cf4899611ac93404ffe2ff50"
+    },
+    {
+      "path": "cards/fairlight--item_source--patch.md",
+      "sha256": "d7ce71a828d67414334734140165772ca55ce35962a352755b89d76de89d4228"
+    },
+    {
+      "path": "cards/fairlight--items.md",
+      "sha256": "02e4afaa31afedee8bb7085e4bc337b0e767f83da1b42f5abbb7277b90529d15"
+    },
+    {
+      "path": "cards/fairlight--lock.md",
+      "sha256": "d38b041c0e4a12d5e197c5347fa911bb44772eca303477be661055bd904fd454"
+    },
+    {
+      "path": "cards/fairlight--loudness--analyze.md",
+      "sha256": "e373a7db0138a30efc32d64e41a8bf761aa5fed185ccdd476e97ff6ff4654b34"
+    },
+    {
+      "path": "cards/fairlight--loudness--info.md",
+      "sha256": "940029370f8915a814bbc2114198e39dbe09308b6fae2c60dd26cb1b443aa9fe"
+    },
+    {
+      "path": "cards/fairlight--loudness--normalize.md",
+      "sha256": "fbb20bc80ab9ab858005cd27b49dddbbfcb743507655ee28d87481382daf4782"
+    },
+    {
+      "path": "cards/fairlight--mixer--fader.md",
+      "sha256": "82f2f70cda04449931d580cf425887c839d24fc611549d7343ad09ca10f63359"
+    },
+    {
+      "path": "cards/fairlight--mixer--meter.md",
+      "sha256": "557ff5604fe4c0d16e70fca263bdde0e568a0e0d7434ca74d4dd35a03675046a"
+    },
+    {
+      "path": "cards/fairlight--mixer--meter_settings.md",
+      "sha256": "ab0d1cd3956e850e78bd9893087d8e81bdb317bbfefd538d1b07f1c5e73efecb"
+    },
+    {
+      "path": "cards/fairlight--mixer--pan.md",
+      "sha256": "20ad7fe89e831301150d6daf99d2bdc525fc1d559d2a131ca728f7f85a91a1e5"
+    },
+    {
+      "path": "cards/fairlight--mixer--read.md",
+      "sha256": "469b7ede3315233de913f20f08461c1e1436c23bbeec74bea446a94ab2db73bf"
+    },
+    {
+      "path": "cards/fairlight--monitor--info.md",
+      "sha256": "66fcc0436c43beaeb2c8ac811d3798fa511923ed29a38211de65d28b583e62af"
+    },
+    {
+      "path": "cards/fairlight--monitor--level.md",
+      "sha256": "4bd6b0a6e8d8281b47c843ea72de91a9dc6b7e8abe8f0aeabeec11b9cc838c66"
+    },
+    {
+      "path": "cards/fairlight--monitor--mute.md",
+      "sha256": "20140707061e485ae068eb9442ac1936f3636fb3ce482926b9fa6b91a506ef0d"
+    },
+    {
+      "path": "cards/fairlight--mute.md",
+      "sha256": "47f156439be66544dbd27d875e6f266622940b8bbf5ec1ffd66329ef7560732a"
+    },
+    {
+      "path": "cards/fairlight--preset--apply.md",
+      "sha256": "fc7957f1eac1dcd438e585d0a2536407463f9aee536eff9a46d43e8bebf10d64"
+    },
+    {
+      "path": "cards/fairlight--preset--list.md",
+      "sha256": "1fd2efc738ad07dc0b244087e848bbc5f4185af668e3b907863dad5eb1d1371c"
+    },
+    {
+      "path": "cards/fairlight--record--arm.md",
+      "sha256": "b13032dd0209307d79adac0b37351aabbc3b0c2eef166a64c6cf7b3643ec24bb"
+    },
+    {
+      "path": "cards/fairlight--record--info.md",
+      "sha256": "5c0b843480a3b8ec8146f2310110b6b46fa8430c86e60c59a3895aa65b06a46c"
+    },
+    {
+      "path": "cards/fairlight--record--start.md",
+      "sha256": "c9b4e14b687825017fbcad556cde9d2e98b9da01d6fe8fe570632118063f770a"
+    },
+    {
+      "path": "cards/fairlight--record--stop.md",
+      "sha256": "dc1268547e873ecc091544ce43e087073b8b331b6634f322cfb3b9d721390b3c"
+    },
+    {
+      "path": "cards/fairlight--rename.md",
+      "sha256": "449f0c0b910dba2c6f3caa160ac14d912cd9090d86551e26df3e5392d08679ca"
+    },
+    {
+      "path": "cards/fairlight--send--list.md",
+      "sha256": "7099bc6dda21618f9b8445b53d33f7d3c1c83617b2bef82a4360fa09a8c06514"
+    },
+    {
+      "path": "cards/fairlight--send--set.md",
+      "sha256": "b666afaa43722b9d0287bceb4f325dc00966931e00d5074a673b40333b1d507c"
+    },
+    {
+      "path": "cards/fairlight--solo.md",
+      "sha256": "d3285ae47daa18ec0e91beda020f0ce3e45f6010e05f65fb322324216b4ea124"
+    },
+    {
+      "path": "cards/fairlight--solo_restore.md",
+      "sha256": "57db4e386005db33269a78230bc669e7664545e2b135a01ce34322d831d99d0b"
+    },
+    {
+      "path": "cards/fairlight--sound_library--audition.md",
+      "sha256": "734625028acb6159590d480b80a91e3473b6af546e89b78ec42c7a60363e9da0"
+    },
+    {
+      "path": "cards/fairlight--sound_library--delete.md",
+      "sha256": "73f4a39d4a7bf1027de88df3cac45579a917ee58c96415fddd4b0bc519e04dbf"
+    },
+    {
+      "path": "cards/fairlight--sound_library--index_file.md",
+      "sha256": "d224728b0ae8d512da848ec989222818d8230c52eec99a299dfaf57eded4069a"
+    },
+    {
+      "path": "cards/fairlight--sound_library--index_folder.md",
+      "sha256": "b14111e2d43203468929e83b4e9134b17a412fdacc0ab1954dbe4607d2ceee70"
+    },
+    {
+      "path": "cards/fairlight--sound_library--insert.md",
+      "sha256": "3608223f7dd110e8a278265e4961eeb30bc5ad2aa8c57c3ce34a989e898f47a5"
+    },
+    {
+      "path": "cards/fairlight--sound_library--list.md",
+      "sha256": "096221f0fd48854706078c2d0e6fd8adaae13fdeddc1aab031c154d21593a599"
+    },
+    {
+      "path": "cards/fairlight--sound_library--preview.md",
+      "sha256": "8bddeff701300c547ed78a825bae26d584640fc4cf563d8df0aa0f2e6fd63d46"
+    },
+    {
+      "path": "cards/fairlight--sound_library--search.md",
+      "sha256": "5f661ebadf67849d3d9125a56c12bd2cc1d84373f466698dbb24ab33ba05b326"
+    },
+    {
+      "path": "cards/fairlight--sound_library--source_list.md",
+      "sha256": "04415d4cc18ec5257274f1bc6de5a0e0c67c92a983cce3ca4ce4496fb93dc734"
+    },
+    {
+      "path": "cards/fairlight--sound_library--source_rebuild.md",
+      "sha256": "2be72b5305147fc2a07afa17f9c7fe8338ff69290b72da17bf8ed155f6e82ff2"
+    },
+    {
+      "path": "cards/fairlight--sound_library--source_remove.md",
+      "sha256": "e1ca54702ed407074d002d1e4dd00ade355407ba28c5f20876c3f95759c51d7d"
+    },
+    {
+      "path": "cards/fairlight--track--duplicate.md",
+      "sha256": "9f4e01a45aba90d15178dd0896cf29a1c09f141305a45863f16a53c001bfcb83"
+    },
+    {
+      "path": "cards/fairlight--track--folder.md",
+      "sha256": "73e01e530c9f44784429dcc4b80ac5ef669adf7c5138b75af57a9612636d1b2d"
+    },
+    {
+      "path": "cards/fairlight--track--height.md",
+      "sha256": "4da987932d8cb3882ac3c89b98e4930bbbfdb64465e5628bfc86c0155f97e28c"
+    },
+    {
+      "path": "cards/fairlight--track--hide.md",
+      "sha256": "384bbafadccd36a5e91c0e49d5a849c4607d4eafe5f4d9165c4539fa05dc8444"
+    },
+    {
+      "path": "cards/fairlight--track--input_monitor.md",
+      "sha256": "053e9cda214543e84d2159839f1ec289d8c12ce3a1bfdf3b4d955c585c063b70"
+    },
+    {
+      "path": "cards/fairlight--track--show.md",
+      "sha256": "36b1151ffa76c787dfdb53fe5433f8ad514e4c290f0ebe61f4ff7024caa1d4fa"
+    },
+    {
+      "path": "cards/fairlight--track_color.md",
+      "sha256": "6e58179e4a1f3d7491bb02995b764bca3ab8e3a0782e4bdc0089ab90db45215b"
+    },
+    {
+      "path": "cards/fairlight--track_format--set.md",
+      "sha256": "f7cca49f143c26e30c3f7501c15d2d185acc6c20037b78b92587350aed009f47"
+    },
+    {
+      "path": "cards/fairlight--track_order--move.md",
+      "sha256": "b7b73ac1bb13514b033ee5688d894fa71425fd2d54fe76236722afc015669161"
+    },
+    {
+      "path": "cards/fairlight--tracks.md",
+      "sha256": "d6e67f56c385f67693046419601dd34ef325e99538c7719994684b425cd81d13"
+    },
+    {
+      "path": "cards/fairlight--transition--add.md",
+      "sha256": "92ed1141e592387a8f085d1deb66f4c48f78ea8d93245b86f4b8dad05c40c22b"
+    },
+    {
+      "path": "cards/fairlight--unlock.md",
+      "sha256": "dd326de76513d88d976b3e5a0e8e970b994363c863a07bb06373b11c795a809b"
+    },
+    {
+      "path": "cards/fairlight--unmute.md",
+      "sha256": "38e3394fb8634327044ab9a974306fad3e43eb63b990906f4e201029c50d9474"
+    },
+    {
+      "path": "cards/fairlight--vca--assign.md",
+      "sha256": "53d203837b739921c8c2786976f92daec3d1e15de8f8a11581190e76c546a8a8"
+    },
+    {
+      "path": "cards/fairlight--vca--list.md",
+      "sha256": "3054dfc0889eea473a3158476f32c375be516d3d68cc30039ef2519c4cc203cd"
+    },
+    {
+      "path": "cards/fairlight--voice_isolation--get.md",
+      "sha256": "f556620dac5babe9312fddc1431e28ec074d446c44d17e6e3d524a5e7a6019df"
+    },
+    {
+      "path": "cards/fairlight--voice_isolation--set.md",
+      "sha256": "2fb1063285a89f5ff03e8e61d513c6e494a7fa12264a00eb691c0a3117f2ed13"
+    },
+    {
+      "path": "cards/fairlight--waveform--info.md",
+      "sha256": "5ba494b81a5bb249e3b8283958a7b8de743c97502cd062e5fb2890c225aa45e6"
+    },
+    {
+      "path": "cards/fairlight--waveform--repair_click.md",
+      "sha256": "9aba1746e17bcf2abc41483120239635bb9e868b7a18dc9accac69ba9fc85701"
+    },
+    {
+      "path": "cards/fuse--examples--install.md",
+      "sha256": "b7fe271f64248cce5b1eee69f60e8500509ea8270b750f80b8ec6d14c197fd4e"
+    },
+    {
+      "path": "cards/fuse--examples--list.md",
+      "sha256": "8f53080d89db159e539f6262f90b849e1a7bbf0cf56ec90c1410af9622f673e9"
+    },
+    {
+      "path": "cards/fuse--install.md",
+      "sha256": "4719c6773841cd50147c4ae8f0fe9e0790e3646545958f689046686160df7c13"
+    },
+    {
+      "path": "cards/fuse--list.md",
+      "sha256": "63326dfed98d8b0e8f4566c4c35c35206d506eeda4727e7eb70319b74f163a07"
+    },
+    {
+      "path": "cards/fuse--scaffold.md",
+      "sha256": "c689381d900b798024732114684726f492ecced271edc9f9f415480ae4a9b3dc"
+    },
+    {
+      "path": "cards/fuse--uninstall.md",
+      "sha256": "c50a18cf7cd0c87e5af9a82a26746231ce8c3da4fdb2cf1e166922c4db441b42"
+    },
+    {
+      "path": "cards/fuse--validate.md",
+      "sha256": "3185c39a0c29ec0ce26e790d0a718c256c79fd3e8c75c700ec7d90387d4cad20"
+    },
+    {
+      "path": "cards/fusion--apply.md",
+      "sha256": "6af47ce7fa46d6f7f40a0b50c8d427b66c4e3092b56da182e1be3ef5d1c6a9ba"
+    },
+    {
+      "path": "cards/fusion--comp--current.md",
+      "sha256": "47b18b45a930cab245a773229c3106ed13d4a7a0e21271e3ec8e4a50852d7b69"
+    },
+    {
+      "path": "cards/fusion--comp--delete.md",
+      "sha256": "b2c6a5933093104587bc93d5a68b385852e87d41ff5470468a710bbd76533e40"
+    },
+    {
+      "path": "cards/fusion--comp--play.md",
+      "sha256": "eefa02d1152a83a85e39416926842182ff1c048aa120fde9eb11c1c191a4b58e"
+    },
+    {
+      "path": "cards/fusion--comp--range.md",
+      "sha256": "51d37684b801e5d4e8bd3b52efbfa1faeb65bf77da35967f9276e86d8cb8c3cd"
+    },
+    {
+      "path": "cards/fusion--comp--rename.md",
+      "sha256": "fb1f49c926f3916316444b51df1393a61634bb157608349db65c1d62f3718260"
+    },
+    {
+      "path": "cards/fusion--comp--render.md",
+      "sha256": "c66201a17e06b65f7522f55b04e2664994972c67c72ad418ad6b81472517b6e7"
+    },
+    {
+      "path": "cards/fusion--comp--stop.md",
+      "sha256": "b3b48a6bec01c889494a7df532b04126d247bc84566d78d1d20c850b77fff0e7"
+    },
+    {
+      "path": "cards/fusion--effect--blur.md",
+      "sha256": "cd65fe7626896d2648a49abf58194286ba48df5b9bc7f657b99b9126f45c85c6"
+    },
+    {
+      "path": "cards/fusion--effect--color_correct.md",
+      "sha256": "4602527800c7048762498d148aee912fff75edf6a7e44986906caa75245e7e76"
+    },
+    {
+      "path": "cards/fusion--effect--glow.md",
+      "sha256": "7a30db6e5b7ddc7c2af68ba94ee3a36808d422a536a96f9df98183f92a6d7c97"
+    },
+    {
+      "path": "cards/fusion--effect--sharpen.md",
+      "sha256": "f70362e41eff54eadb8a46289e7702985d385933cc54d8b998208ade164277d7"
+    },
+    {
+      "path": "cards/fusion--effect--transform.md",
+      "sha256": "a696024e8f88f8ee0e06f4e1cfc009cfd59281626ae23a6e0674905206480a1b"
+    },
+    {
+      "path": "cards/fusion--generate.md",
+      "sha256": "c92e53587e09b27bd5ba203c879fb0309a093eddc7c9c9b3744f561262d21c1c"
+    },
+    {
+      "path": "cards/fusion--image--batch.md",
+      "sha256": "7e9c0112d7e1bd4f42fad99e65de406794037930ae3ab0e1829557593d6e1fc0"
+    },
+    {
+      "path": "cards/fusion--image--set.md",
+      "sha256": "9e3f128d8d5ecf47c9c8a73f022a01b474ee9693a894dd61b06127e66ce52883"
+    },
+    {
+      "path": "cards/fusion--insert_setting.md",
+      "sha256": "e1fc75d5350fd081d9272a080eee8ab528a4e2df2dfc4ef4326c87578a21f323"
+    },
+    {
+      "path": "cards/fusion--insert_settings--batch.md",
+      "sha256": "70e160c9736195f1f4b57b3e3a5ea3e069d69f56710c57785de53b35907c874f"
+    },
+    {
+      "path": "cards/fusion--keyer--chroma.md",
+      "sha256": "0a8c6a13dc8ed2dc5062d00350404edb6bfd0d3443c5f12a2a8605281dfae151"
+    },
+    {
+      "path": "cards/fusion--keyframe--add.md",
+      "sha256": "a70eed25cfe47f33e0f3a1ffea0452aed93d2458bc7a65daa70e92e389e25ca1"
+    },
+    {
+      "path": "cards/fusion--keyframe--clear.md",
+      "sha256": "8b305eada20fac518fc88e30ea539526ee94f70bce0778523250cb7bd73e0cef"
+    },
+    {
+      "path": "cards/fusion--keyframe--delete.md",
+      "sha256": "27a0eae6cbec62217accffb49c4e3cb31cea1fb0caaa5ec25b28b970ee2353fe"
+    },
+    {
+      "path": "cards/fusion--keyframe--list.md",
+      "sha256": "d28d10d6f8486652340d01e71e82cb487ca07f607366344a029053d381952a1b"
+    },
+    {
+      "path": "cards/fusion--keyframe--set.md",
+      "sha256": "c6bc6c6e706889c8029817ff18608610db14ff5c5036e0549fb818b2876d4058"
+    },
+    {
+      "path": "cards/fusion--macro--apply.md",
+      "sha256": "e88a47ea544d367207581344cccdd8a56ed32eadcb7599cb89cb280335153561"
+    },
+    {
+      "path": "cards/fusion--mask--ellipse.md",
+      "sha256": "8782fbc8eb5583ed980c4859749ce5d2f42ec46aec13a2b58c23d8ce52103104"
+    },
+    {
+      "path": "cards/fusion--mask--polygon.md",
+      "sha256": "da6ebd62c9f62614fa52a05a3a5d382ac5006c7f050f8903d335470e3ba2b9c8"
+    },
+    {
+      "path": "cards/fusion--mask--rectangle.md",
+      "sha256": "1b5c71347c1e459599bab59d7bc3f7dfc7be3583ff7e4b4ea1cee7d23f90e117"
+    },
+    {
+      "path": "cards/fusion--nested_text--batch.md",
+      "sha256": "98c54a04a74d302e756acfe60f851947931ce62b32977f925582af0ea9b98a8d"
+    },
+    {
+      "path": "cards/fusion--nested_text--update.md",
+      "sha256": "694413be1b9ff3a9902644c0402eba735bd1c24b10f5fde92aefcb4853ace651"
+    },
+    {
+      "path": "cards/fusion--node--add.md",
+      "sha256": "ca26865c86f2bd49ecdbd69b67deeb4202dfa94ed536df11347880f2eabceb85"
+    },
+    {
+      "path": "cards/fusion--node--connect.md",
+      "sha256": "825d3c2c9a57dce1ff3bd21269065766a9aba1e3c1786c162ee7c051a05e644b"
+    },
+    {
+      "path": "cards/fusion--node--delete.md",
+      "sha256": "914a7e026c454123bc8050f5e1003571f667725b69a6349dd9101c7a9c66dd7b"
+    },
+    {
+      "path": "cards/fusion--node--disconnect.md",
+      "sha256": "a7be93a974dc12fdbf5b230c858cf9e633678ec558f9d45cc665ede30f284aa2"
+    },
+    {
+      "path": "cards/fusion--preview.md",
+      "sha256": "6d3b8bcd62dc3597f1031aa21850163e6957a2b034684a11d3c2dd875b5e0bd9"
+    },
+    {
+      "path": "cards/fusion--setting--center_to_polypath.md",
+      "sha256": "475b57bee6cb25adb0ce67ff6cc8110c308a533347389ab49022f896c06375f0"
+    },
+    {
+      "path": "cards/fusion--setting--inspect.md",
+      "sha256": "0df2d7b0f58866d0e3a39588a0eeeb5525325123208137b9da76da821b1d9aac"
+    },
+    {
+      "path": "cards/fusion--setting--polypath_to_center.md",
+      "sha256": "1642e9558e2813fb362845007a978bf8ec0f05bd610b919669bb674544043620"
+    },
+    {
+      "path": "cards/fusion--setting--summary.md",
+      "sha256": "df904f63318714e1431e9f48312472515368d97f24f1d4c24c6b2d2d6a2bb189"
+    },
+    {
+      "path": "cards/fusion--setting--validate.md",
+      "sha256": "2f63593481cae437933c5db0a2dba5805429c06057b02fcc7b17a645f7da243d"
+    },
+    {
+      "path": "cards/fusion--template--apply.md",
+      "sha256": "98d7df6915a2deb581df18dec171d36f5b148657db777c3c465226e1e92103f3"
+    },
+    {
+      "path": "cards/fusion--template--assets--add.md",
+      "sha256": "66e5cb9924296059a2a88051f43fe594b85570da0271cb31944afd30de328b34"
+    },
+    {
+      "path": "cards/fusion--template--assets--list.md",
+      "sha256": "98ef6da60c9dee1b6a12cabb025c5bdc749c6efd69695f1a390f476d0d109e59"
+    },
+    {
+      "path": "cards/fusion--template--dir.md",
+      "sha256": "fee4a1d6f2daa01ff23a88b977638ca4f53cfcfd5044842e4d76d1eb432a6f6c"
+    },
+    {
+      "path": "cards/fusion--template--icon--set.md",
+      "sha256": "ee241603334060f2cbe18e055c41ef00b7c53e17ab3ccfdb22dbd64ad3af3fea"
+    },
+    {
+      "path": "cards/fusion--template--install.md",
+      "sha256": "5456a03e195b5c3c8f8347003e02e18f838773159cc7c0561d4a95d4478c1fa5"
+    },
+    {
+      "path": "cards/fusion--template--list.md",
+      "sha256": "3ac34e03ace2491fba6189bc63864a0abc875fcb360395c295f12c7fa47af669"
+    },
+    {
+      "path": "cards/fusion--template--package_drfx.md",
+      "sha256": "69a0c871e4dc5c42dedb957d506569a5328dc7f455c9c044d890e36b885c9df6"
+    },
+    {
+      "path": "cards/fusion--template--scaffold.md",
+      "sha256": "73473b65669d585faa311b3322bb7a2ed0425e923e92480c3c1f4a36349f9cd1"
+    },
+    {
+      "path": "cards/fusion--template--show.md",
+      "sha256": "018ad0469269d76618f892723fe86c7014d80837191914e67a16836360e269ba"
+    },
+    {
+      "path": "cards/fusion--template--uninstall.md",
+      "sha256": "e660bde6842ffa84e306fd397d6aa205c24c0233e4c3eefd4760177d988636db"
+    },
+    {
+      "path": "cards/fusion--template--unpack_drfx.md",
+      "sha256": "2cc83c3d8086f27d1fb4ae901984f4625df23634721992b205c449e3f12ea4e4"
+    },
+    {
+      "path": "cards/fusion--template--validate.md",
+      "sha256": "14938ddbf07f3b4031c0c6783ad807d3ae3364a34e180d454c6fbc9d189eb04e"
+    },
+    {
+      "path": "cards/fusion--text--batch.md",
+      "sha256": "6a5dd7a7d6f3d2c8a25e135a9da2fa9fa01dd4ab1a0a196a156069382b962c2b"
+    },
+    {
+      "path": "cards/fusion--text--set.md",
+      "sha256": "9b671563bc6639d2b0e9c3c43e4f9f80fd0dcc830674fe86727ecd37d720489b"
+    },
+    {
+      "path": "cards/fusion--tool--active.md",
+      "sha256": "decd71c91c2b98fcf4ad07cbf21a49745f06702554a299f0fc05a6305e2a7d9e"
+    },
+    {
+      "path": "cards/fusion--tool--add.md",
+      "sha256": "5842f0b65356334c9c3d5575af5dc718c7442d151b949fddf4f6c76000010f95"
+    },
+    {
+      "path": "cards/fusion--tool--attrs.md",
+      "sha256": "1b49fac21a9e22415712f6e4a8c585cb29250f7d94a27cda9739c43a9d863a9e"
+    },
+    {
+      "path": "cards/fusion--tool--connect.md",
+      "sha256": "25fc637a057c642b1bc831ced81c75341c4a56d7e1f9f7cb59552864a707c02d"
+    },
+    {
+      "path": "cards/fusion--tool--copy.md",
+      "sha256": "98bca75006b9c3e72373de3e7cc7f72016ed49267eb6feaa1a2267664752f57c"
+    },
+    {
+      "path": "cards/fusion--tool--delete.md",
+      "sha256": "658582aa859334de20449e22ba381c8c6f1f5622b371137f4a609dfc85c7c6ba"
+    },
+    {
+      "path": "cards/fusion--tool--disconnect.md",
+      "sha256": "4792b4c48cc975363eb7505e40721d91c13440ffd0c4b02ca3a7e302b9007f67"
+    },
+    {
+      "path": "cards/fusion--tool--get.md",
+      "sha256": "fbab0d333e765405bdbb54a152b99542eef164c0fcf94ca80a64169362122ffd"
+    },
+    {
+      "path": "cards/fusion--tool--inputs.md",
+      "sha256": "8564b5d12bad666669032e1b3e838952ae7c81c2c039590bde307399bd01b442"
+    },
+    {
+      "path": "cards/fusion--tool--list.md",
+      "sha256": "f18c41555846e26ccd70b2d9ec7d1f16165e68200d2533f1f83a072f9f3fdf4e"
+    },
+    {
+      "path": "cards/fusion--tool--outputs.md",
+      "sha256": "b658f17004a04c4eea73953e3fb87cd37da6fce47d9910f9f1a0671c5c58565c"
+    },
+    {
+      "path": "cards/fusion--tool--paste.md",
+      "sha256": "51ab70691d869433bfea9d2609091c53bce88390effa15007e05b58e6416a496"
+    },
+    {
+      "path": "cards/fusion--tool--set.md",
+      "sha256": "60ec5b788d2553f98366d0eada736fc8ae90930741decfc2877094156b40d07d"
+    },
+    {
+      "path": "cards/fusion--tracker--add.md",
+      "sha256": "3af7b78f05aacb501d3f27dcc4e4b3fb77a715d3dc248a9abf6662e9381156f9"
+    },
+    {
+      "path": "cards/info.md",
+      "sha256": "1c0ed813948055819e1852b7e8219c8f45c415ce41cd22832ef45b38890dbb1a"
+    },
+    {
+      "path": "cards/launch.md",
+      "sha256": "4ac8f4b2967d532721ea0e6d724462d5d8251932f4de2086714828f47ef8d46f"
+    },
+    {
+      "path": "cards/layout--delete.md",
+      "sha256": "095a1c2b358a08104e7697855cfb083984bcc84ce3d78911d85123b495e1aa2c"
+    },
+    {
+      "path": "cards/layout--export.md",
+      "sha256": "ce7b385d28e3ddf8187ef7830d9f36766bc39a95e3c7ae6da6be8e6b11383719"
+    },
+    {
+      "path": "cards/layout--import.md",
+      "sha256": "ea4a6328cf3b8e3d0d6fd274b487121801b5f5d3cf0e58e52bf96cf78e5e16b4"
+    },
+    {
+      "path": "cards/layout--load.md",
+      "sha256": "6afdd0c2129882bc2a2ee0f215a1c7b1f559957d172900d192c64007550e7352"
+    },
+    {
+      "path": "cards/layout--save.md",
+      "sha256": "eaefcf1c7bc62e753401755b53539c91214c97089419f56f936fc7b10293eba9"
+    },
+    {
+      "path": "cards/layout--update.md",
+      "sha256": "1253cf621c21cbeac21de3039c8099736be14e91322911a1fc6dba33d25be64b"
+    },
+    {
+      "path": "cards/lut--convert.md",
+      "sha256": "65a688f6358ad7bb07319d38780c27e407dafc5ad4f2049822ff950212df349b"
+    },
+    {
+      "path": "cards/lut--generate--identity.md",
+      "sha256": "8b665fed58996fe1db6b271b7f8c18de18aa5f5733ef3a165456628dd3f992c2"
+    },
+    {
+      "path": "cards/lut--inspect.md",
+      "sha256": "f520ed26459ff2991487c4b91b7e9f0cd16025dc6f17eb935e9e83add0be6e19"
+    },
+    {
+      "path": "cards/lut--install.md",
+      "sha256": "af7fe7ce4740dd2d5c411972f50ae7b2cfe19ff15c167e5703716fdcf890e918"
+    },
+    {
+      "path": "cards/lut--list.md",
+      "sha256": "a386c9dbbec7ae41e636145397a5459afd139c124df66c2ab07fea6c54bb305b"
+    },
+    {
+      "path": "cards/lut--remove.md",
+      "sha256": "1c0a70585ed8f628ab5bc01942d5feaa7ed370e971fbbd35e3c30b7d826dd588"
+    },
+    {
+      "path": "cards/lut--validate.md",
+      "sha256": "c87a219dd62228b431c2dc66031ae008df0a16b7b1d2fe1c0e1385ebc608e731"
+    },
+    {
+      "path": "cards/lut_refresh.md",
+      "sha256": "0cae309446f6cf58f181e293d2fa22f1f4c6486a0ee4c156cf82ca567bf1d9a2"
+    },
+    {
+      "path": "cards/media--append.md",
+      "sha256": "fbb61604d0f83afe97d1f686f79b7866cb573d73638f8bff18b89da1e678f717"
+    },
+    {
+      "path": "cards/media--append--batch.md",
+      "sha256": "35840ae18b3209ee9a9c2da0b4d075f9278bff2519e42622c67e2e8d222b1098"
+    },
+    {
+      "path": "cards/media--audio_mapping.md",
+      "sha256": "ac21287840114a95a00a57be2adcd7c47143e5a3967feac10e5036ec84fca020"
+    },
+    {
+      "path": "cards/media--clear_transcription.md",
+      "sha256": "43e244ccdd94bef819110a0f71d9b6f462bc62ce337630d185a1852dc2062692"
+    },
+    {
+      "path": "cards/media--color--clear.md",
+      "sha256": "337ee7210988b20ddd359c4683655cb6fd0b56be32b842b4bcb38614e7cdceae"
+    },
+    {
+      "path": "cards/media--color--set.md",
+      "sha256": "7694bf2fe4e94da90f065051dd6f9f37b9375db695c1ea546388d3a103b7ebc3"
+    },
+    {
+      "path": "cards/media--create_timeline.md",
+      "sha256": "a95fa34e9cfa4b3846962a458173184c729ce02e81654cbb908935db79ed07d6"
+    },
+    {
+      "path": "cards/media--delete.md",
+      "sha256": "3ea3602d0be66883d4bce93c9de6ec4173c4d44bfce4220507c11a2e5f559b70"
+    },
+    {
+      "path": "cards/media--duplicate.md",
+      "sha256": "31ead9a17e098cdae9ed43cae7defc70f9e5dd019fcbec821ff09645389de4e5"
+    },
+    {
+      "path": "cards/media--extract_template.md",
+      "sha256": "cf6ba996d4e6bb70c92569ce732d9f49a5080338cd621f643cf88661cdf2918f"
+    },
+    {
+      "path": "cards/media--flag--add.md",
+      "sha256": "6befb85f4dabf66287a60d1a5cdc60b54ea382853e05faa74c381e34442d4258"
+    },
+    {
+      "path": "cards/media--flag--clear.md",
+      "sha256": "7ad7ecec4aa25720628f1cba42ddaf8c6281776b79b95b40276cb27bbc5d80b0"
+    },
+    {
+      "path": "cards/media--folder--export_drb.md",
+      "sha256": "3921179995958b3c56d1518fb277c7d7bad5a7f839a00df3568f466f690bfca4"
+    },
+    {
+      "path": "cards/media--folder--import_drb.md",
+      "sha256": "b915a027d6ea41bd21f540035dd9ab3b0676a330922365a664e06be8df0b52b5"
+    },
+    {
+      "path": "cards/media--folders--create.md",
+      "sha256": "ff0c91c7c45c75e1e3f589ffe0493e7808785c07a77a4269f0c8e6595c90b5ad"
+    },
+    {
+      "path": "cards/media--folders--delete.md",
+      "sha256": "4ca28196312dd6e141bfe4c06f09e8877a722e47e49c1303fb7bdc11d91d986e"
+    },
+    {
+      "path": "cards/media--folders--list.md",
+      "sha256": "2148a7ee9f339b71535ca129de55e1f4746365ca86a75ed6c394dd6bfc14809a"
+    },
+    {
+      "path": "cards/media--folders--move.md",
+      "sha256": "aa02527851e9c848fb6f25bb998abeba461cc02b52be2a5286ba9c25714fec93"
+    },
+    {
+      "path": "cards/media--folders--open.md",
+      "sha256": "0c508f5780718f932815cf6b03b99f0995f9ad67dda675f8ab6b40a255271091"
+    },
+    {
+      "path": "cards/media--folders--root.md",
+      "sha256": "3e30eb3bdd7992704789bedab87829abd85425c7f049012471e27103e7629d05"
+    },
+    {
+      "path": "cards/media--folders--tree.md",
+      "sha256": "abdeb823066bf5566bdeedf8104128ec76b29c1d86372cd16ef8e6310d72976b"
+    },
+    {
+      "path": "cards/media--growing_file--monitor.md",
+      "sha256": "0e41579771817887a079cc2045adcceb8093c12e7316a90cace748d17401d73c"
+    },
+    {
+      "path": "cards/media--import.md",
+      "sha256": "5aa5faea1327c06e2bb968a7ba6125b171416922ccb9c2501708601b0fc9bac3"
+    },
+    {
+      "path": "cards/media--info.md",
+      "sha256": "be70d30641eb0ec9182ed2282586a6b52ddee054934360d992d82b8ffc35099a"
+    },
+    {
+      "path": "cards/media--list.md",
+      "sha256": "c009cbf81e1ef68ccee49fda1f5c16170fdd2fe5e004aca9b98e0f025626f710"
+    },
+    {
+      "path": "cards/media--mark--clear.md",
+      "sha256": "c61f006a7c43eabefe6ae0fe05a6b5c8334296c433a9d89040f6aadec6d45974"
+    },
+    {
+      "path": "cards/media--mark--get.md",
+      "sha256": "7c6a1116c4cfe2c18ba1704522be8af3f4227a765796109a0babdc5a46654c6d"
+    },
+    {
+      "path": "cards/media--mark--set.md",
+      "sha256": "8001cafa4d3e9b24ffd33bcb0632ea64b2ae6ccc232f9e66e187267fda672a2b"
+    },
+    {
+      "path": "cards/media--marker--add.md",
+      "sha256": "a06d8f5d1b95ef69c3269b9ba6b93cb6106664868a35ac854cfe250c44bc9366"
+    },
+    {
+      "path": "cards/media--marker--delete.md",
+      "sha256": "1478047b2ad71e91b2f4c2bba9f5fa8eca7fd758b5c953acac0d095a6d1c5ddb"
+    },
+    {
+      "path": "cards/media--marker--list.md",
+      "sha256": "a7677204c7c4c16e478926a6d82633954b6fbcc36be526b0f584c60ba2deb9f8"
+    },
+    {
+      "path": "cards/media--matte--delete.md",
+      "sha256": "daa6ee278dd6590a657ac2cd545f47bc0c6c0849edffe57fe679f821110d35a1"
+    },
+    {
+      "path": "cards/media--matte--list.md",
+      "sha256": "0112b6e6fdb8864ae8d3bbb28621cb20e663d5bfc77c091b446e8459d88181b1"
+    },
+    {
+      "path": "cards/media--metadata.md",
+      "sha256": "e3889922eaa30b10fb88b0360cea1efb3387bbe1ab0e1afa9515c21bc603e3fb"
+    },
+    {
+      "path": "cards/media--metadata--export.md",
+      "sha256": "19628801f0d9cb2fad07a896631e5e6e9f1a6028329daa9fbece1151ab6740e4"
+    },
+    {
+      "path": "cards/media--move.md",
+      "sha256": "65f0bb8c8af8c37276305519a69807e10e17e1aa20fa4cb85af7d8e382aa0d44"
+    },
+    {
+      "path": "cards/media--property_set.md",
+      "sha256": "f3562d45ce311d710e81cbbff5af229faaf91307f7069879104ac2c1e514c0b6"
+    },
+    {
+      "path": "cards/media--proxy.md",
+      "sha256": "855e95953e0f9d3d83f06eeaafb334764d8f57d7d6eafd07912f4edd629a79ce"
+    },
+    {
+      "path": "cards/media--proxy--link_fullres.md",
+      "sha256": "0a68a778a587c840124ae36f60a0ae144e509cc72f426e0e8728dfafe307b26b"
+    },
+    {
+      "path": "cards/media--relink.md",
+      "sha256": "4dcf3f3a6b28ee93e735b5ff9d59a61b9f327b72c8ce1570addc05e7f1282aca"
+    },
+    {
+      "path": "cards/media--rename.md",
+      "sha256": "ef6256b3243f5350ccac747eecc8553ce3ac6a031b1c7b48d540ab6b88c94968"
+    },
+    {
+      "path": "cards/media--replace.md",
+      "sha256": "7a7dc01f9029a758409fa06bc9c5eb333b55153f30af6445c04f524fccf478c0"
+    },
+    {
+      "path": "cards/media--replace_preserve_subclip.md",
+      "sha256": "e4fb8cef429522b92570c323705562f8afcaa66a025a53d7d1b7eba6f25abc56"
+    },
+    {
+      "path": "cards/media--search.md",
+      "sha256": "9c3cd215f01bb521c666c33d69847293d58054a30d972836d75aa0a0e4d6414c"
+    },
+    {
+      "path": "cards/media--selected--list.md",
+      "sha256": "8e939bfd144a2aa5954cd96538d05727c558c07f4340a5deb6bca3b1736e53a9"
+    },
+    {
+      "path": "cards/media--selected--set.md",
+      "sha256": "86d18a4821c256db9239167c5df8126e173b0051d41ec39edbf43b4a6bfad44e"
+    },
+    {
+      "path": "cards/media--stereo_create.md",
+      "sha256": "c23caf1420973f87f87daf3667f7c21b3cbbf7f0ddcb10315bb3d9ee74728350"
+    },
+    {
+      "path": "cards/media--sync_audio.md",
+      "sha256": "875f1446460cedf4b858b307d83c0e8a76222b2fe4d30c95ef1ee12491f2a98c"
+    },
+    {
+      "path": "cards/media--third_party_metadata--get.md",
+      "sha256": "2462d4a6a43cffc78a5d52f109d5f1282cfa278ba16d0668c430235d8289dfb8"
+    },
+    {
+      "path": "cards/media--third_party_metadata--set.md",
+      "sha256": "9c8af17fd668494dc7b2b3306f063d32ec4536689c83dc6c2e22bfcf22b26aaa"
+    },
+    {
+      "path": "cards/media--third_party_metadata--set_json.md",
+      "sha256": "f543a5a6756862488d59e36350691e5f97d384a123d498e988a84d58a514208f"
+    },
+    {
+      "path": "cards/media--timeline_matte--list.md",
+      "sha256": "17ad6c410d65545ff148491f8b6ea8a077570fbf13cb614c0476158ca4c973c4"
+    },
+    {
+      "path": "cards/media--transcode.md",
+      "sha256": "f43c68079a053148b50322d7f88ee2af775ad45111f19d93f65cfcb0754e2917"
+    },
+    {
+      "path": "cards/media--transcribe.md",
+      "sha256": "9927d7afb2df8d961bacc2cc289670b094537aaa2094bf6833df7f9f67fb0993"
+    },
+    {
+      "path": "cards/media--unlink.md",
+      "sha256": "b9799237b3b8f00c3da9266f105923110f02b09529107c527a40d6e8d1536713"
+    },
+    {
+      "path": "cards/multicam--angle--remove.md",
+      "sha256": "4b5dc46b09f0668f6ed5432e9dce6f9cf1617495dbd29de05ac3e6da59defc8c"
+    },
+    {
+      "path": "cards/multicam--angle--rename.md",
+      "sha256": "84376a487c2f5637b95faf6e5847076e6069f59fc337a5a5e8c3ea6f0f38fb9a"
+    },
+    {
+      "path": "cards/multicam--angle--set_enabled.md",
+      "sha256": "c682d0bc315c8e47877fde35592c9d23e2ed45a89866f35427cc6932d57acbbf"
+    },
+    {
+      "path": "cards/multicam--audio_activity--calibrate.md",
+      "sha256": "ea7b634532e86bda3c4281aa6b44c61e076847cbff5f9ed10138a26ea6df9b5f"
+    },
+    {
+      "path": "cards/multicam--convert.md",
+      "sha256": "dd7ff44e2cf346cf4cc1c8f7dd325eabbfd131bdcf76e87d5a986a22ed577dac"
+    },
+    {
+      "path": "cards/multicam--create.md",
+      "sha256": "53dd741a1f5afc6cf042c2fc51cf83f7457397d5bec8b0a7a2dabeb61267d51e"
+    },
+    {
+      "path": "cards/multicam--flatten.md",
+      "sha256": "787b5ac37337b559e50ca5d1a51e71e49eb84351a8997bbbef33544b496bf8ed"
+    },
+    {
+      "path": "cards/multicam--inspect.md",
+      "sha256": "cc66222aac1c410dbc23e9c236ca1b803f98beaf07342ce881e4d371b6eaeab5"
+    },
+    {
+      "path": "cards/multicam--match_frame.md",
+      "sha256": "a049df9d96d49796f28a98ca98f4bc0a9ae75b228390754634ff0cf87a639499"
+    },
+    {
+      "path": "cards/multicam--recover_timing.md",
+      "sha256": "1891aa0f9bf8cec625e91e735148f4e02a57f19aaf32545238927ac39bed4143"
+    },
+    {
+      "path": "cards/multicam--reorder_angles.md",
+      "sha256": "d1d53cfcf585693f582d84b6bb19c36314669cddf67f8b2a37f7ae6684833e16"
+    },
+    {
+      "path": "cards/multicam--replace--audio.md",
+      "sha256": "4837394a3a6b33f05750e82f3275c9bd2dc0b112653f25d4c5dc9e2642b34991"
+    },
+    {
+      "path": "cards/multicam--replace--video.md",
+      "sha256": "ce9991bcbba10eef28ad02126a82c194aa2b4052e92b13028e06fa153c852ba9"
+    },
+    {
+      "path": "cards/multicam--seed_timeline.md",
+      "sha256": "13046802bd13d3b6774d581b0a10ead5341e66200ddc171e1dc834ffb8fbe438"
+    },
+    {
+      "path": "cards/multicam--set_start_timecode.md",
+      "sha256": "076a8afaac9dc7364797572052ef1a4bd86d00f4d850dbec45390035e19579c9"
+    },
+    {
+      "path": "cards/multicam--settings.md",
+      "sha256": "8efcde320c0e55a3a27b48aba72ddaedbb81236dff62cc4ff94a018b85d9b8b9"
+    },
+    {
+      "path": "cards/multicam--smart_switch.md",
+      "sha256": "a9e3af9a899c17dd780385e79aa05d7fda3af626d4e018e58e62ec3856d26d42"
+    },
+    {
+      "path": "cards/multicam--source--grade_cdl.md",
+      "sha256": "17b2be7afb6c31d5260cd93b379da81bc0ca66e5a5ac111221bb3af4b940f5e1"
+    },
+    {
+      "path": "cards/multicam--source--move.md",
+      "sha256": "39a2246da5a481c3343d1f13c86c8e8e1325d042490978a0a834829c24f62e3c"
+    },
+    {
+      "path": "cards/multicam--source--property_set.md",
+      "sha256": "7e01ab499458a590d7edbb85181f26b76f40e0cf9a217da83b25779b059fd079"
+    },
+    {
+      "path": "cards/multicam--source--raw_braw_set.md",
+      "sha256": "573a427d0604df20e3fbf8219a543a87820b38d5c886e0e5fa1f70572c7bedf4"
+    },
+    {
+      "path": "cards/multicam--source--remove.md",
+      "sha256": "7c796498053f614b1651b57920fee3da8d667bded908119714d8a810def77da6"
+    },
+    {
+      "path": "cards/multicam--strip_embedded_audio.md",
+      "sha256": "0ce947349ea7bdcebb455cbd089b79a781f9e6ed738dcd798b22eec7a97de448"
+    },
+    {
+      "path": "cards/multicam--switch.md",
+      "sha256": "cb1ec15621e6af7cbbbae2325634ad326135fbe753c776eb36aadf5d6ed67993"
+    },
+    {
+      "path": "cards/multicam--timeline_create.md",
+      "sha256": "4c958ae3576a1a5d5de45dee6a83d04678cef60d98d12d74662de435a126f25d"
+    },
+    {
+      "path": "cards/multicam--verdict_clear.md",
+      "sha256": "ec7c97c89a519c37b81a4a0814cb6f1f62986d011db7c3dd78c4618d537eb450"
+    },
+    {
+      "path": "cards/multicam--verdict_list.md",
+      "sha256": "ef68a97d7efd027264d4f299c12c444c520911785e5e04dffa50f02e8a8f37b5"
+    },
+    {
+      "path": "cards/multicam--verdict_set.md",
+      "sha256": "7050edc29fd2e889ac46ed1299773845e121dd05a8cd78523c552f9946fdcd53"
+    },
+    {
+      "path": "cards/ofx--build.md",
+      "sha256": "410853abf8198cbc5afc948fca32cc29b3214a89202f4f9ec4a2ca0c607ccf81"
+    },
+    {
+      "path": "cards/ofx--install.md",
+      "sha256": "7c341198fe367832982ff4ef4d473f8864c626102a3c29c6f48b2925531ac04d"
+    },
+    {
+      "path": "cards/ofx--list_installed.md",
+      "sha256": "b1251a10323d125b821943d8d09d645af6081670ea05bec8d4ceea46eb0e92ae"
+    },
+    {
+      "path": "cards/ofx--package.md",
+      "sha256": "1d0980d4722aeb0c6ec1c1d2d304f8edbce2df936d31c5e2444f5b504595678f"
+    },
+    {
+      "path": "cards/ofx--sample--copy.md",
+      "sha256": "dc9c6ac38c627d4a0e0de98c6209f89f66845e467a77add77e320be3ec4c301c"
+    },
+    {
+      "path": "cards/ofx--scaffold.md",
+      "sha256": "77eed2efac41a84b0c3fc56372f1aedf76ecefeea2c87a17e27259ca188cb75b"
+    },
+    {
+      "path": "cards/ofx--uninstall.md",
+      "sha256": "ec67cd51ba1ebb4320ef19caec521030f881576b3eef91928152eb519a7f9fdf"
+    },
+    {
+      "path": "cards/ofx--validate.md",
+      "sha256": "8bc37e80137f9f3ffccae7a7929b4a418a63f492dbe1bd8d722b5fbc4703e701"
+    },
+    {
+      "path": "cards/page--current.md",
+      "sha256": "3779ccea9262988d8a9ebb50271467153a190d20126dbf9319088f3cb3a910fa"
+    },
+    {
+      "path": "cards/page--switch.md",
+      "sha256": "8867f6323389d40a616b1732a8ea5e750e86743fdac7b075e0221038ae0b4037"
+    },
+    {
+      "path": "cards/product.md",
+      "sha256": "855b8956deb1573e796507860d7119f090e878e1de20266531f93064cdd1a187"
+    },
+    {
+      "path": "cards/project--archive.md",
+      "sha256": "0dbc9f9d295153b2dfeb6c18115542398624e7e03d0607a67e7760690a504802"
+    },
+    {
+      "path": "cards/project--cleanup_scratch.md",
+      "sha256": "296263ef9e8d6895f4d9dfc9a652a80e55dc4c62ed3662c124d63b7242e0acc7"
+    },
+    {
+      "path": "cards/project--close.md",
+      "sha256": "97a277e03bbe5db1fd0f94ae1a15edb24a02d4921c97297efb52cea5907325ae"
+    },
+    {
+      "path": "cards/project--cloud--create.md",
+      "sha256": "e028370702739f8364df1e64647790e3b8ea7499ed7a8c5314eda37142ed08cd"
+    },
+    {
+      "path": "cards/project--cloud--import.md",
+      "sha256": "4f9e314d3dfa986e1a08e6e996034eaa214b6981ed138037b6fdd46dba3307e2"
+    },
+    {
+      "path": "cards/project--cloud--open.md",
+      "sha256": "08686eff6f5ba504272c65f36ffbe1e1e2225f8fc6c79c3b6fe08b924e74e03d"
+    },
+    {
+      "path": "cards/project--cloud--restore.md",
+      "sha256": "98957fd9656dbd6baff591b861426a2e51faf54d0cbbefccb925259b25a26fa6"
+    },
+    {
+      "path": "cards/project--create.md",
+      "sha256": "7503bc9323dc79f177fd40ef2ea874dfb3bc85bc6af91185e8117058e460eca9"
+    },
+    {
+      "path": "cards/project--db--backup.md",
+      "sha256": "071bb170af37324b0ae80ac0170b07f579f8718ff33a772b5a4aeccdd97bcb44"
+    },
+    {
+      "path": "cards/project--db--create.md",
+      "sha256": "7e8fc6ca8fe354e7186d9d485846e71c0c8f760a917dc54a03e74e2c69925eca"
+    },
+    {
+      "path": "cards/project--db--current.md",
+      "sha256": "b4c9b6df45f0809d56407fe09ff26661403d67a17dfc1651f5443d352d0428a3"
+    },
+    {
+      "path": "cards/project--db--list.md",
+      "sha256": "4d3fbf69e04224cec203d18c48729d2c9698b2d074acc518a93fb33d216fc0c7"
+    },
+    {
+      "path": "cards/project--db--restore.md",
+      "sha256": "644d81a56b45050cf27cc46f7ca2a00f45c57261ffad1c0c36e63862b10c7536"
+    },
+    {
+      "path": "cards/project--db--switch.md",
+      "sha256": "09e1e92f60fed3118fc280b8115bacc6517259f67dfc42a467935dbba4c24f53"
+    },
+    {
+      "path": "cards/project--delete.md",
+      "sha256": "0d7008870899270e008ac6e2686465eda17c950fa223036d4cc08e18d14fecac"
+    },
+    {
+      "path": "cards/project--export.md",
+      "sha256": "68afdf88b753eeba7555aaafdcd89b535b66aa9a0d1773d8a7fe25d01c2056bf"
+    },
+    {
+      "path": "cards/project--folders--create.md",
+      "sha256": "7d2de77e23cac52f92c3b4f0cc96aac65b9e423c01f56fe3ab40fc1199ddbd3a"
+    },
+    {
+      "path": "cards/project--folders--delete.md",
+      "sha256": "356c752597361c9c743583d4f73918ec5152abe1fac69819fbdff48cb3aa1ecc"
+    },
+    {
+      "path": "cards/project--folders--list.md",
+      "sha256": "4b8cdf1e1dd3f4a204e186087b57d79770a11c4c2086bb32190219fa10bba000"
+    },
+    {
+      "path": "cards/project--folders--open.md",
+      "sha256": "ce58a1f42d9b30110fbbdb47cdc55cff76cbe84ec2f15e4778134ff0d5d452ac"
+    },
+    {
+      "path": "cards/project--folders--root.md",
+      "sha256": "f9b1f92a9139f0dc46965cdfb8483f8868a636cbd7084d71e020d9dabe96ab35"
+    },
+    {
+      "path": "cards/project--folders--up.md",
+      "sha256": "e631dc72304f0f2c1d151b5396a9f261497dc94a4d7bd7640a56acd730885dd0"
+    },
+    {
+      "path": "cards/project--import.md",
+      "sha256": "dee3f58b6b8cff3eed924ce078495512021a3d41f6b8479f4a625a57215edc05"
+    },
+    {
+      "path": "cards/project--info.md",
+      "sha256": "5beba4451123642b434cd9655454a4cf58e1727f53826274ba5421c4574042ad"
+    },
+    {
+      "path": "cards/project--list.md",
+      "sha256": "3618e84987a9fb2737b5b2b28b3d321e4ab9a477d5a6f8553e8a95a5e71b134e"
+    },
+    {
+      "path": "cards/project--open.md",
+      "sha256": "8121a81fb0b55678480e2e68837932d2e93c18ec0e3250594f101a842464b393"
+    },
+    {
+      "path": "cards/project--preset--list.md",
+      "sha256": "01f0faf667ac67ec267142f0356e0212f295722721fac6c22a8b638c73c815f4"
+    },
+    {
+      "path": "cards/project--preset--load.md",
+      "sha256": "cddd62b4b4234f68453e6b82b2a0b4b29defd31014d1674b06ca7db4950d6477"
+    },
+    {
+      "path": "cards/project--preset--save.md",
+      "sha256": "37b06eedd38560883866c22d56cd6f30567b77e26645413b7d558487201a9f37"
+    },
+    {
+      "path": "cards/project--rename.md",
+      "sha256": "fa47c2216682b29ddfcfb43303bfe654f1be0813be4caacf17cb551e625942ac"
+    },
+    {
+      "path": "cards/project--restore.md",
+      "sha256": "d7ca12c219be2321fb408b4ada19e8b5f461ce2cd12f9ff7376fb1bffacfc7e1"
+    },
+    {
+      "path": "cards/project--save.md",
+      "sha256": "698179e1c17ed1f225007862436528778bf719484f900603aa83ca9d1ea22469"
+    },
+    {
+      "path": "cards/project--settings.md",
+      "sha256": "4884d4e6d4f60a86da2499256b9d3be6524ca737d656886c8b8983804e0874c7"
+    },
+    {
+      "path": "cards/project--settings_get.md",
+      "sha256": "574323e6e25b32515cbf7682b5593275794c468a326bc649ec7d31c7662c99bc"
+    },
+    {
+      "path": "cards/project--settings_set.md",
+      "sha256": "340d506778fee350b9f68ab36377136702109878200ea20ec8d16d2d632a46a3"
+    },
+    {
+      "path": "cards/quit.md",
+      "sha256": "eee8ba9878661508cad8032ca4c6de64467a0098ddd5007bd85a396831240b26"
+    },
+    {
+      "path": "cards/render--add.md",
+      "sha256": "abcf4a7edf8768e32fe5f9f3ba0587175f5d13f99f20a1dba96884b954aede8c"
+    },
+    {
+      "path": "cards/render--alpha.md",
+      "sha256": "a25d197c5ca029a3370ad6c78a5e1caa267682fe687d289621e9dae6ccababaa"
+    },
+    {
+      "path": "cards/render--archive_settings.md",
+      "sha256": "61f1220ab094f79c8489f3ab2c2af150d502f238aede24b907644049a2623b80"
+    },
+    {
+      "path": "cards/render--audio.md",
+      "sha256": "fe1dec21d0fd723b1334aca9235b28458ed0eb8f0cf5f4bd38a4fa12f6ee0bad"
+    },
+    {
+      "path": "cards/render--burnin--export.md",
+      "sha256": "5c2cb7cdb9d98548fb71155ec02312b5d32abe1dc6005cc7a947dbb45d21f910"
+    },
+    {
+      "path": "cards/render--burnin--import.md",
+      "sha256": "1b5673fca4c844edec984c3d5ac2f916ef2a459a91529cd7d1736e4338c6de3f"
+    },
+    {
+      "path": "cards/render--burnin--load.md",
+      "sha256": "84e31f06bad433d78b029c6080d5a9d591ec05e9558e3465474bfb84e4e15c9b"
+    },
+    {
+      "path": "cards/render--cancel.md",
+      "sha256": "cc33dd6d9bb022bbd9a54271a20c9cbe3fc59f0c9562d902e10f534ef269ee5d"
+    },
+    {
+      "path": "cards/render--codecs.md",
+      "sha256": "f6d1ddb6dac90be791f87c294a12fb9544bf4857c6415a51b6f6f82aca91b4f5"
+    },
+    {
+      "path": "cards/render--custom_range.md",
+      "sha256": "96e06f0dd39fc7bf68ea4191983e4ff06181cbf5242b53c983342871742473b4"
+    },
+    {
+      "path": "cards/render--delete.md",
+      "sha256": "eb49720f0e21b64b4f94ad03e4b8aae258b44231c25ea91c3781f3e7bf473172"
+    },
+    {
+      "path": "cards/render--encoding.md",
+      "sha256": "daa0cd1a550fc6178c6c044c3c9603aae8f13c5a71f5d89894d23cbf8df9dbed"
+    },
+    {
+      "path": "cards/render--export_file.md",
+      "sha256": "f4eeb0b290496b61a218591320dcc96d289bc6a8b25ac2be47214ec367ff42e2"
+    },
+    {
+      "path": "cards/render--export_preset.md",
+      "sha256": "a7b503d4b384aa36a0f17cccd077b624d8b9f7d8a7a31e3d7bc28f5a9c1d2ff2"
+    },
+    {
+      "path": "cards/render--formats.md",
+      "sha256": "08599dbf48a9a26eb17921dfacb052e947f7681f3769bd3dfa369dd60fdaf189"
+    },
+    {
+      "path": "cards/render--import_preset.md",
+      "sha256": "3a57093a399f5c849f02acaeda58c4d0b68a5784067b73193520ba708373a8bf"
+    },
+    {
+      "path": "cards/render--job_status.md",
+      "sha256": "121f000b3caeb9f39b93de0d12d082b15cf89a15e406f6e8e99029aa5ed2ea18"
+    },
+    {
+      "path": "cards/render--jobs.md",
+      "sha256": "0ea91b53f7a9533ffcba6df7dbb2863ccf48696d019c7718871790d0af3ca009"
+    },
+    {
+      "path": "cards/render--mode--get.md",
+      "sha256": "54f953e090fbdde15702ca6f1fd1ef7b5d3511be0362b160387341a3f79361dc"
+    },
+    {
+      "path": "cards/render--mode--set.md",
+      "sha256": "5f466f3e5bb39b68b6a7e29b2d0c509472d296ef11c34e27096b65fe7f5b0f41"
+    },
+    {
+      "path": "cards/render--preset_delete.md",
+      "sha256": "382a04b33d600da8265450c74146355f5c070bfda12fd5282b845dc10e3365d4"
+    },
+    {
+      "path": "cards/render--preset_load.md",
+      "sha256": "99cbc305c938c92eab4d5fd64069642bc08a4a7c1844756b5a754a70abd3103f"
+    },
+    {
+      "path": "cards/render--preset_save.md",
+      "sha256": "0a91f8fcf20aa5a5a061cdcb58fb64c6050629485c8b449547113531619efcf5"
+    },
+    {
+      "path": "cards/render--presets.md",
+      "sha256": "f5e9fd18ad2b61828ac8ac555422e1b5f25852536d06d5367e57dd89d8924c1d"
+    },
+    {
+      "path": "cards/render--quick_export.md",
+      "sha256": "be8b93bbca091d8d6144c102b23f57a926f99ffd07fd8ffd3454ce2efb8f94b8"
+    },
+    {
+      "path": "cards/render--quick_export_presets.md",
+      "sha256": "43322bc3fe84875bb36bb8d65f0ca230c075366ba7ffc57e643f3e111f7487ae"
+    },
+    {
+      "path": "cards/render--resolutions.md",
+      "sha256": "1e0bbdd11848167f4e0514aeeef29ad5be366338fa5e69beac604237b4a4399c"
+    },
+    {
+      "path": "cards/render--settings.md",
+      "sha256": "968e7a22e99a78c325c78d90b180bab5541add4c6f820e565a9d6973311f2e73"
+    },
+    {
+      "path": "cards/render--settings_get.md",
+      "sha256": "edd5e474d4deeae1da0873936668c24e8a24209342539cbddb996abfa9f03391"
+    },
+    {
+      "path": "cards/render--settings_set.md",
+      "sha256": "ebc5ec96e3ebc32d0a73fec4f2772b65ff0d16e305ec41e18fed21e413bfae8a"
+    },
+    {
+      "path": "cards/render--settings_set_json.md",
+      "sha256": "2ab7da592ba2d8331474c3dc3ff91c526ac04a18599b9ac57181e83979bd1c32"
+    },
+    {
+      "path": "cards/render--settings_set_key.md",
+      "sha256": "53f284df130dd4e3185fdd2a2d2eae80f47ebb090b85e111ab875cf5a8eedf28"
+    },
+    {
+      "path": "cards/render--start.md",
+      "sha256": "88192b6cf591a02fe5ff3014b6548edc1a58f36c66c4beafa8bbd59300af8200"
+    },
+    {
+      "path": "cards/render--status.md",
+      "sha256": "ec5ce1b2173d65465b0bc6755471e79bf88e666653c9abc73b56a41283f7e629"
+    },
+    {
+      "path": "cards/render--stop.md",
+      "sha256": "57f37364a8f7e1f04e72a8f7c24420b37303a5dbc4adeab67945620e1031ef97"
+    },
+    {
+      "path": "cards/render--subtitles.md",
+      "sha256": "0d1892fcdaeb5280e703db80deddd926d5f8b691c6b7afcb017521d05b9d74d7"
+    },
+    {
+      "path": "cards/render--transcript_audio.md",
+      "sha256": "efab94939511cded4983c00aba101b43270d34ca219a22fc16442a44bc102e31"
+    },
+    {
+      "path": "cards/render--wait.md",
+      "sha256": "827a585280da8abbfc9100af558903820a95941318a142896a0a8379192a021f"
+    },
+    {
+      "path": "cards/script--env--print.md",
+      "sha256": "6700798557f23fc8f1938c5ecdfc71c6bed822f2e9168f4191b1e67422c0b705"
+    },
+    {
+      "path": "cards/script--install.md",
+      "sha256": "955ed763caa4d68bf3432b2f5ca05a4efda3e5c208d91cca8b76f9e827ce51cf"
+    },
+    {
+      "path": "cards/script--list.md",
+      "sha256": "ed606d69adc55eee6c4dcef710bc14a7de37269524b2f91950760bb9b375dbdc"
+    },
+    {
+      "path": "cards/script--run.md",
+      "sha256": "cf76f0ce03fc0fdba2a090becf3febe007d159b37995311e915dcad46d35cc56"
+    },
+    {
+      "path": "cards/script--uninstall.md",
+      "sha256": "adf00a851ee79b4a9ec884e0acb63ae9624750e66cd034bf9080d262de543d5b"
+    },
+    {
+      "path": "cards/status.md",
+      "sha256": "50c397dcb02042314b97f848d190e97bc6bd1c094e78aa2f4edc360f8112cbfc"
+    },
+    {
+      "path": "cards/storage--files.md",
+      "sha256": "651e7f14f14c8716adb56b312f212bb5169bf58c6637a66d2be0c1ba058f1f16"
+    },
+    {
+      "path": "cards/storage--import.md",
+      "sha256": "941f3757badaf9e9635c1470232d235ba2dc30005544975b5ef8764520093572"
+    },
+    {
+      "path": "cards/storage--import_sequence.md",
+      "sha256": "0b9b0bbd45baf11fcaa927e8771244cd3f97b63b76591bcf098c323ada06519d"
+    },
+    {
+      "path": "cards/storage--import_subclip.md",
+      "sha256": "3b0fe3da661994466927a6456ef20957115e022e6d033aaa645df2786b0e20a4"
+    },
+    {
+      "path": "cards/storage--matte--add.md",
+      "sha256": "f58f4050bb30e1e24b9837e73d6833abcd43e4ae535d5c972d565a0aaa1bdd36"
+    },
+    {
+      "path": "cards/storage--matte--timeline_add.md",
+      "sha256": "a0c9f9fe5b59825aa0e8322c19cb64b27fd926d1a0fec444b60ada2361297b70"
+    },
+    {
+      "path": "cards/storage--reveal.md",
+      "sha256": "2d97521d180c1c18cb28d0e4a4483c1ff155f9c082b9424fec8c4c06a3a81a11"
+    },
+    {
+      "path": "cards/storage--volumes.md",
+      "sha256": "2ad9ec7a426809f1bc456a424572baaff62acfa3c5467a65a947ac752cfdec12"
+    },
+    {
+      "path": "cards/system--keyframe_mode--get.md",
+      "sha256": "9b0ee9858483e7346f91eb53fda6dd13816b8d244354a0aafbe6ff349af290c1"
+    },
+    {
+      "path": "cards/system--keyframe_mode--set.md",
+      "sha256": "a880e04a90f968cfe9eddbc8c2d58db1369046c6eef767a75874e8d197e34492"
+    },
+    {
+      "path": "cards/text--insert.md",
+      "sha256": "d7625b963886887c0ab17d249d2cb2a3f9c5b535006176ee3762cda3837970e5"
+    },
+    {
+      "path": "cards/text--insert_captions.md",
+      "sha256": "0896013167d527b6768bf13a68e3bba78dd39396f5c6c601d3f050970b14224c"
+    },
+    {
+      "path": "cards/text--insert_preset.md",
+      "sha256": "48143a3f33369aad65993496e70443d7263fb55b90238eaf34593e8250fea3c7"
+    },
+    {
+      "path": "cards/text--insert_template.md",
+      "sha256": "46780e2c51d5c7ff3e5744ea10a57136c7422022ff55262b550d8a472e416ace"
+    },
+    {
+      "path": "cards/text--insert_template_batch.md",
+      "sha256": "9d9a49e81d73cb69fc1ac115b73fe94b860fc72eacf05cddeef043b567c56c97"
+    },
+    {
+      "path": "cards/text--inspect.md",
+      "sha256": "6bc785de7d496f1e222dd6f42996aa6fd71ac0e27f49de612d5bf3fdeee1fb8d"
+    },
+    {
+      "path": "cards/text--list_presets.md",
+      "sha256": "54f37d07f6ed83cc06959c0026772e56eba96ae25ed223ac539e0dd27444f622"
+    },
+    {
+      "path": "cards/text--update.md",
+      "sha256": "770ff92ddd5c58c03d5f0f9c9a6a6e33cfec9f43ca909d2204b7d0808f5c5e38"
+    },
+    {
+      "path": "cards/timeline--auto_caption.md",
+      "sha256": "aaf940f2454c24f38dd78d7fcf606adb0cdc471d02ff60012fd213c3ca9bf6fc"
+    },
+    {
+      "path": "cards/timeline--captions.md",
+      "sha256": "07601b797b5ae45dd5e7c5784d23b8e5f64e8fa028252d17413c497de149755b"
+    },
+    {
+      "path": "cards/timeline--clip_color--batch.md",
+      "sha256": "2cff20ffa54d3e8dc79e1c1609d9ec9952c20a466da24c5ebb5833e4cc042395"
+    },
+    {
+      "path": "cards/timeline--clip_markers--list.md",
+      "sha256": "28be536f2568b35240514e4123771d9a6324266cef1099d1630058bd40dc054a"
+    },
+    {
+      "path": "cards/timeline--compound_create.md",
+      "sha256": "9b2eb4108140440d1557dcf31911595a58ba19d52ff7225b33799849c35e4bc6"
+    },
+    {
+      "path": "cards/timeline--create.md",
+      "sha256": "71db6f25627e65eaf2bff1efb3f3ff7e7519178f4c346aa95460c08783f81e29"
+    },
+    {
+      "path": "cards/timeline--current_item.md",
+      "sha256": "dd8074ba37526254592e29f0baac387323aac9a9db3b92cc0225324d4608be89"
+    },
+    {
+      "path": "cards/timeline--delete.md",
+      "sha256": "e92b796eaac66e6ac8ad36358093049b386a507d2f3bbfc5bded562d57d4bc9f"
+    },
+    {
+      "path": "cards/timeline--dolby--analyze.md",
+      "sha256": "d657ef17ac575ad2d2288ac0949cb9c0eccb67f8ed3db414385713711071de8a"
+    },
+    {
+      "path": "cards/timeline--duplicate.md",
+      "sha256": "86b8b97d4159db9bbb90f2bedf90bc58b31d3efbd0b9c606f9e66f6156b69279"
+    },
+    {
+      "path": "cards/timeline--duration.md",
+      "sha256": "c1a1ec315fac5d3d5237f830adc69b4c95708def09dd81da03d189bce269923f"
+    },
+    {
+      "path": "cards/timeline--export.md",
+      "sha256": "24aa8f63bacd737b8445c73d2a42d28ce604a35599611d78eb1177e0272e646a"
+    },
+    {
+      "path": "cards/timeline--fairlight_preset--apply.md",
+      "sha256": "2d692344f0aea593b24b9ca348b3455a6273a56625e6f40ab86a571c414b7805"
+    },
+    {
+      "path": "cards/timeline--frame_export.md",
+      "sha256": "5252e1121d2e637c5f4c722a2f1b635ddd3bcd40418ad028fdcb5d3fcc297ec1"
+    },
+    {
+      "path": "cards/timeline--frame_export--batch.md",
+      "sha256": "8b92fb0f90212f8d20e26d6e03b89777716abc7f0dafe9352b397bd234f89206"
+    },
+    {
+      "path": "cards/timeline--fusion_clip--create.md",
+      "sha256": "1ae5513a354d4e718e1bd47addd30391c9d21bdce6eaaa0471ae17020e2510d5"
+    },
+    {
+      "path": "cards/timeline--fusion_composition--insert.md",
+      "sha256": "0c6adcacf223e3ee7daed2d9c9a567d9431da121947f3120fbdf08e4baecfdcd"
+    },
+    {
+      "path": "cards/timeline--grab_still.md",
+      "sha256": "e25992774418452368fa2ebcdd32ea6bc1715b66b65800a63367457f774dbc9c"
+    },
+    {
+      "path": "cards/timeline--import.md",
+      "sha256": "78e292a4b28170291cb7c4b2e0de44a02837a5e0c612e4be2f7cccbef2d9b7ec"
+    },
+    {
+      "path": "cards/timeline--import_into.md",
+      "sha256": "edc0668ac6149854fbac8e04a597d1cf5926502dc20b48439812020495226e40"
+    },
+    {
+      "path": "cards/timeline--info.md",
+      "sha256": "60350ed0c7cbbdc9eead5156669b2a82ab5228593d8e462a504e142597ccf5d4"
+    },
+    {
+      "path": "cards/timeline--insert_generator.md",
+      "sha256": "40358ef46b1fe0b21aa82eef7386b774aecdee353640dd6936de3a710ea52716"
+    },
+    {
+      "path": "cards/timeline--insert_title.md",
+      "sha256": "25d6df283974ae810103d07af9e1d495e2edee7ebc39756fe395169f4deb4f17"
+    },
+    {
+      "path": "cards/timeline--inspect_export.md",
+      "sha256": "34b87e69da65bef1b1976b3b77c73f037789080457b49defd4e4b44024c01220"
+    },
+    {
+      "path": "cards/timeline--item_at.md",
+      "sha256": "02b32b7639f2a7fb693244dc50e0509c4bbad6b8cbee0dfeaca39a6a9f22ef62"
+    },
+    {
+      "path": "cards/timeline--items--delete.md",
+      "sha256": "2fcee93015106265389173a4b34e57257ea620cad52bc0bb41511f2f346bc499"
+    },
+    {
+      "path": "cards/timeline--items--move.md",
+      "sha256": "0161a2e4c664b3f6f94a6ca437479bf7f1db15316116057c4b688c9ba85adfcc"
+    },
+    {
+      "path": "cards/timeline--items--set_duration.md",
+      "sha256": "60d2e1f3a48ac35728e26dccd42a3b18291472bde09e5e9207ba0532bf03708e"
+    },
+    {
+      "path": "cards/timeline--layer--ensure_media.md",
+      "sha256": "de01191eaf85b2c8ac3e5a6f1f82a23aaae4c64badada20e3419a8ec799b3758"
+    },
+    {
+      "path": "cards/timeline--layout--free_stack.md",
+      "sha256": "d6635f9d0a2447b37cf0b8f895593029737ec215be359454bd404ef14f491522"
+    },
+    {
+      "path": "cards/timeline--list.md",
+      "sha256": "68acb2e065133c6764d36d39ab8958a4f7553f6f47fec8900763e287bb6831ea"
+    },
+    {
+      "path": "cards/timeline--mark--clear.md",
+      "sha256": "c17a0da2b0e2f4ea9b38c2faa16aa891ba8d197f2a69678a7412d3095dc2f126"
+    },
+    {
+      "path": "cards/timeline--mark--get.md",
+      "sha256": "b226bc0651e46d1fd673aa0a15941208ff7a37a890fc38629d94c585b151c304"
+    },
+    {
+      "path": "cards/timeline--mark--set.md",
+      "sha256": "3121717f3e44c4ecbe89357038c65c539d885dfeaa7e2d8309676c425d0a4d53"
+    },
+    {
+      "path": "cards/timeline--marker--add.md",
+      "sha256": "519fb8872d45ac607f4f71577963e8e852b72848a0f48a44baa91ace4f5fa31b"
+    },
+    {
+      "path": "cards/timeline--marker--batch.md",
+      "sha256": "7e387769fe32c26e8bccc7d8b526759a1ecc52c9623337cd6c7b7fb2bef6cb20"
+    },
+    {
+      "path": "cards/timeline--marker--delete.md",
+      "sha256": "59519a38fa9e90713d1733dd3d01e3d1acd954c95ccbe9fdfda569a816836f71"
+    },
+    {
+      "path": "cards/timeline--marker--list.md",
+      "sha256": "7499d89151164c89d561bf726b2151285f9cf190733a2a9cac6b05c4e20f6b59"
+    },
+    {
+      "path": "cards/timeline--marker--update.md",
+      "sha256": "5c03701ab4ce03ba1944573ac73cbd5a132fb89940ed468d38c9a7fa847f4f74"
+    },
+    {
+      "path": "cards/timeline--media_pool_item.md",
+      "sha256": "3fe58f0fccfd6c7889cfea75f045a6db4cbc5c4571bbcf5014ec33c9818b6b07"
+    },
+    {
+      "path": "cards/timeline--node_graph--inspect.md",
+      "sha256": "245691cd18da33768754ee7087dbc9d0bab440da1f279131a819b5dcde6f8138"
+    },
+    {
+      "path": "cards/timeline--overlay_stack--insert.md",
+      "sha256": "66bde07e1bee3f6eb8791346826e596ca7832f72ed2869586e97b54d484d6d16"
+    },
+    {
+      "path": "cards/timeline--playhead--get.md",
+      "sha256": "a0412d8b2af53024260afc13519ccfb50de343a8f5d07290235a1c861d359d4d"
+    },
+    {
+      "path": "cards/timeline--playhead--set.md",
+      "sha256": "e37f20118614192b4731a154610515e34ed9b768a45955f89b395a4e74decdac"
+    },
+    {
+      "path": "cards/timeline--preview_export.md",
+      "sha256": "81d4e55355c4e5ce1b1bf36e46e3ff40d9f70c26facae3908690e5ef6b5c8ed4"
+    },
+    {
+      "path": "cards/timeline--rename.md",
+      "sha256": "955743e8072c11412f10d9070102f4014832d6a3417537f614697ec639885535"
+    },
+    {
+      "path": "cards/timeline--set_start_tc.md",
+      "sha256": "bcf6994c3f4b7a754a66c4538e547bcdcf07f2b7a22b85607ffdc10187007b39"
+    },
+    {
+      "path": "cards/timeline--settings.md",
+      "sha256": "776337df0aea83629f1db4e42b9579df61dedf8e398c20d7cabb510ffc8d8a1d"
+    },
+    {
+      "path": "cards/timeline--settings_get.md",
+      "sha256": "e37a680a2481d7efad0bfa04239467e5af499c0dd7790fea6e5082f894613e42"
+    },
+    {
+      "path": "cards/timeline--settings_set.md",
+      "sha256": "3fd5ec3e6953cc0a733f6611378111dd1f30ad66c7881141267902cbbca32a32"
+    },
+    {
+      "path": "cards/timeline--start_tc.md",
+      "sha256": "1a86a22c53995ef626e87ecff83809fa46754e0faa5de5e864b8583706991b09"
+    },
+    {
+      "path": "cards/timeline--stereo_convert.md",
+      "sha256": "fbe6645acad968cd16ff18db71f4db749e7f2b92dc508ec2ffc3ad77b447f37b"
+    },
+    {
+      "path": "cards/timeline--still--grab_all.md",
+      "sha256": "edd3a58f652dd65640c1baa916351574cd51f80ae092e204bc5b02b36f3cb666"
+    },
+    {
+      "path": "cards/timeline--subtitle--export.md",
+      "sha256": "d67eeca30b10fa086df10c9d74fc18e244aca562a73555f3c1278602e3bb3878"
+    },
+    {
+      "path": "cards/timeline--subtitle--insert.md",
+      "sha256": "fd9fad64dc3dde9b4ef98fa3020171a4e5d8974c760147c8b8acb90de97f668e"
+    },
+    {
+      "path": "cards/timeline--subtitle--list.md",
+      "sha256": "e84db8e42ad3a3bf3adbd38ae62b65717ea4ed9d1489443a1117c9dc7f099485"
+    },
+    {
+      "path": "cards/timeline--subtitles.md",
+      "sha256": "72acc16d648aa0b93098822799212d59b87efce8d74494ece75e2d42a5053144"
+    },
+    {
+      "path": "cards/timeline--summarize.md",
+      "sha256": "7463b39c99f0ff75aef95314342446cd5b871cf52058a2ed08c7923d80d641f8"
+    },
+    {
+      "path": "cards/timeline--switch.md",
+      "sha256": "039c5f23c88e10e82a05bba3c7517b11be561bd46ee601bb5d502cab72fac20f"
+    },
+    {
+      "path": "cards/timeline--sync_clips.md",
+      "sha256": "36b113dff35d60c722c6ae4c27aaf113c7d5da8f787270ea702366987b9e01bf"
+    },
+    {
+      "path": "cards/timeline--thumbnail.md",
+      "sha256": "c9deacb71f8c0e4c1fcdd21a20efbf026220e2098768afc828b4af69d13bd066"
+    },
+    {
+      "path": "cards/timeline--track--add.md",
+      "sha256": "8a03fcea639f653f9a83237d69da9506a07ae2662506378df51f692e2b1bc1c8"
+    },
+    {
+      "path": "cards/timeline--track--delete.md",
+      "sha256": "105edc51cea32f72710d50e0c518b64fcc8e8487ebc456e5d5a6cfaf1f378fb5"
+    },
+    {
+      "path": "cards/timeline--track--disable.md",
+      "sha256": "2d54e4268b84ac5e4ed910379bbe7a35f3dbf7c0134d9ddc57111e7e7ce6b776"
+    },
+    {
+      "path": "cards/timeline--track--enable.md",
+      "sha256": "ec7d5dcc97b2ea95cbaa49b6a8f996ec0b928d0b413d9c6762033254a2c18579"
+    },
+    {
+      "path": "cards/timeline--track--items.md",
+      "sha256": "941f3f8437d233e149ff356d9551fee1efece10c11ccd2b0f1da124bc591b876"
+    },
+    {
+      "path": "cards/timeline--track--list.md",
+      "sha256": "d50784d3f7ddbf4fd028dbbd3af46ba4241ed197e7957f3007c9c6add657db1d"
+    },
+    {
+      "path": "cards/timeline--track--lock.md",
+      "sha256": "6c7fbe06ac49d28496fb3e96e7461ae60fded6f8339e9eea061ec735df239f4f"
+    },
+    {
+      "path": "cards/timeline--track--rename.md",
+      "sha256": "8c9c78387e6a423c10e375b59b58f4849a95454ebbff4d0935645fe77e7f6ee2"
+    },
+    {
+      "path": "cards/timeline--track--subtype.md",
+      "sha256": "c786a26a866a963e7ae0ae9eb509c779f22835d0ad5772c2c21e520bda5cd9b0"
+    },
+    {
+      "path": "cards/timeline--track--unlock.md",
+      "sha256": "2c61ae570f9f73e404987498c68acb85ab82338a82b8cb8967a6786fb855015c"
+    },
+    {
+      "path": "cards/timeline--voice_isolation--get.md",
+      "sha256": "4c73d148a35ec4db5cbda1b080443c03ff892ee9ff221e1ab4bf934ddd94a42e"
+    },
+    {
+      "path": "cards/timeline--voice_isolation--set.md",
+      "sha256": "0e9f818d25eea629f8e7035b87e28f4d9404ed262eda6d75877aed7738035d9a"
+    },
+    {
+      "path": "cards/transcript--create.md",
+      "sha256": "3493074612f9dca8ef2579022ce86266c2dfa6d9065fdebfb4b4514e37b567fd"
+    },
+    {
+      "path": "cards/version.md",
+      "sha256": "cc7e14c1b62b2ec98e202c9236420fb6f58263166e1e9a0d10ac9dc6ceb08364"
+    },
+    {
+      "path": "cards/version--create.md",
+      "sha256": "b49b7a1a815f2dc4eadedef9385e4fe31d4461ade3b520b0f01f5795b3e544ea"
+    },
+    {
+      "path": "cards/version--inspect.md",
+      "sha256": "ec2db675fb20a3e774ad96d3582d666b92d5d8df10976c26245f77698af7d4b3"
+    },
+    {
+      "path": "cards/version--list.md",
+      "sha256": "a944f994d68717754babb00773bcb6b1851905b5fbb9c0d5721e655827dbdd2e"
+    },
+    {
+      "path": "cards/version--prune.md",
+      "sha256": "369644ff36409e6463849c0bb3d20c4e41913402f9b6ce5a1f40aad6f51f846d"
+    },
+    {
+      "path": "cards/version--restore.md",
+      "sha256": "81af12f63f154eeb4102133c1bdbd2b0ec97a9a99e0672d73c36e6c7582b0014"
+    },
+    {
+      "path": "cards/version--status.md",
+      "sha256": "2075f8a129215732394ff1aeb2708a4c78aa4eb268885f4ed62566728d88e88a"
+    },
+    {
+      "path": "cards/workflow--callback--script--create.md",
+      "sha256": "4dccf3820a3aca4128a3961b9f4da5287f3cd020349027c81b15a97dc40c47d0"
+    },
+    {
+      "path": "cards/workflow--node--check.md",
+      "sha256": "6a53ec4f5ab3f100c813a2567cb0c7df17dd392c0062c1b7067c46851c549d38"
+    },
+    {
+      "path": "cards/workflow--plugin--info.md",
+      "sha256": "2f715c8d2fecd0b942b012530c82eaccd800ecaaf6d02249fdb33c4c7c3710c7"
+    },
+    {
+      "path": "cards/workflow--plugin--install.md",
+      "sha256": "ada682b1261e63dda508b61e0eeecc719766ce508c58dbf42aa2bae93799a362"
+    },
+    {
+      "path": "cards/workflow--plugin--list.md",
+      "sha256": "6768c2b774905976761a9d041a60ac7eb89925ba4a4b6ed6febde81ce75b2f3b"
+    },
+    {
+      "path": "cards/workflow--plugin--package.md",
+      "sha256": "26a98500f9326303295acb36912675d0b6f315b2a6ff79021d7e83b3e000e87f"
+    },
+    {
+      "path": "cards/workflow--plugin--scaffold.md",
+      "sha256": "3b3a0af3db51fc2afcc525a601469e4c13389507ffc06c1b2c58b62f1b036c55"
+    },
+    {
+      "path": "cards/workflow--plugin--uninstall.md",
+      "sha256": "b9962085914d55b69b91391d897a663d9d3b22e6facf77330e4df66667a3d977"
+    },
+    {
+      "path": "cards/workflow--plugin--validate.md",
+      "sha256": "40c93401c418da2e0ab2f7578131c0553f8ac7921bd0dff9b72b9fdc5ab49ef2"
+    },
+    {
+      "path": "cards/workflow--script--install.md",
+      "sha256": "f1ba21390afe4a37dfb3e2e9befbb6c2c048f9dd2ddfaa9111628693695e2f6d"
+    },
+    {
+      "path": "cards/workflow--ui--scaffold.md",
+      "sha256": "a9c2133e86553d085a1372225262eeaccb00d104f0c0490f181a35fab64b14d9"
+    },
+    {
+      "path": "catalog-context.md",
+      "sha256": "5c9521cc1eaf15f0362eb90d829248fdd5f8b1ca0e1d4d63af2f273347ad835a"
+    },
+    {
+      "path": "fusion-registry.json",
+      "sha256": "8947660032b6216c5447a16f6874cab6067d87641e8443f9681711f95e11526d"
+    }
+  ],
+  "product_version": "3.0.0",
+  "schema_version": 1
+}

@@ -1,0 +1,969 @@
+{
+  "$id": "urn:cutagent:schema:sdk-inventory:v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "actions": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "availability": {
+            "enum": [
+              "unknown",
+              "partial",
+              "unavailable"
+            ]
+          },
+          "cancellation_category": {
+            "enum": [
+              "not_cancellable",
+              "local_wait_only",
+              "operation_cancellable"
+            ]
+          },
+          "capability_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contract_status": {
+            "enum": [
+              "input_typed_result_typed",
+              "input_typed_result_opaque",
+              "planned",
+              "unavailable"
+            ]
+          },
+          "disposition": {
+            "enum": [
+              "typed_semantic_action",
+              "high_level_equivalent",
+              "alias",
+              "unsupported_missing_implementation",
+              "non_video_product_utility"
+            ]
+          },
+          "environment_applicability": {
+            "additionalProperties": false,
+            "properties": {
+              "architecture": {
+                "additionalProperties": false,
+                "properties": {
+                  "arm64": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  },
+                  "x86_64": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  }
+                },
+                "required": [
+                  "arm64",
+                  "x86_64"
+                ],
+                "type": "object"
+              },
+              "davinci_resolve_version": {
+                "additionalProperties": false,
+                "properties": {
+                  "evidence": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  },
+                  "maximum_declared": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "minimum_declared": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "minimum_declared",
+                  "maximum_declared",
+                  "evidence"
+                ],
+                "type": "object"
+              },
+              "edition": {
+                "additionalProperties": false,
+                "properties": {
+                  "free": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  },
+                  "studio": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  }
+                },
+                "required": [
+                  "free",
+                  "studio"
+                ],
+                "type": "object"
+              },
+              "operating_system": {
+                "additionalProperties": false,
+                "properties": {
+                  "macos": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  },
+                  "windows": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  }
+                },
+                "required": [
+                  "macos",
+                  "windows"
+                ],
+                "type": "object"
+              },
+              "overall": {
+                "enum": [
+                  "unknown",
+                  "partial",
+                  "unavailable",
+                  "available"
+                ]
+              },
+              "transport": {
+                "additionalProperties": false,
+                "properties": {
+                  "embedded_free": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  },
+                  "studio_external": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  }
+                },
+                "required": [
+                  "studio_external",
+                  "embedded_free"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "operating_system",
+              "architecture",
+              "davinci_resolve_version",
+              "edition",
+              "transport",
+              "overall"
+            ],
+            "type": "object"
+          },
+          "error_codes": {
+            "items": {
+              "pattern": "^[A-Z][A-Z0-9_]+$",
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "high_level_equivalent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "pattern": "^cutagent\\.action\\.",
+            "type": "string"
+          },
+          "idempotency_category": {
+            "enum": [
+              "safe_repeat",
+              "requires_idempotency_key",
+              "unknown",
+              "not_applicable"
+            ]
+          },
+          "input_schema": {
+            "pattern": "^urn:cutagent:schema:action-contracts:v1#/\\$defs/cutagent\\.action\\..+\\.input$",
+            "type": "string"
+          },
+          "maturity": {
+            "enum": [
+              "stable",
+              "inventory_only",
+              "partial",
+              "unknown",
+              "unavailable",
+              "not_applicable"
+            ]
+          },
+          "operation_class": {
+            "enum": [
+              "read",
+              "mutation",
+              "long_running"
+            ]
+          },
+          "owner": {
+            "enum": [
+              "cutagent_cli",
+              "sdk_domain_api",
+              "sdk_low_level_bindings",
+              "cutagent_product_runtime"
+            ]
+          },
+          "precondition_category": {
+            "enum": [
+              "none",
+              "connection",
+              "live_state_revision",
+              "not_applicable"
+            ]
+          },
+          "protected_state_category": {
+            "enum": [
+              "none",
+              "active_context",
+              "active_project",
+              "active_context_and_filesystem_destination",
+              "active_context_and_library_registration",
+              "active_project_and_timeline",
+              "checkpoint_history",
+              "current_project",
+              "filesystem_destination"
+            ]
+          },
+          "reason_code": {
+            "type": "string"
+          },
+          "recovery_category": {
+            "enum": [
+              "none",
+              "retry_read",
+              "inspect_state_before_retry",
+              "inspect_artifact_destination",
+              "inspect_artifact_destination_and_restore_active_context",
+              "inspect_and_restore_active_context",
+              "inspect_checkpoint_history",
+              "inspect_cloud_project_state",
+              "inspect_library_registration_and_active_context",
+              "inspect_project_state",
+              "restore_exact_project_settings",
+              "delete_created_preset_and_verify_inventory",
+              "reopen_exact_saved_project_and_verify_snapshot",
+              "restore_from_backup_or_checkpoint",
+              "use_high_level_equivalent",
+              "not_available"
+            ]
+          },
+          "result_schema": {
+            "pattern": "^urn:cutagent:schema:action-contracts:v1#/\\$defs/cutagent\\.action\\..+\\.result$",
+            "type": "string"
+          },
+          "verification_category": {
+            "enum": [
+              "structural_readback",
+              "required_unknown",
+              "terminal_and_readback",
+              "not_applicable"
+            ]
+          }
+        },
+        "required": [
+          "availability",
+          "cancellation_category",
+          "capability_id",
+          "contract_status",
+          "disposition",
+          "environment_applicability",
+          "error_codes",
+          "high_level_equivalent",
+          "id",
+          "idempotency_category",
+          "input_schema",
+          "maturity",
+          "operation_class",
+          "owner",
+          "precondition_category",
+          "protected_state_category",
+          "reason_code",
+          "recovery_category",
+          "result_schema",
+          "verification_category"
+        ],
+        "type": "object"
+      },
+      "maxItems": 1024,
+      "type": "array"
+    },
+    "capabilities": {
+      "items": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "available": {
+                  "const": true
+                }
+              },
+              "required": [
+                "available"
+              ]
+            },
+            "then": {
+              "properties": {
+                "applicability": {
+                  "properties": {
+                    "architecture": {
+                      "properties": {
+                        "arm64": {
+                          "const": "verified"
+                        },
+                        "x86_64": {
+                          "const": "verified"
+                        }
+                      },
+                      "required": [
+                        "arm64",
+                        "x86_64"
+                      ]
+                    },
+                    "davinci_resolve_version": {
+                      "properties": {
+                        "evidence": {
+                          "const": "verified"
+                        }
+                      },
+                      "required": [
+                        "evidence"
+                      ]
+                    },
+                    "edition": {
+                      "properties": {
+                        "free": {
+                          "const": "verified"
+                        },
+                        "studio": {
+                          "const": "verified"
+                        }
+                      },
+                      "required": [
+                        "free",
+                        "studio"
+                      ]
+                    },
+                    "operating_system": {
+                      "properties": {
+                        "macos": {
+                          "const": "verified"
+                        },
+                        "windows": {
+                          "const": "verified"
+                        }
+                      },
+                      "required": [
+                        "macos",
+                        "windows"
+                      ]
+                    },
+                    "overall": {
+                      "const": "available"
+                    },
+                    "transport": {
+                      "properties": {
+                        "embedded_free": {
+                          "const": "verified"
+                        },
+                        "studio_external": {
+                          "const": "verified"
+                        }
+                      },
+                      "required": [
+                        "studio_external",
+                        "embedded_free"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "operating_system",
+                    "architecture",
+                    "davinci_resolve_version",
+                    "edition",
+                    "transport",
+                    "overall"
+                  ]
+                },
+                "maturity": {
+                  "const": "stable"
+                },
+                "sdk_parity": {
+                  "const": "typed_semantic_action"
+                }
+              }
+            }
+          }
+        ],
+        "properties": {
+          "applicability": {
+            "additionalProperties": false,
+            "properties": {
+              "architecture": {
+                "additionalProperties": false,
+                "properties": {
+                  "arm64": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  },
+                  "x86_64": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  }
+                },
+                "required": [
+                  "arm64",
+                  "x86_64"
+                ],
+                "type": "object"
+              },
+              "davinci_resolve_version": {
+                "additionalProperties": false,
+                "properties": {
+                  "evidence": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  },
+                  "maximum_declared": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "minimum_declared": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "minimum_declared",
+                  "maximum_declared",
+                  "evidence"
+                ],
+                "type": "object"
+              },
+              "edition": {
+                "additionalProperties": false,
+                "properties": {
+                  "free": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  },
+                  "studio": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  }
+                },
+                "required": [
+                  "free",
+                  "studio"
+                ],
+                "type": "object"
+              },
+              "operating_system": {
+                "additionalProperties": false,
+                "properties": {
+                  "macos": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  },
+                  "windows": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  }
+                },
+                "required": [
+                  "macos",
+                  "windows"
+                ],
+                "type": "object"
+              },
+              "overall": {
+                "enum": [
+                  "unknown",
+                  "partial",
+                  "unavailable",
+                  "available"
+                ]
+              },
+              "transport": {
+                "additionalProperties": false,
+                "properties": {
+                  "embedded_free": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  },
+                  "studio_external": {
+                    "enum": [
+                      "unknown",
+                      "declared_unverified",
+                      "partial",
+                      "unavailable",
+                      "verified"
+                    ]
+                  }
+                },
+                "required": [
+                  "studio_external",
+                  "embedded_free"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "operating_system",
+              "architecture",
+              "davinci_resolve_version",
+              "edition",
+              "transport",
+              "overall"
+            ],
+            "type": "object"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "cli_status": {
+            "enum": [
+              "supported",
+              "partial",
+              "unsupported"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "maturity": {
+            "enum": [
+              "stable",
+              "inventory_only",
+              "partial",
+              "unknown",
+              "unavailable",
+              "not_applicable"
+            ]
+          },
+          "owner": {
+            "enum": [
+              "cutagent_cli",
+              "sdk_domain_api",
+              "sdk_low_level_bindings",
+              "cutagent_product_runtime"
+            ]
+          },
+          "reason_code": {
+            "type": "string"
+          },
+          "sdk_parity": {
+            "enum": [
+              "typed_semantic_action",
+              "high_level_equivalent",
+              "partial_missing_implementation",
+              "unsupported_missing_implementation",
+              "capability_without_action",
+              "non_video_product_utility"
+            ]
+          }
+        },
+        "required": [
+          "applicability",
+          "available",
+          "cli_status",
+          "id",
+          "maturity",
+          "owner",
+          "reason_code",
+          "sdk_parity"
+        ],
+        "type": "object"
+      },
+      "maxItems": 512,
+      "type": "array"
+    },
+    "contract_digests": {
+      "additionalProperties": false,
+      "properties": {
+        "action_contracts": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "applicability": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "compatibility": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "error_registry": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "input_schemas": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "result_schemas": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action_contracts",
+        "applicability",
+        "compatibility",
+        "error_registry",
+        "input_schemas",
+        "result_schemas"
+      ],
+      "type": "object"
+    },
+    "counts": {
+      "additionalProperties": false,
+      "properties": {
+        "active_commands": {
+          "maximum": 1024,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "capabilities": {
+          "maximum": 512,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "capability_sdk_parity": {
+          "additionalProperties": false,
+          "properties": {
+            "capability_without_action": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "high_level_equivalent": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "non_video_product_utility": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "partial_missing_implementation": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "typed_semantic_action": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "unsupported_missing_implementation": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "capability_without_action",
+            "high_level_equivalent",
+            "non_video_product_utility",
+            "partial_missing_implementation",
+            "typed_semantic_action",
+            "unsupported_missing_implementation"
+          ],
+          "type": "object"
+        },
+        "capability_statuses": {
+          "additionalProperties": false,
+          "properties": {
+            "partial": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "supported": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "unsupported": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "partial",
+            "supported",
+            "unsupported"
+          ],
+          "type": "object"
+        },
+        "classified_commands": {
+          "maximum": 1024,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "command_dispositions": {
+          "additionalProperties": false,
+          "properties": {
+            "alias": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "high_level_equivalent": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "non_video_product_utility": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "typed_semantic_action": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "unsupported_missing_implementation": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "alias",
+            "high_level_equivalent",
+            "non_video_product_utility",
+            "typed_semantic_action",
+            "unsupported_missing_implementation"
+          ],
+          "type": "object"
+        },
+        "errors": {
+          "maximum": 128,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "public_actions": {
+          "maximum": 1024,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "active_commands",
+        "capabilities",
+        "capability_sdk_parity",
+        "capability_statuses",
+        "classified_commands",
+        "command_dispositions",
+        "errors",
+        "public_actions"
+      ],
+      "type": "object"
+    },
+    "errors": {
+      "items": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "not": {
+              "properties": {
+                "possible_mutation": {
+                  "enum": [
+                    "yes",
+                    "unknown"
+                  ]
+                },
+                "retryability": {
+                  "const": "safe"
+                }
+              },
+              "required": [
+                "retryability",
+                "possible_mutation"
+              ]
+            }
+          }
+        ],
+        "properties": {
+          "code": {
+            "pattern": "^[A-Z][A-Z0-9_]+$",
+            "type": "string"
+          },
+          "exit_code": {
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "id": {
+            "pattern": "^cutagent\\.error\\.",
+            "type": "string"
+          },
+          "maturity": {
+            "enum": [
+              "stable",
+              "compatibility"
+            ]
+          },
+          "operation_classes": {
+            "items": {
+              "enum": [
+                "read",
+                "mutation",
+                "long_running"
+              ]
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "possible_mutation": {
+            "enum": [
+              "no",
+              "yes",
+              "unknown"
+            ]
+          },
+          "retryability": {
+            "enum": [
+              "safe",
+              "unsafe",
+              "manual",
+              "unknown"
+            ]
+          },
+          "schema": {
+            "const": "urn:cutagent:schema:sdk-error:v1"
+          }
+        },
+        "required": [
+          "code",
+          "exit_code",
+          "id",
+          "maturity",
+          "operation_classes",
+          "possible_mutation",
+          "retryability",
+          "schema"
+        ],
+        "type": "object"
+      },
+      "maxItems": 128,
+      "type": "array"
+    },
+    "kind": {
+      "const": "cutagent-sdk-inventory"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "source_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "source_digest",
+    "contract_digests",
+    "counts",
+    "actions",
+    "capabilities",
+    "errors"
+  ],
+  "type": "object"
+}

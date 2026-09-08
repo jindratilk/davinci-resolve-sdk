@@ -1,0 +1,288 @@
+{
+  "schema_family": "resolve_20x",
+  "fixture_version": 2,
+  "angle_count": 6,
+  "source": {
+    "project": "CutAgent MC 3to6 Switch 20260418-142138",
+    "clip_name": "multicam-native-6",
+    "sm2_mp_media_id": "e081c9d4-9db9-458f-a056-d6cd61c909fd",
+    "sm2_sequence_id": "5ffeb683-d304-487e-80a0-96f1635cdcd4"
+  },
+  "multicam_media": {
+    "fields_blob_b64": "AAAAAgAAANSBKLUv/WBRAE0GAKLMJi2ATZoDiAgTZuAMJaAlGW7pRXyX9Vtur0YBqltxFE8OmdP8HNIt5P8kfGKTOwXMgXEOLJXp4nWmzYRSIkCpWqWOmlmNZmK606hVE/MyKpWIXlalVEtN9+V8u/V9gP50OBQupL4RK77X63TiJqESwpjx+mbUyHBKsfo2NPjzvBY3QpwcgOQJ7rLnzAMhwBWAfHSMQAOtNRbSmEgLEQAtxeMZ+wzhqyaccg6r9vgQFVyOWDc9ZBaQwOpq+GkWgeQz87eZU2duDA==",
+    "frame_rate_b64": null,
+    "video_metadata_b64": "AAAAAQAAAAIAAAAQAFUAbgBpAHEAdQBlAEkAZAAAAAoAAAAASAA1AGYAYwBhADEAMAAyAGYALQAyAGMANQBmAC0ANABhADIAMwAtADkANgA4ADQALQA0AGMAYwBjAGEAOABiADAAYgA4AGIAMwAAAAwARABiAFQAeQBwAGUAAAAKAAAAAB4AQgB0AFYAaQBkAGUAbwBNAGUAdABhAGQAYQB0AGE=",
+    "virtual_audio_tracks_b64": "AAAAAQAAAAEAAAACADAAAAAMAAAAAFQAAAABAAAAAgAAABQAQwBoAGEAbgBuAGUAbABzAEIAQQAAAAwAAAAADAAAAAIAAAABAABAAQAAABIAQQB1AGQAaQBvAFQAeQBwAGUAAAACAAAAAAE=",
+    "cur_playhead_position": null,
+    "audio_source": "AUDIO_SOURCE_EMBEDDED",
+    "slate_tc": "-68719476737"
+  },
+  "sequence": {
+    "frame_rate_b64": "AAAAAAAAOEAAAAAAAAAAAA==",
+    "resolution_b64": "AAAAAAAAB4AAAAAAAAAEOA==",
+    "media_extents_b64": "AAAAAAAAAAAAAAAAAAAgQA==",
+    "fields_blob_b64": "AAAAAQAAAAQAAAASAFQAaAB1AG0AYgBuAGEAaQBsAAAADAAAAAUlAAAAAQAAAAYAAAAQAFUAbgBpAHEAdQBlAEkAZAAAAAoAAAAASAA5ADkANAAxAGUAZQA1ADAALQA2AGQAYQAyAC0ANABjAGQAYQAtADgAZAAyADMALQAyAGUAMQBiAGQANgBhADUANABkAGMAOAAAABAASQBtAGcAVwBpAGQAdABoAAAAAgAAAADQAAAAFABJAG0AZwBRAHUAYQBsAGkAdAB5AAAAAgAAAAABAAAAEgBJAG0AZwBIAGUAaQBnAGgAdAAAAAIAAAAAdQAAAAwARABiAFQAeQBwAGUAAAAKAAAAABQAQgB0AFQAaAB1AG0AbgBhAGkAbAAAAAwAQgB1AGYAZgBlAHIAAAAMAAAABBX/2P/gABBKRklGAAEBAQBIAEgAAP/bAEMACAYGBwYFCAcHBwkJCAoMFA0MCwsMGRITDxQdGh8eHRocHCAkLicgIiwjHBwoNyksMDE0NDQfJzk9ODI8LjM0Mv/bAEMBCQkJDAsMGA0NGDIhHCEyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMv/AABEIAHUA0AMBIgACEQEDEQH/xAAfAAABBQEBAQEBAQAAAAAAAAAAAQIDBAUGBwgJCgv/xAC1EAACAQMDAgQDBQUEBAAAAX0BAgMABBEFEiExQQYTUWEHInEUMoGRoQgjQrHBFVLR8CQzYnKCCQoWFxgZGiUmJygpKjQ1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4eLj5OXm5+jp6vHy8/T19vf4+fr/xAAfAQADAQEBAQEBAQEBAAAAAAAAAQIDBAUGBwgJCgv/xAC1EQACAQIEBAMEBwUEBAABAncAAQIDEQQFITEGEkFRB2FxEyIygQgUQpGhscEJIzNS8BVictEKFiQ04SXxFxgZGiYnKCkqNTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqCg4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2dri4+Tl5ufo6ery8/T19vf4+fr/2gAMAwEAAhEDEQA/APWqKKK/Ej2AooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooA//ZAAAAGABTAGUAcQB1AGUAbgBjAGUAVAB5AHAAZQAAAAIAAAAAAgAAAAwAUwBlAHEAUgBlAGYAAAAKAAAAAEgAYQAxADUAMABiADIAYwAwAC0ANQBmAGEAMwAtADQAZAA5ADgALQA4AGEAOQBjAC0AOQA5AGQAYgA5AGUANwBiADgAYQA0AGEAAAAwAEkAcwBSAGUAbgBkAGUAcgBDAGEAYwBoAGUAQgBBAFYAZQByAHMAaQBvAG4AZQBkAAAAAQAB",
+    "render_cache_b64": "AAAAJHicY2ZgZCAEAACyAAU=",
+    "aux_render_cache_b64": "AAAAJHicY2ZgZCAEAACyAAU="
+  },
+  "ti_item": {
+    "start": "86400",
+    "duration": "192"
+  },
+  "track_templates": [
+    {
+      "type": 0,
+      "subtype": 0,
+      "user_defined_name": "Angle 1",
+      "fields_blob_b64": "AAAAAQAAAAIAAAASAE4AdQBtAEwAYQB5AGUAcgBzAAAAAgAAAAAAAAAADgBBAG4AZwBsAGUASQBkAAAACgAAAAAQAEMAYQBtAGUAcgBhACAAMQ=="
+    },
+    {
+      "type": 0,
+      "subtype": 0,
+      "user_defined_name": "Angle 2",
+      "fields_blob_b64": "AAAAAQAAAAIAAAASAE4AdQBtAEwAYQB5AGUAcgBzAAAAAgAAAAAAAAAADgBBAG4AZwBsAGUASQBkAAAACgAAAAAQAEMAYQBtAGUAcgBhACAAMg=="
+    },
+    {
+      "type": 0,
+      "subtype": 0,
+      "user_defined_name": "Angle 3",
+      "fields_blob_b64": "AAAAAQAAAAIAAAASAE4AdQBtAEwAYQB5AGUAcgBzAAAAAgAAAAAAAAAADgBBAG4AZwBsAGUASQBkAAAACgAAAAAQAEMAYQBtAGUAcgBhACAAMw=="
+    },
+    {
+      "type": 0,
+      "subtype": 0,
+      "user_defined_name": "Angle 4",
+      "fields_blob_b64": "AAAAAQAAAAIAAAASAE4AdQBtAEwAYQB5AGUAcgBzAAAAAgAAAAAAAAAADgBBAG4AZwBsAGUASQBkAAAACgAAAAAQAEMAYQBtAGUAcgBhACAANA=="
+    },
+    {
+      "type": 0,
+      "subtype": 0,
+      "user_defined_name": "Angle 5",
+      "fields_blob_b64": "AAAAAQAAAAIAAAASAE4AdQBtAEwAYQB5AGUAcgBzAAAAAgAAAAAAAAAADgBBAG4AZwBsAGUASQBkAAAACgAAAAAQAEMAYQBtAGUAcgBhACAANQ=="
+    },
+    {
+      "type": 0,
+      "subtype": 0,
+      "user_defined_name": "Angle 6",
+      "fields_blob_b64": "AAAAAQAAAAIAAAASAE4AdQBtAEwAYQB5AGUAcgBzAAAAAgAAAAAAAAAADgBBAG4AZwBsAGUASQBkAAAACgAAAAAQAEMAYQBtAGUAcgBhACAANg=="
+    },
+    {
+      "type": 1,
+      "subtype": 257,
+      "user_defined_name": "Angle 1",
+      "fields_blob_b64": "AAAAAQAAAAMAAAASAE4AdQBtAEwAYQB5AGUAcgBzAAAAAgAAAAAAAAAAPgBFAHgAYwBsAHUAZABlAFQAcgBhAGMAawBGAHIAbwBtAFMAZQBxAHUAZQBuAGMAZQBDAGEAYwBoAGkAbgBnAAAAAQABAAAADgBBAG4AZwBsAGUASQBkAAAACgAAAAAQAEMAYQBtAGUAcgBhACAAMQ=="
+    },
+    {
+      "type": 1,
+      "subtype": 257,
+      "user_defined_name": "Angle 2",
+      "fields_blob_b64": "AAAAAQAAAAMAAAASAE4AdQBtAEwAYQB5AGUAcgBzAAAAAgAAAAAAAAAAPgBFAHgAYwBsAHUAZABlAFQAcgBhAGMAawBGAHIAbwBtAFMAZQBxAHUAZQBuAGMAZQBDAGEAYwBoAGkAbgBnAAAAAQABAAAADgBBAG4AZwBsAGUASQBkAAAACgAAAAAQAEMAYQBtAGUAcgBhACAAMg=="
+    },
+    {
+      "type": 1,
+      "subtype": 257,
+      "user_defined_name": "Angle 3",
+      "fields_blob_b64": "AAAAAQAAAAMAAAASAE4AdQBtAEwAYQB5AGUAcgBzAAAAAgAAAAAAAAAAPgBFAHgAYwBsAHUAZABlAFQAcgBhAGMAawBGAHIAbwBtAFMAZQBxAHUAZQBuAGMAZQBDAGEAYwBoAGkAbgBnAAAAAQABAAAADgBBAG4AZwBsAGUASQBkAAAACgAAAAAQAEMAYQBtAGUAcgBhACAAMw=="
+    },
+    {
+      "type": 1,
+      "subtype": 257,
+      "user_defined_name": "Angle 4",
+      "fields_blob_b64": "AAAAAQAAAAMAAAASAE4AdQBtAEwAYQB5AGUAcgBzAAAAAgAAAAAAAAAAPgBFAHgAYwBsAHUAZABlAFQAcgBhAGMAawBGAHIAbwBtAFMAZQBxAHUAZQBuAGMAZQBDAGEAYwBoAGkAbgBnAAAAAQABAAAADgBBAG4AZwBsAGUASQBkAAAACgAAAAAQAEMAYQBtAGUAcgBhACAANA=="
+    },
+    {
+      "type": 1,
+      "subtype": 257,
+      "user_defined_name": "Angle 5",
+      "fields_blob_b64": "AAAAAQAAAAMAAAASAE4AdQBtAEwAYQB5AGUAcgBzAAAAAgAAAAAAAAAAPgBFAHgAYwBsAHUAZABlAFQAcgBhAGMAawBGAHIAbwBtAFMAZQBxAHUAZQBuAGMAZQBDAGEAYwBoAGkAbgBnAAAAAQABAAAADgBBAG4AZwBsAGUASQBkAAAACgAAAAAQAEMAYQBtAGUAcgBhACAANQ=="
+    },
+    {
+      "type": 1,
+      "subtype": 257,
+      "user_defined_name": "Angle 6",
+      "fields_blob_b64": "AAAAAQAAAAMAAAASAE4AdQBtAEwAYQB5AGUAcgBzAAAAAgAAAAAAAAAAPgBFAHgAYwBsAHUAZABlAFQAcgBhAGMAawBGAHIAbwBtAFMAZQBxAHUAZQBuAGMAZQBDAGEAYwBoAGkAbgBnAAAAAQABAAAADgBBAG4AZwBsAGUASQBkAAAACgAAAAAQAEMAYQBtAGUAcgBhACAANg=="
+    }
+  ],
+  "item_templates": [
+    {
+      "db_type": "Sm2TiVideoClip",
+      "track_index": 0,
+      "is_placeholder": false,
+      "media_file_path": "/tmp/cutagent-multicam-3to6-20260418-142138/cutagent_3to6_cam_d.mp4",
+      "media_timemap_b64": "AkAf1VVVVVVV",
+      "preconform_media_extents_b64": "AAABAAAAMMIAAAEAAAAwQg==",
+      "media_frame_rate_b64": "AAAAAAAAOEAAAAAAAAAAAA==",
+      "virtual_audio_track_b64": null,
+      "fields_blob_b64": "AAAAAgAAAGKBKLUv/SB5xQIAcsYSHcAlrQH/////f++2hPDFQXNkE9l20U+gAT5oG0kBd3d3d4GCQUFIj2tqE5UqqhZQZKo8kUZDe9plcj2TS2vVI7oe3twIKI4wiVkmAwDiZmjL3WeuCw==",
+      "in_value": null,
+      "media_track_idx": null,
+      "current_selector_idx": 4,
+      "media_start_time": 0.0
+    },
+    {
+      "db_type": "Sm2TiVideoClip",
+      "track_index": 1,
+      "is_placeholder": false,
+      "media_file_path": "/tmp/cutagent-multicam-3to6-20260418-142138/cutagent_3to6_cam_e.mp4",
+      "media_timemap_b64": "AkAf1VVVVVVV",
+      "preconform_media_extents_b64": "AAABAAAAMMIAAAEAAAAwQg==",
+      "media_frame_rate_b64": "AAAAAAAAOEAAAAAAAAAAAA==",
+      "virtual_audio_track_b64": null,
+      "fields_blob_b64": "AAAAAgAAAGGBKLUv/SB5vQIAIgYSHLAnrQEMwzAMw+Dc4Smj5GzJkrU1w5ldE/jDhKR3d3d3gAGBMbCGiGiyy/NEmhYxCZPLQxO1aaKZJm2hRZWo4uvnYXxRSlkFBAC4Ua66Kitt77ou",
+      "in_value": null,
+      "media_track_idx": null,
+      "current_selector_idx": 4,
+      "media_start_time": 0.0
+    },
+    {
+      "db_type": "Sm2TiVideoClip",
+      "track_index": 2,
+      "is_placeholder": false,
+      "media_file_path": "/tmp/cutagent-multicam-3to6-20260418-142138/cutagent_3to6_cam_a.mp4",
+      "media_timemap_b64": "AkAf1VVVVVVV",
+      "preconform_media_extents_b64": "AAABAAAAMMIAAAEAAAAwQg==",
+      "media_frame_rate_b64": "AAAAAAAAOEAAAAAAAAAAAA==",
+      "virtual_audio_track_b64": null,
+      "fields_blob_b64": "AAAAAgAAAF+BKLUv/SB5rQIAcgYSGtClOQAAAAAARG65v0lllXvLxAwIEfAqisgUd3d3d4GCQSGwiMUjmlzVtBA9nonqZI3G9GyTbXuiKbuuRaRqeHMUUH4wiGkmAwDCzZOgLjxzSA==",
+      "in_value": null,
+      "media_track_idx": null,
+      "current_selector_idx": 808464432,
+      "media_start_time": 0.0
+    },
+    {
+      "db_type": "Sm2TiVideoClip",
+      "track_index": 3,
+      "is_placeholder": false,
+      "media_file_path": "/tmp/cutagent-multicam-3to6-20260418-142138/cutagent_3to6_cam_b.mp4",
+      "media_timemap_b64": "AkAf1VVVVVVV",
+      "preconform_media_extents_b64": "AAABAAAAMMIAAAEAAAAwQg==",
+      "media_frame_rate_b64": "AAAAAAAAOEAAAAAAAAAAAA==",
+      "virtual_audio_track_b64": null,
+      "fields_blob_b64": "AAAAAgAAAGGBKLUv/SB5vQIAwgYTHLAnrQEMwzAMw+DyEptEDQ73riWDsAK7JvTClqR3d3d3gYKBQUCianquqpq06dFc06RqWmtoTeThmZrool2P6ImY+PJCgHFFQcoqAQIAGW7EM4cE",
+      "in_value": null,
+      "media_track_idx": null,
+      "current_selector_idx": -10854554,
+      "media_start_time": 0.0
+    },
+    {
+      "db_type": "Sm2TiVideoClip",
+      "track_index": 4,
+      "is_placeholder": false,
+      "media_file_path": "/tmp/cutagent-multicam-3to6-20260418-142138/cutagent_3to6_cam_c.mp4",
+      "media_timemap_b64": "AkAf1VVVVVVV",
+      "preconform_media_extents_b64": "AAABAAAAMMIAAAEAAAAwQg==",
+      "media_frame_rate_b64": "AAAAAAAAOEAAAAAAAAAAAA==",
+      "virtual_audio_track_b64": null,
+      "fields_blob_b64": "AAAAAgAAAF+BKLUv/SB5rQIAIoYRGtClOQAAAACQi5RqpI5sIuXeMu+ECHgVtWUKd3d3d4ABQRm0qvGIpgotXE/GnqhxPZ7IZJo8V2RrmCau6uHNCYtyhGGmmQQAcBNSTlLOtnddFw==",
+      "in_value": null,
+      "media_track_idx": null,
+      "current_selector_idx": 1,
+      "media_start_time": 0.0
+    },
+    {
+      "db_type": "Sm2TiVideoClip",
+      "track_index": 5,
+      "is_placeholder": false,
+      "media_file_path": "/tmp/cutagent-multicam-3to6-20260418-142138/cutagent_3to6_cam_f.mp4",
+      "media_timemap_b64": "AkAf1VVVVVVV",
+      "preconform_media_extents_b64": "AAABAAAAMMIAAAEAAAAwQg==",
+      "media_frame_rate_b64": "AAAAAAAAOEAAAAAAAAAAAA==",
+      "virtual_audio_track_b64": null,
+      "fields_blob_b64": "AAAAAgAAAGOBKLUv/SB5zQIAIoYSHbAnrQEMwzAMw+Ac2UuQcsEhbTOyZo0nuybwx22nd3d3d4GCgSEoKD0e0XV5qquKPBsTkYjn0jBFz8M1mSoVVXTx9kKAOcMSWxYEALipou6QrNrZdV0=",
+      "in_value": null,
+      "media_track_idx": null,
+      "current_selector_idx": 9,
+      "media_start_time": 0.0
+    },
+    {
+      "db_type": "Sm2TiAudioClip",
+      "track_index": 0,
+      "is_placeholder": false,
+      "media_file_path": "/tmp/cutagent-multicam-3to6-20260418-142138/cutagent_3to6_cam_d.mp4",
+      "media_timemap_b64": "AkAf1VVVVVVV",
+      "preconform_media_extents_b64": null,
+      "media_frame_rate_b64": "AAAAAAAAOEAAAAAAAAAAAA==",
+      "virtual_audio_track_b64": "AAAAAQAAAAIAAAAUAEMAaABhAG4AbgBlAGwAcwBCAEEAAAAMAAAAAAwAAAACAAAAAQAAQAEAAAASAEEAdQBkAGkAbwBUAHkAcABlAAAAAgAAAAAB",
+      "fields_blob_b64": "AAAAAgAAAFSBKLUv/SBpVQIAMsUOFpCpWQM/l8rvnTtfzZFIs3Vm80RviKSBBRHcwprew/S4ouVFVWOpnodwlalqGg4eT0XE200AecIMOwsEANlKXssNZza365A=",
+      "in_value": null,
+      "media_track_idx": 0,
+      "current_selector_idx": 0,
+      "media_start_time": 0.0
+    },
+    {
+      "db_type": "Sm2TiAudioClip",
+      "track_index": 1,
+      "is_placeholder": false,
+      "media_file_path": "/tmp/cutagent-multicam-3to6-20260418-142138/cutagent_3to6_cam_e.mp4",
+      "media_timemap_b64": "AkAf1VVVVVVV",
+      "preconform_media_extents_b64": null,
+      "media_frame_rate_b64": "AAAAAAAAOEAAAAAAAAAAAA==",
+      "virtual_audio_track_b64": "AAAAAQAAAAIAAAAUAEMAaABhAG4AbgBlAGwAcwBCAEEAAAAMAAAAAAwAAAACAAAAAQAAQAEAAAASAEEAdQBkAGkAbwBUAHkAcABlAAAAAgAAAAAB",
+      "fields_blob_b64": "AAAAAgAAAFOBKLUv/SBpTQIAggUPFrClWQOsihoRNMGSbe+OA6BNMZa3lgKAwhBQT2XWY1le47milzwazSuIpuQ90WKqkmY5eHuRGE6wZMsCAwA7RYikrjlzXQ==",
+      "in_value": null,
+      "media_track_idx": 0,
+      "current_selector_idx": 0,
+      "media_start_time": 0.0
+    },
+    {
+      "db_type": "Sm2TiAudioClip",
+      "track_index": 2,
+      "is_placeholder": false,
+      "media_file_path": "/tmp/cutagent-multicam-3to6-20260418-142138/cutagent_3to6_cam_a.mp4",
+      "media_timemap_b64": "AkAf1VVVVVVV",
+      "preconform_media_extents_b64": null,
+      "media_frame_rate_b64": "AAAAAAAAOEAAAAAAAAAAAA==",
+      "virtual_audio_track_b64": "AAAAAQAAAAIAAAAUAEMAaABhAG4AbgBlAGwAcwBCAEEAAAAMAAAAAAwAAAACAAAAAQAAQAEAAAASAEEAdQBkAGkAbwBUAHkAcABlAAAAAgAAAAAB",
+      "fields_blob_b64": "AAAAAgAAAFWBKLUv/SBpXQIAgoUPF5C3WQM/y3pRyZ97ZVt/owEPNk8MrZEUgIMJLI0GY+FNVWR6oqm6xbV4Hq/gPZXJZRK5HtfB21HCnGBnigUDAFOEwc0LzxwS",
+      "in_value": null,
+      "media_track_idx": 0,
+      "current_selector_idx": 0,
+      "media_start_time": 0.0
+    },
+    {
+      "db_type": "Sm2TiAudioClip",
+      "track_index": 3,
+      "is_placeholder": false,
+      "media_file_path": "/tmp/cutagent-multicam-3to6-20260418-142138/cutagent_3to6_cam_b.mp4",
+      "media_timemap_b64": "AkAf1VVVVVVV",
+      "preconform_media_extents_b64": null,
+      "media_frame_rate_b64": "AAAAAAAAOEAAAAAAAAAAAA==",
+      "virtual_audio_track_b64": "AAAAAQAAAAIAAAAUAEMAaABhAG4AbgBlAGwAcwBCAEEAAAAMAAAAAAwAAAACAAAAAQAAQAEAAAASAEEAdQBkAGkAbwBUAHkAcABlAAAAAgAAAAAB",
+      "fields_blob_b64": "AAAAAgAAAFWBKLUv/SBpXQIAMgUPF5C3WQM/y9p6b47msRpRCzUO34+M0XYKgIMJLNPBomBCuKKK8S7kLZ43VY1nUr1H5LpEC29HCXODHaZYBABTiQnqtFta2XVd",
+      "in_value": null,
+      "media_track_idx": 0,
+      "current_selector_idx": 0,
+      "media_start_time": 0.0
+    },
+    {
+      "db_type": "Sm2TiAudioClip",
+      "track_index": 4,
+      "is_placeholder": false,
+      "media_file_path": "/tmp/cutagent-multicam-3to6-20260418-142138/cutagent_3to6_cam_c.mp4",
+      "media_timemap_b64": "AkAf1VVVVVVV",
+      "preconform_media_extents_b64": null,
+      "media_frame_rate_b64": "AAAAAAAAOEAAAAAAAAAAAA==",
+      "virtual_audio_track_b64": "AAAAAQAAAAIAAAAUAEMAaABhAG4AbgBlAGwAcwBCAEEAAAAMAAAAAAwAAAACAAAAAQAAQAEAAAASAEEAdQBkAGkAbwBUAHkAcABlAAAAAgAAAAAB",
+      "fields_blob_b64": "AAAAAgAAAFWBKLUv/SBpXQIAgoUPF6CnWQOPY39RKvsT30t+68YL/CJs9kkKgUQRoGeyaESLJxo0CW9ab/JoXuMRaabIVEVc1cPC2y+g3GDKlgUDADXlwM0LzxwS",
+      "in_value": null,
+      "media_track_idx": 0,
+      "current_selector_idx": 0,
+      "media_start_time": 0.0
+    },
+    {
+      "db_type": "Sm2TiAudioClip",
+      "track_index": 5,
+      "is_placeholder": false,
+      "media_file_path": "/tmp/cutagent-multicam-3to6-20260418-142138/cutagent_3to6_cam_f.mp4",
+      "media_timemap_b64": "AkAf1VVVVVVV",
+      "preconform_media_extents_b64": null,
+      "media_frame_rate_b64": "AAAAAAAAOEAAAAAAAAAAAA==",
+      "virtual_audio_track_b64": "AAAAAQAAAAIAAAAUAEMAaABhAG4AbgBlAGwAcwBCAEEAAAAMAAAAAAwAAAACAAAAAQAAQAEAAAASAEEAdQBkAGkAbwBUAHkAcABlAAAAAgAAAAAB",
+      "fields_blob_b64": "AAAAAgAAAFSBKLUv/SBpVQIA0sUPF6A3rQGP04p2Ux382qityZ/Z+oVo01oKgEQRWJpIJWFyeQqU9kTT06ZIdNAe7y205jFFEW/yGr5uGsUPdSpVAgB+U8AzhwQ=",
+      "in_value": null,
+      "media_track_idx": 0,
+      "current_selector_idx": 0,
+      "media_start_time": 0.0
+    }
+  ]
+}

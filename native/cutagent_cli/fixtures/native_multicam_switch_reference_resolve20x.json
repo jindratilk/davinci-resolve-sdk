@@ -1,0 +1,62 @@
+{
+  "schema_family": "resolve_20x",
+  "fixture_version": 1,
+  "video_segments": [
+    {
+      "position": "first",
+      "angle_index": 0,
+      "start": "0",
+      "duration": "68",
+      "in_value": null,
+      "current_selector_idx": 8,
+      "fields_blob_b64": "AAAAAgAAAG2BKLUv/SCDHQMAEocVHsCnOf////+bE/a0yS4Wnc7cYu+2xlnFvmlRsMhOAXd3d3eBAwKSsKQ9okZDCArLFfpslYat8xC6qDKfS6cKXa5KlXGpTbaNMhnZZuLTVwByRWrJkQIDAABuoi3XnTkk"
+    },
+    {
+      "position": "middle",
+      "angle_index": 1,
+      "start": "68",
+      "duration": "124",
+      "in_value": "68",
+      "current_selector_idx": 8,
+      "fields_blob_b64": "AAAAAgAAAG2BKLUv/SCGHQMAUgYUHcCnOf//7/2/Pu2QvYtFpx1p+xYy94t906JgEZkCd3d3d4EDAjrY0Z4FoyEEhajhZB6y7XJVGjabK1HIpKpMskx1WduWdSY+HQlAVyQnPSkGAMFNaTkZqt05WVZuO3NI"
+    },
+    {
+      "position": "last",
+      "angle_index": 0,
+      "start": "192",
+      "duration": "48",
+      "in_value": "192",
+      "current_selector_idx": 8,
+      "fields_blob_b64": "AAAAAgAAAG6BKLUv/SCGJQMA8kYVHcCnOf//7/2/nDPtFtei05m9u5ViF6xi37QoWESmd3d3d4EDQjqQw2FEC+cgKEwNqBL5TCaZSCXUkLkyzfXZKrbrsq2tkl02o0sW8eosID2hIMVQAQQAxU25csCZLe+6Lg=="
+    }
+  ],
+  "audio_segments": [
+    {
+      "position": "first",
+      "angle_index": null,
+      "start": "0",
+      "duration": "68",
+      "in_value": null,
+      "current_selector_idx": 0,
+      "fields_blob_b64": "AAAAAgAAAF6BKLUv/SBzpQIAwgYTGXBrswb8QVkSFQGxJ/z669DVUt9XkvP6NgWBB5IoyTkY4w6CQUvINpVpul62VVGWZTbRddkWoq1iykTVq7iqi0tDxJ+nAOSJc6dxAgEAZw4J"
+    },
+    {
+      "position": "middle",
+      "angle_index": null,
+      "start": "68",
+      "duration": "124",
+      "in_value": "68",
+      "current_selector_idx": 0,
+      "fields_blob_b64": "AAAAAgAAAGCBKLUv/SB2tQIAosYSGaC35f8/thFnL78DzLmIkGQvyYV6nXzWf6cBxTEQwzWIhCMIBs/iXV+2Pa5ue8h801ZJj6yaTJOrkpkul+yqui+y8Ogq4NyAHmpQAgBSlIBnDgk="
+    },
+    {
+      "position": "last",
+      "angle_index": null,
+      "start": "192",
+      "duration": "48",
+      "in_value": "192",
+      "current_selector_idx": 0,
+      "fields_blob_b64": "AAAAAgAAAGKBKLUv/SB2xQIAokYTGrCn5QwDYApQRJoEpwChLJms3ZzlcVrR3HYKAcY5ksMtGIUzCAZPo32bhKqyXVnmUqrumy6T7JqqbZNNkYWvu3xf9fDoSMA5AiXQAgUCANoi4JlDAg=="
+    }
+  ]
+}

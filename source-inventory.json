@@ -1,0 +1,233 @@
+{
+  "status": "dependency-plan-only",
+  "sourceCommit": "eb934734f5cb2d223192980a3b951f7509b0beec",
+  "inventoryKind": "reviewed-boundary-seeds-not-complete-transitive-closure",
+  "runtimeImplemented": false,
+  "published": false,
+  "files": [
+    {
+      "path": "sdk/LICENSE",
+      "group": "public-client",
+      "sha256": "e6f2227c9a47f8cc473e774270073765e5ff48ffa50bc7a5d2af02b75f33aa53",
+      "bytes": 1065,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "sdk/package.json",
+      "group": "public-client",
+      "sha256": "882d4e92200d7ac7df4450c801a53a41d7bbc79789bdf1970f8a9a5d228b85e8",
+      "bytes": 6502,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "sdk/src/client.ts",
+      "group": "public-client",
+      "sha256": "a4eb2aa7372a6b30b5136a4fb90c89af0a252305abaabc3bd8f349a14751038b",
+      "bytes": 1452,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "sdk/src/connection/desktop-transport.ts",
+      "group": "public-client",
+      "sha256": "c46fc1ac17aba19253c812234b55a772b5db790ada23906a1af2f80215f1e512",
+      "bytes": 8530,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "sdk/src/connection/plugin-transport.ts",
+      "group": "public-client",
+      "sha256": "bcfa7e09211866b25cf5a8f4113e8156b2ce9d40e978c378438ebe27c185d111",
+      "bytes": 14526,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "sdk/release/public-source-files.json",
+      "group": "public-client",
+      "sha256": "bb84404912862ae240e7bd752f71aad069460ba5fff34bd61776eeaf447e0a11",
+      "bytes": 1430,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "bridge/app/sdk-runtime-route.js",
+      "group": "local-admission",
+      "sha256": "7d3f26576b4166b614fbff68f0f89ad4987e368ba46aa5452228acb32125d39a",
+      "bytes": 33610,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "bridge/app/sdk-runtime-discovery.js",
+      "group": "local-admission",
+      "sha256": "de4ca0c53b422e1efff4ca49e0095ad7a0fc1ff4d5b033f1f80e61043d5d3dd7",
+      "bytes": 5865,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "bridge/services/sdk-authenticated-request.js",
+      "group": "local-admission",
+      "sha256": "ef53d939d18e1209eb493a8af5e50f61d24a1c42321a1fcaf436fe313bdf880c",
+      "bytes": 2610,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "bridge/services/sdk-runtime-service.js",
+      "group": "local-admission",
+      "sha256": "962cbb448a39fffb4fd8515d4381dc51fe8af4cb57eebf18e9d36b1744d4f269",
+      "bytes": 21547,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "bridge/services/sdk-prepared-action-coordinator.js",
+      "group": "local-admission",
+      "sha256": "009c0d7dbd11235e1c6f7e6fedb328b5d53e4c60525b56f8092c13af1bbd80d3",
+      "bytes": 10360,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "bridge/services/sdk-prepared-action-runtime-client.js",
+      "group": "local-admission",
+      "sha256": "a05595d3a9f6d42d055e39160d3f6044e0506a328607c4155a3123786dc894ff",
+      "bytes": 39765,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "bridge/services/sdk-operation-authority.js",
+      "group": "preserve-mutation-protection",
+      "sha256": "c091f256f2a95ca48fd1c8f0baf776e02bfdf4bb78679222e43ad700bffd015d",
+      "bytes": 33150,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "bridge/repos/sdk-operation-repo.js",
+      "group": "preserve-mutation-protection",
+      "sha256": "a8b524c3fb8dc59fd615f43870b2af32b9bcd844ef49b9340086ea4aea9fd4dc",
+      "bytes": 35560,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "bridge/services/sdk-direct-mutation-policy-authority.js",
+      "group": "preserve-mutation-protection",
+      "sha256": "cccd7b25a4cf1e77bd373eb37ea290e7293084d231fc28ece14a3e64c7477039",
+      "bytes": 2080,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "bridge/services/sdk-prepared-action-mutation-base-authority.js",
+      "group": "preserve-mutation-protection",
+      "sha256": "75fd2350e5235a53f426997a4a8126c6a19bc7e76e96208b7ba5aa92563f1685",
+      "bytes": 3941,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "bridge/services/mutation-policy/mutation-policy-gate.js",
+      "group": "preserve-mutation-protection",
+      "sha256": "abc91cb4609c53fa53df0b85472581d2f115a2a88dd29ebbed0c1d4e15821fd0",
+      "bytes": 25703,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "bridge/services/sdk-workflow-authority.js",
+      "group": "preserve-mutation-protection",
+      "sha256": "94f0d186b85408363cc2c89b6c78d56e421c022213b68528a66788696ec440b9",
+      "bytes": 128819,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "cutagent-cli/cutagent_cli/sdk_prepared_action.py",
+      "group": "preserve-mutation-protection",
+      "sha256": "766b58cfe1f2c6a2b7521503e91a8c6a2eef5a75ec03e4a58e4cb13d6f8c7ae4",
+      "bytes": 82871,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "cutagent-cli/cutagent_cli/core/db_session.py",
+      "group": "preserve-mutation-protection",
+      "sha256": "6534f08443ea9b83493846bfee1aba8ec39dc690ee9efc6dbaf0c19f9bece691",
+      "bytes": 54747,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "cutagent-cli/pyproject.toml",
+      "group": "local-native-runtime",
+      "sha256": "c68f5ceeb5bc334e48c0504d4fdb9a7b5bf2da1196ea0268b3776cdf2a852694",
+      "bytes": 2098,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "cutagent-cli/LICENSE",
+      "group": "local-native-runtime",
+      "sha256": "135ac0990ea940ef36a908bd241b2f7979a5297bd435c9e2e0ea50bbd4036b05",
+      "bytes": 958,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "cutagent-cli/cutagent_cli/adapters.py",
+      "group": "local-native-runtime",
+      "sha256": "499cd70efd18d5e44ae1a2deb1e4240ba20f6c95628b6f728a7065cc9b9039bc",
+      "bytes": 26055,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "cutagent-cli/cutagent_cli/embedded_bridge.py",
+      "group": "local-native-runtime",
+      "sha256": "31a08f57f8f88c5fd6625d6771f05c0d90c36a665d2dc38e731cf5ea1a6fb968",
+      "bytes": 70325,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "cutagent-cli/cutagent_cli/assets/CutAgent.lua",
+      "group": "local-native-runtime",
+      "sha256": "0b2d70084db04c821da0dc3fbfde2202f24d730faca1e22ab0d6e372d7097153",
+      "bytes": 35093,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "cutagent-cli/cutagent_cli/sdk_low_level_runtime.py",
+      "group": "local-native-runtime",
+      "sha256": "ae2f83fa2d25786b9baaa645e8a944b253a322f9a3d10e2eab0125ef0aeffc62",
+      "bytes": 5060,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "cutagent-cli/cutagent_cli/_sdk_low_level_runtime.py",
+      "group": "local-native-runtime",
+      "sha256": "0bd1b6b628cbb646a0b13707816d424315fa1f9c612bbb99220ca3b0361fd6fd",
+      "bytes": 148417,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "cutagent-cli/cutagent_cli/authz.py",
+      "group": "replace-commercial-authority",
+      "sha256": "096ec2228746cbbefb1b651ce321b3799c9ea5333e67518d377eae0e3661b772",
+      "bytes": 20556,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "bridge/services/cutagent-cli-authorization.js",
+      "group": "replace-commercial-authority",
+      "sha256": "6da8a281d081929e159de07b40ba647f4e44fded5964713cb743d1a049b5c394",
+      "bytes": 34365,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "bridge/services/auth-service.js",
+      "group": "replace-commercial-authority",
+      "sha256": "05b5d079589eb049452ca43fe6727ef434bf69ced2ba4f3ba755a9afa17d28d5",
+      "bytes": 34193,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "frontend/src-tauri/licenses/cutagent-cli-runtime/PACKAGE-LICENSE-INDEX.txt",
+      "group": "packaging-notice-input",
+      "sha256": "31f6ff31120aa1c1cfb0ccfb36a4cfef18abbbe84666d4e0569f004ab48971c6",
+      "bytes": 5523,
+      "copiedToStandaloneRuntime": false
+    },
+    {
+      "path": "frontend/src-tauri/licenses/ffmpeg/FFMPEG-LICENSE.md",
+      "group": "packaging-notice-input",
+      "sha256": "2e1d16c72fd74e12063776371da757322f8b77589386532f4fd8634bde7de1af",
+      "bytes": 4346,
+      "copiedToStandaloneRuntime": false
+    }
+  ]
+}

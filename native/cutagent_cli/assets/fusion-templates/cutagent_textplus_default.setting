@@ -1,0 +1,55 @@
+{
+    Tools = ordered() {
+        Template = TextPlus {
+            CtrlWZoom = false,
+            Inputs = {
+                GlobalOut = Input { Value = 239, },
+                Width = Input { Value = 1920, },
+                Height = Input { Value = 1080, },
+                UseFrameFormatSettings = Input { Value = 1, },
+                Center = Input { Value = { 0.5, 0.45 }, },
+                LineSpacing = Input { Value = 1.071, },
+                CharacterSpacing = Input { Value = 0.9945, },
+                StyledText = Input {
+                    SourceOp = "CharacterLevelStyling1",
+                    Source = "StyledText",
+                },
+                Font = Input { Value = "Poppins", },
+                Style = Input { Value = "Medium", },
+                Size = Input { Value = 0.12, },
+                VerticalJustificationNew = Input { Value = 3, },
+                HorizontalLeftCenterRight = Input { Value = 0, },
+                HorizontalJustificationNew = Input { Value = 3, },
+                TabSpacing = Input { Value = 1, },
+                AdvancedFontControls = Input { Value = 1, }
+            },
+            ViewInfo = OperatorInfo { Pos = { 220, 49.5 } },
+        },
+        CharacterLevelStyling1 = StyledTextCLS {
+            CtrlWZoom = false,
+            Inputs = {
+                TransformRotation = Input { Value = 1, },
+                Softness = Input { Value = 1, },
+                Text = Input { Value = "{{TEXT_PLACEHOLDER}}", },
+                CharacterLevelStyling = Input {
+                    Value = StyledText {
+                        Array = {
+                            {{STYLING_ARRAY_PLACEHOLDER}}
+                        },
+                        Value = ""
+                    },
+                }
+            },
+        },
+        MediaOut1 = MediaOut {
+            Inputs = {
+                Index = Input { Value = "0", },
+                Input = Input {
+                    SourceOp = "Template",
+                    Source = "Output",
+                }
+            },
+            ViewInfo = OperatorInfo { Pos = { 440, 49.5 } },
+        }
+    }
+}

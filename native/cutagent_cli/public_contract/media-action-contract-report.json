@@ -1,0 +1,2154 @@
+{
+  "actions": [
+    {
+      "actionId": "cutagent.action.media.audio_mapping",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.audio_mapping",
+      "capabilityLinkStatus": "linked",
+      "classification": "read",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "bounded_inline_read_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.audio_mapping.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.clear_transcription",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "unknown",
+          "maximum_declared": null,
+          "minimum_declared": null
+        },
+        "edition": {
+          "free": "unknown",
+          "studio": "unknown"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "unknown",
+          "studio_external": "unknown"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": null,
+      "capabilityLinkStatus": "missing",
+      "classification": "mutation",
+      "contractStatus": "inventory_only_missing_capability",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "unknown",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.clear_transcription.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.color.clear",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.flag_color",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.color.clear.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.color.set",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.flag_color",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.color.set.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.create_timeline",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.create_timeline",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.create_timeline.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.delete",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.clip_management",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.delete.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.duplicate",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.duplicate",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.duplicate.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.extract_template",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.extract_template",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.extract_template.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.flag.add",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.flag_color",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.flag.add.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.flag.clear",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.flag_color",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.flag.clear.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.folder.export_drb",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.import",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.folder.export_drb.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.folder.import_drb",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.folder_management",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.folder.import_drb.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.folders.create",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.folder_management",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.folders.create.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.folders.delete",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.folder_move_delete",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.folders.delete.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.folders.list",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.folder_management",
+      "capabilityLinkStatus": "linked",
+      "classification": "read",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "bounded_inline_read_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.folders.list.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.folders.move",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.folder_move_delete",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.folders.move.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.folders.open",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.folder_management",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.folders.open.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.folders.root",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.folder_management",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.folders.root.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.folders.tree",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.folder_management",
+      "capabilityLinkStatus": "linked",
+      "classification": "read",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "bounded_inline_read_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.folders.tree.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.growing_file.monitor",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.proxy_transcode",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.growing_file.monitor.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.import",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.import",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.import.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.info",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "unknown",
+          "maximum_declared": null,
+          "minimum_declared": null
+        },
+        "edition": {
+          "free": "unknown",
+          "studio": "unknown"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "unknown",
+          "studio_external": "unknown"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": null,
+      "capabilityLinkStatus": "missing",
+      "classification": "read",
+      "contractStatus": "inventory_only_missing_capability",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "unknown",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "bounded_inline_read_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.info.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.list",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.list",
+      "capabilityLinkStatus": "linked",
+      "classification": "read",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "bounded_inline_read_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.list.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.mark.clear",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.mark_in_out",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.mark.clear.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.mark.get",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.mark_in_out",
+      "capabilityLinkStatus": "linked",
+      "classification": "read",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "bounded_inline_read_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.mark.get.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.mark.set",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.mark_in_out",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.mark.set.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.marker.add",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.marker_crud",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.marker.add.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.marker.delete",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.marker_crud",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.marker.delete.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.marker.list",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.marker_crud",
+      "capabilityLinkStatus": "linked",
+      "classification": "read",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "bounded_inline_read_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.marker.list.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.matte.delete",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.clip_management",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.matte.delete.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.matte.list",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.clip_management",
+      "capabilityLinkStatus": "linked",
+      "classification": "read",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "bounded_inline_read_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.matte.list.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.metadata",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.metadata_write",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.metadata.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.metadata.export",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.metadata_write",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.metadata.export.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.move",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.clip_management",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.move.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.property_set",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.metadata_write",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.property_set.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.proxy",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.proxy_transcode",
+      "capabilityLinkStatus": "linked",
+      "classification": "long_running",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.proxy.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.proxy.link_fullres",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.proxy_transcode",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.proxy.link_fullres.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.relink",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.unlink_relink",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.relink.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.rename",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.clip_management",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.rename.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.replace",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.unlink_relink",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.replace.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.replace_preserve_subclip",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.unlink_relink",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.replace_preserve_subclip.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.search",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.search",
+      "capabilityLinkStatus": "linked",
+      "classification": "read",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "bounded_inline_read_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.search.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.selected.list",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.list",
+      "capabilityLinkStatus": "linked",
+      "classification": "read",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "bounded_inline_read_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.selected.list.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.selected.set",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.clip_management",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.selected.set.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.stereo_create",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.stereo_clip",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.stereo_create.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.sync_audio",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.audio_sync",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.sync_audio.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.third_party_metadata.get",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.metadata_write",
+      "capabilityLinkStatus": "linked",
+      "classification": "read",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "bounded_inline_read_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.third_party_metadata.get.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.third_party_metadata.set",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.metadata_write",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.third_party_metadata.set.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.timeline_matte.list",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.clip_management",
+      "capabilityLinkStatus": "linked",
+      "classification": "read",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "bounded_inline_read_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.timeline_matte.list.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.transcode",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.proxy_transcode",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.transcode.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.transcribe",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "unknown",
+          "maximum_declared": null,
+          "minimum_declared": null
+        },
+        "edition": {
+          "free": "unknown",
+          "studio": "unknown"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "unknown",
+          "studio_external": "unknown"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": null,
+      "capabilityLinkStatus": "missing",
+      "classification": "long_running",
+      "contractStatus": "inventory_only_missing_capability",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "unknown",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.transcribe.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    },
+    {
+      "actionId": "cutagent.action.media.unlink",
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "availability": "unknown",
+      "capabilityId": "media.unlink_relink",
+      "capabilityLinkStatus": "linked",
+      "classification": "mutation",
+      "contractStatus": "typed_declared_unverified",
+      "executorStatus": "integrated_fail_closed",
+      "maturity": "inventory_only",
+      "operationCreateReachability": "prepared_action_or_semantic_executor",
+      "projectionStatus": "readback_mutation_projection",
+      "releaseReadiness": "runtime_guarded",
+      "resultSchema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.unlink.result",
+      "runtimeResultValidation": "sdk_terminal_enforced",
+      "schemaStatus": "typed_semantic",
+      "verificationCategory": "structural_readback"
+    }
+  ],
+  "authoritativeActions": 52,
+  "boundedInlineReadActions": 12,
+  "classifiedLongRunningActions": 2,
+  "classifiedMutationActions": 38,
+  "classifiedReadActions": 12,
+  "declaredUnverifiedActions": 49,
+  "executorBackedActions": 52,
+  "expectedActions": 52,
+  "kind": "cutagent-media-action-contract-report",
+  "opaqueActions": 0,
+  "projectedMutationActions": 40,
+  "projectedReadActions": 12,
+  "releaseReadyActions": 52,
+  "schemaVersion": 2,
+  "semanticProjectionActions": 52,
+  "typedActions": 52,
+  "unboundedRetrievalActions": 0,
+  "unsupportedHandlerActions": 0
+}

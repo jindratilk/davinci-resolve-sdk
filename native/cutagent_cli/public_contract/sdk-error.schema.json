@@ -1,0 +1,2414 @@
+{
+  "$id": "urn:cutagent:schema:sdk-error:v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "ABORTED"
+        },
+        "id": {
+          "const": "cutagent.error.aborted"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "AMBIGUOUS_MEDIA_POOL_ITEM"
+        },
+        "id": {
+          "const": "cutagent.error.ambiguous_media_pool_item"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "AMBIGUOUS_TIMELINE_ITEM"
+        },
+        "id": {
+          "const": "cutagent.error.ambiguous_timeline_item"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "API_CALL_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.api_call_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "ASSET_NOT_FOUND"
+        },
+        "id": {
+          "const": "cutagent.error.asset_not_found"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "AUTHORIZATION_ACCOUNT_MISMATCH"
+        },
+        "id": {
+          "const": "cutagent.error.authorization_account_mismatch"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "AUTH_REQUIRED"
+        },
+        "id": {
+          "const": "cutagent.error.auth_required"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "AUTH_TOKEN_COMMAND_MISMATCH"
+        },
+        "id": {
+          "const": "cutagent.error.auth_token_command_mismatch"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "AUTH_TOKEN_EXPIRED"
+        },
+        "id": {
+          "const": "cutagent.error.auth_token_expired"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "AUTH_TOKEN_INVALID"
+        },
+        "id": {
+          "const": "cutagent.error.auth_token_invalid"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "AUTH_TOKEN_REDEMPTION_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.auth_token_redemption_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "CAPABILITY_NEGOTIATION_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.capability_negotiation_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "CLIP_NOT_FOUND"
+        },
+        "id": {
+          "const": "cutagent.error.clip_not_found"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "COLOR_PAGE_GUI_PROOF_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.color_page_gui_proof_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "COLOR_PAGE_NOT_READY"
+        },
+        "id": {
+          "const": "cutagent.error.color_page_not_ready"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "COLOR_PAGE_PANEL_NOT_READY"
+        },
+        "id": {
+          "const": "cutagent.error.color_page_panel_not_ready"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "COLOR_PAGE_TRACK_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.color_page_track_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "COLOR_RENDER_PROOF_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.color_render_proof_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "COLOR_RENDER_PROOF_REQUIRED"
+        },
+        "id": {
+          "const": "cutagent.error.color_render_proof_required"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "CONFIRMATION_REQUIRED"
+        },
+        "id": {
+          "const": "cutagent.error.confirmation_required"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "CUTAGENT_DESKTOP_UNREACHABLE"
+        },
+        "id": {
+          "const": "cutagent.error.cutagent_desktop_unreachable"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "DB_LOCKED"
+        },
+        "id": {
+          "const": "cutagent.error.db_locked"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "safe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "EDIT_CONSTRAINT_VIOLATION"
+        },
+        "id": {
+          "const": "cutagent.error.edit_constraint_violation"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "EDIT_MUTATION_FAILED_BEFORE_CHANGE"
+        },
+        "id": {
+          "const": "cutagent.error.edit_mutation_failed_before_change"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "EDIT_MUTATION_PARTIALLY_APPLIED"
+        },
+        "id": {
+          "const": "cutagent.error.edit_mutation_partially_applied"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "yes"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "EDIT_MUTATION_RECOVERY_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.edit_mutation_recovery_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "yes"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "EDIT_MUTATION_RESTORED"
+        },
+        "id": {
+          "const": "cutagent.error.edit_mutation_restored"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "EFFECT_NOT_SUPPORTED"
+        },
+        "id": {
+          "const": "cutagent.error.effect_not_supported"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "EFFECT_PARAMETER_INVALID"
+        },
+        "id": {
+          "const": "cutagent.error.effect_parameter_invalid"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "EFFECT_VERIFICATION_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.effect_verification_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "EMBEDDED_BRIDGE_AUTH_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.embedded_bridge_auth_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "EMBEDDED_BRIDGE_CLIENT_REPLACED"
+        },
+        "id": {
+          "const": "cutagent.error.embedded_bridge_client_replaced"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "EMBEDDED_BRIDGE_NOT_RUNNING"
+        },
+        "id": {
+          "const": "cutagent.error.embedded_bridge_not_running"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "EMBEDDED_BRIDGE_OUTDATED"
+        },
+        "id": {
+          "const": "cutagent.error.embedded_bridge_outdated"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "EMBEDDED_BRIDGE_POLICY_DENIED"
+        },
+        "id": {
+          "const": "cutagent.error.embedded_bridge_policy_denied"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "EMBEDDED_BRIDGE_TIMEOUT"
+        },
+        "id": {
+          "const": "cutagent.error.embedded_bridge_timeout"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "EXTERNAL_TOOL_NOT_FOUND"
+        },
+        "id": {
+          "const": "cutagent.error.external_tool_not_found"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "FILE_NOT_FOUND"
+        },
+        "id": {
+          "const": "cutagent.error.file_not_found"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "GUI_PERMISSION_MISSING"
+        },
+        "id": {
+          "const": "cutagent.error.gui_permission_missing"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "HOSTED_TRANSCRIPT_ATTEMPT_UNCERTAIN"
+        },
+        "id": {
+          "const": "cutagent.error.hosted_transcript_attempt_uncertain"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "HOSTED_TRANSCRIPT_NEW_JOB_REQUIRED"
+        },
+        "id": {
+          "const": "cutagent.error.hosted_transcript_new_job_required"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "HOSTED_TRANSCRIPT_PENDING"
+        },
+        "id": {
+          "const": "cutagent.error.hosted_transcript_pending"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "safe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "HOSTED_TRANSCRIPT_RESUME_REQUIRED"
+        },
+        "id": {
+          "const": "cutagent.error.hosted_transcript_resume_required"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "INTERNAL_ERROR"
+        },
+        "id": {
+          "const": "cutagent.error.internal_error"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "INVALID_OPTION"
+        },
+        "id": {
+          "const": "cutagent.error.invalid_option"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "INVALID_TIME_REFERENCE"
+        },
+        "id": {
+          "const": "cutagent.error.invalid_time_reference"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "LOCAL_AUTH_PORT_BLOCKED"
+        },
+        "id": {
+          "const": "cutagent.error.local_auth_port_blocked"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "MAGIC_MASK_PANEL_NOT_READY"
+        },
+        "id": {
+          "const": "cutagent.error.magic_mask_panel_not_ready"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "MAGIC_MASK_PROOF_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.magic_mask_proof_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "MAGIC_MASK_TRACK_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.magic_mask_track_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "MEDIA_POOL_ITEM_NOT_FOUND"
+        },
+        "id": {
+          "const": "cutagent.error.media_pool_item_not_found"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "MISSING_ARGUMENT"
+        },
+        "id": {
+          "const": "cutagent.error.missing_argument"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "NOT_FOUND"
+        },
+        "id": {
+          "const": "cutagent.error.not_found"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "NO_PROJECT"
+        },
+        "id": {
+          "const": "cutagent.error.no_project"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "NO_PROJECT_OPEN"
+        },
+        "id": {
+          "const": "cutagent.error.no_project_open"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "NO_TIMELINE"
+        },
+        "id": {
+          "const": "cutagent.error.no_timeline"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "NO_TIMELINE_OPEN"
+        },
+        "id": {
+          "const": "cutagent.error.no_timeline_open"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "OPERATION_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.operation_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "POLICY_DENIED"
+        },
+        "id": {
+          "const": "cutagent.error.policy_denied"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "READINESS_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.readiness_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "RECOVERY_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.recovery_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "yes"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "RESOLVE_NOT_RUNNING"
+        },
+        "id": {
+          "const": "cutagent.error.resolve_not_running"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "RESOLVE_SCRIPTING_UNAVAILABLE"
+        },
+        "id": {
+          "const": "cutagent.error.resolve_scripting_unavailable"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "RESOLVE_WINDOW_NOT_FOUND"
+        },
+        "id": {
+          "const": "cutagent.error.resolve_window_not_found"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "RESOLVE_WINDOW_NOT_READY"
+        },
+        "id": {
+          "const": "cutagent.error.resolve_window_not_ready"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "RUNTIME_CLEANUP_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.runtime_cleanup_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "RUNTIME_UNAVAILABLE"
+        },
+        "id": {
+          "const": "cutagent.error.runtime_unavailable"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "SDK_LIVE_INSPECTION_TIMEOUT"
+        },
+        "id": {
+          "const": "cutagent.error.sdk_live_inspection_timeout"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "safe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "SMART_REFRAME_VERIFICATION_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.smart_reframe_verification_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "STALE_DB_MULTICAM"
+        },
+        "id": {
+          "const": "cutagent.error.stale_db_multicam"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "STALE_REVISION"
+        },
+        "id": {
+          "const": "cutagent.error.stale_revision"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "safe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "STALE_TIMELINE_ITEM"
+        },
+        "id": {
+          "const": "cutagent.error.stale_timeline_item"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "STROKE_MAPPING_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.stroke_mapping_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "SUBSCRIPTION_REQUIRED"
+        },
+        "id": {
+          "const": "cutagent.error.subscription_required"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "TEMPLATE_FIELD_NOT_FOUND"
+        },
+        "id": {
+          "const": "cutagent.error.template_field_not_found"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "TEMP_APPEND_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.temp_append_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "TEMP_APPEND_NOT_ALLOWED"
+        },
+        "id": {
+          "const": "cutagent.error.temp_append_not_allowed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "TEMP_CLEANUP_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.temp_cleanup_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "TIMELINE_CONFLICT"
+        },
+        "id": {
+          "const": "cutagent.error.timeline_conflict"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "TRANSCRIPT_ATTEMPT_AUDIO_UNAVAILABLE"
+        },
+        "id": {
+          "const": "cutagent.error.transcript_attempt_audio_unavailable"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "UNKNOWN_COMMAND"
+        },
+        "id": {
+          "const": "cutagent.error.unknown_command"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "UNSUPPORTED_OPERATION"
+        },
+        "id": {
+          "const": "cutagent.error.unsupported_operation"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "USAGE_ERROR"
+        },
+        "id": {
+          "const": "cutagent.error.usage_error"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "VALIDATION_ERROR"
+        },
+        "id": {
+          "const": "cutagent.error.validation_error"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "manual"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "VERIFICATION_FAILED"
+        },
+        "id": {
+          "const": "cutagent.error.verification_failed"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "unknown"
+        },
+        "retryability": {
+          "const": "unknown"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "const": "VIEWER_GEOMETRY_NOT_FOUND"
+        },
+        "id": {
+          "const": "cutagent.error.viewer_geometry_not_found"
+        },
+        "message": {
+          "type": "string"
+        },
+        "possibleMutation": {
+          "const": "no"
+        },
+        "retryability": {
+          "const": "unsafe"
+        }
+      },
+      "required": [
+        "code",
+        "id",
+        "message",
+        "possibleMutation",
+        "retryability"
+      ],
+      "type": "object"
+    }
+  ]
+}

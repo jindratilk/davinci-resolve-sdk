@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "evidenceClass": "private_source_acceptance",
+  "productionProof": false,
+  "packaged": false,
+  "signed": false,
+  "published": false,
+  "runtime": {
+    "product": "DaVinci Resolve",
+    "version": "21.1.0.14",
+    "edition": "free",
+    "transport": "embedded_free_file_spool"
+  },
+  "publicSdkRenderFlow": {
+    "repositoryCommit": "b9fb7e3978acdef285084272aa3fa728e002dc32",
+    "exactCommitTested": true,
+    "project": "CUTAGENT_FREE_SDK_NATIVE_20260908131843",
+    "timeline": "CUTAGENT_FREE_SDK_TIMELINE_20260908131843",
+    "stages": [
+      "project.create",
+      "media.import",
+      "timeline.create",
+      "clip.transform",
+      "render.export"
+    ],
+    "nativeReadback": {
+      "ZoomX": 1.15,
+      "ZoomY": 1.15,
+      "Pan": 32
+    },
+    "copiedArtifact": {
+      "path": "/private/tmp/cutagent-free-sdk-native-21-1-output.mp4",
+      "byteCount": 1211041,
+      "durationSeconds": 2.069333,
+      "sha256": "fb2c39f1c7681e4366920fe55264741afcd04f6b08616931d6923e281fa2568a",
+      "video": "h264_1920x1080",
+      "audio": "aac_48000hz_stereo"
+    }
+  },
+  "standaloneAccountFreeMarkerFlow": {
+    "acceptedFixCommit": "37ea65d69b550b40313df8444d982685c7f40f03",
+    "exactCommitTested": false,
+    "liveTestBaseCommit": "ed8cd1c84269d61a97574c52e30c3c116879dfe7",
+    "liveTestTreeNote": "The successful live tree contained the retained carrier-admission and bounded Free-timeout fixes plus temporary private diagnostics. Diagnostics were removed before commit; the accepted commit was then rebased over unrelated native fixes and passed source, Node, TypeScript, and Python verification without another native mutation.",
+    "project": "CUTAGENT_FREE_SDK_NATIVE_20260908131843",
+    "timeline": "CUTAGENT_FREE_SDK_TIMELINE_20260908131843",
+    "create": {
+      "operationId": "operation_a10f0d02-6c9c-42be-ba8b-cd9e8604bfcb",
+      "status": "succeeded",
+      "possibleMutation": "confirmed",
+      "verification": "passed",
+      "protectedStatePreserved": true
+    },
+    "delete": {
+      "operationId": "operation_69ff664e-8879-4462-aceb-3ccd161fcd24",
+      "status": "succeeded",
+      "possibleMutation": "confirmed",
+      "verification": "passed",
+      "protectedStatePreserved": true
+    },
+    "beforeTracksSha256": "c4438f12783b81f36adeed6c99b0c42daf4c31e685d8003fe2c114d7361de1cc",
+    "beforeMarkersSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "restored": true,
+    "retainedLocalReport": "/var/folders/m1/9js4bgb14vv3m37f518l3kjr0000gn/T/standalone-marker-live-2tCsS9/smoke-report.json"
+  },
+  "cleanup": {
+    "brokerStopped": true,
+    "ephemeralAuthorizationRemoved": true,
+    "commercialCutAgentScriptUntouched": true
+  }
+}

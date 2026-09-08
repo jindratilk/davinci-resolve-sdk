@@ -1,0 +1,34 @@
+{
+  "cutagent-cli/cutagent_cli/prepared_action_marker.py": [
+    {
+      "before": "\nimport hashlib\nimport json\nimport os\n",
+      "after": "\nimport hashlib\nimport inspect\nimport json\nimport os\n"
+    },
+    {
+      "before": "from .connection import get_connection\nfrom .core import timeline_ops\n\nACTION_ID = \"cutagent.action.timeline.marker.add\"\n",
+      "after": "from .connection import get_connection\nfrom .core import timeline_ops\nfrom .policy import _prepared_action_admission_scope\n\nACTION_ID = \"cutagent.action.timeline.marker.add\"\n"
+    },
+    {
+      "before": "    def bind_private_timeline_inspector(self, callback):\n        self._private_timeline_inspector = callback\n\n    def capture_state(self, context):\n",
+      "after": "    def bind_private_timeline_inspector(self, callback):\n        self._private_timeline_inspector = callback\n\n    def _matches_carrier_admission(self, action_id, command_id, admitted_handler):\n        return (\n            action_id == ACTION_ID\n            and command_id == \"timeline.marker.add\"\n            and inspect.unwrap(self._marker_adder) is admitted_handler\n        )\n\n    def capture_state(self, context):\n"
+    },
+    {
+      "before": "        try:\n            self._mutation_guard(conn)\n            result = self._marker_adder(\n                conn,\n                f\"{marker['recordFrame'] - timeline_start}f\",\n                marker[\"color\"],\n                marker[\"name\"],\n                marker[\"note\"],\n                marker[\"durationFrames\"],\n            )\n        finally:\n            if previous_guard is None:\n",
+      "after": "        try:\n            self._mutation_guard(conn)\n            with _prepared_action_admission_scope(\n                ACTION_ID,\n                \"timeline.marker.add\",\n                self,\n                inspect.unwrap(self._marker_adder),\n                context,\n            ):\n                result = self._marker_adder(\n                    conn,\n                    f\"{marker['recordFrame'] - timeline_start}f\",\n                    marker[\"color\"],\n                    marker[\"name\"],\n                    marker[\"note\"],\n                    marker[\"durationFrames\"],\n                )\n        finally:\n            if previous_guard is None:\n"
+    }
+  ],
+  "bridge/services/sdk-live-inspection-service.js": [
+    {
+      "before": "}\n\nexport function createSdkLiveInspectionService({ resolveService, identityNamespace }) {\n  if (typeof resolveService?.readSdkLiveInspection !== \"function\") {\n    throw new TypeError(\"SDK live inspection requires the CutAgent CLI-backed resolve service.\");\n",
+      "after": "}\n\nexport function createSdkLiveInspectionService({\n  resolveService,\n  identityNamespace,\n  defaultInternalInspectionTimeoutMs = DEFAULT_INTERNAL_INSPECTION_TIMEOUT_MS,\n}) {\n  if (typeof resolveService?.readSdkLiveInspection !== \"function\") {\n    throw new TypeError(\"SDK live inspection requires the CutAgent CLI-backed resolve service.\");\n"
+    },
+    {
+      "before": "  if (typeof identityNamespace !== \"string\" || !identityNamespace.trim()) {\n    throw new TypeError(\"SDK live inspection requires a stable installation/profile identity namespace.\");\n  }\n  const stableIdentityNamespace = identityNamespace.trim();\n",
+      "after": "  if (typeof identityNamespace !== \"string\" || !identityNamespace.trim()) {\n    throw new TypeError(\"SDK live inspection requires a stable installation/profile identity namespace.\");\n  }\n  if (!Number.isSafeInteger(defaultInternalInspectionTimeoutMs)\n    || defaultInternalInspectionTimeoutMs < 100\n    || defaultInternalInspectionTimeoutMs > 180_000) {\n    throw new TypeError(\"SDK live inspection default deadline is invalid.\");\n  }\n  const stableIdentityNamespace = identityNamespace.trim();\n"
+    },
+    {
+      "before": "    operation,\n    options.deadlineAtMs === undefined\n      ? { ...options, deadlineAtMs: Date.now() + DEFAULT_INTERNAL_INSPECTION_TIMEOUT_MS }\n      : options,\n  );\n",
+      "after": "    operation,\n    options.deadlineAtMs === undefined\n      ? { ...options, deadlineAtMs: Date.now() + defaultInternalInspectionTimeoutMs }\n      : options,\n  );\n"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+// Generated from the private plugin carrier contract and public SDK protocol digest. Do not edit.
+export const CUTAGENT_PLUGIN_CARRIER_PROTOCOL_DIGEST = "sha256:df880b17ca033da23052e5ca73691fcea4901cbbae188de9f4a02c3a9215a8ef";

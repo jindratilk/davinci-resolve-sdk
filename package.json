@@ -1,0 +1,28 @@
+{
+  "name": "davinci-resolve-sdk-standalone-candidate",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "sdk"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace davinci-resolve-sdk",
+    "test": "node --test test/*.test.mjs",
+    "test:types": "tsc --noEmit --module NodeNext --moduleResolution NodeNext --target ES2023 --strict test/type-smoke.ts",
+    "verify:source": "node scripts/verify-source.mjs"
+  },
+  "dependencies": {
+    "express": "5.2.1",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.1",
+    "typescript": "5.9.3",
+    "@types/node": "24.13.3"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0 <23 || >=24.0.0 <25"
+  }
+}

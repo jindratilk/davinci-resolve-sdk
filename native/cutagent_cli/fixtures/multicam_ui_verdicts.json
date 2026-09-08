@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "verdicts": [
+    {
+      "id": "cutagent_mc_2cam_ui_rejected_2026_04_02",
+      "status": "ui_rejected",
+      "angle_count": 2,
+      "label": "Known broken CutAgent 2-cam UI family",
+      "verified_on": "2026-04-02",
+      "clip_name_patterns": [
+        "^CutAgent (?:Live Verify )?MC 2cam\\b"
+      ],
+      "notes": [
+        "DaVinci Resolve UI verification on 2026-04-02 showed non-functional 2-cam angle selection."
+      ]
+    },
+    {
+      "id": "cutagent_mc_3cam_ui_rejected_2026_04_02",
+      "status": "ui_rejected",
+      "angle_count": 3,
+      "label": "Known broken CutAgent 3-cam UI family",
+      "verified_on": "2026-04-02",
+      "clip_name_patterns": [
+        "^CutAgent (?:Live Verify )?MC 3cam\\b"
+      ],
+      "notes": [
+        "DaVinci Resolve UI verification on 2026-04-02 showed that Switch Multicam Clip Angle did not expose working 3-cam angles."
+      ]
+    },
+    {
+      "id": "cutagent_mc_4cam_ui_rejected_2026_04_02",
+      "status": "ui_rejected",
+      "angle_count": 4,
+      "label": "Known broken CutAgent 4-cam UI family",
+      "verified_on": "2026-04-02",
+      "clip_name_patterns": [
+        "^CutAgent (?:Live Verify )?MC 4cam\\b"
+      ],
+      "notes": [
+        "DaVinci Resolve UI verification on 2026-04-02 showed wrong source/audio binding for the CutAgent 4-cam family."
+      ]
+    },
+    {
+      "id": "cutagent_native_2cam_ui_confirmed_2026_04_18",
+      "status": "ui_confirmed",
+      "angle_count": 2,
+      "label": "CutAgent Native 2-cam DaVinci Resolve-created reference confirmed",
+      "verified_on": "2026-04-18",
+      "clip_name_patterns": [
+        "^CutAgent Native 2cam Multicam$"
+      ],
+      "notes": [
+        "DaVinci Resolve 20.3.1 GUI verification in project CutAgent 5-6cam Calibration 20260418-040116 confirmed Clip > Multicam Switch can switch every available angle after placing the native multicam on a timeline."
+      ]
+    },
+    {
+      "id": "cutagent_native_3cam_ui_confirmed_2026_04_18",
+      "status": "ui_confirmed",
+      "angle_count": 3,
+      "label": "CutAgent Native 3-cam DaVinci Resolve-created reference confirmed",
+      "verified_on": "2026-04-18",
+      "clip_name_patterns": [
+        "^CutAgent Native 3cam Multicam$"
+      ],
+      "notes": [
+        "DaVinci Resolve 20.3.1 GUI verification in project CutAgent 5-6cam Calibration 20260418-040116 confirmed Clip > Multicam Switch can switch every available angle after placing the native multicam on a timeline."
+      ]
+    },
+    {
+      "id": "cutagent_native_4cam_ui_confirmed_2026_04_18",
+      "status": "ui_confirmed",
+      "angle_count": 4,
+      "label": "CutAgent Native 4-cam DaVinci Resolve-created reference confirmed",
+      "verified_on": "2026-04-18",
+      "clip_name_patterns": [
+        "^CutAgent Native 4cam Multicam$"
+      ],
+      "notes": [
+        "DaVinci Resolve 20.3.1 GUI verification in project CutAgent 5-6cam Calibration 20260418-040116 confirmed Clip > Multicam Switch can switch every available angle after placing the native multicam on a timeline."
+      ]
+    },
+    {
+      "id": "cutagent_native_5cam_ui_confirmed_2026_04_18",
+      "status": "ui_confirmed",
+      "angle_count": 5,
+      "label": "CutAgent Native 5-cam DaVinci Resolve-created reference confirmed",
+      "verified_on": "2026-04-18",
+      "clip_name_patterns": [
+        "^CutAgent Native 5cam Multicam$"
+      ],
+      "notes": [
+        "DaVinci Resolve 20.3.1 GUI verification in project CutAgent 5-6cam Calibration 20260418-040116 confirmed Clip > Multicam Switch can switch every available angle after placing the native multicam on a timeline."
+      ]
+    },
+    {
+      "id": "cutagent_native_6cam_ui_confirmed_2026_04_18",
+      "status": "ui_confirmed",
+      "angle_count": 6,
+      "label": "CutAgent Native 6-cam DaVinci Resolve-created reference confirmed",
+      "verified_on": "2026-04-18",
+      "clip_name_patterns": [
+        "^CutAgent Native 6cam Multicam$"
+      ],
+      "notes": [
+        "DaVinci Resolve 20.3.1 GUI verification in project CutAgent 5-6cam Calibration 20260418-040116 confirmed Clip > Multicam Switch can switch every available angle after placing the native multicam on a timeline."
+      ]
+    }
+  ]
+}

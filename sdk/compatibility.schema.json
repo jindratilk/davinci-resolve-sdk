@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "./compatibility.schema.json"
+    },
+    "manifestVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "packageName": {
+      "type": "string",
+      "const": "davinci-resolve-sdk"
+    },
+    "sdkVersion": {
+      "type": "string",
+      "const": "0.2.0"
+    },
+    "sdkApiVersion": {
+      "type": "string",
+      "const": "0.2"
+    },
+    "wireProtocol": {
+      "type": "number",
+      "const": 1
+    },
+    "moduleFormat": {
+      "type": "string",
+      "const": "esm"
+    },
+    "browserSupported": {
+      "type": "boolean",
+      "const": false
+    },
+    "nodeRange": {
+      "type": "string",
+      "const": ">=22.12.0 <23 || >=24.0.0 <25"
+    },
+    "typescriptRange": {
+      "type": "string",
+      "const": ">=5.7.0 <5.10.0"
+    },
+    "runtimeRange": {
+      "type": "string",
+      "const": ">=3.0.0 <3.1.0"
+    },
+    "desktopManagedRange": {
+      "type": "string",
+      "const": ">=3.0.0 <3.1.0"
+    },
+    "pluginManagedRange": {
+      "type": "null"
+    },
+    "cliRange": {
+      "type": "string",
+      "const": ">=3.0.0 <3.1.0"
+    }
+  },
+  "required": [
+    "$schema",
+    "manifestVersion",
+    "packageName",
+    "sdkVersion",
+    "sdkApiVersion",
+    "wireProtocol",
+    "moduleFormat",
+    "browserSupported",
+    "nodeRange",
+    "typescriptRange",
+    "runtimeRange",
+    "desktopManagedRange",
+    "pluginManagedRange",
+    "cliRange"
+  ],
+  "additionalProperties": false,
+  "$id": "urn:cutagent:sdk:compatibility-manifest:1",
+  "title": "CutAgent SDK compatibility manifest",
+  "description": "Exact sanitized davinci-resolve-sdk 0.2.0 release policy for independent compatibility axes."
+}
