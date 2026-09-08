@@ -39,7 +39,7 @@ The local principal is owned by the current process/user and invalidated by gene
 
 The source verifier checks exact paths and hashes. Defensive schema expressions containing words such as `sqlite` are valid source and do not trigger the old binary-only exporter rule. It still excludes unrelated app/cloud/private-documentation families and private keys. This source policy is local to this authorized open-source candidate; the original product's release policy was not weakened.
 
-The ignored `rejected-sdk-export/` is evidence from the earlier failed upstream exporter and is not part of this candidate. No registry release or public artifact was created. Private source transfer is used for Free acceptance. See [PROVENANCE.md](PROVENANCE.md) for licensing scope and remaining notices, and [extraction-plan.md](extraction-plan.md) for the dependency analysis; the latter records the initial plan and its initial licensing/admission alternatives, not the implemented session authority.
+The ignored `rejected-sdk-export/` is evidence from the earlier failed upstream exporter and is not part of this candidate. The source preview is public at [jindratilk/davinci-resolve-sdk](https://github.com/jindratilk/davinci-resolve-sdk). No registry release or bundled installer is activated. See [PROVENANCE.md](PROVENANCE.md) for licensing scope and remaining notices, and [extraction-plan.md](extraction-plan.md) for the dependency analysis; the latter records the initial plan and its initial licensing/admission alternatives, not the implemented session authority.
 
 Free broker setup (run only when the target Free environment is assigned):
 
