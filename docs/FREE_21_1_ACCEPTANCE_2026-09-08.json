@@ -65,18 +65,35 @@
   },
   "publishedPublicSourceMarkerAttempt": {
     "repository": "jindratilk/davinci-resolve-sdk",
-    "commit": "fb4ad93df8e9d78d0fae5e5111f86bbb92ee40b1",
+    "commit": "172232a2de5022d7413fc9a7de32b18900b99557",
     "trackedStatusClean": true,
     "relevantRuntimeSourcesMatchAcceptedPrivateCandidate": true,
-    "result": "blocked_before_mutation",
-    "failure": {
-      "code": "RUNTIME_UNAVAILABLE",
-      "phase": "initial_timeline_snapshot",
-      "retrySafe": true,
-      "possibleMutation": "none",
-      "usage": "not_reserved"
+    "result": "succeeded",
+    "cleanRestartBeforeAttempt": true,
+    "newEmbeddedClientConfirmed": true,
+    "project": "CUTAGENT_FREE_SDK_NATIVE_20260908131843",
+    "timeline": "CUTAGENT_FREE_SDK_TIMELINE_20260908131843",
+    "create": {
+      "operationId": "operation_6a98f23e-31e7-4c16-8a7a-698323c89c40",
+      "requestId": "request_79041c8f-af82-4bc1-a755-439512b1ef7d",
+      "status": "succeeded",
+      "possibleMutation": "confirmed",
+      "verification": "passed",
+      "protectedStatePreserved": true
     },
-    "attempts": [
+    "delete": {
+      "operationId": "operation_bc68b4e9-e4fc-4abf-af59-7eb4703e0a75",
+      "requestId": "request_de9f67b9-3ff9-46e3-b50e-69977bd72647",
+      "status": "succeeded",
+      "possibleMutation": "confirmed",
+      "verification": "passed",
+      "protectedStatePreserved": true
+    },
+    "beforeTracksSha256": "8b29798485f889a92d2305824a03fd076f7974296dbf44ea5f9bf4d854b040b7",
+    "beforeMarkersSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "restored": true,
+    "retainedLocalReport": "/var/folders/m1/9js4bgb14vv3m37f518l3kjr0000gn/T/standalone-marker-live-7QjyKo/smoke-report.json",
+    "initialBlockedAttempts": [
       {
         "requestId": "request_d07130c5-2c08-45ce-af14-f4e5383c1835",
         "retainedLocalReport": "/var/folders/m1/9js4bgb14vv3m37f518l3kjr0000gn/T/standalone-marker-live-4qNlT4/smoke-report.json"
@@ -91,8 +108,15 @@
         "brokerRestartedBeforeAttempt": true
       }
     ],
-    "projectMutationOccurred": false,
-    "nextAction": "Repeat the exact public-source marker cycle only after the shared DaVinci Resolve native lane is available for a clean application/script activation."
+    "exactCommitTested": true,
+    "exampleModified": false,
+    "initialBlockedAttemptContext": {
+      "commit": "fb4ad93df8e9d78d0fae5e5111f86bbb92ee40b1",
+      "phase": "initial_timeline_snapshot",
+      "code": "RUNTIME_UNAVAILABLE",
+      "possibleMutation": "none",
+      "resolution": "Clean application and standalone script activation with a newly confirmed Lua client; the unchanged public example then passed. The original underlying exception was not isolated, so no specific code defect is claimed."
+    }
   },
   "cleanup": {
     "brokerStopped": true,

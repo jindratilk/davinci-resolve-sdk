@@ -6,7 +6,7 @@ This is an independently published source preview. No npm release or bundled nat
 
 - Complete inherited authoring/API export shape and original native owner composition: 639 native actions and 502 prepared descriptors initialize.
 - Studio: exact public commit fb4ad93 passed full-chain marker create/readback/delete on 2026-09-08. Both native verifiers passed; all original track/clip/audio and marker state matched afterwards. See docs/STUDIO_PUBLIC_SOURCE_ACCEPTANCE_2026-09-08.json.
-- DaVinci Resolve 21.1 Free: account-free standalone marker create/readback/delete passed through the independent embedded broker. Both operations were verified and the original Timeline state was restored. The sanitized private source evidence records the exact live-tree boundary in `docs/FREE_21_1_ACCEPTANCE_2026-09-08.json`.
+- DaVinci Resolve 21.1 Free: exact public commit 172232a passed the unchanged account-free standalone marker create/readback/delete example through the independent embedded broker after clean script activation. Both native verifiers passed and original track/clip/audio and marker state was restored. The sanitized evidence records the exact source boundary in `docs/FREE_21_1_ACCEPTANCE_2026-09-08.json`.
 - Clean client tarball consumer: installed from a local packed artifact outside the repository, all documented public imports and strict TypeScript NodeNext types passed; unsupported deep import was rejected.
 - Clean source archive: Node dependencies and Python 3.12 locked dependencies install independently of the original monorepo. Build and native source/process tests run from this archive.
 - Selected-source provenance and preserved dependency license texts are inventoried. No proprietary application/cloud source is required by installation.
@@ -15,7 +15,7 @@ This is an independently published source preview. No npm release or bundled nat
 
 | Gate | Current state | Completion evidence |
 | --- | --- | --- |
-| Standalone Free | Earlier tested-tree acceptance passed; exact public-source retry blocked before mutation | Independent broker/script activation, account-free SDK read, guarded marker create/readback/delete, and preserved state; exact live-tree boundary retained in the sanitized evidence |
+| Standalone Free marker scope | Exact public-source acceptance passed | Public commit 172232a; independent broker/script activation, account-free SDK read, guarded marker create/readback/delete, and final state restoration |
 | Broader Studio native domains | Awaiting exclusive native lane | Real Fusion, audio and render batch with native/readback/render evidence; composition alone is insufficient |
 | Windows | Startup intentionally rejects | Same-user ACL validation plus native transport prerequisites; no support claim before live tests |
 | Local native prerequisites | DaVinci Resolve, Python 3.12, FFmpeg/FFprobe supplied locally | Document/test target-platform installations; no redistribution of vendor binaries |
