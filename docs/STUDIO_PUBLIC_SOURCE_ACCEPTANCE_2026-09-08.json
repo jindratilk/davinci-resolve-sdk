@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "repository": "jindratilk/davinci-resolve-sdk",
+  "commit": "fb4ad93df8e9d78d0fae5e5111f86bbb92ee40b1",
+  "exactCommitTested": true,
+  "trackedStatusClean": true,
+  "evidenceClass": "public_source_native_acceptance",
+  "packaged": false,
+  "signed": false,
+  "productionProof": false,
+  "runtime": {
+    "product": "DaVinci Resolve",
+    "edition": "studio",
+    "transport": "studio_external"
+  },
+  "scope": [
+    "marker.create",
+    "marker.readback",
+    "marker.delete",
+    "protected_timeline_state_restoration"
+  ],
+  "projectSwitched": false,
+  "timelineSwitched": false,
+  "create": {
+    "operationId": "operation_22eb19be-a559-4e02-9251-2b0046b450d1",
+    "status": "succeeded",
+    "possibleMutation": "confirmed",
+    "verification": "passed",
+    "protectedStatePreserved": true
+  },
+  "delete": {
+    "operationId": "operation_cc7d63fc-641f-410c-b10a-87ca2146bb3e",
+    "status": "succeeded",
+    "possibleMutation": "confirmed",
+    "verification": "passed",
+    "protectedStatePreserved": true
+  },
+  "beforeTracksSha256": "2ecdaa996d4f3a16f722a711ea0afdd5e2912c92c7fea3b6f2544afa781db737",
+  "beforeMarkersSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "restored": true,
+  "nativeLaneReleased": true,
+  "limitation": "This proves the guarded marker path on the exact public source commit, not every native action or a signed packaged distribution."
+}

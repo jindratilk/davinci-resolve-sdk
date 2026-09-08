@@ -63,6 +63,37 @@
     "restored": true,
     "retainedLocalReport": "/var/folders/m1/9js4bgb14vv3m37f518l3kjr0000gn/T/standalone-marker-live-2tCsS9/smoke-report.json"
   },
+  "publishedPublicSourceMarkerAttempt": {
+    "repository": "jindratilk/davinci-resolve-sdk",
+    "commit": "fb4ad93df8e9d78d0fae5e5111f86bbb92ee40b1",
+    "trackedStatusClean": true,
+    "relevantRuntimeSourcesMatchAcceptedPrivateCandidate": true,
+    "result": "blocked_before_mutation",
+    "failure": {
+      "code": "RUNTIME_UNAVAILABLE",
+      "phase": "initial_timeline_snapshot",
+      "retrySafe": true,
+      "possibleMutation": "none",
+      "usage": "not_reserved"
+    },
+    "attempts": [
+      {
+        "requestId": "request_d07130c5-2c08-45ce-af14-f4e5383c1835",
+        "retainedLocalReport": "/var/folders/m1/9js4bgb14vv3m37f518l3kjr0000gn/T/standalone-marker-live-4qNlT4/smoke-report.json"
+      },
+      {
+        "requestId": "request_0fd593c9-54dd-4ebc-9c20-4c0fc179e3e9",
+        "retainedLocalReport": "/var/folders/m1/9js4bgb14vv3m37f518l3kjr0000gn/T/standalone-marker-live-IoYLAD/smoke-report.json"
+      },
+      {
+        "requestId": "request_e998dd47-8601-42a4-b2e2-0b65e5b072fb",
+        "retainedLocalReport": "/var/folders/m1/9js4bgb14vv3m37f518l3kjr0000gn/T/standalone-marker-live-iV4g2v/smoke-report.json",
+        "brokerRestartedBeforeAttempt": true
+      }
+    ],
+    "projectMutationOccurred": false,
+    "nextAction": "Repeat the exact public-source marker cycle only after the shared DaVinci Resolve native lane is available for a clean application/script activation."
+  },
   "cleanup": {
     "brokerStopped": true,
     "ephemeralAuthorizationRemoved": true,
