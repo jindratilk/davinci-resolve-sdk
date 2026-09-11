@@ -1,5 +1,5 @@
 // Generated from the private authoritative CutAgent CLI inventory. Do not edit.
-// Selected runtime source distributed under AGPL-3.0-only; see PROVENANCE.md.
+// Selected runtime source distributed under MIT; see PROVENANCE.md.
 export const PRIVATE_IMPACT_REGISTRY_VERSION = 3;
 export const PRIVATE_IMPACT_REGISTRY_DIGEST = "sha256:ea97a6eda75096a87b52bfc0520cfb734767e97192f114c58a3c0e1f2fd5fcc2";
 export const PRIVATE_COMMAND_IMPACT = Object.freeze(new Map([

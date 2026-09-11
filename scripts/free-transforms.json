@@ -16,7 +16,7 @@
   "cutagent-cli/cutagent_cli/_mutation_impact_registry.py": [
     {
       "before": "# This module is compiled into the proprietary CutAgent CLI runtime and must not ship as source.",
-      "after": "# Selected runtime source distributed under AGPL-3.0-only; see PROVENANCE.md."
+      "after": "# Selected runtime source distributed under MIT; see PROVENANCE.md."
     }
   ],
   "cutagent-cli/cutagent_cli/_sdk_low_level_runtime.py": [
@@ -28,7 +28,7 @@
   "cutagent-cli/cutagent_cli/private_sdk_actions/__init__.py": [
     {
       "before": "These modules are compiled into the proprietary CutAgent CLI runtime and are\nnever part of the public npm SDK.",
-      "after": "These selected runtime modules are included in the standalone CutAgent SDK\nsource distribution under AGPL-3.0-only; see PROVENANCE.md."
+      "after": "These selected runtime modules are included in the standalone CutAgent SDK\nsource distribution under MIT; see PROVENANCE.md."
     }
   ],
   "cutagent-cli/cutagent_cli/private_sdk_actions/visual_prepared_action_production.py": [
@@ -40,7 +40,7 @@
   "bridge/services/mutation-policy/private-impact-registry.generated.js": [
     {
       "before": "// This file is proprietary runtime input and must never enter the public npm package.",
-      "after": "// Selected runtime source distributed under AGPL-3.0-only; see PROVENANCE.md."
+      "after": "// Selected runtime source distributed under MIT; see PROVENANCE.md."
     }
   ],
   "bridge/contracts/sdk-media-prepared-inputs.generated.js": [

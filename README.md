@@ -1,172 +1,135 @@
-# Turn code into DaVinci Resolve timelines.
+<div align="center">
 
-CutAgent SDK is a TypeScript SDK and local CutAgent CLI for DaVinci Resolve 20+ Studio and DaVinci Resolve 20+ Free. This source preview runs local editing workflows without a CutAgent account, subscription, or desktop app.
+# 🎬 CutAgent SDK
 
-Source: https://github.com/jindratilk/davinci-resolve-sdk. The local package is named `cutagent`; it is not published to npm. Build and install it from this repository.
+### Give your AI agent the keys to DaVinci Resolve.
 
-## What is included
+An open-source connection between your agent and your editing timeline.<br>
+**Works with DaVinci Resolve Free and Studio. No CutAgent account required.**
 
-- The complete extracted TypeScript authoring surface, including root, actions, schemas, protocol, and preview entry points.
-- Local editing with durable operations, exact project and timeline checks, verification, and recovery.
-- CutAgent CLI source for the extracted DaVinci Resolve command surface.
-- The Studio external scripting transport.
-- The independent Free embedded Lua/file-spool transport.
-- Locked Node.js and Python dependency inputs and an inventoried third-party notice set.
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![DaVinci Resolve Free](https://img.shields.io/badge/DaVinci_Resolve-Free_%26_Studio-ff5a2b)](#-yes-it-works-with-davinci-resolve-free)
+[![TypeScript](https://img.shields.io/badge/TypeScript-SDK-3178C6)](docs/package/README.md)
+[![GitHub stars](https://img.shields.io/github/stars/jindratilk/davinci-resolve-sdk?style=social)](https://github.com/jindratilk/davinci-resolve-sdk)
 
-Agent skills and creative knowledge are outside this candidate. Setup does not install or rewrite agent skill content.
+[Get started](#-get-started) · [Examples](examples/) · [Documentation](docs/GETTING_STARTED.md) · [CutAgent desktop app](https://cutagent.ai)
 
-## Requirements
+</div>
 
-- macOS 13 or later for the currently qualified local setup.
-- Node.js 22.12+ on the Node 22 line, or Node.js 24.x.
-- Python 3.12.
-- DaVinci Resolve 20+ Studio or DaVinci Resolve 20+ Free.
-- DaVinci Resolve Studio: external scripting set to Local.
-- DaVinci Resolve Free: the included script installed and activated from `Workspace > Scripts > CutAgentSDK`.
-- FFmpeg and FFprobe on `PATH` for workflows that inspect or render media.
+---
 
-Windows source is present, but this candidate rejects Windows setup until same-user ACL validation and live Windows qualification are complete.
+## From an idea to an editable timeline
 
-## Build and install from source
+Your agent can write code. Now give it a way to work with your footage.
 
-Build and pack locally:
+CutAgent SDK lets agents and scripts organize media, build timelines, edit clips, work with audio, create Fusion graphics, and export videos in DaVinci Resolve. The work stays in your project, where you can inspect it, change it, and keep editing.
+
+Use the TypeScript SDK for editing scripts, or CutAgent CLI when your agent works through a terminal. Bring an agent that can run local code and give it the SDK documentation and examples to work from.
+
+## ✨ What you can build
+
+| Your next project | What the SDK brings |
+| --- | --- |
+| A real estate reel | Arrange shots, adjust framing, shape the pacing, and add titles. |
+| A podcast edit | Organize cameras and audio, work with multicam cuts, and add captions. |
+| A repeatable content workflow | Import files, organize bins, apply edits to multiple clips, and export. |
+| Your own motion graphics | Build editable Fusion text, node graphs, and keyframe animations. |
+| A custom editing assistant | Read the current timeline and let your agent make changes through code. |
+
+These are workflows you can build with the SDK, not one-prompt presets. The agent supplies the editing decisions and script; the SDK connects them to DaVinci Resolve.
+
+## 🆓 Yes, it works with DaVinci Resolve Free
+
+You don't need to buy DaVinci Resolve Studio to get started.
+
+CutAgent SDK includes a local script that connects to the free edition. Install it, open it from **Workspace → Scripts → CutAgentSDK**, and your agent can work with your project.
+
+Studio is supported too. Features that require Studio inside DaVinci Resolve still require Studio; the SDK doesn't unlock paid effects.
+
+**Current platform: macOS.** Windows setup is not available yet. Free and Studio have passed native marker tests on earlier releases; the latest Studio source has also passed a marker create/read/delete test. See [current verification and limitations](RELEASE_STATUS.md) for what has been tested.
+
+## 🤖 Built for agents. Useful for people.
+
+- **Bring your own agent.** Use a coding agent that can run local commands and TypeScript scripts.
+- **Keep editing in DaVinci Resolve.** Work with timelines, clips, audio, and Fusion compositions in the editor you already use.
+- **Work locally.** Local editing doesn't require a CutAgent account, subscription, or desktop app.
+- **Make it yours.** MIT licensed, so you can build your own tools and workflows on top.
+
+Your agent provider has its own data handling and billing. CutAgent SDK supplies the local editing connection, not an AI model or a library of creative skills.
+
+## 🚀 Get started
+
+You'll need macOS, DaVinci Resolve, Node.js 22.12+ or 24.x, and Python 3.12. Install FFmpeg and FFprobe for media inspection and export workflows.
+
+The SDK is currently installed from source, not npm:
 
 ```sh
+git clone https://github.com/jindratilk/davinci-resolve-sdk.git
+cd davinci-resolve-sdk
 npm ci --ignore-scripts
 npm run build
-npm test
-npm run test:types
-npm run verify:source
-npm pack --json
+npm pack
+mkdir ../my-video-project
+cd ../my-video-project
+npm init -y
+npm install ../davinci-resolve-sdk/cutagent-3.0.0.tgz
 ```
 
-Install the resulting tarball in a clean consumer project:
-
-```sh
-npm install /absolute/path/to/cutagent-3.0.0.tgz
-npx cutagent setup
-```
-
-`setup` installs CutAgent SDK under `~/.local/share/cutagent-sdk` and creates `~/.local/bin/cutagent`. It preserves an existing command from the CutAgent desktop app or another installation. Choose a separate folder when both are installed:
-
-```sh
-npx cutagent setup --bin-dir "$HOME/.local/cutagent-sdk-bin"
-```
-
-For DaVinci Resolve Free, install the independent embedded script during setup:
+**Using DaVinci Resolve Free?**
 
 ```sh
 npx cutagent setup --free
 ```
 
-No setup command opens a browser, signs in, uploads media, or contacts CutAgent Cloud. Package dependency installation may contact the configured npm and Python package indexes.
-
-## Import the SDK
-
-```ts
-import {
-  CutAgent,
-  frames,
-  idempotencyKey,
-} from "cutagent";
-import { ActionIds } from "cutagent/actions";
-import { ProjectIdSchema } from "cutagent/schemas";
-```
-
-Start the local runtime in a separate terminal:
-
-```sh
-cutagent runtime start --transport studio_external
-```
-
-For DaVinci Resolve Free:
+Open **Workspace → Scripts → CutAgentSDK** in DaVinci Resolve, then start the connection:
 
 ```sh
 cutagent runtime start --transport embedded_free
 ```
 
-The command prints the connection file used by `CutAgent.connect()`. If the client runs outside the same shell environment, set `CUTAGENT_SDK_DISCOVERY_FILE` to that absolute path.
+**Using DaVinci Resolve Studio?** Set external scripting to **Local**, then run:
+
+```sh
+npx cutagent setup
+cutagent runtime start --transport studio_external
+```
+
+Keep that terminal running. It prints the connection-file path; set `CUTAGENT_SDK_DISCOVERY_FILE` to that path in the terminal where your agent or script runs.
+
+[Full setup guide →](docs/GETTING_STARTED.md)
+
+## Your first connection
 
 ```ts
 import { CutAgent } from "cutagent";
 
 const client = await CutAgent.connect();
-const project = await client.projects.current();
-const timeline = await project.timelines.current();
 
-console.log({
-  project: project.name,
-  timeline: timeline.name,
-  revision: timeline.revision,
-});
+try {
+  const project = await client.projects.current();
+  const timeline = await project.timelines.current();
 
-await client.close();
+  console.log(`Ready to edit ${timeline.name} in ${project.name}`);
+  console.log(await timeline.snapshot());
+} finally {
+  await client.close();
+}
 ```
 
-Direct CutAgent CLI commands use the same canonical executable:
+Start with the [examples](examples/), including a marker workflow that creates a temporary marker, reads it back, and removes it again.
 
-```sh
-cutagent --json status
-cutagent --json timeline list
-cutagent --json capabilities
-```
+## Want the full editing app?
 
-Read each JSON envelope through `ok`, `data`, `error`, and `meta`. For mutations, preserve exact project/timeline identity, use the inspected revision, and verify the returned terminal operation.
+[CutAgent](https://cutagent.ai) brings the editing experience into a desktop app, including its AI transcription, voice generation, and video generation services. The open-source SDK is for building your own local tools and agent workflows.
 
-## Features in the CutAgent desktop app
+## Help make it better
 
-AI transcription, AI voice selection/generation, and `video generate` are available in the CutAgent desktop app. In CutAgent SDK, these commands return `HOSTED_SERVICE_REQUIRES_CUTAGENT_APP` with the link `https://cutagent.ai`. They do not connect to a service, upload files, check an account, start billing, or open a browser.
+Found a bug? [Open an issue](https://github.com/jindratilk/davinci-resolve-sdk/issues) with your operating system, DaVinci Resolve version and edition, and a small script that reproduces it. Leave out credentials and private footage.
 
-Native transcription and transcription reads exposed by the installed DaVinci Resolve edition remain local capabilities. Native Fairlight voice isolation also remains available where DaVinci Resolve reports it.
+Pull requests are welcome. Run the build, tests, and source checks before submitting a change. If this project is useful to you, a star helps other editors and builders find it. ⭐
 
-The CutAgent desktop app continues to provide these features. This candidate does not change them.
+## License
 
-## Update, status, and uninstall
+[MIT](LICENSE). Third-party components keep their [own licenses](THIRD_PARTY_NOTICES/README.md).
 
-Inspect the managed installation:
-
-```sh
-cutagent status --json
-```
-
-Updates are deliberate. Install the reviewed newer npm artifact, then rerun setup:
-
-```sh
-npm install cutagent@<reviewed-version>
-npx cutagent setup
-```
-
-`cutagent update` prints this instruction and performs no network request or automatic replacement.
-
-Remove managed executable and versioned runtime files:
-
-```sh
-cutagent uninstall
-```
-
-Uninstall removes only files recorded as belonging to this standalone setup. Runtime state is retained for recovery. The command does not remove DaVinci Resolve, user projects, media, FFmpeg, Python, Node.js, or CutAgent app files.
-
-## Supported and qualified combinations
-
-| Platform | Edition | Source/runtime state | Native evidence |
-| --- | --- | --- | --- |
-| macOS arm64 | DaVinci Resolve Studio 21.1 | Enabled | Historical marker baseline passed at commit fb4ad93; current candidate native revalidation awaits the exclusive native lane |
-| macOS arm64 | DaVinci Resolve Free 21.1 | Enabled through independent embedded broker | Historical marker baseline passed at commit 172232a; current candidate remote revalidation is pending |
-| macOS arm64 | DaVinci Resolve 20+ | Intended by compatibility contract | Full domain matrix remains pending |
-| Windows x64 | DaVinci Resolve Studio / Free | Setup blocked | ACL, packaging, and live native qualification remain pending |
-
-The retained Studio and Free records are historical marker baselines from the exact commits named above. They do not qualify the current candidate head, broader native domains, every DaVinci Resolve 20/21 point release, signed installers, notarization, or Windows.
-
-## Security and project safety
-
-CutAgent keeps local connection state private to your OS account, accepts each setup connection once, checks the exact project and timeline before editing, and verifies native changes. The package contains no development bypass and local editing does not require an account or subscription.
-
-DaVinci Resolve database mutations still require native reopen and GUI/render truth. A matching SQLite readback alone is not accepted as success.
-
-## License and provenance
-
-First-party source in this candidate is offered under GNU AGPL v3 only. No custom script exception is included. Third-party components keep their own licenses and notices under [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES/README.md).
-
-Earlier published SDK source was offered under MIT. This candidate preserves that historical grant and does not claim to revoke or retroactively replace rights already received under MIT. [PROVENANCE.md](PROVENANCE.md) records the extraction boundary and license history.
-
-DaVinci Resolve is a product of Blackmagic Design Pty Ltd. CutAgent SDK is independent software and does not include or redistribute DaVinci Resolve.
+DaVinci Resolve is a product of Blackmagic Design Pty Ltd. This project is independent and is not affiliated with or endorsed by Blackmagic Design.

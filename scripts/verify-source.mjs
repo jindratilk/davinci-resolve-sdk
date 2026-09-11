@@ -5,7 +5,7 @@ const root = resolve(import.meta.dirname, '..');
 const sdkInventory = JSON.parse(await readFile(join(root, 'EXTRACTION_INVENTORY.json'), 'utf8'));
 const nativeInventory = JSON.parse(await readFile(join(root, 'native/SOURCE_INVENTORY.json'), 'utf8'));
 if ((await readFile(join(root, 'sdk/LICENSE'), 'utf8')) !== (await readFile(join(root, 'LICENSE'), 'utf8'))) {
-  throw new Error('Standalone SDK license must match the candidate-owned AGPL license.');
+  throw new Error('Standalone SDK license must match the root MIT license.');
 }
 const inventory = {files:[...sdkInventory.files,...nativeInventory.files]};
 const allowed = new Set();

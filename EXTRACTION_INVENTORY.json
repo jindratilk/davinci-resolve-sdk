@@ -719,8 +719,8 @@
       "source": "sdk/LICENSE",
       "destination": "sdk/LICENSE",
       "sourceSha256": "e6f2227c9a47f8cc473e774270073765e5ff48ffa50bc7a5d2af02b75f33aa53",
-      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0",
-      "transformed": true
+      "sha256": "e6f2227c9a47f8cc473e774270073765e5ff48ffa50bc7a5d2af02b75f33aa53",
+      "transformed": false
     },
     {
       "source": "sdk/README.md",
@@ -1041,7 +1041,7 @@
       "source": "bridge/services/mutation-policy/private-impact-registry.generated.js",
       "destination": "runtime/bridge/services/mutation-policy/private-impact-registry.generated.js",
       "sourceSha256": "da5596ce114b11b9f32f8b448e3bdf6b02d7767a989a847fec4ac65147ecca8b",
-      "sha256": "41c3a3498cda63d8e490e5909ebd6fc997f414ee7bfccaa953b62196e786d510",
+      "sha256": "76b3a6d6095e75ad095b1ab191079c82525a01c491e094af22d8596ca0570d68",
       "transformed": true
     },
     {
