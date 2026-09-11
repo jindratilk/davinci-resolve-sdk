@@ -140,7 +140,6 @@ def _project_setting_runtime_value(key: str, value: Any) -> str | None:
 
 def _project_binding(context: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
     project = context.get("project")
-    policy = context.get("mutationPolicy")
     exact = context.get("exactRequestBinding")
     mutation_base = context.get("mutationBase")
     if isinstance(exact, Mapping) and isinstance(mutation_base, Mapping):
@@ -158,23 +157,12 @@ def _project_binding(context: Mapping[str, Any]) -> tuple[dict[str, Any], dict[s
                     if key in runtime_project
                 },
             }
-            policy = {
-                "scopeId": mutation_base.get("scopeId"),
-                "scopeRevision": mutation_base.get("scopeRevision"),
-            }
-    if not isinstance(project, Mapping) or not isinstance(policy, Mapping):
-        raise ValidationError("Prepared project mutation requires signed project and policy context.")
+    if not isinstance(project, Mapping):
+        raise ValidationError("Prepared project mutation requires signed project context.")
     required_project = ("projectLibraryId", "projectId", "projectRevision")
     if any(not isinstance(project.get(key), str) or not project[key] for key in required_project):
         raise ValidationError("Prepared project mutation has an incomplete project binding.")
-    if (
-        not isinstance(policy.get("scopeId"), str)
-        or not isinstance(policy.get("scopeRevision"), int)
-        or isinstance(policy.get("scopeRevision"), bool)
-        or policy["scopeRevision"] < 1
-    ):
-        raise ValidationError("Prepared project mutation has no exact Mutation Policy scope.")
-    return dict(project), dict(policy)
+    return dict(project), {}
 
 
 def _target(context: Mapping[str, Any]) -> dict[str, Any]:
@@ -187,14 +175,14 @@ def _target(context: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _impact(context: Mapping[str, Any], action_id: str, value: Mapping[str, Any]) -> dict[str, Any]:
-    project, policy = _project_binding(context)
+    project, _ = _project_binding(context)
     mutation_base = context.get("mutationBase")
     if not isinstance(mutation_base, Mapping):
         raise ValidationError("Prepared project mutation has no carrier-owned mutation base.")
     required_base = {
         "contractVersion", "carrier", "minimumBinding", "registryDigest",
         "canonicalRequestDigest", "referencedPayloadDigests", "requestId",
-        "operationId", "executionId", "scopeId", "scopeRevision",
+        "operationId", "executionId",
         "projectLibraryId",
     }
     project_open = action_id == "cutagent.action.project.open"
@@ -206,9 +194,7 @@ def _impact(context: Mapping[str, Any], action_id: str, value: Mapping[str, Any]
     has_project_binding = project_binding_fields.issubset(mutation_base)
     has_partial_project_binding = bool(project_binding_fields.intersection(mutation_base)) and not has_project_binding
     if (
-        mutation_base.get("scopeId") != policy["scopeId"]
-        or mutation_base.get("scopeRevision") != policy["scopeRevision"]
-        or mutation_base.get("projectLibraryId") != project["projectLibraryId"]
+        mutation_base.get("projectLibraryId") != project["projectLibraryId"]
         or (project_open and has_partial_project_binding)
         or (project_open and not has_project_binding and mutation_base.get("minimumBinding") != "account/project-library")
         or (not project_open and mutation_base.get("projectId") != project["projectId"])
@@ -816,20 +802,25 @@ class RenderPresetMutationDescriptor:
         presets = getter() if callable(getter) else None
         if not isinstance(presets, list):
             raise APICallFailed("DaVinci Resolve render-preset readback is unavailable.")
+        if any(not isinstance(item, str) or not item.strip() for item in presets) or len(set(presets)) != len(presets):
+            raise APICallFailed("DaVinci Resolve returned an ambiguous render-preset catalog.")
         return {
-            "presets": sorted(str(item) for item in presets),
+            "presets": sorted(presets),
             "protected": _project_protected_state(conn, context),
         }
 
     def prepare(self, context: Mapping[str, Any], value: Mapping[str, Any]) -> dict[str, Any]:
         before = self._snapshot(context)
+        name = value["presetName"]
+        if self.action_id.endswith("preset_save") and name in before["presets"]:
+            raise ValidationError("Render preset already exists; overwrite is forbidden.")
         target = _target(context)
         return {
             "targets": [target], "preState": before,
             "impact": _impact(context, self.action_id, value),
             "lowering": {"presetName": value["presetName"]},
             "verification": {"minimumEvidence": ["readback", "structural"]},
-            "recovery": {"strategy": "delete_new_preset_or_require_manual_recovery"},
+            "recovery": {"strategy": "verify_unchanged_or_require_manual_recovery"},
         }
 
     def resolve_current(self, context: Mapping[str, Any], prepared: Mapping[str, Any]) -> dict[str, Any]:
@@ -843,7 +834,7 @@ class RenderPresetMutationDescriptor:
             if name in prepared["preState"]["presets"]:
                 raise ValidationError("Render preset already exists; overwrite is forbidden.")
             saver = getattr(conn.project, "SaveAsNewRenderPreset", None)
-            if not callable(saver) or saver(name) is False:
+            if not callable(saver) or saver(name) is not True:
                 raise APICallFailed("DaVinci Resolve rejected the render-preset save.")
             return {"presetName": name, "saved": True}
         if name not in prepared["preState"]["presets"]:
@@ -855,23 +846,23 @@ class RenderPresetMutationDescriptor:
         after = self._snapshot(context)
         name = prepared["lowering"]["presetName"]
         expected_present = self.action_id.endswith("preset_save")
-        passed = (name in after["presets"]) is expected_present and after["protected"] == prepared["preState"]["protected"]
+        expected = set(prepared["preState"]["presets"])
+        expected = expected | {name} if expected_present else expected - {name}
+        passed = set(after["presets"]) == expected and after["protected"] == prepared["preState"]["protected"]
         result["after"] = after
         return {"outcome": "passed" if passed else "failed", "evidence": _evidence(self.action_id, after), "protectedStatePreserved": passed}
 
     def recover(self, context: Mapping[str, Any], prepared: Mapping[str, Any], failure: BaseException) -> dict[str, Any]:
         del failure
-        restored = False
-        attempted = self.action_id.endswith("preset_save")
-        if attempted:
-            try:
-                render_engine.delete_render_preset(
-                    get_connection(require_project=True), prepared["lowering"]["presetName"]
-                )
-                restored = self._snapshot(context) == prepared["preState"]
-            except Exception:
-                restored = False
-        return {"outcome": "succeeded" if restored else "manual_required", "attempted": True, "manualActionRequired": not restored}
+        # A catalog name is not an operation-owned identity. A failed save or
+        # concurrent creation cannot authorize deletion of the matching preset.
+        # Report partial failures explicitly; do not manufacture a destructive rollback.
+        try:
+            restored = self._snapshot(context) == prepared["preState"]
+        except Exception:
+            restored = False
+        return {"outcome": "succeeded" if restored else "manual_required", "attempted": False, "manualActionRequired": not restored}
+
 
     def project_result(self, context: Mapping[str, Any], prepared: Mapping[str, Any], result: Any) -> Any:
         del context
@@ -1339,6 +1330,8 @@ _BASE_PROJECT_RENDER_STORAGE_MEDIA_CALLABLE_ACTION_IDS = (
     "cutagent.action.render.encoding",
     "cutagent.action.render.mode.set",
     "cutagent.action.render.subtitles",
+    "cutagent.action.render.preset_save",
+    "cutagent.action.render.preset_update",
 )
 
 from .project_media_extended_prepared_action import (  # noqa: E402
@@ -1359,10 +1352,13 @@ PROJECT_RENDER_STORAGE_MEDIA_CALLABLE_ACTION_IDS = (
 
 def project_render_storage_media_prepared_action_descriptors() -> Mapping[str, Any]:
     """Return this domain's exact contribution to the sole shared registry."""
+    from .render_preset_update_prepared_action import RenderPresetUpdateDescriptor
     descriptors: dict[str, Any] = {
+        RenderPresetUpdateDescriptor.action_id: RenderPresetUpdateDescriptor(),
         ProjectRenameDescriptor.action_id: ProjectRenameDescriptor(),
         ProjectSettingDescriptor.action_id: ProjectSettingDescriptor(),
         **_render_descriptors(),
+        "cutagent.action.render.preset_save": RenderPresetMutationDescriptor("cutagent.action.render.preset_save"),
         **extended_project_media_prepared_action_descriptors(),
         **residual_media_prepared_action_descriptors(),
     }

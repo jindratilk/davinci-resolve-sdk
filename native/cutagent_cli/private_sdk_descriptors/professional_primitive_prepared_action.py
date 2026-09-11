@@ -204,7 +204,7 @@ _MUTATION_BASE_REQUIRED_KEYS = frozenset(
     {
         "contractVersion", "carrier", "minimumBinding", "registryDigest",
         "canonicalRequestDigest", "referencedPayloadDigests", "requestId",
-        "operationId", "executionId", "scopeId", "scopeRevision",
+        "operationId", "executionId",
         "projectLibraryId",
     }
 )
@@ -528,14 +528,11 @@ def _merge_carrier_mutation_base(
     if (
         normalized_base.get("contractVersion") != 1
         or normalized_base.get("carrier") != "sdk"
-        or not isinstance(normalized_base.get("scopeRevision"), int)
-        or isinstance(normalized_base.get("scopeRevision"), bool)
-        or normalized_base["scopeRevision"] <= 0
         or not all(
             isinstance(normalized_base.get(key), str) and normalized_base[key]
             for key in (
                 "minimumBinding", "registryDigest", "canonicalRequestDigest",
-                "requestId", "operationId", "executionId", "scopeId",
+                "requestId", "operationId", "executionId",
                 "projectLibraryId",
             )
         )

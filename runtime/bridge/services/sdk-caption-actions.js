@@ -12,7 +12,6 @@ import {
   sdkTranscriptCreateInputSchema,
 } from "../contracts/generated/sdk-operations.js";
 import { assertAuthenticatedSdkRequestCurrent, captureAuthenticatedSdkRequest } from "./sdk-authenticated-request.js";
-import {resolveSdkDirectMutationScope, sdkMutationScopeCandidates} from "./sdk-direct-mutation-scope.js";
 import { issueCutAgentCliBrokerEnvironment } from "./cutagent-cli-broker-grant.js";
 
 const id = (prefix) => `${prefix}${crypto.randomUUID()}`;
@@ -99,43 +98,16 @@ function serializeSubtitles(rows, format, fps, timelineStartFrame) {
   return `${format === "vtt" ? "WEBVTT\n\n" : ""}${cues.join("\n\n")}${cues.length ? "\n" : ""}`;
 }
 
-function mutationContext(input, context, resolvedTargets, mutationPolicyGate, directScope = null) {
-  const matchingScopes = sdkMutationScopeCandidates(mutationPolicyGate, context.accountFingerprint, directScope).filter((scope) => (
-    scope.binding.level === "project+timeline"
-    && scope.binding.projectId === input.projectId
-    && scope.binding.timelineId === input.timelineId
-    && scope.binding.timelineRevision === input.precondition
-  ));
-  if (matchingScopes.length !== 1) {
-    const error = new Error("Exactly one current editing-constraint scope must bind this SDK timeline mutation.");
-    error.code = "EDIT_CONSTRAINT_VIOLATION";
-    throw error;
-  }
-  const scope = matchingScopes[0];
-  return { scope, policyContext: {
-    requestId: context.requestId, operationId: context.operationId, executionId: context.executionId,
-    scopeId: scope.scopeId, scopeRevision: scope.revision,
-    projectLibraryId: scope.binding.projectLibraryId, projectId: input.projectId, timelineId: input.timelineId,
-    projectRevision: scope.binding.projectRevision, timelineRevision: input.precondition,
-    resolvedTargets, closedComposition: true, executableStableTargetPrecondition: true,
-  } };
-}
-
-function timelineTarget(input) {
-  return { kind: "timeline", stableId: input.timelineId, revision: input.precondition };
-}
-
-function trackTarget(snapshot, type, index) {
+function assertTrackExists(snapshot, type, index) {
   const track = snapshot.tracks.find((candidate) => candidate.type === type && candidate.index === index);
   if (!track) {
     const error = new Error(`The requested ${type} track does not exist in the precondition snapshot.`);
     error.code = "TARGET_NOT_FOUND";
     throw error;
   }
-  return { kind: "track", stableId: track.snapshotId, revision: snapshot.revision, trackType: type, trackIndex: index };
 }
 
-function subtitleTargets(snapshot, input, ensureTrack = true) {
+function assertSubtitleTrack(snapshot, ensureTrack = true) {
   const tracks = snapshot.tracks.filter((track) => track.type === "subtitle");
   if (tracks.length === 0) {
     if (!ensureTrack) {
@@ -143,9 +115,7 @@ function subtitleTargets(snapshot, input, ensureTrack = true) {
       error.code = "TARGET_NOT_FOUND";
       throw error;
     }
-    return [timelineTarget(input)];
   }
-  return tracks.map((track) => trackTarget(snapshot, "subtitle", track.index));
 }
 
 function stableTrackState(snapshot, excluded = new Set()) {
@@ -261,36 +231,14 @@ function transcriptResult(data, transcript) {
 }
 
 /** Build accepted caption/transcript executors over the existing CutAgent CLI and durable operation authority. */
-export function createSdkCaptionActionDefinitions({ toolExecutionService, liveInspectionService, mutationPolicyGate, transcriptDeliveryDir, authService, transcriptBroker = null, directMutationPolicyAuthority = null }) {
+export function createSdkCaptionActionDefinitions({ toolExecutionService, liveInspectionService, transcriptDeliveryDir, authService, transcriptBroker = null }) {
   if (typeof toolExecutionService?.executeCutAgentCliCommand !== "function" || typeof liveInspectionService?.read !== "function"
-    || typeof mutationPolicyGate?.listScopes !== "function" || typeof mutationPolicyGate?.bindVerifiedProtectedTargets !== "function"
     || typeof liveInspectionService?.readWithMutationGuard !== "function"
-    || typeof mutationPolicyGate?.assertProtectedStateEvidence !== "function" || typeof transcriptDeliveryDir !== "string" || !path.isAbsolute(transcriptDeliveryDir)
+    || typeof transcriptDeliveryDir !== "string" || !path.isAbsolute(transcriptDeliveryDir)
     || typeof authService?.capture !== "function" || typeof authService?.assertCurrent !== "function") {
     throw new TypeError("SDK caption actions require CutAgent CLI execution and live inspection authorities.");
   }
   const run = async (args, options) => envelope(await toolExecutionService.executeCutAgentCliCommand({ args, expect_json: true }, options));
-  const runMutation = async (args, context, input, targets, runOptions = {}) => {
-    const directScope = await resolveSdkDirectMutationScope({directMutationPolicyAuthority, context, liveInspectionService, level: "project+timeline", projectId: input.projectId, timelineId: input.timelineId, timelineRevision: input.precondition});
-    const { scope, policyContext } = mutationContext(input, context, targets, mutationPolicyGate, directScope);
-    const releaseProof = mutationPolicyGate.bindVerifiedProtectedTargets({
-      accountFingerprint: context.accountFingerprint,
-      executionId: context.executionId,
-      scopeId: scope.scopeId,
-      scopeRevision: scope.revision,
-      timelineRevision: input.precondition,
-    });
-    let authorization = null;
-    try {
-      const response = await run(args, { ...runOptions, policyContext, sdkTimelineGuard: context.sdkTimelineGuard, onAuthorization(value) { authorization = value; } });
-      return { response, authorization };
-    } finally {
-      releaseProof();
-    }
-  };
-  const assertProtectedEvidence = (authorization, report) => {
-    if (authorization?.policyDecision) mutationPolicyGate.assertProtectedStateEvidence(authorization.policyDecision.decisionId, report);
-  };
   const actionDefinitions = {};
   for (const [actionId, definition] of Object.entries(definitions)) actionDefinitions[actionId] = { ...definition };
   const cancellationUnsupported = async () => ({ confirmed: false, reason: "This CutAgent CLI capability does not expose authoritative cancellation." });
@@ -311,11 +259,10 @@ export function createSdkCaptionActionDefinitions({ toolExecutionService, liveIn
     const subtitlePath = path.join(directory, "captions.srt");
     try {
       fs.writeFileSync(subtitlePath, input.srt, { encoding: "utf8", mode: 0o600 });
-      const { response, authorization } = await runMutation(
+      assertSubtitleTrack(before, input.ensureTrack);
+      const response = await run(
         ["timeline", "subtitle", "insert", subtitlePath, input.ensureTrack ? "--ensure-track" : "--no-ensure-track"],
-        { ...context, sdkTimelineGuard: mutationGuard },
-        input,
-        subtitleTargets(before, input, input.ensureTrack),
+        { sdkTimelineGuard: mutationGuard },
       );
       const afterInspected = await liveInspectionService.readWithMutationGuard({ operation: "timeline.snapshot", projectId: input.projectId, timelineId: input.timelineId }, { deadlineAtMs: Date.now() + 30_000 });
       const after = afterInspected.value;
@@ -330,7 +277,6 @@ export function createSdkCaptionActionDefinitions({ toolExecutionService, liveIn
       const preserved = protectedStatePreserved(before, after, new Set(["subtitle:*"]));
       const report = verification("Native subtitle insertion passed independent DaVinci Resolve subtitle readback.", [evidence(`Matched ${expectedCues.length} imported subtitle entries by exact text and record-frame timing.`), evidence("Compared all non-subtitle timeline structure before and after insertion.", "structural")], preserved);
       if (!preserved) throw new Error("Native subtitle insertion changed timeline state outside its declared subtitle targets.");
-      assertProtectedEvidence(authorization, report);
       return success({ matchedEntries: Number(data.matched_entries), createdTrack: Boolean(data.created_subtitle_track), verification: { revision: after.revision, evidenceCount: report.evidence.length } }, report);
     } finally { fs.rmSync(directory, { recursive: true, force: true }); }
   };
@@ -350,11 +296,9 @@ export function createSdkCaptionActionDefinitions({ toolExecutionService, liveIn
     const { snapshot: before, mutationGuard } = await currentSnapshot(liveInspectionService, input);
     const beforeCount = before.tracks.filter((track) => track.type === "subtitle").reduce((sum, track) => sum + track.clips.length, 0);
     context.reportProgress({ phase: "davinci_resolve_auto_caption", overallFraction: 0.2, phaseFraction: 0.1 });
-    const { authorization } = await runMutation(
+    await run(
       ["timeline", "auto-caption", ...(input.language ? ["--language", input.language] : []), ...(input.preset ? ["--preset", input.preset] : []), ...(input.charsPerLine ? ["--chars-per-line", String(input.charsPerLine)] : []), ...(input.lineBreak ? ["--line-break", input.lineBreak] : []), ...(input.gap !== undefined ? ["--gap", String(input.gap)] : [])],
-      { ...context, sdkTimelineGuard: mutationGuard },
-      input,
-      subtitleTargets(before, input),
+      { sdkTimelineGuard: mutationGuard },
     );
     const after = await liveInspectionService.read({ operation: "timeline.snapshot", projectId: input.projectId, timelineId: input.timelineId }, { deadlineAtMs: Date.now() + 30_000 });
     const afterCount = after.tracks.filter((track) => track.type === "subtitle").reduce((sum, track) => sum + track.clips.length, 0);
@@ -362,7 +306,6 @@ export function createSdkCaptionActionDefinitions({ toolExecutionService, liveIn
     const preserved = protectedStatePreserved(before, after, new Set(["subtitle:*"]));
     const report = verification("DaVinci Resolve auto-caption produced new native subtitle items.", [evidence(`Read back ${afterCount - beforeCount} new subtitle items.`), evidence("Compared all non-subtitle timeline structure before and after auto-caption.", "structural")], preserved);
     if (!preserved) throw new Error("DaVinci Resolve auto-caption changed timeline state outside its declared subtitle targets.");
-    assertProtectedEvidence(authorization, report);
     return success({ createdItems: afterCount - beforeCount, verification: { revision: after.revision, evidenceCount: report.evidence.length } }, report);
   };
 
@@ -387,7 +330,8 @@ export function createSdkCaptionActionDefinitions({ toolExecutionService, liveIn
       }) }), { encoding: "utf8", mode: 0o600 });
       const segmentation = input.segmentation;
       fs.writeFileSync(specPath, JSON.stringify({ transcript: transcriptPath, template: input.template.path, track: input.trackIndex, holder_kind: "textplus", segmentation: { unit: segmentation.unit, target: segmentation.target, preferred_min: segmentation.preferredMin, preferred_max: segmentation.preferredMax, hard_max: segmentation.hardMax, max_characters_per_line: segmentation.maxCharactersPerLine, max_lines: segmentation.maxLines, preferred_cps: segmentation.preferredCps, hard_cps: segmentation.hardCps, minimum_duration_seconds: segmentation.minimumDurationSeconds, pause_threshold_seconds: segmentation.pauseThresholdSeconds } }), { encoding: "utf8", mode: 0o600 });
-      const { response, authorization } = await runMutation(["text", "insert-captions", "--spec", specPath], { ...context, sdkTimelineGuard: mutationGuard }, input, [trackTarget(before, "video", input.trackIndex)]);
+      assertTrackExists(before, "video", input.trackIndex);
+      const response = await run(["text", "insert-captions", "--spec", specPath], { sdkTimelineGuard: mutationGuard });
       const after = await liveInspectionService.read({ operation: "timeline.snapshot", projectId: input.projectId, timelineId: input.timelineId }, { deadlineAtMs: Date.now() + 30_000 });
       const created = Array.isArray(response.data?.result?.created) ? response.data.result.created : [];
       const targetTrack = after.tracks.find((track) => track.type === "video" && track.index === input.trackIndex);
@@ -398,7 +342,6 @@ export function createSdkCaptionActionDefinitions({ toolExecutionService, liveIn
       const preserved = protectedStatePreserved(before, after, new Set([`video:${input.trackIndex}`]));
       const report = verification("Designed Text+ captions passed exact target-track placement and command verification.", [evidence(`Read back ${inserted} exact caption placements on video track ${input.trackIndex}.`), evidence("CutAgent CLI reported verified Text+ DB/Fusion insertion and all non-target tracks were unchanged.", "structural")], preserved);
       if (!preserved) throw new Error("Designed caption insertion changed timeline state outside its declared video track.");
-      assertProtectedEvidence(authorization, report);
       return success({ insertedItems: inserted, trackIndex: input.trackIndex, verification: { revision: after.revision, evidenceCount: report.evidence.length } }, report);
     } finally { fs.rmSync(directory, { recursive: true, force: true }); }
   };
@@ -412,7 +355,6 @@ export function createSdkCaptionActionDefinitions({ toolExecutionService, liveIn
       let resumeJobId = input.resumeJobId;
       let allowNewJob = input.newJob && !resumeJobId && context.reconciling !== true;
       let response;
-      let authorization;
       for (;;) {
         try {
           const authenticated = await captureAuthenticatedSdkRequest(authService);
@@ -422,12 +364,10 @@ export function createSdkCaptionActionDefinitions({ toolExecutionService, liveIn
             throw error;
           }
           assertAuthenticatedSdkRequestCurrent(authService, authenticated);
-          const dispatched = await runMutation(
+          const dispatched = await run(
             [...baseArgs, ...(resumeJobId ? ["--resume-job", resumeJobId] : []), ...(allowNewJob ? ["--new-job"] : []), ...(fs.existsSync(outputPath) ? ["--force"] : [])],
-            { ...context, sdkTimelineGuard: mutationGuard },
-            input,
-            [timelineTarget(input)],
             {
+              sdkTimelineGuard: mutationGuard,
               accessToken: authenticated.accessToken,
               issueBrokerEnvironment: ({ authorization, args }) => issueCutAgentCliBrokerEnvironment({
                 broker: transcriptBroker,
@@ -437,8 +377,7 @@ export function createSdkCaptionActionDefinitions({ toolExecutionService, liveIn
               }),
             },
           );
-          response = dispatched.response;
-          authorization = dispatched.authorization;
+          response = dispatched;
           assertAuthenticatedSdkRequestCurrent(authService, authenticated);
           break;
         } catch (error) {
@@ -461,7 +400,6 @@ export function createSdkCaptionActionDefinitions({ toolExecutionService, liveIn
         evidence("Compared the complete timeline structure before and after transcript rendering.", "structural"),
       ], preserved);
       if (!preserved) throw new Error("Hosted transcript rendering changed the protected timeline state.");
-      assertProtectedEvidence(authorization, report);
       return success(result, report, "none", "consumed");
     }
   };

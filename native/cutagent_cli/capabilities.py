@@ -6,10 +6,12 @@ from copy import deepcopy
 
 from .multicam_support import build_multicam_support_matrix
 
-CAPABILITIES_SCHEMA_VERSION = "1.14.32"
+CAPABILITIES_SCHEMA_VERSION = "1.14.35"
 
 _BASE_CAPABILITIES: dict[str, dict[str, list[str]]] = {
     "supported": {
+        "dctl": ["encrypt"],
+        "video": ["generation"],
         "transcript": [
             "create",
         ],
@@ -38,6 +40,8 @@ _BASE_CAPABILITIES: dict[str, dict[str, list[str]]] = {
             "db_switch",
             "cleanup_scratch",
             "preset_save",
+            "preset_delete",
+            "preset_import_export",
             "cloud.create",
             "cloud.open",
             "cloud.import",
@@ -54,6 +58,7 @@ _BASE_CAPABILITIES: dict[str, dict[str, list[str]]] = {
             "import_export",
             "inspection_export",
             "settings_write",
+            "output_blanking",
             "playhead_set",
             "compound_clip",
             "grab_still",
@@ -338,6 +343,8 @@ _BASE_CAPABILITIES: dict[str, dict[str, list[str]]] = {
             "lut_refresh",
             "lut_management",
             "keyframe_mode",
+            "keyboard_preset_read",
+            "keyboard_preset_management",
             "export_frame_still",
             # insert_audio_fairlight removed: redundant with fairlight.insert
         ],
@@ -392,7 +399,6 @@ _BASE_CAPABILITIES: dict[str, dict[str, list[str]]] = {
             "settings",
             "set_start_timecode",
             "smart_switch",
-            "source.grade_cdl",
             "source.move",
             "source.property_set",
             "source.raw_braw_set",
@@ -485,6 +491,9 @@ _BASE_CAPABILITIES: dict[str, dict[str, list[str]]] = {
         "clip": [
             "magic_mask",
         ],
+        "multicam": [
+            "source.grade_cdl",
+        ],
     },
 }
 
@@ -500,13 +509,16 @@ _ENGINE_CONFIDENCE = {
 }
 
 _FEATURE_TRANSPORT_OVERRIDES = {
+    "dctl.encrypt": ["studio_external"],
     "system.resolve_quit": ["studio_external", "embedded_free"],
     "edit.trim_workaround": ["studio_external"],
 }
 
 _FEATURE_ENGINE_OVERRIDES = {
+    "dctl.encrypt": "api_native",
     "audio.beat_detection": "workaround_setting",
     "audio.voiceover": "hosted_api",
+    "video.generation": "hosted_api",
     "timeline.scene_cuts_native": "api_native",
     "timeline.thumbnail": "workaround_setting",
     "timeline.frame_export": "api_native",
@@ -521,7 +533,7 @@ _FEATURE_ENGINE_OVERRIDES = {
     "edit.insert_overwrite": "api_native",
     "edit.blade_native": "db_workaround",
     "auto_edit.silence_cut": "workaround_setting",
-    "edit.transitions_native": "db_workaround",
+    "edit.transitions_native": "api_native",
     "edit.audio_duck_sidechain": "workaround_setting",
     "edit.delete_through_edit": "db_workaround",
     "edit.trim_workaround": "db_workaround",
@@ -557,7 +569,6 @@ _FEATURE_ENGINE_OVERRIDES = {
     "multicam.settings": "api_native",
     "multicam.set_start_timecode": "db_workaround",
     "multicam.smart_switch": "db_workaround",
-    "multicam.source.grade_cdl": "api_native",
     "multicam.source.move": "db_workaround",
     "multicam.source.property_set": "api_native",
     "multicam.source.raw_braw_set": "api_native",
@@ -572,11 +583,11 @@ _FEATURE_ENGINE_OVERRIDES = {
     "clip.freeze": "db_workaround",
     "clip.reverse": "db_workaround",
     "clip.audio_eq": "db_workaround",
-    "clip.audio_normalize": "db_workaround",
-    "clip.audio_gain": "db_workaround",
-    "clip.audio_pan": "db_workaround",
-    "clip.audio_pitch": "db_workaround",
-    "clip.fade_in": "db_workaround",
+    "clip.audio_normalize": "api_native",
+    "clip.audio_gain": "api_native",
+    "clip.audio_pan": "api_native",
+    "clip.audio_pitch": "api_native",
+    "clip.fade_in": "api_native",
     "fairlight.dialogue_leveler": "db_workaround",
     "fairlight.music_remixer": "db_workaround",
     "fairlight.ai_read": "db_workaround",
@@ -599,7 +610,7 @@ _FEATURE_ENGINE_OVERRIDES = {
     "fairlight.clip_trim": "db_workaround",
     "fairlight.crossfade_batch": "db_workaround",
     "fairlight.channel_mapping_read": "api_native",
-    "fairlight.channel_mapping_write": "db_workaround",
+    "fairlight.channel_mapping_write": "api_native",
     "fairlight.builtin_effect_route": "db_workaround",
     "fairlight.dynamics": "db_workaround",
     "fairlight.eq": "db_workaround",
@@ -754,10 +765,20 @@ _FEATURE_ENGINE_OVERRIDES = {
 # route fails safely. These are part of the advertised capability contract so
 # policy admission can cover the strongest possible route before execution.
 _FEATURE_FALLBACK_ENGINE_OVERRIDES = {
+    "fairlight.channel_mapping_write": ["db_workaround"],
+    "edit.transitions_native": ["db_workaround"],
+    "clip.audio_normalize": ["db_workaround"],
+    "clip.audio_gain": ["db_workaround"],
+    "clip.audio_pan": ["db_workaround"],
+    "clip.audio_pitch": ["db_workaround"],
+    "clip.fade_in": ["db_workaround"],
     "clip.fusion_comp": ["db_workaround"],
 }
 
 _FEATURE_VERIFICATION_OVERRIDES = {
+    "dctl.encrypt": True,
+    "project.preset_delete": True,
+    "project.preset_import_export": True,
     "edit.insert_overwrite": True,
     "edit.blade_native": True,
     "edit.trim_workaround": True,
@@ -892,6 +913,8 @@ _FEATURE_VERIFICATION_OVERRIDES = {
     "project.db_backup": True,
     "project.db_restore": True,
     "project.preset_save": True,
+    "project.preset_delete": True,
+    "project.preset_import_export": True,
     "text.insert": True,
     "text.insert_preset": True,
     "text.insert_template": True,
@@ -940,6 +963,7 @@ _FEATURE_VERIFICATION_OVERRIDES = {
 }
 
 _FEATURE_RECOVERABILITY_OVERRIDES = {
+    "dctl.encrypt": "manual",
     "edit.insert_overwrite": "manual",
     "edit.blade_native": "manual",
     "edit.remove_remove_range": "manual",
@@ -967,6 +991,8 @@ _FEATURE_RECOVERABILITY_OVERRIDES = {
     "fairlight.timeline_voice_isolation": "manual",
     "version.checkpoint": "manual",
     "project.preset_save": "manual",
+    "project.preset_delete": "manual",
+    "project.preset_import_export": "manual",
     "render.archive_settings": "manual",
     "render.preset_import_export": "manual",
     "project.cloud.create": "manual",
@@ -985,10 +1011,10 @@ _FEATURE_RECOVERABILITY_OVERRIDES = {
 }
 
 _FEATURE_RENDER_PROOF_STATUS_OVERRIDES = {
+    "dctl.encrypt": "readback_only",
     "multicam.convert": "render_proof_verified",
     "multicam.flatten": "render_proof_verified",
     "multicam.smart_switch": "render_proof_verified",
-    "multicam.source.grade_cdl": "render_proof_verified",
     "multicam.source.raw_braw_set": "render_proof_verified",
     "color.lut_set_clear": "readback_only",
     "color.grade_copy_apply": "readback_only",
@@ -1438,7 +1464,9 @@ _FAIRLIGHT_UNSUPPORTED_WRITE_CAVEATS = {
         "unsupported": ["adr_cue_list_read", "adr_record_start_stop", "adr_take_capture"],
     },
     "fairlight.channel_mapping_write": {
-        "native_scope": "timeline_item_stereo_virtual_audio_track_subset",
+        "native_scope": "timeline_item_stereo_source_channel_mapping",
+        "native_since": "21.1",
+        "fallback": "Disk DB on older runtimes only; no retry after a native mutation attempt.",
         "available_read_route": "fairlight channel-map clip|media",
         "supported_subset": [
             "timeline_item_track_1_stereo_channel_idx_restore_[1,2]",
@@ -1532,6 +1560,36 @@ _FAIRLIGHT_UNSUPPORTED_WRITE_CAVEATS = {
 }
 
 _FEATURE_CAVEATS = {
+    "dctl.encrypt": {
+        "native_since": "21.1",
+        "edition": "Studio",
+        "scope": "explicit source .dctl path to exact output .dctle path",
+        "overwrite": "existing output is rejected unless --overwrite is explicit",
+        "verification": "non-empty output artifact size and SHA-256 readback",
+    },
+    "multicam.source.grade_cdl": {
+        "reason": "multicam_source_grade_target_not_addressable",
+        "required_target": "exact_nested_multicam_timeline_item",
+        "rejected_route": "temporary_timeline_remote_version",
+        "verification": "A setter and readback on a disposable timeline instance do not prove mutation of the nested multicam source item.",
+    },
+    "system.keyboard_preset_read": {
+        "native_since": "21.1",
+        "scope": "keyboard preset catalog and current preset name only",
+        "methods": ["GetKeyboardPresetList", "GetCurrentKeyboardPreset"],
+    },
+    "system.keyboard_preset_management": {
+        "native_since": "21.1",
+        "scope": "exact keyboard preset load, inactive delete, import and no-overwrite export",
+        "methods": ["LoadKeyboardPreset", "DeleteKeyboardPreset", "ImportKeyboardPreset", "ExportKeyboardPreset"],
+        "sdk_activation": "pending_reviewed_managed_artifact_and_global_state_custody",
+    },
+    "edit.transitions_native": {"native_since": "21.1", "native_scope": "single_command_item_edge_transitions", "fallback": "Disk DB for older runtimes, interior seam splitting, Smooth Cut preparation and transition batches."},
+    "clip.audio_normalize": {"native_since": "21.1", "native_scope": "Sample Peak Program via NormalizeAudioLevel with clip gain readback", "fallback": "Render analysis and Disk DB on older runtimes only; native readback does not claim a separately measured output peak."},
+    "clip.audio_gain": {"native_since": "21.1", "native_range_db": [-100, 30], "fallback": "Disk DB for older runtimes or gain above +30 dB; no fallback after a native mutation attempt."},
+    "clip.audio_pan": {"native_since": "21.1", "fallback": "Disk DB on older runtimes only."},
+    "clip.audio_pitch": {"native_since": "21.1", "fallback": "Disk DB on older runtimes only."},
+    "clip.fade_in": {"native_since": "21.1", "fallback": "Disk DB on older runtimes only; native duration must fit each exact item."},
     "project.db_create": {
         "scope": "explicit new Disk project library",
         "overwrite_supported": False,

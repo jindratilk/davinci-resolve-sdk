@@ -214,7 +214,13 @@ def _read_overlapping_audio_items(conn, *, target: LiveItemRef) -> list[LiveItem
     return overlaps
 
 
-def measure_peak_normalization(conn, *, audio_item: LiveItemRef, target_dbfs: float = -9.0) -> dict[str, object]:
+def measure_peak_normalization(
+    conn,
+    *,
+    audio_item: LiveItemRef,
+    target_dbfs: float = -9.0,
+    preferred_render_route: tuple[str, str] | None = None,
+) -> dict[str, object]:
     validated_target_dbfs = validate_target_dbfs(target_dbfs)
     overlaps = _read_overlapping_audio_items(conn, target=audio_item)
     if overlaps:
@@ -227,16 +233,28 @@ def measure_peak_normalization(conn, *, audio_item: LiveItemRef, target_dbfs: fl
         )
 
     last_retryable_error: APICallFailed | None = None
+    unavailable_routes: set[tuple[str, str]] = set()
     for attempt in range(1, 4):
         temp_dir = tempfile.mkdtemp(prefix="resolve_audio_normalize_")
         try:
             rendered_path: str | None = None
             route_errors: list[Exception] = []
-            render_routes = (
+            default_render_routes = (
                 (os.path.join(temp_dir, "normalize.wav"), "Wave", "Linear PCM"),
                 (os.path.join(temp_dir, "normalize.mov"), "QuickTime", "Apple ProRes 422 Proxy"),
             )
+            render_routes = default_render_routes
+            if preferred_render_route is not None:
+                render_routes = tuple(
+                    sorted(
+                        default_render_routes,
+                        key=lambda candidate: (candidate[1], candidate[2]) != preferred_render_route,
+                    )
+                )
             for render_path, render_format, render_codec in render_routes:
+                route = (render_format, render_codec)
+                if route in unavailable_routes:
+                    continue
                 try:
                     rendered_path = render_engine.render_audio_range(
                         conn,
@@ -250,6 +268,7 @@ def measure_peak_normalization(conn, *, audio_item: LiveItemRef, target_dbfs: fl
                 except (APICallFailed, ValidationError) as exc:
                     if not _audio_render_route_is_unavailable(exc):
                         raise
+                    unavailable_routes.add(route)
                     route_errors.append(exc)
             if rendered_path is None:
                 if not route_errors:
@@ -268,6 +287,8 @@ def measure_peak_normalization(conn, *, audio_item: LiveItemRef, target_dbfs: fl
                 "gain_db": gain_db,
                 "clip_start": int(audio_item.start),
                 "clip_duration": int(audio_item.duration),
+                "render_format": render_format,
+                "render_codec": render_codec,
             }
         except APICallFailed as exc:
             if str(exc) not in _RETRYABLE_AUDIO_RENDER_MESSAGES or attempt >= 3:

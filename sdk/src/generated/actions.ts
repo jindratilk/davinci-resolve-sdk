@@ -4,17 +4,17 @@ import type { BoundFrames, FrameDuration, Frames, SourcePositionOf, SourceRangeO
 /** A runtime-validated positive integer returned by an action. @beta */
 export type ActionPositiveInteger = number & { readonly __cutagentActionPositiveInteger: unique symbol };
 /** @beta */
-export const CUTAGENT_ACTION_INVENTORY_DIGEST = "e193232f96dc9ad9aeb1905a1e6c4ac3e4d0261b6966b09fb6765461c9d5874e" as const;
+export const CUTAGENT_ACTION_INVENTORY_DIGEST = "ab1e223d9561e9beb5ebacf02b86e17cc0ac6ca6f746cdc99b400503bb0f01d2" as const;
 /** @beta */
-export const CUTAGENT_ACTION_INPUT_SCHEMA_DIGEST = "69c4341cc26bc23516a0876209db2831775fea502b4a737dc8fb314f7e9b634b" as const;
+export const CUTAGENT_ACTION_INPUT_SCHEMA_DIGEST = "3266be1b56cc403a568931f5c39bf0f91913ab6f938711755ff522559a16ff9e" as const;
 /** @beta */
-export const CUTAGENT_ACTION_RESULT_SCHEMA_DIGEST = "ed9d4fd0f0fd9c4642d1e9ebeea728c9f1ded239e219cf358de377060d7ba967" as const;
+export const CUTAGENT_ACTION_RESULT_SCHEMA_DIGEST = "c00cc429829030b8885b14e7c4df6fa07ef0ab7e0cde8275ba650d2abf2a2796" as const;
 /** @beta */
-export const CUTAGENT_ACTION_APPLICABILITY_DIGEST = "fcb9ba43c1c1fbab35fd76d955349bdac68816c65eba64eb60e484dfae1aa8a3" as const;
+export const CUTAGENT_ACTION_APPLICABILITY_DIGEST = "2a2c749066541f24fa6ee5a256dd462101319822909ddb90ce89c7402a9f5708" as const;
 /** @beta */
-export const CUTAGENT_ACTION_ERROR_REGISTRY_DIGEST = "9b27be2b9cbc44af7ec48a46ead873aa66b752ab2ef196349ba604380275ca95" as const;
+export const CUTAGENT_ACTION_ERROR_REGISTRY_DIGEST = "1afa2635cb0e5ecd914265a680f8296bb54a216398cee1b4df686704c3a9fe7a" as const;
 /** @beta */
-export const CUTAGENT_ACTION_PROTOCOL_BINDING_DIGEST = "f7651e569cf2700ebcc7677d38ccbb4360439cb1be2bbb104edad857a6d3def2" as const;
+export const CUTAGENT_ACTION_PROTOCOL_BINDING_DIGEST = "109f9d84f093e595d3e6ddbe6d97fdc651cf35126df232790f88408afc42aa49" as const;
 /** @beta */
 export const ACTION_IDS = [
   "cutagent.action.audio.beat_detect",
@@ -26,6 +26,9 @@ export const ACTION_IDS = [
   "cutagent.action.audio.voice_list",
   "cutagent.action.audio.voice_place",
   "cutagent.action.audio.waveform_offset",
+  "cutagent.action.bulk.disable",
+  "cutagent.action.bulk.enable",
+  "cutagent.action.bulk.property_set",
   "cutagent.action.burnin.load",
   "cutagent.action.burnin.preset.export",
   "cutagent.action.burnin.preset.import",
@@ -262,6 +265,7 @@ export const ACTION_IDS = [
   "cutagent.action.color.window.rectangle",
   "cutagent.action.color.window.reorder",
   "cutagent.action.dctl.apply",
+  "cutagent.action.dctl.validate_source",
   "cutagent.action.edit.auto_subtitle",
   "cutagent.action.edit.blade",
   "cutagent.action.edit.camera_pip",
@@ -280,6 +284,7 @@ export const ACTION_IDS = [
   "cutagent.action.edit.social_crop",
   "cutagent.action.edit.split",
   "cutagent.action.edit.transition.add",
+  "cutagent.action.edit.transition.batch",
   "cutagent.action.fairlight.add",
   "cutagent.action.fairlight.adr.info",
   "cutagent.action.fairlight.ai.dialogue_leveler",
@@ -388,8 +393,10 @@ export const ACTION_IDS = [
   "cutagent.action.fusion.effect.sharpen",
   "cutagent.action.fusion.effect.transform",
   "cutagent.action.fusion.generate",
+  "cutagent.action.fusion.image.batch",
   "cutagent.action.fusion.image.set",
   "cutagent.action.fusion.insert_setting",
+  "cutagent.action.fusion.insert_settings.batch",
   "cutagent.action.fusion.keyer.chroma",
   "cutagent.action.fusion.keyframe.add",
   "cutagent.action.fusion.keyframe.clear",
@@ -399,6 +406,7 @@ export const ACTION_IDS = [
   "cutagent.action.fusion.mask.ellipse",
   "cutagent.action.fusion.mask.polygon",
   "cutagent.action.fusion.mask.rectangle",
+  "cutagent.action.fusion.nested_text.batch",
   "cutagent.action.fusion.nested_text.update",
   "cutagent.action.fusion.node.add",
   "cutagent.action.fusion.node.connect",
@@ -422,6 +430,7 @@ export const ACTION_IDS = [
   "cutagent.action.fusion.template.show",
   "cutagent.action.fusion.template.uninstall",
   "cutagent.action.fusion.template.validate",
+  "cutagent.action.fusion.text.batch",
   "cutagent.action.fusion.text.set",
   "cutagent.action.fusion.tool.active",
   "cutagent.action.fusion.tool.add",
@@ -433,6 +442,7 @@ export const ACTION_IDS = [
   "cutagent.action.fusion.tool.inputs",
   "cutagent.action.fusion.tool.list",
   "cutagent.action.fusion.tool.outputs",
+  "cutagent.action.fusion.tool.registry",
   "cutagent.action.fusion.tool.set",
   "cutagent.action.fusion.tracker.add",
   "cutagent.action.lut_refresh",
@@ -509,7 +519,6 @@ export const ACTION_IDS = [
   "cutagent.action.multicam.set_start_timecode",
   "cutagent.action.multicam.settings",
   "cutagent.action.multicam.smart_switch",
-  "cutagent.action.multicam.source.grade_cdl",
   "cutagent.action.multicam.source.move",
   "cutagent.action.multicam.source.property_set",
   "cutagent.action.multicam.source.raw_braw_set",
@@ -543,6 +552,7 @@ export const ACTION_IDS = [
   "cutagent.action.project.library.switch",
   "cutagent.action.project.list",
   "cutagent.action.project.open",
+  "cutagent.action.project.preset.export",
   "cutagent.action.project.preset.list",
   "cutagent.action.project.preset.load",
   "cutagent.action.project.preset.save",
@@ -559,6 +569,8 @@ export const ACTION_IDS = [
   "cutagent.action.render.jobs",
   "cutagent.action.render.mode.get",
   "cutagent.action.render.mode.set",
+  "cutagent.action.render.preset_save",
+  "cutagent.action.render.preset_update",
   "cutagent.action.render.presets",
   "cutagent.action.render.quick_export_presets",
   "cutagent.action.render.resolutions",
@@ -573,6 +585,8 @@ export const ACTION_IDS = [
   "cutagent.action.storage.matte.timeline_add",
   "cutagent.action.storage.reveal",
   "cutagent.action.storage.volumes",
+  "cutagent.action.system.keyboard_preset.current",
+  "cutagent.action.system.keyboard_preset.list",
   "cutagent.action.system.keyframe_mode.get",
   "cutagent.action.system.keyframe_mode.set",
   "cutagent.action.text.insert",
@@ -583,6 +597,7 @@ export const ACTION_IDS = [
   "cutagent.action.text.list_presets",
   "cutagent.action.text.update",
   "cutagent.action.timeline.auto_caption",
+  "cutagent.action.timeline.clip_color.batch",
   "cutagent.action.timeline.clip_markers.list",
   "cutagent.action.timeline.compound_create",
   "cutagent.action.timeline.create",
@@ -618,6 +633,8 @@ export const ACTION_IDS = [
   "cutagent.action.timeline.marker.update",
   "cutagent.action.timeline.media_pool_item",
   "cutagent.action.timeline.node_graph.inspect",
+  "cutagent.action.timeline.output_blanking.get",
+  "cutagent.action.timeline.output_blanking.set",
   "cutagent.action.timeline.playhead.get",
   "cutagent.action.timeline.playhead.set",
   "cutagent.action.timeline.preview_export",
@@ -708,6 +725,7 @@ export const READ_ACTION_IDS = [
   "cutagent.action.color.tracker.list",
   "cutagent.action.color.version.list",
   "cutagent.action.color.window.list",
+  "cutagent.action.dctl.validate_source",
   "cutagent.action.fairlight.adr.info",
   "cutagent.action.fairlight.ai.read",
   "cutagent.action.fairlight.api_notes",
@@ -766,6 +784,7 @@ export const READ_ACTION_IDS = [
   "cutagent.action.fusion.tool.inputs",
   "cutagent.action.fusion.tool.list",
   "cutagent.action.fusion.tool.outputs",
+  "cutagent.action.fusion.tool.registry",
   "cutagent.action.lut.convert",
   "cutagent.action.lut.inspect",
   "cutagent.action.lut.list",
@@ -804,6 +823,8 @@ export const READ_ACTION_IDS = [
   "cutagent.action.render.status",
   "cutagent.action.storage.files",
   "cutagent.action.storage.volumes",
+  "cutagent.action.system.keyboard_preset.current",
+  "cutagent.action.system.keyboard_preset.list",
   "cutagent.action.system.keyframe_mode.get",
   "cutagent.action.text.inspect",
   "cutagent.action.text.list_presets",
@@ -817,6 +838,7 @@ export const READ_ACTION_IDS = [
   "cutagent.action.timeline.marker.list",
   "cutagent.action.timeline.media_pool_item",
   "cutagent.action.timeline.node_graph.inspect",
+  "cutagent.action.timeline.output_blanking.get",
   "cutagent.action.timeline.playhead.get",
   "cutagent.action.timeline.settings",
   "cutagent.action.timeline.subtitle.list",
@@ -838,6 +860,9 @@ export const OPERATION_ACTION_IDS = [
   "cutagent.action.audio.voice_generate",
   "cutagent.action.audio.voice_place",
   "cutagent.action.audio.waveform_offset",
+  "cutagent.action.bulk.disable",
+  "cutagent.action.bulk.enable",
+  "cutagent.action.bulk.property_set",
   "cutagent.action.burnin.load",
   "cutagent.action.burnin.preset.export",
   "cutagent.action.burnin.preset.import",
@@ -1042,6 +1067,7 @@ export const OPERATION_ACTION_IDS = [
   "cutagent.action.edit.social_crop",
   "cutagent.action.edit.split",
   "cutagent.action.edit.transition.add",
+  "cutagent.action.edit.transition.batch",
   "cutagent.action.fairlight.add",
   "cutagent.action.fairlight.ai.dialogue_leveler",
   "cutagent.action.fairlight.ai.music_remixer",
@@ -1107,8 +1133,10 @@ export const OPERATION_ACTION_IDS = [
   "cutagent.action.fusion.effect.sharpen",
   "cutagent.action.fusion.effect.transform",
   "cutagent.action.fusion.generate",
+  "cutagent.action.fusion.image.batch",
   "cutagent.action.fusion.image.set",
   "cutagent.action.fusion.insert_setting",
+  "cutagent.action.fusion.insert_settings.batch",
   "cutagent.action.fusion.keyer.chroma",
   "cutagent.action.fusion.keyframe.add",
   "cutagent.action.fusion.keyframe.clear",
@@ -1117,6 +1145,7 @@ export const OPERATION_ACTION_IDS = [
   "cutagent.action.fusion.mask.ellipse",
   "cutagent.action.fusion.mask.polygon",
   "cutagent.action.fusion.mask.rectangle",
+  "cutagent.action.fusion.nested_text.batch",
   "cutagent.action.fusion.nested_text.update",
   "cutagent.action.fusion.node.add",
   "cutagent.action.fusion.node.connect",
@@ -1131,6 +1160,7 @@ export const OPERATION_ACTION_IDS = [
   "cutagent.action.fusion.template.package_drfx",
   "cutagent.action.fusion.template.scaffold",
   "cutagent.action.fusion.template.uninstall",
+  "cutagent.action.fusion.text.batch",
   "cutagent.action.fusion.text.set",
   "cutagent.action.fusion.tool.active",
   "cutagent.action.fusion.tool.add",
@@ -1195,7 +1225,6 @@ export const OPERATION_ACTION_IDS = [
   "cutagent.action.multicam.seed_timeline",
   "cutagent.action.multicam.set_start_timecode",
   "cutagent.action.multicam.smart_switch",
-  "cutagent.action.multicam.source.grade_cdl",
   "cutagent.action.multicam.source.move",
   "cutagent.action.multicam.source.property_set",
   "cutagent.action.multicam.source.raw_braw_set",
@@ -1223,6 +1252,7 @@ export const OPERATION_ACTION_IDS = [
   "cutagent.action.project.library.restore",
   "cutagent.action.project.library.switch",
   "cutagent.action.project.open",
+  "cutagent.action.project.preset.export",
   "cutagent.action.project.preset.load",
   "cutagent.action.project.preset.save",
   "cutagent.action.project.rename",
@@ -1232,6 +1262,8 @@ export const OPERATION_ACTION_IDS = [
   "cutagent.action.render.alpha",
   "cutagent.action.render.encoding",
   "cutagent.action.render.mode.set",
+  "cutagent.action.render.preset_save",
+  "cutagent.action.render.preset_update",
   "cutagent.action.render.subtitles",
   "cutagent.action.storage.import",
   "cutagent.action.storage.import_sequence",
@@ -1246,6 +1278,7 @@ export const OPERATION_ACTION_IDS = [
   "cutagent.action.text.insert_template_batch",
   "cutagent.action.text.update",
   "cutagent.action.timeline.auto_caption",
+  "cutagent.action.timeline.clip_color.batch",
   "cutagent.action.timeline.compound_create",
   "cutagent.action.timeline.create",
   "cutagent.action.timeline.delete",
@@ -1271,6 +1304,7 @@ export const OPERATION_ACTION_IDS = [
   "cutagent.action.timeline.marker.add",
   "cutagent.action.timeline.marker.delete",
   "cutagent.action.timeline.marker.update",
+  "cutagent.action.timeline.output_blanking.set",
   "cutagent.action.timeline.playhead.set",
   "cutagent.action.timeline.preview_export",
   "cutagent.action.timeline.rename",
@@ -1305,6 +1339,9 @@ export const REQUIRED_IDEMPOTENCY_ACTION_IDS = [
   "cutagent.action.audio.voice_generate",
   "cutagent.action.audio.voice_place",
   "cutagent.action.audio.waveform_offset",
+  "cutagent.action.bulk.disable",
+  "cutagent.action.bulk.enable",
+  "cutagent.action.bulk.property_set",
   "cutagent.action.burnin.load",
   "cutagent.action.burnin.preset.export",
   "cutagent.action.burnin.preset.import",
@@ -1504,6 +1541,7 @@ export const REQUIRED_IDEMPOTENCY_ACTION_IDS = [
   "cutagent.action.edit.social_crop",
   "cutagent.action.edit.split",
   "cutagent.action.edit.transition.add",
+  "cutagent.action.edit.transition.batch",
   "cutagent.action.fairlight.add",
   "cutagent.action.fairlight.ai.dialogue_leveler",
   "cutagent.action.fairlight.ai.music_remixer",
@@ -1569,8 +1607,10 @@ export const REQUIRED_IDEMPOTENCY_ACTION_IDS = [
   "cutagent.action.fusion.effect.sharpen",
   "cutagent.action.fusion.effect.transform",
   "cutagent.action.fusion.generate",
+  "cutagent.action.fusion.image.batch",
   "cutagent.action.fusion.image.set",
   "cutagent.action.fusion.insert_setting",
+  "cutagent.action.fusion.insert_settings.batch",
   "cutagent.action.fusion.keyer.chroma",
   "cutagent.action.fusion.keyframe.add",
   "cutagent.action.fusion.keyframe.clear",
@@ -1579,6 +1619,7 @@ export const REQUIRED_IDEMPOTENCY_ACTION_IDS = [
   "cutagent.action.fusion.mask.ellipse",
   "cutagent.action.fusion.mask.polygon",
   "cutagent.action.fusion.mask.rectangle",
+  "cutagent.action.fusion.nested_text.batch",
   "cutagent.action.fusion.nested_text.update",
   "cutagent.action.fusion.node.add",
   "cutagent.action.fusion.node.connect",
@@ -1593,6 +1634,7 @@ export const REQUIRED_IDEMPOTENCY_ACTION_IDS = [
   "cutagent.action.fusion.template.package_drfx",
   "cutagent.action.fusion.template.scaffold",
   "cutagent.action.fusion.template.uninstall",
+  "cutagent.action.fusion.text.batch",
   "cutagent.action.fusion.text.set",
   "cutagent.action.fusion.tool.active",
   "cutagent.action.fusion.tool.add",
@@ -1656,7 +1698,6 @@ export const REQUIRED_IDEMPOTENCY_ACTION_IDS = [
   "cutagent.action.multicam.seed_timeline",
   "cutagent.action.multicam.set_start_timecode",
   "cutagent.action.multicam.smart_switch",
-  "cutagent.action.multicam.source.grade_cdl",
   "cutagent.action.multicam.source.move",
   "cutagent.action.multicam.source.property_set",
   "cutagent.action.multicam.source.raw_braw_set",
@@ -1684,6 +1725,7 @@ export const REQUIRED_IDEMPOTENCY_ACTION_IDS = [
   "cutagent.action.project.library.restore",
   "cutagent.action.project.library.switch",
   "cutagent.action.project.open",
+  "cutagent.action.project.preset.export",
   "cutagent.action.project.preset.load",
   "cutagent.action.project.preset.save",
   "cutagent.action.project.rename",
@@ -1693,6 +1735,8 @@ export const REQUIRED_IDEMPOTENCY_ACTION_IDS = [
   "cutagent.action.render.alpha",
   "cutagent.action.render.encoding",
   "cutagent.action.render.mode.set",
+  "cutagent.action.render.preset_save",
+  "cutagent.action.render.preset_update",
   "cutagent.action.render.subtitles",
   "cutagent.action.storage.import",
   "cutagent.action.storage.import_sequence",
@@ -1707,6 +1751,7 @@ export const REQUIRED_IDEMPOTENCY_ACTION_IDS = [
   "cutagent.action.text.insert_template_batch",
   "cutagent.action.text.update",
   "cutagent.action.timeline.auto_caption",
+  "cutagent.action.timeline.clip_color.batch",
   "cutagent.action.timeline.compound_create",
   "cutagent.action.timeline.create",
   "cutagent.action.timeline.delete",
@@ -1732,6 +1777,7 @@ export const REQUIRED_IDEMPOTENCY_ACTION_IDS = [
   "cutagent.action.timeline.marker.add",
   "cutagent.action.timeline.marker.delete",
   "cutagent.action.timeline.marker.update",
+  "cutagent.action.timeline.output_blanking.set",
   "cutagent.action.timeline.playhead.set",
   "cutagent.action.timeline.preview_export",
   "cutagent.action.timeline.rename",
@@ -1778,6 +1824,11 @@ export const ActionIds = Object.freeze({
     "voice_list": "cutagent.action.audio.voice_list",
     "voice_place": "cutagent.action.audio.voice_place",
     "waveform_offset": "cutagent.action.audio.waveform_offset"
+  }),
+  "bulk": Object.freeze({
+    "disable": "cutagent.action.bulk.disable",
+    "enable": "cutagent.action.bulk.enable",
+    "property_set": "cutagent.action.bulk.property_set"
   }),
   "burnin": Object.freeze({
     "load": "cutagent.action.burnin.load",
@@ -2077,7 +2128,8 @@ export const ActionIds = Object.freeze({
     })
   }),
   "dctl": Object.freeze({
-    "apply": "cutagent.action.dctl.apply"
+    "apply": "cutagent.action.dctl.apply",
+    "validate_source": "cutagent.action.dctl.validate_source"
   }),
   "edit": Object.freeze({
     "auto_subtitle": "cutagent.action.edit.auto_subtitle",
@@ -2100,7 +2152,8 @@ export const ActionIds = Object.freeze({
     "social_crop": "cutagent.action.edit.social_crop",
     "split": "cutagent.action.edit.split",
     "transition": Object.freeze({
-      "add": "cutagent.action.edit.transition.add"
+      "add": "cutagent.action.edit.transition.add",
+      "batch": "cutagent.action.edit.transition.batch"
     })
   }),
   "fairlight": Object.freeze({
@@ -2283,9 +2336,13 @@ export const ActionIds = Object.freeze({
     }),
     "generate": "cutagent.action.fusion.generate",
     "image": Object.freeze({
+      "batch": "cutagent.action.fusion.image.batch",
       "set": "cutagent.action.fusion.image.set"
     }),
     "insert_setting": "cutagent.action.fusion.insert_setting",
+    "insert_settings": Object.freeze({
+      "batch": "cutagent.action.fusion.insert_settings.batch"
+    }),
     "keyer": Object.freeze({
       "chroma": "cutagent.action.fusion.keyer.chroma"
     }),
@@ -2302,6 +2359,7 @@ export const ActionIds = Object.freeze({
       "rectangle": "cutagent.action.fusion.mask.rectangle"
     }),
     "nested_text": Object.freeze({
+      "batch": "cutagent.action.fusion.nested_text.batch",
       "update": "cutagent.action.fusion.nested_text.update"
     }),
     "node": Object.freeze({
@@ -2337,6 +2395,7 @@ export const ActionIds = Object.freeze({
       "validate": "cutagent.action.fusion.template.validate"
     }),
     "text": Object.freeze({
+      "batch": "cutagent.action.fusion.text.batch",
       "set": "cutagent.action.fusion.text.set"
     }),
     "tool": Object.freeze({
@@ -2350,6 +2409,7 @@ export const ActionIds = Object.freeze({
       "inputs": "cutagent.action.fusion.tool.inputs",
       "list": "cutagent.action.fusion.tool.list",
       "outputs": "cutagent.action.fusion.tool.outputs",
+      "registry": "cutagent.action.fusion.tool.registry",
       "set": "cutagent.action.fusion.tool.set"
     }),
     "tracker": Object.freeze({
@@ -2470,7 +2530,6 @@ export const ActionIds = Object.freeze({
     "settings": "cutagent.action.multicam.settings",
     "smart_switch": "cutagent.action.multicam.smart_switch",
     "source": Object.freeze({
-      "grade_cdl": "cutagent.action.multicam.source.grade_cdl",
       "move": "cutagent.action.multicam.source.move",
       "property_set": "cutagent.action.multicam.source.property_set",
       "raw_braw_set": "cutagent.action.multicam.source.raw_braw_set",
@@ -2516,6 +2575,7 @@ export const ActionIds = Object.freeze({
     "list": "cutagent.action.project.list",
     "open": "cutagent.action.project.open",
     "preset": Object.freeze({
+      "export": "cutagent.action.project.preset.export",
       "list": "cutagent.action.project.preset.list",
       "load": "cutagent.action.project.preset.load",
       "save": "cutagent.action.project.preset.save"
@@ -2537,6 +2597,8 @@ export const ActionIds = Object.freeze({
       "get": "cutagent.action.render.mode.get",
       "set": "cutagent.action.render.mode.set"
     }),
+    "preset_save": "cutagent.action.render.preset_save",
+    "preset_update": "cutagent.action.render.preset_update",
     "presets": "cutagent.action.render.presets",
     "quick_export_presets": "cutagent.action.render.quick_export_presets",
     "resolutions": "cutagent.action.render.resolutions",
@@ -2557,6 +2619,10 @@ export const ActionIds = Object.freeze({
     "volumes": "cutagent.action.storage.volumes"
   }),
   "system": Object.freeze({
+    "keyboard_preset": Object.freeze({
+      "current": "cutagent.action.system.keyboard_preset.current",
+      "list": "cutagent.action.system.keyboard_preset.list"
+    }),
     "keyframe_mode": Object.freeze({
       "get": "cutagent.action.system.keyframe_mode.get",
       "set": "cutagent.action.system.keyframe_mode.set"
@@ -2573,6 +2639,9 @@ export const ActionIds = Object.freeze({
   }),
   "timeline": Object.freeze({
     "auto_caption": "cutagent.action.timeline.auto_caption",
+    "clip_color": Object.freeze({
+      "batch": "cutagent.action.timeline.clip_color.batch"
+    }),
     "clip_markers": Object.freeze({
       "list": "cutagent.action.timeline.clip_markers.list"
     }),
@@ -2628,6 +2697,10 @@ export const ActionIds = Object.freeze({
     "node_graph": Object.freeze({
       "inspect": "cutagent.action.timeline.node_graph.inspect"
     }),
+    "output_blanking": Object.freeze({
+      "get": "cutagent.action.timeline.output_blanking.get",
+      "set": "cutagent.action.timeline.output_blanking.set"
+    }),
     "playhead": Object.freeze({
       "get": "cutagent.action.timeline.playhead.get",
       "set": "cutagent.action.timeline.playhead.set"
@@ -2680,13 +2753,13 @@ export const ActionIds = Object.freeze({
   })
 });
 /** @beta */
-export type ActionId = "cutagent.action.audio.beat_detect" | "cutagent.action.audio.duck" | "cutagent.action.audio.info" | "cutagent.action.audio.probe_subframe" | "cutagent.action.audio.reverb" | "cutagent.action.audio.voice_generate" | "cutagent.action.audio.voice_list" | "cutagent.action.audio.voice_place" | "cutagent.action.audio.waveform_offset" | "cutagent.action.burnin.load" | "cutagent.action.burnin.preset.export" | "cutagent.action.burnin.preset.import" | "cutagent.action.clip.audio_eq" | "cutagent.action.clip.audio_gain" | "cutagent.action.clip.audio_normalize" | "cutagent.action.clip.audio_pan" | "cutagent.action.clip.audio_pitch" | "cutagent.action.clip.burnin.load" | "cutagent.action.clip.cache" | "cutagent.action.clip.cache_set" | "cutagent.action.clip.cache_state" | "cutagent.action.clip.color" | "cutagent.action.clip.composite" | "cutagent.action.clip.current" | "cutagent.action.clip.disable" | "cutagent.action.clip.dynamic_zoom" | "cutagent.action.clip.enable" | "cutagent.action.clip.fade_in" | "cutagent.action.clip.flag" | "cutagent.action.clip.freeze" | "cutagent.action.clip.fusion.add" | "cutagent.action.clip.fusion.by_name" | "cutagent.action.clip.fusion.delete" | "cutagent.action.clip.fusion.export" | "cutagent.action.clip.fusion.import" | "cutagent.action.clip.fusion.list" | "cutagent.action.clip.fusion.load" | "cutagent.action.clip.fusion.tool_get" | "cutagent.action.clip.fusion.tool_set" | "cutagent.action.clip.fusion.tools" | "cutagent.action.clip.info" | "cutagent.action.clip.keyframe.add" | "cutagent.action.clip.keyframe.delete" | "cutagent.action.clip.keyframe.get" | "cutagent.action.clip.keyframe.set_interpolation" | "cutagent.action.clip.link" | "cutagent.action.clip.linked.list" | "cutagent.action.clip.list" | "cutagent.action.clip.marker.add" | "cutagent.action.clip.marker.custom_data" | "cutagent.action.clip.marker.delete" | "cutagent.action.clip.marker.delete_custom" | "cutagent.action.clip.marker.get_custom" | "cutagent.action.clip.marker.list" | "cutagent.action.clip.offset" | "cutagent.action.clip.properties" | "cutagent.action.clip.rename" | "cutagent.action.clip.reset_node_colors" | "cutagent.action.clip.reverse" | "cutagent.action.clip.smart_reframe" | "cutagent.action.clip.source_audio_mapping" | "cutagent.action.clip.source_range" | "cutagent.action.clip.speed" | "cutagent.action.clip.speed_ramp" | "cutagent.action.clip.stabilize" | "cutagent.action.clip.stereo_values" | "cutagent.action.clip.take.add" | "cutagent.action.clip.take.delete" | "cutagent.action.clip.take.finalize" | "cutagent.action.clip.take.list" | "cutagent.action.clip.take.select" | "cutagent.action.clip.track_info" | "cutagent.action.clip.transform" | "cutagent.action.clip.unlink" | "cutagent.action.clip.update_sidecar" | "cutagent.action.clip.voice_isolation" | "cutagent.action.color.arri_cdl_lut" | "cutagent.action.color.auto_color" | "cutagent.action.color.cdl" | "cutagent.action.color.comp.doctor" | "cutagent.action.color.comp.export" | "cutagent.action.color.comp.flatten" | "cutagent.action.color.comp.repair" | "cutagent.action.color.curves" | "cutagent.action.color.export_lut" | "cutagent.action.color.fx.apply" | "cutagent.action.color.fx.list" | "cutagent.action.color.gallery.album.create" | "cutagent.action.color.gallery.album.current" | "cutagent.action.color.gallery.album.list" | "cutagent.action.color.gallery.album.rename" | "cutagent.action.color.gallery.album.switch" | "cutagent.action.color.gallery.still.apply" | "cutagent.action.color.gallery.still.delete" | "cutagent.action.color.gallery.still.export" | "cutagent.action.color.gallery.still.grab" | "cutagent.action.color.gallery.still.import" | "cutagent.action.color.gallery.still.label" | "cutagent.action.color.gallery.still.list" | "cutagent.action.color.grade_apply" | "cutagent.action.color.grade_copy" | "cutagent.action.color.graph.inspect" | "cutagent.action.color.graph.normalize" | "cutagent.action.color.graph.validate" | "cutagent.action.color.group.add" | "cutagent.action.color.group.assign" | "cutagent.action.color.group.clips" | "cutagent.action.color.group.delete" | "cutagent.action.color.group.graph" | "cutagent.action.color.group.list" | "cutagent.action.color.group.remove" | "cutagent.action.color.group.rename" | "cutagent.action.color.huesat" | "cutagent.action.color.inspect" | "cutagent.action.color.lut" | "cutagent.action.color.lut_refresh" | "cutagent.action.color.mask.inspect" | "cutagent.action.color.node.cache" | "cutagent.action.color.node.disable" | "cutagent.action.color.node.enable" | "cutagent.action.color.node.graph" | "cutagent.action.color.node.label_get" | "cutagent.action.color.node.label_set" | "cutagent.action.color.node.list" | "cutagent.action.color.node.lut_get" | "cutagent.action.color.node.lut_set" | "cutagent.action.color.node.reset" | "cutagent.action.color.node.tools" | "cutagent.action.color.nodes" | "cutagent.action.color.page.alpha_output_connect" | "cutagent.action.color.page.auto_color_ai" | "cutagent.action.color.page.bleach_bypass_intensity_set" | "cutagent.action.color.page.bleach_bypass_set" | "cutagent.action.color.page.cat_set" | "cutagent.action.color.page.color_slice_set" | "cutagent.action.color.page.cst_set" | "cutagent.action.color.page.curve_points_set" | "cutagent.action.color.page.curve_set" | "cutagent.action.color.page.curve_spline_set" | "cutagent.action.color.page.dctl_apply" | "cutagent.action.color.page.dctl_remove" | "cutagent.action.color.page.false_color_read" | "cutagent.action.color.page.hdr_detail_set" | "cutagent.action.color.page.hdr_global_set" | "cutagent.action.color.page.hdr_zone_set" | "cutagent.action.color.page.hsv_node_set" | "cutagent.action.color.page.hue_curve_set" | "cutagent.action.color.page.hue_curve_spline_set" | "cutagent.action.color.page.key_output_set" | "cutagent.action.color.page.layer_mixer_set" | "cutagent.action.color.page.lut_library_import" | "cutagent.action.color.page.magic_mask" | "cutagent.action.color.page.magic_mask_draw_stroke" | "cutagent.action.color.page.magic_mask_refine" | "cutagent.action.color.page.node_add" | "cutagent.action.color.page.node_add_topology" | "cutagent.action.color.page.node_cleanup" | "cutagent.action.color.page.node_cleanup_general" | "cutagent.action.color.page.ofx_glow_set" | "cutagent.action.color.page.param_delete" | "cutagent.action.color.page.power_window_circle" | "cutagent.action.color.page.power_window_circle_detail" | "cutagent.action.color.page.power_window_curve" | "cutagent.action.color.page.power_window_gradient" | "cutagent.action.color.page.power_window_gradient_transform" | "cutagent.action.color.page.power_window_linear" | "cutagent.action.color.page.power_window_overlay_transform" | "cutagent.action.color.page.power_window_polygon" | "cutagent.action.color.page.power_window_rectangle" | "cutagent.action.color.page.power_window_set" | "cutagent.action.color.page.power_window_track" | "cutagent.action.color.page.primary_extended_set" | "cutagent.action.color.page.primary_set" | "cutagent.action.color.page.qualifier_hsl_set" | "cutagent.action.color.page.qualifier_matte_refine" | "cutagent.action.color.page.qualifier_matte_set" | "cutagent.action.color.page.qualifier_panel_probe" | "cutagent.action.color.page.qualifier_sample" | "cutagent.action.color.page.read" | "cutagent.action.color.page.resolvefx_add" | "cutagent.action.color.page.resolvefx_list" | "cutagent.action.color.page.resolvefx_param_discover" | "cutagent.action.color.page.resolvefx_param_list" | "cutagent.action.color.page.resolvefx_param_set" | "cutagent.action.color.page.resolvefx_remove" | "cutagent.action.color.page.rgb_mixer_set" | "cutagent.action.color.page.sat_curve_set" | "cutagent.action.color.page.sat_curve_spline_set" | "cutagent.action.color.page.scope_read" | "cutagent.action.color.page.scope_set" | "cutagent.action.color.page.sharpen_set" | "cutagent.action.color.page.shot_match_analyze" | "cutagent.action.color.page.shot_match_apply" | "cutagent.action.color.page.sky_isolation" | "cutagent.action.color.page.snapshot" | "cutagent.action.color.page.softening_set" | "cutagent.action.color.page.split_tone_set" | "cutagent.action.color.page.still_match" | "cutagent.action.color.page.viewer_before_after" | "cutagent.action.color.page.warper_set" | "cutagent.action.color.page.wheel_set" | "cutagent.action.color.page.white_balance_picker" | "cutagent.action.color.power_grade.album.create" | "cutagent.action.color.power_grade.apply" | "cutagent.action.color.power_grade.list" | "cutagent.action.color.power_grade.template_apply" | "cutagent.action.color.primary.get" | "cutagent.action.color.primary.set" | "cutagent.action.color.qualifier.attach" | "cutagent.action.color.qualifier.chroma" | "cutagent.action.color.qualifier.detach" | "cutagent.action.color.qualifier.list" | "cutagent.action.color.reset_fusion" | "cutagent.action.color.secondary.create" | "cutagent.action.color.secondary.isolate_green_screen" | "cutagent.action.color.secondary.subject_isolation" | "cutagent.action.color.secondary.tracked_window" | "cutagent.action.color.source_grade.apply_cdl" | "cutagent.action.color.source_grade.plan" | "cutagent.action.color.source_grade.prepare_remote" | "cutagent.action.color.still.grab_all" | "cutagent.action.color.thumbnail" | "cutagent.action.color.tracker.add" | "cutagent.action.color.tracker.attach_qualifier" | "cutagent.action.color.tracker.attach_window" | "cutagent.action.color.tracker.list" | "cutagent.action.color.tracker.set_target" | "cutagent.action.color.tracker.track_forward" | "cutagent.action.color.tracker.track_reverse" | "cutagent.action.color.version.activate" | "cutagent.action.color.version.add" | "cutagent.action.color.version.delete" | "cutagent.action.color.version.duplicate" | "cutagent.action.color.version.list" | "cutagent.action.color.version.load" | "cutagent.action.color.version.rollback" | "cutagent.action.color.wheels.set" | "cutagent.action.color.window.attach" | "cutagent.action.color.window.detach" | "cutagent.action.color.window.ellipse" | "cutagent.action.color.window.list" | "cutagent.action.color.window.polygon" | "cutagent.action.color.window.rectangle" | "cutagent.action.color.window.reorder" | "cutagent.action.dctl.apply" | "cutagent.action.edit.auto_subtitle" | "cutagent.action.edit.blade" | "cutagent.action.edit.camera_pip" | "cutagent.action.edit.delete_through_edit" | "cutagent.action.edit.from_edl" | "cutagent.action.edit.fx.add" | "cutagent.action.edit.insert" | "cutagent.action.edit.overwrite" | "cutagent.action.edit.remove" | "cutagent.action.edit.remove_range" | "cutagent.action.edit.ripple_delete" | "cutagent.action.edit.ripple_delete_selected" | "cutagent.action.edit.scene_detect" | "cutagent.action.edit.slide_selected" | "cutagent.action.edit.slip_selected" | "cutagent.action.edit.social_crop" | "cutagent.action.edit.split" | "cutagent.action.edit.transition.add" | "cutagent.action.fairlight.add" | "cutagent.action.fairlight.adr.info" | "cutagent.action.fairlight.ai.dialogue_leveler" | "cutagent.action.fairlight.ai.music_remixer" | "cutagent.action.fairlight.ai.read" | "cutagent.action.fairlight.ai.voice_isolation" | "cutagent.action.fairlight.api_notes" | "cutagent.action.fairlight.automation.list" | "cutagent.action.fairlight.automation.write" | "cutagent.action.fairlight.bounce.mix_to_track" | "cutagent.action.fairlight.bounce.track" | "cutagent.action.fairlight.bus.assign" | "cutagent.action.fairlight.bus.level" | "cutagent.action.fairlight.bus.list" | "cutagent.action.fairlight.channel_map.clip" | "cutagent.action.fairlight.channel_map.media" | "cutagent.action.fairlight.channel_map.set" | "cutagent.action.fairlight.clip.delete" | "cutagent.action.fairlight.clip.info" | "cutagent.action.fairlight.clip.link" | "cutagent.action.fairlight.clip.linked.list" | "cutagent.action.fairlight.clip.move" | "cutagent.action.fairlight.clip.nudge" | "cutagent.action.fairlight.clip.slip" | "cutagent.action.fairlight.clip.source_range" | "cutagent.action.fairlight.clip.split" | "cutagent.action.fairlight.clip.track_info" | "cutagent.action.fairlight.clip.trim" | "cutagent.action.fairlight.clip.unlink" | "cutagent.action.fairlight.delete" | "cutagent.action.fairlight.dynamics.disable" | "cutagent.action.fairlight.dynamics.enable" | "cutagent.action.fairlight.dynamics.read" | "cutagent.action.fairlight.dynamics.set" | "cutagent.action.fairlight.effect.add" | "cutagent.action.fairlight.effect.catalog" | "cutagent.action.fairlight.effect.list" | "cutagent.action.fairlight.effect.params" | "cutagent.action.fairlight.effect.plugin_catalog" | "cutagent.action.fairlight.effect.remove" | "cutagent.action.fairlight.effect.set_param" | "cutagent.action.fairlight.effect.slot_scan" | "cutagent.action.fairlight.elastic.enable" | "cutagent.action.fairlight.elastic.info" | "cutagent.action.fairlight.elastic.keyframe" | "cutagent.action.fairlight.ensure_stereo_tracks" | "cutagent.action.fairlight.ensure_tracks" | "cutagent.action.fairlight.eq.read" | "cutagent.action.fairlight.eq.set" | "cutagent.action.fairlight.export.audio" | "cutagent.action.fairlight.external_process.list" | "cutagent.action.fairlight.group.list" | "cutagent.action.fairlight.index.clips" | "cutagent.action.fairlight.index.markers" | "cutagent.action.fairlight.index.tracks" | "cutagent.action.fairlight.info" | "cutagent.action.fairlight.insert" | "cutagent.action.fairlight.io.info" | "cutagent.action.fairlight.item_source.patch" | "cutagent.action.fairlight.items" | "cutagent.action.fairlight.lock" | "cutagent.action.fairlight.loudness.info" | "cutagent.action.fairlight.mixer.fader" | "cutagent.action.fairlight.mixer.meter_settings" | "cutagent.action.fairlight.mixer.pan" | "cutagent.action.fairlight.mixer.read" | "cutagent.action.fairlight.monitor.info" | "cutagent.action.fairlight.mute" | "cutagent.action.fairlight.preset.apply" | "cutagent.action.fairlight.preset.list" | "cutagent.action.fairlight.record.info" | "cutagent.action.fairlight.rename" | "cutagent.action.fairlight.send.list" | "cutagent.action.fairlight.solo" | "cutagent.action.fairlight.solo_restore" | "cutagent.action.fairlight.sound_library.delete" | "cutagent.action.fairlight.sound_library.index_file" | "cutagent.action.fairlight.sound_library.index_folder" | "cutagent.action.fairlight.sound_library.insert" | "cutagent.action.fairlight.sound_library.list" | "cutagent.action.fairlight.sound_library.search" | "cutagent.action.fairlight.sound_library.source_list" | "cutagent.action.fairlight.sound_library.source_rebuild" | "cutagent.action.fairlight.sound_library.source_remove" | "cutagent.action.fairlight.track_color" | "cutagent.action.fairlight.track_format.set" | "cutagent.action.fairlight.track_order.move" | "cutagent.action.fairlight.track.duplicate" | "cutagent.action.fairlight.track.height" | "cutagent.action.fairlight.tracks" | "cutagent.action.fairlight.transition.add" | "cutagent.action.fairlight.unlock" | "cutagent.action.fairlight.unmute" | "cutagent.action.fairlight.vca.list" | "cutagent.action.fairlight.voice_isolation.get" | "cutagent.action.fairlight.voice_isolation.set" | "cutagent.action.fairlight.waveform.info" | "cutagent.action.fusion.apply" | "cutagent.action.fusion.comp.current" | "cutagent.action.fusion.comp.delete" | "cutagent.action.fusion.comp.range" | "cutagent.action.fusion.comp.rename" | "cutagent.action.fusion.effect.blur" | "cutagent.action.fusion.effect.color_correct" | "cutagent.action.fusion.effect.glow" | "cutagent.action.fusion.effect.sharpen" | "cutagent.action.fusion.effect.transform" | "cutagent.action.fusion.generate" | "cutagent.action.fusion.image.set" | "cutagent.action.fusion.insert_setting" | "cutagent.action.fusion.keyer.chroma" | "cutagent.action.fusion.keyframe.add" | "cutagent.action.fusion.keyframe.clear" | "cutagent.action.fusion.keyframe.delete" | "cutagent.action.fusion.keyframe.list" | "cutagent.action.fusion.keyframe.set" | "cutagent.action.fusion.mask.ellipse" | "cutagent.action.fusion.mask.polygon" | "cutagent.action.fusion.mask.rectangle" | "cutagent.action.fusion.nested_text.update" | "cutagent.action.fusion.node.add" | "cutagent.action.fusion.node.connect" | "cutagent.action.fusion.node.delete" | "cutagent.action.fusion.node.disconnect" | "cutagent.action.fusion.preview" | "cutagent.action.fusion.setting.center_to_polypath" | "cutagent.action.fusion.setting.inspect" | "cutagent.action.fusion.setting.polypath_to_center" | "cutagent.action.fusion.setting.summary" | "cutagent.action.fusion.setting.validate" | "cutagent.action.fusion.template.apply" | "cutagent.action.fusion.template.assets.add" | "cutagent.action.fusion.template.assets.list" | "cutagent.action.fusion.template.dir" | "cutagent.action.fusion.template.icon.set" | "cutagent.action.fusion.template.install" | "cutagent.action.fusion.template.list" | "cutagent.action.fusion.template.package_drfx" | "cutagent.action.fusion.template.scaffold" | "cutagent.action.fusion.template.show" | "cutagent.action.fusion.template.uninstall" | "cutagent.action.fusion.template.validate" | "cutagent.action.fusion.text.set" | "cutagent.action.fusion.tool.active" | "cutagent.action.fusion.tool.add" | "cutagent.action.fusion.tool.attrs" | "cutagent.action.fusion.tool.connect" | "cutagent.action.fusion.tool.delete" | "cutagent.action.fusion.tool.disconnect" | "cutagent.action.fusion.tool.get" | "cutagent.action.fusion.tool.inputs" | "cutagent.action.fusion.tool.list" | "cutagent.action.fusion.tool.outputs" | "cutagent.action.fusion.tool.set" | "cutagent.action.fusion.tracker.add" | "cutagent.action.lut_refresh" | "cutagent.action.lut.convert" | "cutagent.action.lut.generate.identity" | "cutagent.action.lut.inspect" | "cutagent.action.lut.install" | "cutagent.action.lut.list" | "cutagent.action.lut.remove" | "cutagent.action.lut.validate" | "cutagent.action.media.audio_mapping" | "cutagent.action.media.clear_transcription" | "cutagent.action.media.color.clear" | "cutagent.action.media.color.set" | "cutagent.action.media.create_timeline" | "cutagent.action.media.delete" | "cutagent.action.media.duplicate" | "cutagent.action.media.extract_template" | "cutagent.action.media.flag.add" | "cutagent.action.media.flag.clear" | "cutagent.action.media.folder.export_drb" | "cutagent.action.media.folder.import_drb" | "cutagent.action.media.folders.create" | "cutagent.action.media.folders.delete" | "cutagent.action.media.folders.list" | "cutagent.action.media.folders.move" | "cutagent.action.media.folders.open" | "cutagent.action.media.folders.root" | "cutagent.action.media.folders.tree" | "cutagent.action.media.growing_file.monitor" | "cutagent.action.media.import" | "cutagent.action.media.info" | "cutagent.action.media.list" | "cutagent.action.media.mark.clear" | "cutagent.action.media.mark.get" | "cutagent.action.media.mark.set" | "cutagent.action.media.marker.add" | "cutagent.action.media.marker.delete" | "cutagent.action.media.marker.list" | "cutagent.action.media.matte.delete" | "cutagent.action.media.matte.list" | "cutagent.action.media.metadata" | "cutagent.action.media.metadata.export" | "cutagent.action.media.move" | "cutagent.action.media.property_set" | "cutagent.action.media.proxy" | "cutagent.action.media.proxy.link_fullres" | "cutagent.action.media.relink" | "cutagent.action.media.rename" | "cutagent.action.media.replace" | "cutagent.action.media.replace_preserve_subclip" | "cutagent.action.media.search" | "cutagent.action.media.selected.list" | "cutagent.action.media.selected.set" | "cutagent.action.media.stereo_create" | "cutagent.action.media.sync_audio" | "cutagent.action.media.third_party_metadata.get" | "cutagent.action.media.third_party_metadata.set" | "cutagent.action.media.timeline_matte.list" | "cutagent.action.media.transcode" | "cutagent.action.media.transcribe" | "cutagent.action.media.unlink" | "cutagent.action.multicam.angle.remove" | "cutagent.action.multicam.angle.rename" | "cutagent.action.multicam.angle.set_enabled" | "cutagent.action.multicam.audio_activity.calibrate" | "cutagent.action.multicam.convert" | "cutagent.action.multicam.match_frame" | "cutagent.action.multicam.recover_timing" | "cutagent.action.multicam.reorder_angles" | "cutagent.action.multicam.replace.audio" | "cutagent.action.multicam.replace.video" | "cutagent.action.multicam.seed_timeline" | "cutagent.action.multicam.set_start_timecode" | "cutagent.action.multicam.settings" | "cutagent.action.multicam.smart_switch" | "cutagent.action.multicam.source.grade_cdl" | "cutagent.action.multicam.source.move" | "cutagent.action.multicam.source.property_set" | "cutagent.action.multicam.source.raw_braw_set" | "cutagent.action.multicam.source.remove" | "cutagent.action.multicam.strip_embedded_audio" | "cutagent.action.page.current" | "cutagent.action.page.switch" | "cutagent.action.project.archive" | "cutagent.action.project.cleanup_scratch" | "cutagent.action.project.close" | "cutagent.action.project.cloud.create" | "cutagent.action.project.cloud.import" | "cutagent.action.project.cloud.open" | "cutagent.action.project.cloud.restore" | "cutagent.action.project.create" | "cutagent.action.project.delete" | "cutagent.action.project.export" | "cutagent.action.project.folders.create" | "cutagent.action.project.folders.delete" | "cutagent.action.project.folders.list" | "cutagent.action.project.folders.open" | "cutagent.action.project.folders.root" | "cutagent.action.project.folders.up" | "cutagent.action.project.import" | "cutagent.action.project.info" | "cutagent.action.project.library.backup" | "cutagent.action.project.library.create" | "cutagent.action.project.library.current" | "cutagent.action.project.library.list" | "cutagent.action.project.library.restore" | "cutagent.action.project.library.switch" | "cutagent.action.project.list" | "cutagent.action.project.open" | "cutagent.action.project.preset.list" | "cutagent.action.project.preset.load" | "cutagent.action.project.preset.save" | "cutagent.action.project.rename" | "cutagent.action.project.restore" | "cutagent.action.project.save" | "cutagent.action.project.settings" | "cutagent.action.project.settings_set" | "cutagent.action.render.alpha" | "cutagent.action.render.codecs" | "cutagent.action.render.encoding" | "cutagent.action.render.formats" | "cutagent.action.render.job_status" | "cutagent.action.render.jobs" | "cutagent.action.render.mode.get" | "cutagent.action.render.mode.set" | "cutagent.action.render.presets" | "cutagent.action.render.quick_export_presets" | "cutagent.action.render.resolutions" | "cutagent.action.render.settings" | "cutagent.action.render.status" | "cutagent.action.render.subtitles" | "cutagent.action.storage.files" | "cutagent.action.storage.import" | "cutagent.action.storage.import_sequence" | "cutagent.action.storage.import_subclip" | "cutagent.action.storage.matte.add" | "cutagent.action.storage.matte.timeline_add" | "cutagent.action.storage.reveal" | "cutagent.action.storage.volumes" | "cutagent.action.system.keyframe_mode.get" | "cutagent.action.system.keyframe_mode.set" | "cutagent.action.text.insert" | "cutagent.action.text.insert_preset" | "cutagent.action.text.insert_template" | "cutagent.action.text.insert_template_batch" | "cutagent.action.text.inspect" | "cutagent.action.text.list_presets" | "cutagent.action.text.update" | "cutagent.action.timeline.auto_caption" | "cutagent.action.timeline.clip_markers.list" | "cutagent.action.timeline.compound_create" | "cutagent.action.timeline.create" | "cutagent.action.timeline.current_item" | "cutagent.action.timeline.delete" | "cutagent.action.timeline.dolby.analyze" | "cutagent.action.timeline.duplicate" | "cutagent.action.timeline.duration" | "cutagent.action.timeline.export" | "cutagent.action.timeline.fairlight_preset.apply" | "cutagent.action.timeline.frame_export" | "cutagent.action.timeline.fusion_clip.create" | "cutagent.action.timeline.fusion_composition.insert" | "cutagent.action.timeline.grab_still" | "cutagent.action.timeline.import" | "cutagent.action.timeline.import_into" | "cutagent.action.timeline.info" | "cutagent.action.timeline.insert_generator" | "cutagent.action.timeline.insert_title" | "cutagent.action.timeline.inspect_export" | "cutagent.action.timeline.item_at" | "cutagent.action.timeline.items.delete" | "cutagent.action.timeline.items.move" | "cutagent.action.timeline.items.set_duration" | "cutagent.action.timeline.layer.ensure_media" | "cutagent.action.timeline.list" | "cutagent.action.timeline.mark.clear" | "cutagent.action.timeline.mark.get" | "cutagent.action.timeline.mark.set" | "cutagent.action.timeline.marker.add" | "cutagent.action.timeline.marker.delete" | "cutagent.action.timeline.marker.list" | "cutagent.action.timeline.marker.update" | "cutagent.action.timeline.media_pool_item" | "cutagent.action.timeline.node_graph.inspect" | "cutagent.action.timeline.playhead.get" | "cutagent.action.timeline.playhead.set" | "cutagent.action.timeline.preview_export" | "cutagent.action.timeline.rename" | "cutagent.action.timeline.set_start_tc" | "cutagent.action.timeline.settings" | "cutagent.action.timeline.settings_set" | "cutagent.action.timeline.start_tc" | "cutagent.action.timeline.still.grab_all" | "cutagent.action.timeline.subtitle.export" | "cutagent.action.timeline.subtitle.insert" | "cutagent.action.timeline.subtitle.list" | "cutagent.action.timeline.summarize" | "cutagent.action.timeline.switch" | "cutagent.action.timeline.sync_clips" | "cutagent.action.timeline.thumbnail" | "cutagent.action.timeline.track.add" | "cutagent.action.timeline.track.delete" | "cutagent.action.timeline.track.disable" | "cutagent.action.timeline.track.enable" | "cutagent.action.timeline.track.items" | "cutagent.action.timeline.track.list" | "cutagent.action.timeline.track.lock" | "cutagent.action.timeline.track.rename" | "cutagent.action.timeline.track.subtype" | "cutagent.action.timeline.track.unlock" | "cutagent.action.timeline.voice_isolation.get" | "cutagent.action.timeline.voice_isolation.set" | "cutagent.action.transcript.create" | "cutagent.action.version.create" | "cutagent.action.version.inspect" | "cutagent.action.version.list" | "cutagent.action.version.prune" | "cutagent.action.version.restore" | "cutagent.action.version.status";
+export type ActionId = "cutagent.action.audio.beat_detect" | "cutagent.action.audio.duck" | "cutagent.action.audio.info" | "cutagent.action.audio.probe_subframe" | "cutagent.action.audio.reverb" | "cutagent.action.audio.voice_generate" | "cutagent.action.audio.voice_list" | "cutagent.action.audio.voice_place" | "cutagent.action.audio.waveform_offset" | "cutagent.action.bulk.disable" | "cutagent.action.bulk.enable" | "cutagent.action.bulk.property_set" | "cutagent.action.burnin.load" | "cutagent.action.burnin.preset.export" | "cutagent.action.burnin.preset.import" | "cutagent.action.clip.audio_eq" | "cutagent.action.clip.audio_gain" | "cutagent.action.clip.audio_normalize" | "cutagent.action.clip.audio_pan" | "cutagent.action.clip.audio_pitch" | "cutagent.action.clip.burnin.load" | "cutagent.action.clip.cache" | "cutagent.action.clip.cache_set" | "cutagent.action.clip.cache_state" | "cutagent.action.clip.color" | "cutagent.action.clip.composite" | "cutagent.action.clip.current" | "cutagent.action.clip.disable" | "cutagent.action.clip.dynamic_zoom" | "cutagent.action.clip.enable" | "cutagent.action.clip.fade_in" | "cutagent.action.clip.flag" | "cutagent.action.clip.freeze" | "cutagent.action.clip.fusion.add" | "cutagent.action.clip.fusion.by_name" | "cutagent.action.clip.fusion.delete" | "cutagent.action.clip.fusion.export" | "cutagent.action.clip.fusion.import" | "cutagent.action.clip.fusion.list" | "cutagent.action.clip.fusion.load" | "cutagent.action.clip.fusion.tool_get" | "cutagent.action.clip.fusion.tool_set" | "cutagent.action.clip.fusion.tools" | "cutagent.action.clip.info" | "cutagent.action.clip.keyframe.add" | "cutagent.action.clip.keyframe.delete" | "cutagent.action.clip.keyframe.get" | "cutagent.action.clip.keyframe.set_interpolation" | "cutagent.action.clip.link" | "cutagent.action.clip.linked.list" | "cutagent.action.clip.list" | "cutagent.action.clip.marker.add" | "cutagent.action.clip.marker.custom_data" | "cutagent.action.clip.marker.delete" | "cutagent.action.clip.marker.delete_custom" | "cutagent.action.clip.marker.get_custom" | "cutagent.action.clip.marker.list" | "cutagent.action.clip.offset" | "cutagent.action.clip.properties" | "cutagent.action.clip.rename" | "cutagent.action.clip.reset_node_colors" | "cutagent.action.clip.reverse" | "cutagent.action.clip.smart_reframe" | "cutagent.action.clip.source_audio_mapping" | "cutagent.action.clip.source_range" | "cutagent.action.clip.speed" | "cutagent.action.clip.speed_ramp" | "cutagent.action.clip.stabilize" | "cutagent.action.clip.stereo_values" | "cutagent.action.clip.take.add" | "cutagent.action.clip.take.delete" | "cutagent.action.clip.take.finalize" | "cutagent.action.clip.take.list" | "cutagent.action.clip.take.select" | "cutagent.action.clip.track_info" | "cutagent.action.clip.transform" | "cutagent.action.clip.unlink" | "cutagent.action.clip.update_sidecar" | "cutagent.action.clip.voice_isolation" | "cutagent.action.color.arri_cdl_lut" | "cutagent.action.color.auto_color" | "cutagent.action.color.cdl" | "cutagent.action.color.comp.doctor" | "cutagent.action.color.comp.export" | "cutagent.action.color.comp.flatten" | "cutagent.action.color.comp.repair" | "cutagent.action.color.curves" | "cutagent.action.color.export_lut" | "cutagent.action.color.fx.apply" | "cutagent.action.color.fx.list" | "cutagent.action.color.gallery.album.create" | "cutagent.action.color.gallery.album.current" | "cutagent.action.color.gallery.album.list" | "cutagent.action.color.gallery.album.rename" | "cutagent.action.color.gallery.album.switch" | "cutagent.action.color.gallery.still.apply" | "cutagent.action.color.gallery.still.delete" | "cutagent.action.color.gallery.still.export" | "cutagent.action.color.gallery.still.grab" | "cutagent.action.color.gallery.still.import" | "cutagent.action.color.gallery.still.label" | "cutagent.action.color.gallery.still.list" | "cutagent.action.color.grade_apply" | "cutagent.action.color.grade_copy" | "cutagent.action.color.graph.inspect" | "cutagent.action.color.graph.normalize" | "cutagent.action.color.graph.validate" | "cutagent.action.color.group.add" | "cutagent.action.color.group.assign" | "cutagent.action.color.group.clips" | "cutagent.action.color.group.delete" | "cutagent.action.color.group.graph" | "cutagent.action.color.group.list" | "cutagent.action.color.group.remove" | "cutagent.action.color.group.rename" | "cutagent.action.color.huesat" | "cutagent.action.color.inspect" | "cutagent.action.color.lut" | "cutagent.action.color.lut_refresh" | "cutagent.action.color.mask.inspect" | "cutagent.action.color.node.cache" | "cutagent.action.color.node.disable" | "cutagent.action.color.node.enable" | "cutagent.action.color.node.graph" | "cutagent.action.color.node.label_get" | "cutagent.action.color.node.label_set" | "cutagent.action.color.node.list" | "cutagent.action.color.node.lut_get" | "cutagent.action.color.node.lut_set" | "cutagent.action.color.node.reset" | "cutagent.action.color.node.tools" | "cutagent.action.color.nodes" | "cutagent.action.color.page.alpha_output_connect" | "cutagent.action.color.page.auto_color_ai" | "cutagent.action.color.page.bleach_bypass_intensity_set" | "cutagent.action.color.page.bleach_bypass_set" | "cutagent.action.color.page.cat_set" | "cutagent.action.color.page.color_slice_set" | "cutagent.action.color.page.cst_set" | "cutagent.action.color.page.curve_points_set" | "cutagent.action.color.page.curve_set" | "cutagent.action.color.page.curve_spline_set" | "cutagent.action.color.page.dctl_apply" | "cutagent.action.color.page.dctl_remove" | "cutagent.action.color.page.false_color_read" | "cutagent.action.color.page.hdr_detail_set" | "cutagent.action.color.page.hdr_global_set" | "cutagent.action.color.page.hdr_zone_set" | "cutagent.action.color.page.hsv_node_set" | "cutagent.action.color.page.hue_curve_set" | "cutagent.action.color.page.hue_curve_spline_set" | "cutagent.action.color.page.key_output_set" | "cutagent.action.color.page.layer_mixer_set" | "cutagent.action.color.page.lut_library_import" | "cutagent.action.color.page.magic_mask" | "cutagent.action.color.page.magic_mask_draw_stroke" | "cutagent.action.color.page.magic_mask_refine" | "cutagent.action.color.page.node_add" | "cutagent.action.color.page.node_add_topology" | "cutagent.action.color.page.node_cleanup" | "cutagent.action.color.page.node_cleanup_general" | "cutagent.action.color.page.ofx_glow_set" | "cutagent.action.color.page.param_delete" | "cutagent.action.color.page.power_window_circle" | "cutagent.action.color.page.power_window_circle_detail" | "cutagent.action.color.page.power_window_curve" | "cutagent.action.color.page.power_window_gradient" | "cutagent.action.color.page.power_window_gradient_transform" | "cutagent.action.color.page.power_window_linear" | "cutagent.action.color.page.power_window_overlay_transform" | "cutagent.action.color.page.power_window_polygon" | "cutagent.action.color.page.power_window_rectangle" | "cutagent.action.color.page.power_window_set" | "cutagent.action.color.page.power_window_track" | "cutagent.action.color.page.primary_extended_set" | "cutagent.action.color.page.primary_set" | "cutagent.action.color.page.qualifier_hsl_set" | "cutagent.action.color.page.qualifier_matte_refine" | "cutagent.action.color.page.qualifier_matte_set" | "cutagent.action.color.page.qualifier_panel_probe" | "cutagent.action.color.page.qualifier_sample" | "cutagent.action.color.page.read" | "cutagent.action.color.page.resolvefx_add" | "cutagent.action.color.page.resolvefx_list" | "cutagent.action.color.page.resolvefx_param_discover" | "cutagent.action.color.page.resolvefx_param_list" | "cutagent.action.color.page.resolvefx_param_set" | "cutagent.action.color.page.resolvefx_remove" | "cutagent.action.color.page.rgb_mixer_set" | "cutagent.action.color.page.sat_curve_set" | "cutagent.action.color.page.sat_curve_spline_set" | "cutagent.action.color.page.scope_read" | "cutagent.action.color.page.scope_set" | "cutagent.action.color.page.sharpen_set" | "cutagent.action.color.page.shot_match_analyze" | "cutagent.action.color.page.shot_match_apply" | "cutagent.action.color.page.sky_isolation" | "cutagent.action.color.page.snapshot" | "cutagent.action.color.page.softening_set" | "cutagent.action.color.page.split_tone_set" | "cutagent.action.color.page.still_match" | "cutagent.action.color.page.viewer_before_after" | "cutagent.action.color.page.warper_set" | "cutagent.action.color.page.wheel_set" | "cutagent.action.color.page.white_balance_picker" | "cutagent.action.color.power_grade.album.create" | "cutagent.action.color.power_grade.apply" | "cutagent.action.color.power_grade.list" | "cutagent.action.color.power_grade.template_apply" | "cutagent.action.color.primary.get" | "cutagent.action.color.primary.set" | "cutagent.action.color.qualifier.attach" | "cutagent.action.color.qualifier.chroma" | "cutagent.action.color.qualifier.detach" | "cutagent.action.color.qualifier.list" | "cutagent.action.color.reset_fusion" | "cutagent.action.color.secondary.create" | "cutagent.action.color.secondary.isolate_green_screen" | "cutagent.action.color.secondary.subject_isolation" | "cutagent.action.color.secondary.tracked_window" | "cutagent.action.color.source_grade.apply_cdl" | "cutagent.action.color.source_grade.plan" | "cutagent.action.color.source_grade.prepare_remote" | "cutagent.action.color.still.grab_all" | "cutagent.action.color.thumbnail" | "cutagent.action.color.tracker.add" | "cutagent.action.color.tracker.attach_qualifier" | "cutagent.action.color.tracker.attach_window" | "cutagent.action.color.tracker.list" | "cutagent.action.color.tracker.set_target" | "cutagent.action.color.tracker.track_forward" | "cutagent.action.color.tracker.track_reverse" | "cutagent.action.color.version.activate" | "cutagent.action.color.version.add" | "cutagent.action.color.version.delete" | "cutagent.action.color.version.duplicate" | "cutagent.action.color.version.list" | "cutagent.action.color.version.load" | "cutagent.action.color.version.rollback" | "cutagent.action.color.wheels.set" | "cutagent.action.color.window.attach" | "cutagent.action.color.window.detach" | "cutagent.action.color.window.ellipse" | "cutagent.action.color.window.list" | "cutagent.action.color.window.polygon" | "cutagent.action.color.window.rectangle" | "cutagent.action.color.window.reorder" | "cutagent.action.dctl.apply" | "cutagent.action.dctl.validate_source" | "cutagent.action.edit.auto_subtitle" | "cutagent.action.edit.blade" | "cutagent.action.edit.camera_pip" | "cutagent.action.edit.delete_through_edit" | "cutagent.action.edit.from_edl" | "cutagent.action.edit.fx.add" | "cutagent.action.edit.insert" | "cutagent.action.edit.overwrite" | "cutagent.action.edit.remove" | "cutagent.action.edit.remove_range" | "cutagent.action.edit.ripple_delete" | "cutagent.action.edit.ripple_delete_selected" | "cutagent.action.edit.scene_detect" | "cutagent.action.edit.slide_selected" | "cutagent.action.edit.slip_selected" | "cutagent.action.edit.social_crop" | "cutagent.action.edit.split" | "cutagent.action.edit.transition.add" | "cutagent.action.edit.transition.batch" | "cutagent.action.fairlight.add" | "cutagent.action.fairlight.adr.info" | "cutagent.action.fairlight.ai.dialogue_leveler" | "cutagent.action.fairlight.ai.music_remixer" | "cutagent.action.fairlight.ai.read" | "cutagent.action.fairlight.ai.voice_isolation" | "cutagent.action.fairlight.api_notes" | "cutagent.action.fairlight.automation.list" | "cutagent.action.fairlight.automation.write" | "cutagent.action.fairlight.bounce.mix_to_track" | "cutagent.action.fairlight.bounce.track" | "cutagent.action.fairlight.bus.assign" | "cutagent.action.fairlight.bus.level" | "cutagent.action.fairlight.bus.list" | "cutagent.action.fairlight.channel_map.clip" | "cutagent.action.fairlight.channel_map.media" | "cutagent.action.fairlight.channel_map.set" | "cutagent.action.fairlight.clip.delete" | "cutagent.action.fairlight.clip.info" | "cutagent.action.fairlight.clip.link" | "cutagent.action.fairlight.clip.linked.list" | "cutagent.action.fairlight.clip.move" | "cutagent.action.fairlight.clip.nudge" | "cutagent.action.fairlight.clip.slip" | "cutagent.action.fairlight.clip.source_range" | "cutagent.action.fairlight.clip.split" | "cutagent.action.fairlight.clip.track_info" | "cutagent.action.fairlight.clip.trim" | "cutagent.action.fairlight.clip.unlink" | "cutagent.action.fairlight.delete" | "cutagent.action.fairlight.dynamics.disable" | "cutagent.action.fairlight.dynamics.enable" | "cutagent.action.fairlight.dynamics.read" | "cutagent.action.fairlight.dynamics.set" | "cutagent.action.fairlight.effect.add" | "cutagent.action.fairlight.effect.catalog" | "cutagent.action.fairlight.effect.list" | "cutagent.action.fairlight.effect.params" | "cutagent.action.fairlight.effect.plugin_catalog" | "cutagent.action.fairlight.effect.remove" | "cutagent.action.fairlight.effect.set_param" | "cutagent.action.fairlight.effect.slot_scan" | "cutagent.action.fairlight.elastic.enable" | "cutagent.action.fairlight.elastic.info" | "cutagent.action.fairlight.elastic.keyframe" | "cutagent.action.fairlight.ensure_stereo_tracks" | "cutagent.action.fairlight.ensure_tracks" | "cutagent.action.fairlight.eq.read" | "cutagent.action.fairlight.eq.set" | "cutagent.action.fairlight.export.audio" | "cutagent.action.fairlight.external_process.list" | "cutagent.action.fairlight.group.list" | "cutagent.action.fairlight.index.clips" | "cutagent.action.fairlight.index.markers" | "cutagent.action.fairlight.index.tracks" | "cutagent.action.fairlight.info" | "cutagent.action.fairlight.insert" | "cutagent.action.fairlight.io.info" | "cutagent.action.fairlight.item_source.patch" | "cutagent.action.fairlight.items" | "cutagent.action.fairlight.lock" | "cutagent.action.fairlight.loudness.info" | "cutagent.action.fairlight.mixer.fader" | "cutagent.action.fairlight.mixer.meter_settings" | "cutagent.action.fairlight.mixer.pan" | "cutagent.action.fairlight.mixer.read" | "cutagent.action.fairlight.monitor.info" | "cutagent.action.fairlight.mute" | "cutagent.action.fairlight.preset.apply" | "cutagent.action.fairlight.preset.list" | "cutagent.action.fairlight.record.info" | "cutagent.action.fairlight.rename" | "cutagent.action.fairlight.send.list" | "cutagent.action.fairlight.solo" | "cutagent.action.fairlight.solo_restore" | "cutagent.action.fairlight.sound_library.delete" | "cutagent.action.fairlight.sound_library.index_file" | "cutagent.action.fairlight.sound_library.index_folder" | "cutagent.action.fairlight.sound_library.insert" | "cutagent.action.fairlight.sound_library.list" | "cutagent.action.fairlight.sound_library.search" | "cutagent.action.fairlight.sound_library.source_list" | "cutagent.action.fairlight.sound_library.source_rebuild" | "cutagent.action.fairlight.sound_library.source_remove" | "cutagent.action.fairlight.track_color" | "cutagent.action.fairlight.track_format.set" | "cutagent.action.fairlight.track_order.move" | "cutagent.action.fairlight.track.duplicate" | "cutagent.action.fairlight.track.height" | "cutagent.action.fairlight.tracks" | "cutagent.action.fairlight.transition.add" | "cutagent.action.fairlight.unlock" | "cutagent.action.fairlight.unmute" | "cutagent.action.fairlight.vca.list" | "cutagent.action.fairlight.voice_isolation.get" | "cutagent.action.fairlight.voice_isolation.set" | "cutagent.action.fairlight.waveform.info" | "cutagent.action.fusion.apply" | "cutagent.action.fusion.comp.current" | "cutagent.action.fusion.comp.delete" | "cutagent.action.fusion.comp.range" | "cutagent.action.fusion.comp.rename" | "cutagent.action.fusion.effect.blur" | "cutagent.action.fusion.effect.color_correct" | "cutagent.action.fusion.effect.glow" | "cutagent.action.fusion.effect.sharpen" | "cutagent.action.fusion.effect.transform" | "cutagent.action.fusion.generate" | "cutagent.action.fusion.image.batch" | "cutagent.action.fusion.image.set" | "cutagent.action.fusion.insert_setting" | "cutagent.action.fusion.insert_settings.batch" | "cutagent.action.fusion.keyer.chroma" | "cutagent.action.fusion.keyframe.add" | "cutagent.action.fusion.keyframe.clear" | "cutagent.action.fusion.keyframe.delete" | "cutagent.action.fusion.keyframe.list" | "cutagent.action.fusion.keyframe.set" | "cutagent.action.fusion.mask.ellipse" | "cutagent.action.fusion.mask.polygon" | "cutagent.action.fusion.mask.rectangle" | "cutagent.action.fusion.nested_text.batch" | "cutagent.action.fusion.nested_text.update" | "cutagent.action.fusion.node.add" | "cutagent.action.fusion.node.connect" | "cutagent.action.fusion.node.delete" | "cutagent.action.fusion.node.disconnect" | "cutagent.action.fusion.preview" | "cutagent.action.fusion.setting.center_to_polypath" | "cutagent.action.fusion.setting.inspect" | "cutagent.action.fusion.setting.polypath_to_center" | "cutagent.action.fusion.setting.summary" | "cutagent.action.fusion.setting.validate" | "cutagent.action.fusion.template.apply" | "cutagent.action.fusion.template.assets.add" | "cutagent.action.fusion.template.assets.list" | "cutagent.action.fusion.template.dir" | "cutagent.action.fusion.template.icon.set" | "cutagent.action.fusion.template.install" | "cutagent.action.fusion.template.list" | "cutagent.action.fusion.template.package_drfx" | "cutagent.action.fusion.template.scaffold" | "cutagent.action.fusion.template.show" | "cutagent.action.fusion.template.uninstall" | "cutagent.action.fusion.template.validate" | "cutagent.action.fusion.text.batch" | "cutagent.action.fusion.text.set" | "cutagent.action.fusion.tool.active" | "cutagent.action.fusion.tool.add" | "cutagent.action.fusion.tool.attrs" | "cutagent.action.fusion.tool.connect" | "cutagent.action.fusion.tool.delete" | "cutagent.action.fusion.tool.disconnect" | "cutagent.action.fusion.tool.get" | "cutagent.action.fusion.tool.inputs" | "cutagent.action.fusion.tool.list" | "cutagent.action.fusion.tool.outputs" | "cutagent.action.fusion.tool.registry" | "cutagent.action.fusion.tool.set" | "cutagent.action.fusion.tracker.add" | "cutagent.action.lut_refresh" | "cutagent.action.lut.convert" | "cutagent.action.lut.generate.identity" | "cutagent.action.lut.inspect" | "cutagent.action.lut.install" | "cutagent.action.lut.list" | "cutagent.action.lut.remove" | "cutagent.action.lut.validate" | "cutagent.action.media.audio_mapping" | "cutagent.action.media.clear_transcription" | "cutagent.action.media.color.clear" | "cutagent.action.media.color.set" | "cutagent.action.media.create_timeline" | "cutagent.action.media.delete" | "cutagent.action.media.duplicate" | "cutagent.action.media.extract_template" | "cutagent.action.media.flag.add" | "cutagent.action.media.flag.clear" | "cutagent.action.media.folder.export_drb" | "cutagent.action.media.folder.import_drb" | "cutagent.action.media.folders.create" | "cutagent.action.media.folders.delete" | "cutagent.action.media.folders.list" | "cutagent.action.media.folders.move" | "cutagent.action.media.folders.open" | "cutagent.action.media.folders.root" | "cutagent.action.media.folders.tree" | "cutagent.action.media.growing_file.monitor" | "cutagent.action.media.import" | "cutagent.action.media.info" | "cutagent.action.media.list" | "cutagent.action.media.mark.clear" | "cutagent.action.media.mark.get" | "cutagent.action.media.mark.set" | "cutagent.action.media.marker.add" | "cutagent.action.media.marker.delete" | "cutagent.action.media.marker.list" | "cutagent.action.media.matte.delete" | "cutagent.action.media.matte.list" | "cutagent.action.media.metadata" | "cutagent.action.media.metadata.export" | "cutagent.action.media.move" | "cutagent.action.media.property_set" | "cutagent.action.media.proxy" | "cutagent.action.media.proxy.link_fullres" | "cutagent.action.media.relink" | "cutagent.action.media.rename" | "cutagent.action.media.replace" | "cutagent.action.media.replace_preserve_subclip" | "cutagent.action.media.search" | "cutagent.action.media.selected.list" | "cutagent.action.media.selected.set" | "cutagent.action.media.stereo_create" | "cutagent.action.media.sync_audio" | "cutagent.action.media.third_party_metadata.get" | "cutagent.action.media.third_party_metadata.set" | "cutagent.action.media.timeline_matte.list" | "cutagent.action.media.transcode" | "cutagent.action.media.transcribe" | "cutagent.action.media.unlink" | "cutagent.action.multicam.angle.remove" | "cutagent.action.multicam.angle.rename" | "cutagent.action.multicam.angle.set_enabled" | "cutagent.action.multicam.audio_activity.calibrate" | "cutagent.action.multicam.convert" | "cutagent.action.multicam.match_frame" | "cutagent.action.multicam.recover_timing" | "cutagent.action.multicam.reorder_angles" | "cutagent.action.multicam.replace.audio" | "cutagent.action.multicam.replace.video" | "cutagent.action.multicam.seed_timeline" | "cutagent.action.multicam.set_start_timecode" | "cutagent.action.multicam.settings" | "cutagent.action.multicam.smart_switch" | "cutagent.action.multicam.source.move" | "cutagent.action.multicam.source.property_set" | "cutagent.action.multicam.source.raw_braw_set" | "cutagent.action.multicam.source.remove" | "cutagent.action.multicam.strip_embedded_audio" | "cutagent.action.page.current" | "cutagent.action.page.switch" | "cutagent.action.project.archive" | "cutagent.action.project.cleanup_scratch" | "cutagent.action.project.close" | "cutagent.action.project.cloud.create" | "cutagent.action.project.cloud.import" | "cutagent.action.project.cloud.open" | "cutagent.action.project.cloud.restore" | "cutagent.action.project.create" | "cutagent.action.project.delete" | "cutagent.action.project.export" | "cutagent.action.project.folders.create" | "cutagent.action.project.folders.delete" | "cutagent.action.project.folders.list" | "cutagent.action.project.folders.open" | "cutagent.action.project.folders.root" | "cutagent.action.project.folders.up" | "cutagent.action.project.import" | "cutagent.action.project.info" | "cutagent.action.project.library.backup" | "cutagent.action.project.library.create" | "cutagent.action.project.library.current" | "cutagent.action.project.library.list" | "cutagent.action.project.library.restore" | "cutagent.action.project.library.switch" | "cutagent.action.project.list" | "cutagent.action.project.open" | "cutagent.action.project.preset.export" | "cutagent.action.project.preset.list" | "cutagent.action.project.preset.load" | "cutagent.action.project.preset.save" | "cutagent.action.project.rename" | "cutagent.action.project.restore" | "cutagent.action.project.save" | "cutagent.action.project.settings" | "cutagent.action.project.settings_set" | "cutagent.action.render.alpha" | "cutagent.action.render.codecs" | "cutagent.action.render.encoding" | "cutagent.action.render.formats" | "cutagent.action.render.job_status" | "cutagent.action.render.jobs" | "cutagent.action.render.mode.get" | "cutagent.action.render.mode.set" | "cutagent.action.render.preset_save" | "cutagent.action.render.preset_update" | "cutagent.action.render.presets" | "cutagent.action.render.quick_export_presets" | "cutagent.action.render.resolutions" | "cutagent.action.render.settings" | "cutagent.action.render.status" | "cutagent.action.render.subtitles" | "cutagent.action.storage.files" | "cutagent.action.storage.import" | "cutagent.action.storage.import_sequence" | "cutagent.action.storage.import_subclip" | "cutagent.action.storage.matte.add" | "cutagent.action.storage.matte.timeline_add" | "cutagent.action.storage.reveal" | "cutagent.action.storage.volumes" | "cutagent.action.system.keyboard_preset.current" | "cutagent.action.system.keyboard_preset.list" | "cutagent.action.system.keyframe_mode.get" | "cutagent.action.system.keyframe_mode.set" | "cutagent.action.text.insert" | "cutagent.action.text.insert_preset" | "cutagent.action.text.insert_template" | "cutagent.action.text.insert_template_batch" | "cutagent.action.text.inspect" | "cutagent.action.text.list_presets" | "cutagent.action.text.update" | "cutagent.action.timeline.auto_caption" | "cutagent.action.timeline.clip_color.batch" | "cutagent.action.timeline.clip_markers.list" | "cutagent.action.timeline.compound_create" | "cutagent.action.timeline.create" | "cutagent.action.timeline.current_item" | "cutagent.action.timeline.delete" | "cutagent.action.timeline.dolby.analyze" | "cutagent.action.timeline.duplicate" | "cutagent.action.timeline.duration" | "cutagent.action.timeline.export" | "cutagent.action.timeline.fairlight_preset.apply" | "cutagent.action.timeline.frame_export" | "cutagent.action.timeline.fusion_clip.create" | "cutagent.action.timeline.fusion_composition.insert" | "cutagent.action.timeline.grab_still" | "cutagent.action.timeline.import" | "cutagent.action.timeline.import_into" | "cutagent.action.timeline.info" | "cutagent.action.timeline.insert_generator" | "cutagent.action.timeline.insert_title" | "cutagent.action.timeline.inspect_export" | "cutagent.action.timeline.item_at" | "cutagent.action.timeline.items.delete" | "cutagent.action.timeline.items.move" | "cutagent.action.timeline.items.set_duration" | "cutagent.action.timeline.layer.ensure_media" | "cutagent.action.timeline.list" | "cutagent.action.timeline.mark.clear" | "cutagent.action.timeline.mark.get" | "cutagent.action.timeline.mark.set" | "cutagent.action.timeline.marker.add" | "cutagent.action.timeline.marker.delete" | "cutagent.action.timeline.marker.list" | "cutagent.action.timeline.marker.update" | "cutagent.action.timeline.media_pool_item" | "cutagent.action.timeline.node_graph.inspect" | "cutagent.action.timeline.output_blanking.get" | "cutagent.action.timeline.output_blanking.set" | "cutagent.action.timeline.playhead.get" | "cutagent.action.timeline.playhead.set" | "cutagent.action.timeline.preview_export" | "cutagent.action.timeline.rename" | "cutagent.action.timeline.set_start_tc" | "cutagent.action.timeline.settings" | "cutagent.action.timeline.settings_set" | "cutagent.action.timeline.start_tc" | "cutagent.action.timeline.still.grab_all" | "cutagent.action.timeline.subtitle.export" | "cutagent.action.timeline.subtitle.insert" | "cutagent.action.timeline.subtitle.list" | "cutagent.action.timeline.summarize" | "cutagent.action.timeline.switch" | "cutagent.action.timeline.sync_clips" | "cutagent.action.timeline.thumbnail" | "cutagent.action.timeline.track.add" | "cutagent.action.timeline.track.delete" | "cutagent.action.timeline.track.disable" | "cutagent.action.timeline.track.enable" | "cutagent.action.timeline.track.items" | "cutagent.action.timeline.track.list" | "cutagent.action.timeline.track.lock" | "cutagent.action.timeline.track.rename" | "cutagent.action.timeline.track.subtype" | "cutagent.action.timeline.track.unlock" | "cutagent.action.timeline.voice_isolation.get" | "cutagent.action.timeline.voice_isolation.set" | "cutagent.action.transcript.create" | "cutagent.action.version.create" | "cutagent.action.version.inspect" | "cutagent.action.version.list" | "cutagent.action.version.prune" | "cutagent.action.version.restore" | "cutagent.action.version.status";
 /** @beta */
-export type ReadActionId = "cutagent.action.audio.info" | "cutagent.action.audio.voice_list" | "cutagent.action.clip.cache_state" | "cutagent.action.clip.current" | "cutagent.action.clip.fusion.by_name" | "cutagent.action.clip.fusion.list" | "cutagent.action.clip.fusion.tool_get" | "cutagent.action.clip.fusion.tools" | "cutagent.action.clip.info" | "cutagent.action.clip.keyframe.get" | "cutagent.action.clip.linked.list" | "cutagent.action.clip.list" | "cutagent.action.clip.marker.get_custom" | "cutagent.action.clip.marker.list" | "cutagent.action.clip.offset" | "cutagent.action.clip.source_audio_mapping" | "cutagent.action.clip.source_range" | "cutagent.action.clip.stereo_values" | "cutagent.action.clip.take.list" | "cutagent.action.clip.track_info" | "cutagent.action.color.comp.doctor" | "cutagent.action.color.fx.list" | "cutagent.action.color.gallery.album.current" | "cutagent.action.color.gallery.album.list" | "cutagent.action.color.gallery.still.list" | "cutagent.action.color.graph.inspect" | "cutagent.action.color.graph.validate" | "cutagent.action.color.group.clips" | "cutagent.action.color.group.graph" | "cutagent.action.color.group.list" | "cutagent.action.color.inspect" | "cutagent.action.color.mask.inspect" | "cutagent.action.color.node.graph" | "cutagent.action.color.node.label_get" | "cutagent.action.color.node.list" | "cutagent.action.color.node.lut_get" | "cutagent.action.color.node.tools" | "cutagent.action.color.nodes" | "cutagent.action.color.page.magic_mask" | "cutagent.action.color.page.qualifier_panel_probe" | "cutagent.action.color.page.read" | "cutagent.action.color.page.resolvefx_list" | "cutagent.action.color.page.resolvefx_param_discover" | "cutagent.action.color.page.resolvefx_param_list" | "cutagent.action.color.page.snapshot" | "cutagent.action.color.power_grade.list" | "cutagent.action.color.primary.get" | "cutagent.action.color.qualifier.list" | "cutagent.action.color.source_grade.plan" | "cutagent.action.color.tracker.list" | "cutagent.action.color.version.list" | "cutagent.action.color.window.list" | "cutagent.action.fairlight.adr.info" | "cutagent.action.fairlight.ai.read" | "cutagent.action.fairlight.api_notes" | "cutagent.action.fairlight.automation.list" | "cutagent.action.fairlight.bus.list" | "cutagent.action.fairlight.channel_map.clip" | "cutagent.action.fairlight.channel_map.media" | "cutagent.action.fairlight.clip.info" | "cutagent.action.fairlight.clip.linked.list" | "cutagent.action.fairlight.clip.source_range" | "cutagent.action.fairlight.clip.track_info" | "cutagent.action.fairlight.dynamics.read" | "cutagent.action.fairlight.effect.catalog" | "cutagent.action.fairlight.effect.list" | "cutagent.action.fairlight.effect.params" | "cutagent.action.fairlight.effect.plugin_catalog" | "cutagent.action.fairlight.effect.slot_scan" | "cutagent.action.fairlight.elastic.info" | "cutagent.action.fairlight.eq.read" | "cutagent.action.fairlight.external_process.list" | "cutagent.action.fairlight.group.list" | "cutagent.action.fairlight.index.clips" | "cutagent.action.fairlight.index.markers" | "cutagent.action.fairlight.index.tracks" | "cutagent.action.fairlight.info" | "cutagent.action.fairlight.io.info" | "cutagent.action.fairlight.items" | "cutagent.action.fairlight.loudness.info" | "cutagent.action.fairlight.mixer.meter_settings" | "cutagent.action.fairlight.mixer.read" | "cutagent.action.fairlight.monitor.info" | "cutagent.action.fairlight.preset.list" | "cutagent.action.fairlight.record.info" | "cutagent.action.fairlight.send.list" | "cutagent.action.fairlight.sound_library.list" | "cutagent.action.fairlight.sound_library.search" | "cutagent.action.fairlight.sound_library.source_list" | "cutagent.action.fairlight.track.height" | "cutagent.action.fairlight.tracks" | "cutagent.action.fairlight.vca.list" | "cutagent.action.fairlight.voice_isolation.get" | "cutagent.action.fairlight.waveform.info" | "cutagent.action.fusion.comp.current" | "cutagent.action.fusion.keyframe.list" | "cutagent.action.fusion.preview" | "cutagent.action.fusion.setting.center_to_polypath" | "cutagent.action.fusion.setting.inspect" | "cutagent.action.fusion.setting.polypath_to_center" | "cutagent.action.fusion.setting.summary" | "cutagent.action.fusion.template.assets.list" | "cutagent.action.fusion.template.list" | "cutagent.action.fusion.template.show" | "cutagent.action.fusion.template.validate" | "cutagent.action.fusion.tool.attrs" | "cutagent.action.fusion.tool.get" | "cutagent.action.fusion.tool.inputs" | "cutagent.action.fusion.tool.list" | "cutagent.action.fusion.tool.outputs" | "cutagent.action.lut.convert" | "cutagent.action.lut.inspect" | "cutagent.action.lut.list" | "cutagent.action.lut.validate" | "cutagent.action.media.audio_mapping" | "cutagent.action.media.folders.list" | "cutagent.action.media.folders.tree" | "cutagent.action.media.info" | "cutagent.action.media.list" | "cutagent.action.media.mark.get" | "cutagent.action.media.marker.list" | "cutagent.action.media.matte.list" | "cutagent.action.media.search" | "cutagent.action.media.selected.list" | "cutagent.action.media.third_party_metadata.get" | "cutagent.action.media.timeline_matte.list" | "cutagent.action.multicam.match_frame" | "cutagent.action.multicam.settings" | "cutagent.action.page.current" | "cutagent.action.project.folders.list" | "cutagent.action.project.info" | "cutagent.action.project.library.current" | "cutagent.action.project.library.list" | "cutagent.action.project.list" | "cutagent.action.project.preset.list" | "cutagent.action.project.settings" | "cutagent.action.render.codecs" | "cutagent.action.render.formats" | "cutagent.action.render.job_status" | "cutagent.action.render.jobs" | "cutagent.action.render.mode.get" | "cutagent.action.render.presets" | "cutagent.action.render.quick_export_presets" | "cutagent.action.render.resolutions" | "cutagent.action.render.settings" | "cutagent.action.render.status" | "cutagent.action.storage.files" | "cutagent.action.storage.volumes" | "cutagent.action.system.keyframe_mode.get" | "cutagent.action.text.inspect" | "cutagent.action.text.list_presets" | "cutagent.action.timeline.clip_markers.list" | "cutagent.action.timeline.current_item" | "cutagent.action.timeline.duration" | "cutagent.action.timeline.info" | "cutagent.action.timeline.item_at" | "cutagent.action.timeline.list" | "cutagent.action.timeline.mark.get" | "cutagent.action.timeline.marker.list" | "cutagent.action.timeline.media_pool_item" | "cutagent.action.timeline.node_graph.inspect" | "cutagent.action.timeline.playhead.get" | "cutagent.action.timeline.settings" | "cutagent.action.timeline.subtitle.list" | "cutagent.action.timeline.summarize" | "cutagent.action.timeline.track.items" | "cutagent.action.timeline.track.list" | "cutagent.action.timeline.track.subtype" | "cutagent.action.timeline.voice_isolation.get" | "cutagent.action.version.inspect" | "cutagent.action.version.list" | "cutagent.action.version.status";
+export type ReadActionId = "cutagent.action.audio.info" | "cutagent.action.audio.voice_list" | "cutagent.action.clip.cache_state" | "cutagent.action.clip.current" | "cutagent.action.clip.fusion.by_name" | "cutagent.action.clip.fusion.list" | "cutagent.action.clip.fusion.tool_get" | "cutagent.action.clip.fusion.tools" | "cutagent.action.clip.info" | "cutagent.action.clip.keyframe.get" | "cutagent.action.clip.linked.list" | "cutagent.action.clip.list" | "cutagent.action.clip.marker.get_custom" | "cutagent.action.clip.marker.list" | "cutagent.action.clip.offset" | "cutagent.action.clip.source_audio_mapping" | "cutagent.action.clip.source_range" | "cutagent.action.clip.stereo_values" | "cutagent.action.clip.take.list" | "cutagent.action.clip.track_info" | "cutagent.action.color.comp.doctor" | "cutagent.action.color.fx.list" | "cutagent.action.color.gallery.album.current" | "cutagent.action.color.gallery.album.list" | "cutagent.action.color.gallery.still.list" | "cutagent.action.color.graph.inspect" | "cutagent.action.color.graph.validate" | "cutagent.action.color.group.clips" | "cutagent.action.color.group.graph" | "cutagent.action.color.group.list" | "cutagent.action.color.inspect" | "cutagent.action.color.mask.inspect" | "cutagent.action.color.node.graph" | "cutagent.action.color.node.label_get" | "cutagent.action.color.node.list" | "cutagent.action.color.node.lut_get" | "cutagent.action.color.node.tools" | "cutagent.action.color.nodes" | "cutagent.action.color.page.magic_mask" | "cutagent.action.color.page.qualifier_panel_probe" | "cutagent.action.color.page.read" | "cutagent.action.color.page.resolvefx_list" | "cutagent.action.color.page.resolvefx_param_discover" | "cutagent.action.color.page.resolvefx_param_list" | "cutagent.action.color.page.snapshot" | "cutagent.action.color.power_grade.list" | "cutagent.action.color.primary.get" | "cutagent.action.color.qualifier.list" | "cutagent.action.color.source_grade.plan" | "cutagent.action.color.tracker.list" | "cutagent.action.color.version.list" | "cutagent.action.color.window.list" | "cutagent.action.dctl.validate_source" | "cutagent.action.fairlight.adr.info" | "cutagent.action.fairlight.ai.read" | "cutagent.action.fairlight.api_notes" | "cutagent.action.fairlight.automation.list" | "cutagent.action.fairlight.bus.list" | "cutagent.action.fairlight.channel_map.clip" | "cutagent.action.fairlight.channel_map.media" | "cutagent.action.fairlight.clip.info" | "cutagent.action.fairlight.clip.linked.list" | "cutagent.action.fairlight.clip.source_range" | "cutagent.action.fairlight.clip.track_info" | "cutagent.action.fairlight.dynamics.read" | "cutagent.action.fairlight.effect.catalog" | "cutagent.action.fairlight.effect.list" | "cutagent.action.fairlight.effect.params" | "cutagent.action.fairlight.effect.plugin_catalog" | "cutagent.action.fairlight.effect.slot_scan" | "cutagent.action.fairlight.elastic.info" | "cutagent.action.fairlight.eq.read" | "cutagent.action.fairlight.external_process.list" | "cutagent.action.fairlight.group.list" | "cutagent.action.fairlight.index.clips" | "cutagent.action.fairlight.index.markers" | "cutagent.action.fairlight.index.tracks" | "cutagent.action.fairlight.info" | "cutagent.action.fairlight.io.info" | "cutagent.action.fairlight.items" | "cutagent.action.fairlight.loudness.info" | "cutagent.action.fairlight.mixer.meter_settings" | "cutagent.action.fairlight.mixer.read" | "cutagent.action.fairlight.monitor.info" | "cutagent.action.fairlight.preset.list" | "cutagent.action.fairlight.record.info" | "cutagent.action.fairlight.send.list" | "cutagent.action.fairlight.sound_library.list" | "cutagent.action.fairlight.sound_library.search" | "cutagent.action.fairlight.sound_library.source_list" | "cutagent.action.fairlight.track.height" | "cutagent.action.fairlight.tracks" | "cutagent.action.fairlight.vca.list" | "cutagent.action.fairlight.voice_isolation.get" | "cutagent.action.fairlight.waveform.info" | "cutagent.action.fusion.comp.current" | "cutagent.action.fusion.keyframe.list" | "cutagent.action.fusion.preview" | "cutagent.action.fusion.setting.center_to_polypath" | "cutagent.action.fusion.setting.inspect" | "cutagent.action.fusion.setting.polypath_to_center" | "cutagent.action.fusion.setting.summary" | "cutagent.action.fusion.template.assets.list" | "cutagent.action.fusion.template.list" | "cutagent.action.fusion.template.show" | "cutagent.action.fusion.template.validate" | "cutagent.action.fusion.tool.attrs" | "cutagent.action.fusion.tool.get" | "cutagent.action.fusion.tool.inputs" | "cutagent.action.fusion.tool.list" | "cutagent.action.fusion.tool.outputs" | "cutagent.action.fusion.tool.registry" | "cutagent.action.lut.convert" | "cutagent.action.lut.inspect" | "cutagent.action.lut.list" | "cutagent.action.lut.validate" | "cutagent.action.media.audio_mapping" | "cutagent.action.media.folders.list" | "cutagent.action.media.folders.tree" | "cutagent.action.media.info" | "cutagent.action.media.list" | "cutagent.action.media.mark.get" | "cutagent.action.media.marker.list" | "cutagent.action.media.matte.list" | "cutagent.action.media.search" | "cutagent.action.media.selected.list" | "cutagent.action.media.third_party_metadata.get" | "cutagent.action.media.timeline_matte.list" | "cutagent.action.multicam.match_frame" | "cutagent.action.multicam.settings" | "cutagent.action.page.current" | "cutagent.action.project.folders.list" | "cutagent.action.project.info" | "cutagent.action.project.library.current" | "cutagent.action.project.library.list" | "cutagent.action.project.list" | "cutagent.action.project.preset.list" | "cutagent.action.project.settings" | "cutagent.action.render.codecs" | "cutagent.action.render.formats" | "cutagent.action.render.job_status" | "cutagent.action.render.jobs" | "cutagent.action.render.mode.get" | "cutagent.action.render.presets" | "cutagent.action.render.quick_export_presets" | "cutagent.action.render.resolutions" | "cutagent.action.render.settings" | "cutagent.action.render.status" | "cutagent.action.storage.files" | "cutagent.action.storage.volumes" | "cutagent.action.system.keyboard_preset.current" | "cutagent.action.system.keyboard_preset.list" | "cutagent.action.system.keyframe_mode.get" | "cutagent.action.text.inspect" | "cutagent.action.text.list_presets" | "cutagent.action.timeline.clip_markers.list" | "cutagent.action.timeline.current_item" | "cutagent.action.timeline.duration" | "cutagent.action.timeline.info" | "cutagent.action.timeline.item_at" | "cutagent.action.timeline.list" | "cutagent.action.timeline.mark.get" | "cutagent.action.timeline.marker.list" | "cutagent.action.timeline.media_pool_item" | "cutagent.action.timeline.node_graph.inspect" | "cutagent.action.timeline.output_blanking.get" | "cutagent.action.timeline.playhead.get" | "cutagent.action.timeline.settings" | "cutagent.action.timeline.subtitle.list" | "cutagent.action.timeline.summarize" | "cutagent.action.timeline.track.items" | "cutagent.action.timeline.track.list" | "cutagent.action.timeline.track.subtype" | "cutagent.action.timeline.voice_isolation.get" | "cutagent.action.version.inspect" | "cutagent.action.version.list" | "cutagent.action.version.status";
 /** @beta */
-export type OperationActionId = "cutagent.action.audio.beat_detect" | "cutagent.action.audio.duck" | "cutagent.action.audio.probe_subframe" | "cutagent.action.audio.reverb" | "cutagent.action.audio.voice_generate" | "cutagent.action.audio.voice_place" | "cutagent.action.audio.waveform_offset" | "cutagent.action.burnin.load" | "cutagent.action.burnin.preset.export" | "cutagent.action.burnin.preset.import" | "cutagent.action.clip.audio_eq" | "cutagent.action.clip.audio_gain" | "cutagent.action.clip.audio_normalize" | "cutagent.action.clip.audio_pan" | "cutagent.action.clip.audio_pitch" | "cutagent.action.clip.burnin.load" | "cutagent.action.clip.cache" | "cutagent.action.clip.cache_set" | "cutagent.action.clip.color" | "cutagent.action.clip.composite" | "cutagent.action.clip.disable" | "cutagent.action.clip.dynamic_zoom" | "cutagent.action.clip.enable" | "cutagent.action.clip.fade_in" | "cutagent.action.clip.flag" | "cutagent.action.clip.freeze" | "cutagent.action.clip.fusion.add" | "cutagent.action.clip.fusion.delete" | "cutagent.action.clip.fusion.export" | "cutagent.action.clip.fusion.import" | "cutagent.action.clip.fusion.load" | "cutagent.action.clip.fusion.tool_set" | "cutagent.action.clip.keyframe.add" | "cutagent.action.clip.keyframe.delete" | "cutagent.action.clip.keyframe.set_interpolation" | "cutagent.action.clip.link" | "cutagent.action.clip.marker.add" | "cutagent.action.clip.marker.custom_data" | "cutagent.action.clip.marker.delete" | "cutagent.action.clip.marker.delete_custom" | "cutagent.action.clip.properties" | "cutagent.action.clip.rename" | "cutagent.action.clip.reset_node_colors" | "cutagent.action.clip.reverse" | "cutagent.action.clip.smart_reframe" | "cutagent.action.clip.speed" | "cutagent.action.clip.speed_ramp" | "cutagent.action.clip.stabilize" | "cutagent.action.clip.take.add" | "cutagent.action.clip.take.delete" | "cutagent.action.clip.take.finalize" | "cutagent.action.clip.take.select" | "cutagent.action.clip.transform" | "cutagent.action.clip.unlink" | "cutagent.action.clip.update_sidecar" | "cutagent.action.clip.voice_isolation" | "cutagent.action.color.arri_cdl_lut" | "cutagent.action.color.auto_color" | "cutagent.action.color.cdl" | "cutagent.action.color.comp.export" | "cutagent.action.color.comp.flatten" | "cutagent.action.color.comp.repair" | "cutagent.action.color.curves" | "cutagent.action.color.export_lut" | "cutagent.action.color.fx.apply" | "cutagent.action.color.gallery.album.create" | "cutagent.action.color.gallery.album.rename" | "cutagent.action.color.gallery.album.switch" | "cutagent.action.color.gallery.still.apply" | "cutagent.action.color.gallery.still.delete" | "cutagent.action.color.gallery.still.export" | "cutagent.action.color.gallery.still.grab" | "cutagent.action.color.gallery.still.import" | "cutagent.action.color.gallery.still.label" | "cutagent.action.color.grade_apply" | "cutagent.action.color.grade_copy" | "cutagent.action.color.graph.normalize" | "cutagent.action.color.group.add" | "cutagent.action.color.group.assign" | "cutagent.action.color.group.delete" | "cutagent.action.color.group.remove" | "cutagent.action.color.group.rename" | "cutagent.action.color.huesat" | "cutagent.action.color.lut" | "cutagent.action.color.lut_refresh" | "cutagent.action.color.node.cache" | "cutagent.action.color.node.disable" | "cutagent.action.color.node.enable" | "cutagent.action.color.node.label_set" | "cutagent.action.color.node.lut_set" | "cutagent.action.color.node.reset" | "cutagent.action.color.page.alpha_output_connect" | "cutagent.action.color.page.auto_color_ai" | "cutagent.action.color.page.bleach_bypass_intensity_set" | "cutagent.action.color.page.bleach_bypass_set" | "cutagent.action.color.page.cat_set" | "cutagent.action.color.page.color_slice_set" | "cutagent.action.color.page.cst_set" | "cutagent.action.color.page.curve_points_set" | "cutagent.action.color.page.curve_set" | "cutagent.action.color.page.curve_spline_set" | "cutagent.action.color.page.dctl_apply" | "cutagent.action.color.page.dctl_remove" | "cutagent.action.color.page.false_color_read" | "cutagent.action.color.page.hdr_detail_set" | "cutagent.action.color.page.hdr_global_set" | "cutagent.action.color.page.hdr_zone_set" | "cutagent.action.color.page.hsv_node_set" | "cutagent.action.color.page.hue_curve_set" | "cutagent.action.color.page.hue_curve_spline_set" | "cutagent.action.color.page.key_output_set" | "cutagent.action.color.page.layer_mixer_set" | "cutagent.action.color.page.lut_library_import" | "cutagent.action.color.page.magic_mask_draw_stroke" | "cutagent.action.color.page.magic_mask_refine" | "cutagent.action.color.page.node_add" | "cutagent.action.color.page.node_add_topology" | "cutagent.action.color.page.node_cleanup" | "cutagent.action.color.page.node_cleanup_general" | "cutagent.action.color.page.ofx_glow_set" | "cutagent.action.color.page.param_delete" | "cutagent.action.color.page.power_window_circle" | "cutagent.action.color.page.power_window_circle_detail" | "cutagent.action.color.page.power_window_curve" | "cutagent.action.color.page.power_window_gradient" | "cutagent.action.color.page.power_window_gradient_transform" | "cutagent.action.color.page.power_window_linear" | "cutagent.action.color.page.power_window_overlay_transform" | "cutagent.action.color.page.power_window_polygon" | "cutagent.action.color.page.power_window_rectangle" | "cutagent.action.color.page.power_window_set" | "cutagent.action.color.page.power_window_track" | "cutagent.action.color.page.primary_extended_set" | "cutagent.action.color.page.primary_set" | "cutagent.action.color.page.qualifier_hsl_set" | "cutagent.action.color.page.qualifier_matte_refine" | "cutagent.action.color.page.qualifier_matte_set" | "cutagent.action.color.page.qualifier_sample" | "cutagent.action.color.page.resolvefx_add" | "cutagent.action.color.page.resolvefx_param_set" | "cutagent.action.color.page.resolvefx_remove" | "cutagent.action.color.page.rgb_mixer_set" | "cutagent.action.color.page.sat_curve_set" | "cutagent.action.color.page.sat_curve_spline_set" | "cutagent.action.color.page.scope_read" | "cutagent.action.color.page.scope_set" | "cutagent.action.color.page.sharpen_set" | "cutagent.action.color.page.shot_match_analyze" | "cutagent.action.color.page.shot_match_apply" | "cutagent.action.color.page.sky_isolation" | "cutagent.action.color.page.softening_set" | "cutagent.action.color.page.split_tone_set" | "cutagent.action.color.page.still_match" | "cutagent.action.color.page.viewer_before_after" | "cutagent.action.color.page.warper_set" | "cutagent.action.color.page.wheel_set" | "cutagent.action.color.page.white_balance_picker" | "cutagent.action.color.power_grade.album.create" | "cutagent.action.color.power_grade.apply" | "cutagent.action.color.power_grade.template_apply" | "cutagent.action.color.primary.set" | "cutagent.action.color.qualifier.attach" | "cutagent.action.color.qualifier.chroma" | "cutagent.action.color.qualifier.detach" | "cutagent.action.color.reset_fusion" | "cutagent.action.color.secondary.create" | "cutagent.action.color.secondary.isolate_green_screen" | "cutagent.action.color.secondary.subject_isolation" | "cutagent.action.color.secondary.tracked_window" | "cutagent.action.color.source_grade.apply_cdl" | "cutagent.action.color.source_grade.prepare_remote" | "cutagent.action.color.still.grab_all" | "cutagent.action.color.thumbnail" | "cutagent.action.color.tracker.add" | "cutagent.action.color.tracker.attach_qualifier" | "cutagent.action.color.tracker.attach_window" | "cutagent.action.color.tracker.set_target" | "cutagent.action.color.tracker.track_forward" | "cutagent.action.color.tracker.track_reverse" | "cutagent.action.color.version.activate" | "cutagent.action.color.version.add" | "cutagent.action.color.version.delete" | "cutagent.action.color.version.duplicate" | "cutagent.action.color.version.load" | "cutagent.action.color.version.rollback" | "cutagent.action.color.wheels.set" | "cutagent.action.color.window.attach" | "cutagent.action.color.window.detach" | "cutagent.action.color.window.ellipse" | "cutagent.action.color.window.polygon" | "cutagent.action.color.window.rectangle" | "cutagent.action.color.window.reorder" | "cutagent.action.dctl.apply" | "cutagent.action.edit.auto_subtitle" | "cutagent.action.edit.blade" | "cutagent.action.edit.camera_pip" | "cutagent.action.edit.delete_through_edit" | "cutagent.action.edit.from_edl" | "cutagent.action.edit.fx.add" | "cutagent.action.edit.insert" | "cutagent.action.edit.overwrite" | "cutagent.action.edit.remove" | "cutagent.action.edit.remove_range" | "cutagent.action.edit.ripple_delete" | "cutagent.action.edit.ripple_delete_selected" | "cutagent.action.edit.scene_detect" | "cutagent.action.edit.slide_selected" | "cutagent.action.edit.slip_selected" | "cutagent.action.edit.social_crop" | "cutagent.action.edit.split" | "cutagent.action.edit.transition.add" | "cutagent.action.fairlight.add" | "cutagent.action.fairlight.ai.dialogue_leveler" | "cutagent.action.fairlight.ai.music_remixer" | "cutagent.action.fairlight.ai.voice_isolation" | "cutagent.action.fairlight.automation.write" | "cutagent.action.fairlight.bounce.mix_to_track" | "cutagent.action.fairlight.bounce.track" | "cutagent.action.fairlight.bus.assign" | "cutagent.action.fairlight.bus.level" | "cutagent.action.fairlight.channel_map.set" | "cutagent.action.fairlight.clip.delete" | "cutagent.action.fairlight.clip.link" | "cutagent.action.fairlight.clip.move" | "cutagent.action.fairlight.clip.nudge" | "cutagent.action.fairlight.clip.slip" | "cutagent.action.fairlight.clip.split" | "cutagent.action.fairlight.clip.trim" | "cutagent.action.fairlight.clip.unlink" | "cutagent.action.fairlight.delete" | "cutagent.action.fairlight.dynamics.disable" | "cutagent.action.fairlight.dynamics.enable" | "cutagent.action.fairlight.dynamics.set" | "cutagent.action.fairlight.effect.add" | "cutagent.action.fairlight.effect.remove" | "cutagent.action.fairlight.effect.set_param" | "cutagent.action.fairlight.elastic.enable" | "cutagent.action.fairlight.elastic.keyframe" | "cutagent.action.fairlight.ensure_stereo_tracks" | "cutagent.action.fairlight.ensure_tracks" | "cutagent.action.fairlight.eq.set" | "cutagent.action.fairlight.export.audio" | "cutagent.action.fairlight.insert" | "cutagent.action.fairlight.item_source.patch" | "cutagent.action.fairlight.lock" | "cutagent.action.fairlight.mixer.fader" | "cutagent.action.fairlight.mixer.pan" | "cutagent.action.fairlight.mute" | "cutagent.action.fairlight.preset.apply" | "cutagent.action.fairlight.rename" | "cutagent.action.fairlight.solo" | "cutagent.action.fairlight.solo_restore" | "cutagent.action.fairlight.sound_library.delete" | "cutagent.action.fairlight.sound_library.index_file" | "cutagent.action.fairlight.sound_library.index_folder" | "cutagent.action.fairlight.sound_library.insert" | "cutagent.action.fairlight.sound_library.source_rebuild" | "cutagent.action.fairlight.sound_library.source_remove" | "cutagent.action.fairlight.track_color" | "cutagent.action.fairlight.track_format.set" | "cutagent.action.fairlight.track_order.move" | "cutagent.action.fairlight.track.duplicate" | "cutagent.action.fairlight.transition.add" | "cutagent.action.fairlight.unlock" | "cutagent.action.fairlight.unmute" | "cutagent.action.fairlight.voice_isolation.set" | "cutagent.action.fusion.apply" | "cutagent.action.fusion.comp.delete" | "cutagent.action.fusion.comp.range" | "cutagent.action.fusion.comp.rename" | "cutagent.action.fusion.effect.blur" | "cutagent.action.fusion.effect.color_correct" | "cutagent.action.fusion.effect.glow" | "cutagent.action.fusion.effect.sharpen" | "cutagent.action.fusion.effect.transform" | "cutagent.action.fusion.generate" | "cutagent.action.fusion.image.set" | "cutagent.action.fusion.insert_setting" | "cutagent.action.fusion.keyer.chroma" | "cutagent.action.fusion.keyframe.add" | "cutagent.action.fusion.keyframe.clear" | "cutagent.action.fusion.keyframe.delete" | "cutagent.action.fusion.keyframe.set" | "cutagent.action.fusion.mask.ellipse" | "cutagent.action.fusion.mask.polygon" | "cutagent.action.fusion.mask.rectangle" | "cutagent.action.fusion.nested_text.update" | "cutagent.action.fusion.node.add" | "cutagent.action.fusion.node.connect" | "cutagent.action.fusion.node.delete" | "cutagent.action.fusion.node.disconnect" | "cutagent.action.fusion.setting.validate" | "cutagent.action.fusion.template.apply" | "cutagent.action.fusion.template.assets.add" | "cutagent.action.fusion.template.dir" | "cutagent.action.fusion.template.icon.set" | "cutagent.action.fusion.template.install" | "cutagent.action.fusion.template.package_drfx" | "cutagent.action.fusion.template.scaffold" | "cutagent.action.fusion.template.uninstall" | "cutagent.action.fusion.text.set" | "cutagent.action.fusion.tool.active" | "cutagent.action.fusion.tool.add" | "cutagent.action.fusion.tool.connect" | "cutagent.action.fusion.tool.delete" | "cutagent.action.fusion.tool.disconnect" | "cutagent.action.fusion.tool.set" | "cutagent.action.fusion.tracker.add" | "cutagent.action.lut_refresh" | "cutagent.action.lut.generate.identity" | "cutagent.action.lut.install" | "cutagent.action.lut.remove" | "cutagent.action.media.clear_transcription" | "cutagent.action.media.color.clear" | "cutagent.action.media.color.set" | "cutagent.action.media.create_timeline" | "cutagent.action.media.delete" | "cutagent.action.media.duplicate" | "cutagent.action.media.extract_template" | "cutagent.action.media.flag.add" | "cutagent.action.media.flag.clear" | "cutagent.action.media.folder.export_drb" | "cutagent.action.media.folder.import_drb" | "cutagent.action.media.folders.create" | "cutagent.action.media.folders.delete" | "cutagent.action.media.folders.move" | "cutagent.action.media.folders.open" | "cutagent.action.media.folders.root" | "cutagent.action.media.growing_file.monitor" | "cutagent.action.media.import" | "cutagent.action.media.mark.clear" | "cutagent.action.media.mark.set" | "cutagent.action.media.marker.add" | "cutagent.action.media.marker.delete" | "cutagent.action.media.matte.delete" | "cutagent.action.media.metadata" | "cutagent.action.media.metadata.export" | "cutagent.action.media.move" | "cutagent.action.media.property_set" | "cutagent.action.media.proxy" | "cutagent.action.media.proxy.link_fullres" | "cutagent.action.media.relink" | "cutagent.action.media.rename" | "cutagent.action.media.replace" | "cutagent.action.media.replace_preserve_subclip" | "cutagent.action.media.selected.set" | "cutagent.action.media.stereo_create" | "cutagent.action.media.sync_audio" | "cutagent.action.media.third_party_metadata.set" | "cutagent.action.media.transcode" | "cutagent.action.media.transcribe" | "cutagent.action.media.unlink" | "cutagent.action.multicam.angle.remove" | "cutagent.action.multicam.angle.rename" | "cutagent.action.multicam.angle.set_enabled" | "cutagent.action.multicam.audio_activity.calibrate" | "cutagent.action.multicam.convert" | "cutagent.action.multicam.recover_timing" | "cutagent.action.multicam.reorder_angles" | "cutagent.action.multicam.replace.audio" | "cutagent.action.multicam.replace.video" | "cutagent.action.multicam.seed_timeline" | "cutagent.action.multicam.set_start_timecode" | "cutagent.action.multicam.smart_switch" | "cutagent.action.multicam.source.grade_cdl" | "cutagent.action.multicam.source.move" | "cutagent.action.multicam.source.property_set" | "cutagent.action.multicam.source.raw_braw_set" | "cutagent.action.multicam.source.remove" | "cutagent.action.multicam.strip_embedded_audio" | "cutagent.action.page.switch" | "cutagent.action.project.archive" | "cutagent.action.project.cleanup_scratch" | "cutagent.action.project.close" | "cutagent.action.project.cloud.create" | "cutagent.action.project.cloud.import" | "cutagent.action.project.cloud.open" | "cutagent.action.project.cloud.restore" | "cutagent.action.project.create" | "cutagent.action.project.delete" | "cutagent.action.project.export" | "cutagent.action.project.folders.create" | "cutagent.action.project.folders.delete" | "cutagent.action.project.folders.open" | "cutagent.action.project.folders.root" | "cutagent.action.project.folders.up" | "cutagent.action.project.import" | "cutagent.action.project.library.backup" | "cutagent.action.project.library.create" | "cutagent.action.project.library.restore" | "cutagent.action.project.library.switch" | "cutagent.action.project.open" | "cutagent.action.project.preset.load" | "cutagent.action.project.preset.save" | "cutagent.action.project.rename" | "cutagent.action.project.restore" | "cutagent.action.project.save" | "cutagent.action.project.settings_set" | "cutagent.action.render.alpha" | "cutagent.action.render.encoding" | "cutagent.action.render.mode.set" | "cutagent.action.render.subtitles" | "cutagent.action.storage.import" | "cutagent.action.storage.import_sequence" | "cutagent.action.storage.import_subclip" | "cutagent.action.storage.matte.add" | "cutagent.action.storage.matte.timeline_add" | "cutagent.action.storage.reveal" | "cutagent.action.system.keyframe_mode.set" | "cutagent.action.text.insert" | "cutagent.action.text.insert_preset" | "cutagent.action.text.insert_template" | "cutagent.action.text.insert_template_batch" | "cutagent.action.text.update" | "cutagent.action.timeline.auto_caption" | "cutagent.action.timeline.compound_create" | "cutagent.action.timeline.create" | "cutagent.action.timeline.delete" | "cutagent.action.timeline.dolby.analyze" | "cutagent.action.timeline.duplicate" | "cutagent.action.timeline.export" | "cutagent.action.timeline.fairlight_preset.apply" | "cutagent.action.timeline.frame_export" | "cutagent.action.timeline.fusion_clip.create" | "cutagent.action.timeline.fusion_composition.insert" | "cutagent.action.timeline.grab_still" | "cutagent.action.timeline.import" | "cutagent.action.timeline.import_into" | "cutagent.action.timeline.insert_generator" | "cutagent.action.timeline.insert_title" | "cutagent.action.timeline.inspect_export" | "cutagent.action.timeline.items.delete" | "cutagent.action.timeline.items.move" | "cutagent.action.timeline.items.set_duration" | "cutagent.action.timeline.layer.ensure_media" | "cutagent.action.timeline.mark.clear" | "cutagent.action.timeline.mark.set" | "cutagent.action.timeline.marker.add" | "cutagent.action.timeline.marker.delete" | "cutagent.action.timeline.marker.update" | "cutagent.action.timeline.playhead.set" | "cutagent.action.timeline.preview_export" | "cutagent.action.timeline.rename" | "cutagent.action.timeline.set_start_tc" | "cutagent.action.timeline.settings_set" | "cutagent.action.timeline.start_tc" | "cutagent.action.timeline.still.grab_all" | "cutagent.action.timeline.subtitle.export" | "cutagent.action.timeline.subtitle.insert" | "cutagent.action.timeline.switch" | "cutagent.action.timeline.sync_clips" | "cutagent.action.timeline.thumbnail" | "cutagent.action.timeline.track.add" | "cutagent.action.timeline.track.delete" | "cutagent.action.timeline.track.disable" | "cutagent.action.timeline.track.enable" | "cutagent.action.timeline.track.lock" | "cutagent.action.timeline.track.rename" | "cutagent.action.timeline.track.unlock" | "cutagent.action.timeline.voice_isolation.set" | "cutagent.action.transcript.create" | "cutagent.action.version.create" | "cutagent.action.version.prune" | "cutagent.action.version.restore";
+export type OperationActionId = "cutagent.action.audio.beat_detect" | "cutagent.action.audio.duck" | "cutagent.action.audio.probe_subframe" | "cutagent.action.audio.reverb" | "cutagent.action.audio.voice_generate" | "cutagent.action.audio.voice_place" | "cutagent.action.audio.waveform_offset" | "cutagent.action.bulk.disable" | "cutagent.action.bulk.enable" | "cutagent.action.bulk.property_set" | "cutagent.action.burnin.load" | "cutagent.action.burnin.preset.export" | "cutagent.action.burnin.preset.import" | "cutagent.action.clip.audio_eq" | "cutagent.action.clip.audio_gain" | "cutagent.action.clip.audio_normalize" | "cutagent.action.clip.audio_pan" | "cutagent.action.clip.audio_pitch" | "cutagent.action.clip.burnin.load" | "cutagent.action.clip.cache" | "cutagent.action.clip.cache_set" | "cutagent.action.clip.color" | "cutagent.action.clip.composite" | "cutagent.action.clip.disable" | "cutagent.action.clip.dynamic_zoom" | "cutagent.action.clip.enable" | "cutagent.action.clip.fade_in" | "cutagent.action.clip.flag" | "cutagent.action.clip.freeze" | "cutagent.action.clip.fusion.add" | "cutagent.action.clip.fusion.delete" | "cutagent.action.clip.fusion.export" | "cutagent.action.clip.fusion.import" | "cutagent.action.clip.fusion.load" | "cutagent.action.clip.fusion.tool_set" | "cutagent.action.clip.keyframe.add" | "cutagent.action.clip.keyframe.delete" | "cutagent.action.clip.keyframe.set_interpolation" | "cutagent.action.clip.link" | "cutagent.action.clip.marker.add" | "cutagent.action.clip.marker.custom_data" | "cutagent.action.clip.marker.delete" | "cutagent.action.clip.marker.delete_custom" | "cutagent.action.clip.properties" | "cutagent.action.clip.rename" | "cutagent.action.clip.reset_node_colors" | "cutagent.action.clip.reverse" | "cutagent.action.clip.smart_reframe" | "cutagent.action.clip.speed" | "cutagent.action.clip.speed_ramp" | "cutagent.action.clip.stabilize" | "cutagent.action.clip.take.add" | "cutagent.action.clip.take.delete" | "cutagent.action.clip.take.finalize" | "cutagent.action.clip.take.select" | "cutagent.action.clip.transform" | "cutagent.action.clip.unlink" | "cutagent.action.clip.update_sidecar" | "cutagent.action.clip.voice_isolation" | "cutagent.action.color.arri_cdl_lut" | "cutagent.action.color.auto_color" | "cutagent.action.color.cdl" | "cutagent.action.color.comp.export" | "cutagent.action.color.comp.flatten" | "cutagent.action.color.comp.repair" | "cutagent.action.color.curves" | "cutagent.action.color.export_lut" | "cutagent.action.color.fx.apply" | "cutagent.action.color.gallery.album.create" | "cutagent.action.color.gallery.album.rename" | "cutagent.action.color.gallery.album.switch" | "cutagent.action.color.gallery.still.apply" | "cutagent.action.color.gallery.still.delete" | "cutagent.action.color.gallery.still.export" | "cutagent.action.color.gallery.still.grab" | "cutagent.action.color.gallery.still.import" | "cutagent.action.color.gallery.still.label" | "cutagent.action.color.grade_apply" | "cutagent.action.color.grade_copy" | "cutagent.action.color.graph.normalize" | "cutagent.action.color.group.add" | "cutagent.action.color.group.assign" | "cutagent.action.color.group.delete" | "cutagent.action.color.group.remove" | "cutagent.action.color.group.rename" | "cutagent.action.color.huesat" | "cutagent.action.color.lut" | "cutagent.action.color.lut_refresh" | "cutagent.action.color.node.cache" | "cutagent.action.color.node.disable" | "cutagent.action.color.node.enable" | "cutagent.action.color.node.label_set" | "cutagent.action.color.node.lut_set" | "cutagent.action.color.node.reset" | "cutagent.action.color.page.alpha_output_connect" | "cutagent.action.color.page.auto_color_ai" | "cutagent.action.color.page.bleach_bypass_intensity_set" | "cutagent.action.color.page.bleach_bypass_set" | "cutagent.action.color.page.cat_set" | "cutagent.action.color.page.color_slice_set" | "cutagent.action.color.page.cst_set" | "cutagent.action.color.page.curve_points_set" | "cutagent.action.color.page.curve_set" | "cutagent.action.color.page.curve_spline_set" | "cutagent.action.color.page.dctl_apply" | "cutagent.action.color.page.dctl_remove" | "cutagent.action.color.page.false_color_read" | "cutagent.action.color.page.hdr_detail_set" | "cutagent.action.color.page.hdr_global_set" | "cutagent.action.color.page.hdr_zone_set" | "cutagent.action.color.page.hsv_node_set" | "cutagent.action.color.page.hue_curve_set" | "cutagent.action.color.page.hue_curve_spline_set" | "cutagent.action.color.page.key_output_set" | "cutagent.action.color.page.layer_mixer_set" | "cutagent.action.color.page.lut_library_import" | "cutagent.action.color.page.magic_mask_draw_stroke" | "cutagent.action.color.page.magic_mask_refine" | "cutagent.action.color.page.node_add" | "cutagent.action.color.page.node_add_topology" | "cutagent.action.color.page.node_cleanup" | "cutagent.action.color.page.node_cleanup_general" | "cutagent.action.color.page.ofx_glow_set" | "cutagent.action.color.page.param_delete" | "cutagent.action.color.page.power_window_circle" | "cutagent.action.color.page.power_window_circle_detail" | "cutagent.action.color.page.power_window_curve" | "cutagent.action.color.page.power_window_gradient" | "cutagent.action.color.page.power_window_gradient_transform" | "cutagent.action.color.page.power_window_linear" | "cutagent.action.color.page.power_window_overlay_transform" | "cutagent.action.color.page.power_window_polygon" | "cutagent.action.color.page.power_window_rectangle" | "cutagent.action.color.page.power_window_set" | "cutagent.action.color.page.power_window_track" | "cutagent.action.color.page.primary_extended_set" | "cutagent.action.color.page.primary_set" | "cutagent.action.color.page.qualifier_hsl_set" | "cutagent.action.color.page.qualifier_matte_refine" | "cutagent.action.color.page.qualifier_matte_set" | "cutagent.action.color.page.qualifier_sample" | "cutagent.action.color.page.resolvefx_add" | "cutagent.action.color.page.resolvefx_param_set" | "cutagent.action.color.page.resolvefx_remove" | "cutagent.action.color.page.rgb_mixer_set" | "cutagent.action.color.page.sat_curve_set" | "cutagent.action.color.page.sat_curve_spline_set" | "cutagent.action.color.page.scope_read" | "cutagent.action.color.page.scope_set" | "cutagent.action.color.page.sharpen_set" | "cutagent.action.color.page.shot_match_analyze" | "cutagent.action.color.page.shot_match_apply" | "cutagent.action.color.page.sky_isolation" | "cutagent.action.color.page.softening_set" | "cutagent.action.color.page.split_tone_set" | "cutagent.action.color.page.still_match" | "cutagent.action.color.page.viewer_before_after" | "cutagent.action.color.page.warper_set" | "cutagent.action.color.page.wheel_set" | "cutagent.action.color.page.white_balance_picker" | "cutagent.action.color.power_grade.album.create" | "cutagent.action.color.power_grade.apply" | "cutagent.action.color.power_grade.template_apply" | "cutagent.action.color.primary.set" | "cutagent.action.color.qualifier.attach" | "cutagent.action.color.qualifier.chroma" | "cutagent.action.color.qualifier.detach" | "cutagent.action.color.reset_fusion" | "cutagent.action.color.secondary.create" | "cutagent.action.color.secondary.isolate_green_screen" | "cutagent.action.color.secondary.subject_isolation" | "cutagent.action.color.secondary.tracked_window" | "cutagent.action.color.source_grade.apply_cdl" | "cutagent.action.color.source_grade.prepare_remote" | "cutagent.action.color.still.grab_all" | "cutagent.action.color.thumbnail" | "cutagent.action.color.tracker.add" | "cutagent.action.color.tracker.attach_qualifier" | "cutagent.action.color.tracker.attach_window" | "cutagent.action.color.tracker.set_target" | "cutagent.action.color.tracker.track_forward" | "cutagent.action.color.tracker.track_reverse" | "cutagent.action.color.version.activate" | "cutagent.action.color.version.add" | "cutagent.action.color.version.delete" | "cutagent.action.color.version.duplicate" | "cutagent.action.color.version.load" | "cutagent.action.color.version.rollback" | "cutagent.action.color.wheels.set" | "cutagent.action.color.window.attach" | "cutagent.action.color.window.detach" | "cutagent.action.color.window.ellipse" | "cutagent.action.color.window.polygon" | "cutagent.action.color.window.rectangle" | "cutagent.action.color.window.reorder" | "cutagent.action.dctl.apply" | "cutagent.action.edit.auto_subtitle" | "cutagent.action.edit.blade" | "cutagent.action.edit.camera_pip" | "cutagent.action.edit.delete_through_edit" | "cutagent.action.edit.from_edl" | "cutagent.action.edit.fx.add" | "cutagent.action.edit.insert" | "cutagent.action.edit.overwrite" | "cutagent.action.edit.remove" | "cutagent.action.edit.remove_range" | "cutagent.action.edit.ripple_delete" | "cutagent.action.edit.ripple_delete_selected" | "cutagent.action.edit.scene_detect" | "cutagent.action.edit.slide_selected" | "cutagent.action.edit.slip_selected" | "cutagent.action.edit.social_crop" | "cutagent.action.edit.split" | "cutagent.action.edit.transition.add" | "cutagent.action.edit.transition.batch" | "cutagent.action.fairlight.add" | "cutagent.action.fairlight.ai.dialogue_leveler" | "cutagent.action.fairlight.ai.music_remixer" | "cutagent.action.fairlight.ai.voice_isolation" | "cutagent.action.fairlight.automation.write" | "cutagent.action.fairlight.bounce.mix_to_track" | "cutagent.action.fairlight.bounce.track" | "cutagent.action.fairlight.bus.assign" | "cutagent.action.fairlight.bus.level" | "cutagent.action.fairlight.channel_map.set" | "cutagent.action.fairlight.clip.delete" | "cutagent.action.fairlight.clip.link" | "cutagent.action.fairlight.clip.move" | "cutagent.action.fairlight.clip.nudge" | "cutagent.action.fairlight.clip.slip" | "cutagent.action.fairlight.clip.split" | "cutagent.action.fairlight.clip.trim" | "cutagent.action.fairlight.clip.unlink" | "cutagent.action.fairlight.delete" | "cutagent.action.fairlight.dynamics.disable" | "cutagent.action.fairlight.dynamics.enable" | "cutagent.action.fairlight.dynamics.set" | "cutagent.action.fairlight.effect.add" | "cutagent.action.fairlight.effect.remove" | "cutagent.action.fairlight.effect.set_param" | "cutagent.action.fairlight.elastic.enable" | "cutagent.action.fairlight.elastic.keyframe" | "cutagent.action.fairlight.ensure_stereo_tracks" | "cutagent.action.fairlight.ensure_tracks" | "cutagent.action.fairlight.eq.set" | "cutagent.action.fairlight.export.audio" | "cutagent.action.fairlight.insert" | "cutagent.action.fairlight.item_source.patch" | "cutagent.action.fairlight.lock" | "cutagent.action.fairlight.mixer.fader" | "cutagent.action.fairlight.mixer.pan" | "cutagent.action.fairlight.mute" | "cutagent.action.fairlight.preset.apply" | "cutagent.action.fairlight.rename" | "cutagent.action.fairlight.solo" | "cutagent.action.fairlight.solo_restore" | "cutagent.action.fairlight.sound_library.delete" | "cutagent.action.fairlight.sound_library.index_file" | "cutagent.action.fairlight.sound_library.index_folder" | "cutagent.action.fairlight.sound_library.insert" | "cutagent.action.fairlight.sound_library.source_rebuild" | "cutagent.action.fairlight.sound_library.source_remove" | "cutagent.action.fairlight.track_color" | "cutagent.action.fairlight.track_format.set" | "cutagent.action.fairlight.track_order.move" | "cutagent.action.fairlight.track.duplicate" | "cutagent.action.fairlight.transition.add" | "cutagent.action.fairlight.unlock" | "cutagent.action.fairlight.unmute" | "cutagent.action.fairlight.voice_isolation.set" | "cutagent.action.fusion.apply" | "cutagent.action.fusion.comp.delete" | "cutagent.action.fusion.comp.range" | "cutagent.action.fusion.comp.rename" | "cutagent.action.fusion.effect.blur" | "cutagent.action.fusion.effect.color_correct" | "cutagent.action.fusion.effect.glow" | "cutagent.action.fusion.effect.sharpen" | "cutagent.action.fusion.effect.transform" | "cutagent.action.fusion.generate" | "cutagent.action.fusion.image.batch" | "cutagent.action.fusion.image.set" | "cutagent.action.fusion.insert_setting" | "cutagent.action.fusion.insert_settings.batch" | "cutagent.action.fusion.keyer.chroma" | "cutagent.action.fusion.keyframe.add" | "cutagent.action.fusion.keyframe.clear" | "cutagent.action.fusion.keyframe.delete" | "cutagent.action.fusion.keyframe.set" | "cutagent.action.fusion.mask.ellipse" | "cutagent.action.fusion.mask.polygon" | "cutagent.action.fusion.mask.rectangle" | "cutagent.action.fusion.nested_text.batch" | "cutagent.action.fusion.nested_text.update" | "cutagent.action.fusion.node.add" | "cutagent.action.fusion.node.connect" | "cutagent.action.fusion.node.delete" | "cutagent.action.fusion.node.disconnect" | "cutagent.action.fusion.setting.validate" | "cutagent.action.fusion.template.apply" | "cutagent.action.fusion.template.assets.add" | "cutagent.action.fusion.template.dir" | "cutagent.action.fusion.template.icon.set" | "cutagent.action.fusion.template.install" | "cutagent.action.fusion.template.package_drfx" | "cutagent.action.fusion.template.scaffold" | "cutagent.action.fusion.template.uninstall" | "cutagent.action.fusion.text.batch" | "cutagent.action.fusion.text.set" | "cutagent.action.fusion.tool.active" | "cutagent.action.fusion.tool.add" | "cutagent.action.fusion.tool.connect" | "cutagent.action.fusion.tool.delete" | "cutagent.action.fusion.tool.disconnect" | "cutagent.action.fusion.tool.set" | "cutagent.action.fusion.tracker.add" | "cutagent.action.lut_refresh" | "cutagent.action.lut.generate.identity" | "cutagent.action.lut.install" | "cutagent.action.lut.remove" | "cutagent.action.media.clear_transcription" | "cutagent.action.media.color.clear" | "cutagent.action.media.color.set" | "cutagent.action.media.create_timeline" | "cutagent.action.media.delete" | "cutagent.action.media.duplicate" | "cutagent.action.media.extract_template" | "cutagent.action.media.flag.add" | "cutagent.action.media.flag.clear" | "cutagent.action.media.folder.export_drb" | "cutagent.action.media.folder.import_drb" | "cutagent.action.media.folders.create" | "cutagent.action.media.folders.delete" | "cutagent.action.media.folders.move" | "cutagent.action.media.folders.open" | "cutagent.action.media.folders.root" | "cutagent.action.media.growing_file.monitor" | "cutagent.action.media.import" | "cutagent.action.media.mark.clear" | "cutagent.action.media.mark.set" | "cutagent.action.media.marker.add" | "cutagent.action.media.marker.delete" | "cutagent.action.media.matte.delete" | "cutagent.action.media.metadata" | "cutagent.action.media.metadata.export" | "cutagent.action.media.move" | "cutagent.action.media.property_set" | "cutagent.action.media.proxy" | "cutagent.action.media.proxy.link_fullres" | "cutagent.action.media.relink" | "cutagent.action.media.rename" | "cutagent.action.media.replace" | "cutagent.action.media.replace_preserve_subclip" | "cutagent.action.media.selected.set" | "cutagent.action.media.stereo_create" | "cutagent.action.media.sync_audio" | "cutagent.action.media.third_party_metadata.set" | "cutagent.action.media.transcode" | "cutagent.action.media.transcribe" | "cutagent.action.media.unlink" | "cutagent.action.multicam.angle.remove" | "cutagent.action.multicam.angle.rename" | "cutagent.action.multicam.angle.set_enabled" | "cutagent.action.multicam.audio_activity.calibrate" | "cutagent.action.multicam.convert" | "cutagent.action.multicam.recover_timing" | "cutagent.action.multicam.reorder_angles" | "cutagent.action.multicam.replace.audio" | "cutagent.action.multicam.replace.video" | "cutagent.action.multicam.seed_timeline" | "cutagent.action.multicam.set_start_timecode" | "cutagent.action.multicam.smart_switch" | "cutagent.action.multicam.source.move" | "cutagent.action.multicam.source.property_set" | "cutagent.action.multicam.source.raw_braw_set" | "cutagent.action.multicam.source.remove" | "cutagent.action.multicam.strip_embedded_audio" | "cutagent.action.page.switch" | "cutagent.action.project.archive" | "cutagent.action.project.cleanup_scratch" | "cutagent.action.project.close" | "cutagent.action.project.cloud.create" | "cutagent.action.project.cloud.import" | "cutagent.action.project.cloud.open" | "cutagent.action.project.cloud.restore" | "cutagent.action.project.create" | "cutagent.action.project.delete" | "cutagent.action.project.export" | "cutagent.action.project.folders.create" | "cutagent.action.project.folders.delete" | "cutagent.action.project.folders.open" | "cutagent.action.project.folders.root" | "cutagent.action.project.folders.up" | "cutagent.action.project.import" | "cutagent.action.project.library.backup" | "cutagent.action.project.library.create" | "cutagent.action.project.library.restore" | "cutagent.action.project.library.switch" | "cutagent.action.project.open" | "cutagent.action.project.preset.export" | "cutagent.action.project.preset.load" | "cutagent.action.project.preset.save" | "cutagent.action.project.rename" | "cutagent.action.project.restore" | "cutagent.action.project.save" | "cutagent.action.project.settings_set" | "cutagent.action.render.alpha" | "cutagent.action.render.encoding" | "cutagent.action.render.mode.set" | "cutagent.action.render.preset_save" | "cutagent.action.render.preset_update" | "cutagent.action.render.subtitles" | "cutagent.action.storage.import" | "cutagent.action.storage.import_sequence" | "cutagent.action.storage.import_subclip" | "cutagent.action.storage.matte.add" | "cutagent.action.storage.matte.timeline_add" | "cutagent.action.storage.reveal" | "cutagent.action.system.keyframe_mode.set" | "cutagent.action.text.insert" | "cutagent.action.text.insert_preset" | "cutagent.action.text.insert_template" | "cutagent.action.text.insert_template_batch" | "cutagent.action.text.update" | "cutagent.action.timeline.auto_caption" | "cutagent.action.timeline.clip_color.batch" | "cutagent.action.timeline.compound_create" | "cutagent.action.timeline.create" | "cutagent.action.timeline.delete" | "cutagent.action.timeline.dolby.analyze" | "cutagent.action.timeline.duplicate" | "cutagent.action.timeline.export" | "cutagent.action.timeline.fairlight_preset.apply" | "cutagent.action.timeline.frame_export" | "cutagent.action.timeline.fusion_clip.create" | "cutagent.action.timeline.fusion_composition.insert" | "cutagent.action.timeline.grab_still" | "cutagent.action.timeline.import" | "cutagent.action.timeline.import_into" | "cutagent.action.timeline.insert_generator" | "cutagent.action.timeline.insert_title" | "cutagent.action.timeline.inspect_export" | "cutagent.action.timeline.items.delete" | "cutagent.action.timeline.items.move" | "cutagent.action.timeline.items.set_duration" | "cutagent.action.timeline.layer.ensure_media" | "cutagent.action.timeline.mark.clear" | "cutagent.action.timeline.mark.set" | "cutagent.action.timeline.marker.add" | "cutagent.action.timeline.marker.delete" | "cutagent.action.timeline.marker.update" | "cutagent.action.timeline.output_blanking.set" | "cutagent.action.timeline.playhead.set" | "cutagent.action.timeline.preview_export" | "cutagent.action.timeline.rename" | "cutagent.action.timeline.set_start_tc" | "cutagent.action.timeline.settings_set" | "cutagent.action.timeline.start_tc" | "cutagent.action.timeline.still.grab_all" | "cutagent.action.timeline.subtitle.export" | "cutagent.action.timeline.subtitle.insert" | "cutagent.action.timeline.switch" | "cutagent.action.timeline.sync_clips" | "cutagent.action.timeline.thumbnail" | "cutagent.action.timeline.track.add" | "cutagent.action.timeline.track.delete" | "cutagent.action.timeline.track.disable" | "cutagent.action.timeline.track.enable" | "cutagent.action.timeline.track.lock" | "cutagent.action.timeline.track.rename" | "cutagent.action.timeline.track.unlock" | "cutagent.action.timeline.voice_isolation.set" | "cutagent.action.transcript.create" | "cutagent.action.version.create" | "cutagent.action.version.prune" | "cutagent.action.version.restore";
 /** @beta */
-export type RequiredIdempotencyActionId = "cutagent.action.audio.beat_detect" | "cutagent.action.audio.duck" | "cutagent.action.audio.probe_subframe" | "cutagent.action.audio.reverb" | "cutagent.action.audio.voice_generate" | "cutagent.action.audio.voice_place" | "cutagent.action.audio.waveform_offset" | "cutagent.action.burnin.load" | "cutagent.action.burnin.preset.export" | "cutagent.action.burnin.preset.import" | "cutagent.action.clip.audio_eq" | "cutagent.action.clip.audio_gain" | "cutagent.action.clip.audio_normalize" | "cutagent.action.clip.audio_pan" | "cutagent.action.clip.audio_pitch" | "cutagent.action.clip.burnin.load" | "cutagent.action.clip.cache" | "cutagent.action.clip.cache_set" | "cutagent.action.clip.color" | "cutagent.action.clip.composite" | "cutagent.action.clip.disable" | "cutagent.action.clip.dynamic_zoom" | "cutagent.action.clip.enable" | "cutagent.action.clip.fade_in" | "cutagent.action.clip.flag" | "cutagent.action.clip.freeze" | "cutagent.action.clip.fusion.add" | "cutagent.action.clip.fusion.delete" | "cutagent.action.clip.fusion.export" | "cutagent.action.clip.fusion.import" | "cutagent.action.clip.fusion.load" | "cutagent.action.clip.fusion.tool_set" | "cutagent.action.clip.keyframe.add" | "cutagent.action.clip.keyframe.delete" | "cutagent.action.clip.keyframe.set_interpolation" | "cutagent.action.clip.link" | "cutagent.action.clip.marker.add" | "cutagent.action.clip.marker.custom_data" | "cutagent.action.clip.marker.delete" | "cutagent.action.clip.marker.delete_custom" | "cutagent.action.clip.properties" | "cutagent.action.clip.rename" | "cutagent.action.clip.reset_node_colors" | "cutagent.action.clip.reverse" | "cutagent.action.clip.smart_reframe" | "cutagent.action.clip.speed" | "cutagent.action.clip.speed_ramp" | "cutagent.action.clip.stabilize" | "cutagent.action.clip.take.add" | "cutagent.action.clip.take.delete" | "cutagent.action.clip.take.finalize" | "cutagent.action.clip.take.select" | "cutagent.action.clip.transform" | "cutagent.action.clip.unlink" | "cutagent.action.clip.update_sidecar" | "cutagent.action.clip.voice_isolation" | "cutagent.action.color.arri_cdl_lut" | "cutagent.action.color.auto_color" | "cutagent.action.color.cdl" | "cutagent.action.color.comp.export" | "cutagent.action.color.comp.flatten" | "cutagent.action.color.comp.repair" | "cutagent.action.color.curves" | "cutagent.action.color.export_lut" | "cutagent.action.color.fx.apply" | "cutagent.action.color.gallery.album.create" | "cutagent.action.color.gallery.album.rename" | "cutagent.action.color.gallery.album.switch" | "cutagent.action.color.gallery.still.apply" | "cutagent.action.color.gallery.still.delete" | "cutagent.action.color.gallery.still.export" | "cutagent.action.color.gallery.still.grab" | "cutagent.action.color.gallery.still.import" | "cutagent.action.color.gallery.still.label" | "cutagent.action.color.grade_apply" | "cutagent.action.color.grade_copy" | "cutagent.action.color.graph.normalize" | "cutagent.action.color.group.add" | "cutagent.action.color.group.assign" | "cutagent.action.color.group.delete" | "cutagent.action.color.group.remove" | "cutagent.action.color.group.rename" | "cutagent.action.color.huesat" | "cutagent.action.color.lut" | "cutagent.action.color.lut_refresh" | "cutagent.action.color.node.cache" | "cutagent.action.color.node.disable" | "cutagent.action.color.node.enable" | "cutagent.action.color.node.label_set" | "cutagent.action.color.node.lut_set" | "cutagent.action.color.node.reset" | "cutagent.action.color.page.alpha_output_connect" | "cutagent.action.color.page.auto_color_ai" | "cutagent.action.color.page.bleach_bypass_intensity_set" | "cutagent.action.color.page.bleach_bypass_set" | "cutagent.action.color.page.cat_set" | "cutagent.action.color.page.color_slice_set" | "cutagent.action.color.page.cst_set" | "cutagent.action.color.page.curve_points_set" | "cutagent.action.color.page.curve_set" | "cutagent.action.color.page.curve_spline_set" | "cutagent.action.color.page.dctl_apply" | "cutagent.action.color.page.dctl_remove" | "cutagent.action.color.page.hdr_detail_set" | "cutagent.action.color.page.hdr_global_set" | "cutagent.action.color.page.hdr_zone_set" | "cutagent.action.color.page.hsv_node_set" | "cutagent.action.color.page.hue_curve_set" | "cutagent.action.color.page.hue_curve_spline_set" | "cutagent.action.color.page.key_output_set" | "cutagent.action.color.page.layer_mixer_set" | "cutagent.action.color.page.lut_library_import" | "cutagent.action.color.page.magic_mask_draw_stroke" | "cutagent.action.color.page.magic_mask_refine" | "cutagent.action.color.page.node_add" | "cutagent.action.color.page.node_add_topology" | "cutagent.action.color.page.node_cleanup" | "cutagent.action.color.page.node_cleanup_general" | "cutagent.action.color.page.ofx_glow_set" | "cutagent.action.color.page.param_delete" | "cutagent.action.color.page.power_window_circle" | "cutagent.action.color.page.power_window_circle_detail" | "cutagent.action.color.page.power_window_curve" | "cutagent.action.color.page.power_window_gradient" | "cutagent.action.color.page.power_window_gradient_transform" | "cutagent.action.color.page.power_window_linear" | "cutagent.action.color.page.power_window_overlay_transform" | "cutagent.action.color.page.power_window_polygon" | "cutagent.action.color.page.power_window_rectangle" | "cutagent.action.color.page.power_window_set" | "cutagent.action.color.page.power_window_track" | "cutagent.action.color.page.primary_extended_set" | "cutagent.action.color.page.primary_set" | "cutagent.action.color.page.qualifier_hsl_set" | "cutagent.action.color.page.qualifier_matte_refine" | "cutagent.action.color.page.qualifier_matte_set" | "cutagent.action.color.page.qualifier_sample" | "cutagent.action.color.page.resolvefx_add" | "cutagent.action.color.page.resolvefx_param_set" | "cutagent.action.color.page.resolvefx_remove" | "cutagent.action.color.page.rgb_mixer_set" | "cutagent.action.color.page.sat_curve_set" | "cutagent.action.color.page.sat_curve_spline_set" | "cutagent.action.color.page.scope_set" | "cutagent.action.color.page.sharpen_set" | "cutagent.action.color.page.shot_match_apply" | "cutagent.action.color.page.sky_isolation" | "cutagent.action.color.page.softening_set" | "cutagent.action.color.page.split_tone_set" | "cutagent.action.color.page.still_match" | "cutagent.action.color.page.warper_set" | "cutagent.action.color.page.wheel_set" | "cutagent.action.color.page.white_balance_picker" | "cutagent.action.color.power_grade.album.create" | "cutagent.action.color.power_grade.apply" | "cutagent.action.color.power_grade.template_apply" | "cutagent.action.color.primary.set" | "cutagent.action.color.qualifier.attach" | "cutagent.action.color.qualifier.chroma" | "cutagent.action.color.qualifier.detach" | "cutagent.action.color.reset_fusion" | "cutagent.action.color.secondary.create" | "cutagent.action.color.secondary.isolate_green_screen" | "cutagent.action.color.secondary.subject_isolation" | "cutagent.action.color.secondary.tracked_window" | "cutagent.action.color.source_grade.apply_cdl" | "cutagent.action.color.source_grade.prepare_remote" | "cutagent.action.color.still.grab_all" | "cutagent.action.color.tracker.add" | "cutagent.action.color.tracker.attach_qualifier" | "cutagent.action.color.tracker.attach_window" | "cutagent.action.color.tracker.set_target" | "cutagent.action.color.tracker.track_forward" | "cutagent.action.color.tracker.track_reverse" | "cutagent.action.color.version.activate" | "cutagent.action.color.version.add" | "cutagent.action.color.version.delete" | "cutagent.action.color.version.duplicate" | "cutagent.action.color.version.load" | "cutagent.action.color.version.rollback" | "cutagent.action.color.wheels.set" | "cutagent.action.color.window.attach" | "cutagent.action.color.window.detach" | "cutagent.action.color.window.ellipse" | "cutagent.action.color.window.polygon" | "cutagent.action.color.window.rectangle" | "cutagent.action.color.window.reorder" | "cutagent.action.dctl.apply" | "cutagent.action.edit.auto_subtitle" | "cutagent.action.edit.blade" | "cutagent.action.edit.camera_pip" | "cutagent.action.edit.delete_through_edit" | "cutagent.action.edit.from_edl" | "cutagent.action.edit.fx.add" | "cutagent.action.edit.insert" | "cutagent.action.edit.overwrite" | "cutagent.action.edit.remove" | "cutagent.action.edit.remove_range" | "cutagent.action.edit.ripple_delete" | "cutagent.action.edit.ripple_delete_selected" | "cutagent.action.edit.scene_detect" | "cutagent.action.edit.slide_selected" | "cutagent.action.edit.slip_selected" | "cutagent.action.edit.social_crop" | "cutagent.action.edit.split" | "cutagent.action.edit.transition.add" | "cutagent.action.fairlight.add" | "cutagent.action.fairlight.ai.dialogue_leveler" | "cutagent.action.fairlight.ai.music_remixer" | "cutagent.action.fairlight.ai.voice_isolation" | "cutagent.action.fairlight.automation.write" | "cutagent.action.fairlight.bounce.mix_to_track" | "cutagent.action.fairlight.bounce.track" | "cutagent.action.fairlight.bus.assign" | "cutagent.action.fairlight.bus.level" | "cutagent.action.fairlight.channel_map.set" | "cutagent.action.fairlight.clip.delete" | "cutagent.action.fairlight.clip.link" | "cutagent.action.fairlight.clip.move" | "cutagent.action.fairlight.clip.nudge" | "cutagent.action.fairlight.clip.slip" | "cutagent.action.fairlight.clip.split" | "cutagent.action.fairlight.clip.trim" | "cutagent.action.fairlight.clip.unlink" | "cutagent.action.fairlight.delete" | "cutagent.action.fairlight.dynamics.disable" | "cutagent.action.fairlight.dynamics.enable" | "cutagent.action.fairlight.dynamics.set" | "cutagent.action.fairlight.effect.add" | "cutagent.action.fairlight.effect.remove" | "cutagent.action.fairlight.effect.set_param" | "cutagent.action.fairlight.elastic.enable" | "cutagent.action.fairlight.elastic.keyframe" | "cutagent.action.fairlight.ensure_stereo_tracks" | "cutagent.action.fairlight.ensure_tracks" | "cutagent.action.fairlight.eq.set" | "cutagent.action.fairlight.export.audio" | "cutagent.action.fairlight.insert" | "cutagent.action.fairlight.item_source.patch" | "cutagent.action.fairlight.lock" | "cutagent.action.fairlight.mixer.fader" | "cutagent.action.fairlight.mixer.pan" | "cutagent.action.fairlight.mute" | "cutagent.action.fairlight.preset.apply" | "cutagent.action.fairlight.rename" | "cutagent.action.fairlight.solo" | "cutagent.action.fairlight.solo_restore" | "cutagent.action.fairlight.sound_library.delete" | "cutagent.action.fairlight.sound_library.index_file" | "cutagent.action.fairlight.sound_library.index_folder" | "cutagent.action.fairlight.sound_library.insert" | "cutagent.action.fairlight.sound_library.source_rebuild" | "cutagent.action.fairlight.sound_library.source_remove" | "cutagent.action.fairlight.track_color" | "cutagent.action.fairlight.track_format.set" | "cutagent.action.fairlight.track_order.move" | "cutagent.action.fairlight.track.duplicate" | "cutagent.action.fairlight.transition.add" | "cutagent.action.fairlight.unlock" | "cutagent.action.fairlight.unmute" | "cutagent.action.fairlight.voice_isolation.set" | "cutagent.action.fusion.apply" | "cutagent.action.fusion.comp.delete" | "cutagent.action.fusion.comp.range" | "cutagent.action.fusion.comp.rename" | "cutagent.action.fusion.effect.blur" | "cutagent.action.fusion.effect.color_correct" | "cutagent.action.fusion.effect.glow" | "cutagent.action.fusion.effect.sharpen" | "cutagent.action.fusion.effect.transform" | "cutagent.action.fusion.generate" | "cutagent.action.fusion.image.set" | "cutagent.action.fusion.insert_setting" | "cutagent.action.fusion.keyer.chroma" | "cutagent.action.fusion.keyframe.add" | "cutagent.action.fusion.keyframe.clear" | "cutagent.action.fusion.keyframe.delete" | "cutagent.action.fusion.keyframe.set" | "cutagent.action.fusion.mask.ellipse" | "cutagent.action.fusion.mask.polygon" | "cutagent.action.fusion.mask.rectangle" | "cutagent.action.fusion.nested_text.update" | "cutagent.action.fusion.node.add" | "cutagent.action.fusion.node.connect" | "cutagent.action.fusion.node.delete" | "cutagent.action.fusion.node.disconnect" | "cutagent.action.fusion.setting.validate" | "cutagent.action.fusion.template.apply" | "cutagent.action.fusion.template.assets.add" | "cutagent.action.fusion.template.dir" | "cutagent.action.fusion.template.icon.set" | "cutagent.action.fusion.template.install" | "cutagent.action.fusion.template.package_drfx" | "cutagent.action.fusion.template.scaffold" | "cutagent.action.fusion.template.uninstall" | "cutagent.action.fusion.text.set" | "cutagent.action.fusion.tool.active" | "cutagent.action.fusion.tool.add" | "cutagent.action.fusion.tool.connect" | "cutagent.action.fusion.tool.delete" | "cutagent.action.fusion.tool.disconnect" | "cutagent.action.fusion.tool.set" | "cutagent.action.fusion.tracker.add" | "cutagent.action.lut_refresh" | "cutagent.action.lut.generate.identity" | "cutagent.action.lut.install" | "cutagent.action.lut.remove" | "cutagent.action.media.clear_transcription" | "cutagent.action.media.color.clear" | "cutagent.action.media.color.set" | "cutagent.action.media.create_timeline" | "cutagent.action.media.delete" | "cutagent.action.media.duplicate" | "cutagent.action.media.extract_template" | "cutagent.action.media.flag.add" | "cutagent.action.media.flag.clear" | "cutagent.action.media.folder.export_drb" | "cutagent.action.media.folder.import_drb" | "cutagent.action.media.folders.create" | "cutagent.action.media.folders.delete" | "cutagent.action.media.folders.move" | "cutagent.action.media.folders.open" | "cutagent.action.media.folders.root" | "cutagent.action.media.growing_file.monitor" | "cutagent.action.media.import" | "cutagent.action.media.mark.clear" | "cutagent.action.media.mark.set" | "cutagent.action.media.marker.add" | "cutagent.action.media.marker.delete" | "cutagent.action.media.matte.delete" | "cutagent.action.media.metadata" | "cutagent.action.media.metadata.export" | "cutagent.action.media.move" | "cutagent.action.media.property_set" | "cutagent.action.media.proxy" | "cutagent.action.media.proxy.link_fullres" | "cutagent.action.media.relink" | "cutagent.action.media.rename" | "cutagent.action.media.replace" | "cutagent.action.media.replace_preserve_subclip" | "cutagent.action.media.selected.set" | "cutagent.action.media.stereo_create" | "cutagent.action.media.sync_audio" | "cutagent.action.media.third_party_metadata.set" | "cutagent.action.media.transcode" | "cutagent.action.media.transcribe" | "cutagent.action.media.unlink" | "cutagent.action.multicam.angle.remove" | "cutagent.action.multicam.angle.rename" | "cutagent.action.multicam.angle.set_enabled" | "cutagent.action.multicam.convert" | "cutagent.action.multicam.recover_timing" | "cutagent.action.multicam.reorder_angles" | "cutagent.action.multicam.replace.audio" | "cutagent.action.multicam.replace.video" | "cutagent.action.multicam.seed_timeline" | "cutagent.action.multicam.set_start_timecode" | "cutagent.action.multicam.smart_switch" | "cutagent.action.multicam.source.grade_cdl" | "cutagent.action.multicam.source.move" | "cutagent.action.multicam.source.property_set" | "cutagent.action.multicam.source.raw_braw_set" | "cutagent.action.multicam.source.remove" | "cutagent.action.multicam.strip_embedded_audio" | "cutagent.action.page.switch" | "cutagent.action.project.archive" | "cutagent.action.project.cleanup_scratch" | "cutagent.action.project.close" | "cutagent.action.project.cloud.create" | "cutagent.action.project.cloud.import" | "cutagent.action.project.cloud.open" | "cutagent.action.project.cloud.restore" | "cutagent.action.project.create" | "cutagent.action.project.delete" | "cutagent.action.project.export" | "cutagent.action.project.folders.create" | "cutagent.action.project.folders.delete" | "cutagent.action.project.folders.open" | "cutagent.action.project.folders.root" | "cutagent.action.project.folders.up" | "cutagent.action.project.import" | "cutagent.action.project.library.backup" | "cutagent.action.project.library.create" | "cutagent.action.project.library.restore" | "cutagent.action.project.library.switch" | "cutagent.action.project.open" | "cutagent.action.project.preset.load" | "cutagent.action.project.preset.save" | "cutagent.action.project.rename" | "cutagent.action.project.restore" | "cutagent.action.project.save" | "cutagent.action.project.settings_set" | "cutagent.action.render.alpha" | "cutagent.action.render.encoding" | "cutagent.action.render.mode.set" | "cutagent.action.render.subtitles" | "cutagent.action.storage.import" | "cutagent.action.storage.import_sequence" | "cutagent.action.storage.import_subclip" | "cutagent.action.storage.matte.add" | "cutagent.action.storage.matte.timeline_add" | "cutagent.action.storage.reveal" | "cutagent.action.system.keyframe_mode.set" | "cutagent.action.text.insert" | "cutagent.action.text.insert_preset" | "cutagent.action.text.insert_template" | "cutagent.action.text.insert_template_batch" | "cutagent.action.text.update" | "cutagent.action.timeline.auto_caption" | "cutagent.action.timeline.compound_create" | "cutagent.action.timeline.create" | "cutagent.action.timeline.delete" | "cutagent.action.timeline.dolby.analyze" | "cutagent.action.timeline.duplicate" | "cutagent.action.timeline.export" | "cutagent.action.timeline.fairlight_preset.apply" | "cutagent.action.timeline.frame_export" | "cutagent.action.timeline.fusion_clip.create" | "cutagent.action.timeline.fusion_composition.insert" | "cutagent.action.timeline.grab_still" | "cutagent.action.timeline.import" | "cutagent.action.timeline.import_into" | "cutagent.action.timeline.insert_generator" | "cutagent.action.timeline.insert_title" | "cutagent.action.timeline.inspect_export" | "cutagent.action.timeline.items.delete" | "cutagent.action.timeline.items.move" | "cutagent.action.timeline.items.set_duration" | "cutagent.action.timeline.layer.ensure_media" | "cutagent.action.timeline.mark.clear" | "cutagent.action.timeline.mark.set" | "cutagent.action.timeline.marker.add" | "cutagent.action.timeline.marker.delete" | "cutagent.action.timeline.marker.update" | "cutagent.action.timeline.playhead.set" | "cutagent.action.timeline.preview_export" | "cutagent.action.timeline.rename" | "cutagent.action.timeline.set_start_tc" | "cutagent.action.timeline.settings_set" | "cutagent.action.timeline.start_tc" | "cutagent.action.timeline.still.grab_all" | "cutagent.action.timeline.subtitle.export" | "cutagent.action.timeline.subtitle.insert" | "cutagent.action.timeline.switch" | "cutagent.action.timeline.sync_clips" | "cutagent.action.timeline.thumbnail" | "cutagent.action.timeline.track.add" | "cutagent.action.timeline.track.delete" | "cutagent.action.timeline.track.disable" | "cutagent.action.timeline.track.enable" | "cutagent.action.timeline.track.lock" | "cutagent.action.timeline.track.rename" | "cutagent.action.timeline.track.unlock" | "cutagent.action.timeline.voice_isolation.set" | "cutagent.action.transcript.create" | "cutagent.action.version.create" | "cutagent.action.version.prune" | "cutagent.action.version.restore";
+export type RequiredIdempotencyActionId = "cutagent.action.audio.beat_detect" | "cutagent.action.audio.duck" | "cutagent.action.audio.probe_subframe" | "cutagent.action.audio.reverb" | "cutagent.action.audio.voice_generate" | "cutagent.action.audio.voice_place" | "cutagent.action.audio.waveform_offset" | "cutagent.action.bulk.disable" | "cutagent.action.bulk.enable" | "cutagent.action.bulk.property_set" | "cutagent.action.burnin.load" | "cutagent.action.burnin.preset.export" | "cutagent.action.burnin.preset.import" | "cutagent.action.clip.audio_eq" | "cutagent.action.clip.audio_gain" | "cutagent.action.clip.audio_normalize" | "cutagent.action.clip.audio_pan" | "cutagent.action.clip.audio_pitch" | "cutagent.action.clip.burnin.load" | "cutagent.action.clip.cache" | "cutagent.action.clip.cache_set" | "cutagent.action.clip.color" | "cutagent.action.clip.composite" | "cutagent.action.clip.disable" | "cutagent.action.clip.dynamic_zoom" | "cutagent.action.clip.enable" | "cutagent.action.clip.fade_in" | "cutagent.action.clip.flag" | "cutagent.action.clip.freeze" | "cutagent.action.clip.fusion.add" | "cutagent.action.clip.fusion.delete" | "cutagent.action.clip.fusion.export" | "cutagent.action.clip.fusion.import" | "cutagent.action.clip.fusion.load" | "cutagent.action.clip.fusion.tool_set" | "cutagent.action.clip.keyframe.add" | "cutagent.action.clip.keyframe.delete" | "cutagent.action.clip.keyframe.set_interpolation" | "cutagent.action.clip.link" | "cutagent.action.clip.marker.add" | "cutagent.action.clip.marker.custom_data" | "cutagent.action.clip.marker.delete" | "cutagent.action.clip.marker.delete_custom" | "cutagent.action.clip.properties" | "cutagent.action.clip.rename" | "cutagent.action.clip.reset_node_colors" | "cutagent.action.clip.reverse" | "cutagent.action.clip.smart_reframe" | "cutagent.action.clip.speed" | "cutagent.action.clip.speed_ramp" | "cutagent.action.clip.stabilize" | "cutagent.action.clip.take.add" | "cutagent.action.clip.take.delete" | "cutagent.action.clip.take.finalize" | "cutagent.action.clip.take.select" | "cutagent.action.clip.transform" | "cutagent.action.clip.unlink" | "cutagent.action.clip.update_sidecar" | "cutagent.action.clip.voice_isolation" | "cutagent.action.color.arri_cdl_lut" | "cutagent.action.color.auto_color" | "cutagent.action.color.cdl" | "cutagent.action.color.comp.export" | "cutagent.action.color.comp.flatten" | "cutagent.action.color.comp.repair" | "cutagent.action.color.curves" | "cutagent.action.color.export_lut" | "cutagent.action.color.fx.apply" | "cutagent.action.color.gallery.album.create" | "cutagent.action.color.gallery.album.rename" | "cutagent.action.color.gallery.album.switch" | "cutagent.action.color.gallery.still.apply" | "cutagent.action.color.gallery.still.delete" | "cutagent.action.color.gallery.still.export" | "cutagent.action.color.gallery.still.grab" | "cutagent.action.color.gallery.still.import" | "cutagent.action.color.gallery.still.label" | "cutagent.action.color.grade_apply" | "cutagent.action.color.grade_copy" | "cutagent.action.color.graph.normalize" | "cutagent.action.color.group.add" | "cutagent.action.color.group.assign" | "cutagent.action.color.group.delete" | "cutagent.action.color.group.remove" | "cutagent.action.color.group.rename" | "cutagent.action.color.huesat" | "cutagent.action.color.lut" | "cutagent.action.color.lut_refresh" | "cutagent.action.color.node.cache" | "cutagent.action.color.node.disable" | "cutagent.action.color.node.enable" | "cutagent.action.color.node.label_set" | "cutagent.action.color.node.lut_set" | "cutagent.action.color.node.reset" | "cutagent.action.color.page.alpha_output_connect" | "cutagent.action.color.page.auto_color_ai" | "cutagent.action.color.page.bleach_bypass_intensity_set" | "cutagent.action.color.page.bleach_bypass_set" | "cutagent.action.color.page.cat_set" | "cutagent.action.color.page.color_slice_set" | "cutagent.action.color.page.cst_set" | "cutagent.action.color.page.curve_points_set" | "cutagent.action.color.page.curve_set" | "cutagent.action.color.page.curve_spline_set" | "cutagent.action.color.page.dctl_apply" | "cutagent.action.color.page.dctl_remove" | "cutagent.action.color.page.hdr_detail_set" | "cutagent.action.color.page.hdr_global_set" | "cutagent.action.color.page.hdr_zone_set" | "cutagent.action.color.page.hsv_node_set" | "cutagent.action.color.page.hue_curve_set" | "cutagent.action.color.page.hue_curve_spline_set" | "cutagent.action.color.page.key_output_set" | "cutagent.action.color.page.layer_mixer_set" | "cutagent.action.color.page.lut_library_import" | "cutagent.action.color.page.magic_mask_draw_stroke" | "cutagent.action.color.page.magic_mask_refine" | "cutagent.action.color.page.node_add" | "cutagent.action.color.page.node_add_topology" | "cutagent.action.color.page.node_cleanup" | "cutagent.action.color.page.node_cleanup_general" | "cutagent.action.color.page.ofx_glow_set" | "cutagent.action.color.page.param_delete" | "cutagent.action.color.page.power_window_circle" | "cutagent.action.color.page.power_window_circle_detail" | "cutagent.action.color.page.power_window_curve" | "cutagent.action.color.page.power_window_gradient" | "cutagent.action.color.page.power_window_gradient_transform" | "cutagent.action.color.page.power_window_linear" | "cutagent.action.color.page.power_window_overlay_transform" | "cutagent.action.color.page.power_window_polygon" | "cutagent.action.color.page.power_window_rectangle" | "cutagent.action.color.page.power_window_set" | "cutagent.action.color.page.power_window_track" | "cutagent.action.color.page.primary_extended_set" | "cutagent.action.color.page.primary_set" | "cutagent.action.color.page.qualifier_hsl_set" | "cutagent.action.color.page.qualifier_matte_refine" | "cutagent.action.color.page.qualifier_matte_set" | "cutagent.action.color.page.qualifier_sample" | "cutagent.action.color.page.resolvefx_add" | "cutagent.action.color.page.resolvefx_param_set" | "cutagent.action.color.page.resolvefx_remove" | "cutagent.action.color.page.rgb_mixer_set" | "cutagent.action.color.page.sat_curve_set" | "cutagent.action.color.page.sat_curve_spline_set" | "cutagent.action.color.page.scope_set" | "cutagent.action.color.page.sharpen_set" | "cutagent.action.color.page.shot_match_apply" | "cutagent.action.color.page.sky_isolation" | "cutagent.action.color.page.softening_set" | "cutagent.action.color.page.split_tone_set" | "cutagent.action.color.page.still_match" | "cutagent.action.color.page.warper_set" | "cutagent.action.color.page.wheel_set" | "cutagent.action.color.page.white_balance_picker" | "cutagent.action.color.power_grade.album.create" | "cutagent.action.color.power_grade.apply" | "cutagent.action.color.power_grade.template_apply" | "cutagent.action.color.primary.set" | "cutagent.action.color.qualifier.attach" | "cutagent.action.color.qualifier.chroma" | "cutagent.action.color.qualifier.detach" | "cutagent.action.color.reset_fusion" | "cutagent.action.color.secondary.create" | "cutagent.action.color.secondary.isolate_green_screen" | "cutagent.action.color.secondary.subject_isolation" | "cutagent.action.color.secondary.tracked_window" | "cutagent.action.color.source_grade.apply_cdl" | "cutagent.action.color.source_grade.prepare_remote" | "cutagent.action.color.still.grab_all" | "cutagent.action.color.tracker.add" | "cutagent.action.color.tracker.attach_qualifier" | "cutagent.action.color.tracker.attach_window" | "cutagent.action.color.tracker.set_target" | "cutagent.action.color.tracker.track_forward" | "cutagent.action.color.tracker.track_reverse" | "cutagent.action.color.version.activate" | "cutagent.action.color.version.add" | "cutagent.action.color.version.delete" | "cutagent.action.color.version.duplicate" | "cutagent.action.color.version.load" | "cutagent.action.color.version.rollback" | "cutagent.action.color.wheels.set" | "cutagent.action.color.window.attach" | "cutagent.action.color.window.detach" | "cutagent.action.color.window.ellipse" | "cutagent.action.color.window.polygon" | "cutagent.action.color.window.rectangle" | "cutagent.action.color.window.reorder" | "cutagent.action.dctl.apply" | "cutagent.action.edit.auto_subtitle" | "cutagent.action.edit.blade" | "cutagent.action.edit.camera_pip" | "cutagent.action.edit.delete_through_edit" | "cutagent.action.edit.from_edl" | "cutagent.action.edit.fx.add" | "cutagent.action.edit.insert" | "cutagent.action.edit.overwrite" | "cutagent.action.edit.remove" | "cutagent.action.edit.remove_range" | "cutagent.action.edit.ripple_delete" | "cutagent.action.edit.ripple_delete_selected" | "cutagent.action.edit.scene_detect" | "cutagent.action.edit.slide_selected" | "cutagent.action.edit.slip_selected" | "cutagent.action.edit.social_crop" | "cutagent.action.edit.split" | "cutagent.action.edit.transition.add" | "cutagent.action.edit.transition.batch" | "cutagent.action.fairlight.add" | "cutagent.action.fairlight.ai.dialogue_leveler" | "cutagent.action.fairlight.ai.music_remixer" | "cutagent.action.fairlight.ai.voice_isolation" | "cutagent.action.fairlight.automation.write" | "cutagent.action.fairlight.bounce.mix_to_track" | "cutagent.action.fairlight.bounce.track" | "cutagent.action.fairlight.bus.assign" | "cutagent.action.fairlight.bus.level" | "cutagent.action.fairlight.channel_map.set" | "cutagent.action.fairlight.clip.delete" | "cutagent.action.fairlight.clip.link" | "cutagent.action.fairlight.clip.move" | "cutagent.action.fairlight.clip.nudge" | "cutagent.action.fairlight.clip.slip" | "cutagent.action.fairlight.clip.split" | "cutagent.action.fairlight.clip.trim" | "cutagent.action.fairlight.clip.unlink" | "cutagent.action.fairlight.delete" | "cutagent.action.fairlight.dynamics.disable" | "cutagent.action.fairlight.dynamics.enable" | "cutagent.action.fairlight.dynamics.set" | "cutagent.action.fairlight.effect.add" | "cutagent.action.fairlight.effect.remove" | "cutagent.action.fairlight.effect.set_param" | "cutagent.action.fairlight.elastic.enable" | "cutagent.action.fairlight.elastic.keyframe" | "cutagent.action.fairlight.ensure_stereo_tracks" | "cutagent.action.fairlight.ensure_tracks" | "cutagent.action.fairlight.eq.set" | "cutagent.action.fairlight.export.audio" | "cutagent.action.fairlight.insert" | "cutagent.action.fairlight.item_source.patch" | "cutagent.action.fairlight.lock" | "cutagent.action.fairlight.mixer.fader" | "cutagent.action.fairlight.mixer.pan" | "cutagent.action.fairlight.mute" | "cutagent.action.fairlight.preset.apply" | "cutagent.action.fairlight.rename" | "cutagent.action.fairlight.solo" | "cutagent.action.fairlight.solo_restore" | "cutagent.action.fairlight.sound_library.delete" | "cutagent.action.fairlight.sound_library.index_file" | "cutagent.action.fairlight.sound_library.index_folder" | "cutagent.action.fairlight.sound_library.insert" | "cutagent.action.fairlight.sound_library.source_rebuild" | "cutagent.action.fairlight.sound_library.source_remove" | "cutagent.action.fairlight.track_color" | "cutagent.action.fairlight.track_format.set" | "cutagent.action.fairlight.track_order.move" | "cutagent.action.fairlight.track.duplicate" | "cutagent.action.fairlight.transition.add" | "cutagent.action.fairlight.unlock" | "cutagent.action.fairlight.unmute" | "cutagent.action.fairlight.voice_isolation.set" | "cutagent.action.fusion.apply" | "cutagent.action.fusion.comp.delete" | "cutagent.action.fusion.comp.range" | "cutagent.action.fusion.comp.rename" | "cutagent.action.fusion.effect.blur" | "cutagent.action.fusion.effect.color_correct" | "cutagent.action.fusion.effect.glow" | "cutagent.action.fusion.effect.sharpen" | "cutagent.action.fusion.effect.transform" | "cutagent.action.fusion.generate" | "cutagent.action.fusion.image.batch" | "cutagent.action.fusion.image.set" | "cutagent.action.fusion.insert_setting" | "cutagent.action.fusion.insert_settings.batch" | "cutagent.action.fusion.keyer.chroma" | "cutagent.action.fusion.keyframe.add" | "cutagent.action.fusion.keyframe.clear" | "cutagent.action.fusion.keyframe.delete" | "cutagent.action.fusion.keyframe.set" | "cutagent.action.fusion.mask.ellipse" | "cutagent.action.fusion.mask.polygon" | "cutagent.action.fusion.mask.rectangle" | "cutagent.action.fusion.nested_text.batch" | "cutagent.action.fusion.nested_text.update" | "cutagent.action.fusion.node.add" | "cutagent.action.fusion.node.connect" | "cutagent.action.fusion.node.delete" | "cutagent.action.fusion.node.disconnect" | "cutagent.action.fusion.setting.validate" | "cutagent.action.fusion.template.apply" | "cutagent.action.fusion.template.assets.add" | "cutagent.action.fusion.template.dir" | "cutagent.action.fusion.template.icon.set" | "cutagent.action.fusion.template.install" | "cutagent.action.fusion.template.package_drfx" | "cutagent.action.fusion.template.scaffold" | "cutagent.action.fusion.template.uninstall" | "cutagent.action.fusion.text.batch" | "cutagent.action.fusion.text.set" | "cutagent.action.fusion.tool.active" | "cutagent.action.fusion.tool.add" | "cutagent.action.fusion.tool.connect" | "cutagent.action.fusion.tool.delete" | "cutagent.action.fusion.tool.disconnect" | "cutagent.action.fusion.tool.set" | "cutagent.action.fusion.tracker.add" | "cutagent.action.lut_refresh" | "cutagent.action.lut.generate.identity" | "cutagent.action.lut.install" | "cutagent.action.lut.remove" | "cutagent.action.media.clear_transcription" | "cutagent.action.media.color.clear" | "cutagent.action.media.color.set" | "cutagent.action.media.create_timeline" | "cutagent.action.media.delete" | "cutagent.action.media.duplicate" | "cutagent.action.media.extract_template" | "cutagent.action.media.flag.add" | "cutagent.action.media.flag.clear" | "cutagent.action.media.folder.export_drb" | "cutagent.action.media.folder.import_drb" | "cutagent.action.media.folders.create" | "cutagent.action.media.folders.delete" | "cutagent.action.media.folders.move" | "cutagent.action.media.folders.open" | "cutagent.action.media.folders.root" | "cutagent.action.media.growing_file.monitor" | "cutagent.action.media.import" | "cutagent.action.media.mark.clear" | "cutagent.action.media.mark.set" | "cutagent.action.media.marker.add" | "cutagent.action.media.marker.delete" | "cutagent.action.media.matte.delete" | "cutagent.action.media.metadata" | "cutagent.action.media.metadata.export" | "cutagent.action.media.move" | "cutagent.action.media.property_set" | "cutagent.action.media.proxy" | "cutagent.action.media.proxy.link_fullres" | "cutagent.action.media.relink" | "cutagent.action.media.rename" | "cutagent.action.media.replace" | "cutagent.action.media.replace_preserve_subclip" | "cutagent.action.media.selected.set" | "cutagent.action.media.stereo_create" | "cutagent.action.media.sync_audio" | "cutagent.action.media.third_party_metadata.set" | "cutagent.action.media.transcode" | "cutagent.action.media.transcribe" | "cutagent.action.media.unlink" | "cutagent.action.multicam.angle.remove" | "cutagent.action.multicam.angle.rename" | "cutagent.action.multicam.angle.set_enabled" | "cutagent.action.multicam.convert" | "cutagent.action.multicam.recover_timing" | "cutagent.action.multicam.reorder_angles" | "cutagent.action.multicam.replace.audio" | "cutagent.action.multicam.replace.video" | "cutagent.action.multicam.seed_timeline" | "cutagent.action.multicam.set_start_timecode" | "cutagent.action.multicam.smart_switch" | "cutagent.action.multicam.source.move" | "cutagent.action.multicam.source.property_set" | "cutagent.action.multicam.source.raw_braw_set" | "cutagent.action.multicam.source.remove" | "cutagent.action.multicam.strip_embedded_audio" | "cutagent.action.page.switch" | "cutagent.action.project.archive" | "cutagent.action.project.cleanup_scratch" | "cutagent.action.project.close" | "cutagent.action.project.cloud.create" | "cutagent.action.project.cloud.import" | "cutagent.action.project.cloud.open" | "cutagent.action.project.cloud.restore" | "cutagent.action.project.create" | "cutagent.action.project.delete" | "cutagent.action.project.export" | "cutagent.action.project.folders.create" | "cutagent.action.project.folders.delete" | "cutagent.action.project.folders.open" | "cutagent.action.project.folders.root" | "cutagent.action.project.folders.up" | "cutagent.action.project.import" | "cutagent.action.project.library.backup" | "cutagent.action.project.library.create" | "cutagent.action.project.library.restore" | "cutagent.action.project.library.switch" | "cutagent.action.project.open" | "cutagent.action.project.preset.export" | "cutagent.action.project.preset.load" | "cutagent.action.project.preset.save" | "cutagent.action.project.rename" | "cutagent.action.project.restore" | "cutagent.action.project.save" | "cutagent.action.project.settings_set" | "cutagent.action.render.alpha" | "cutagent.action.render.encoding" | "cutagent.action.render.mode.set" | "cutagent.action.render.preset_save" | "cutagent.action.render.preset_update" | "cutagent.action.render.subtitles" | "cutagent.action.storage.import" | "cutagent.action.storage.import_sequence" | "cutagent.action.storage.import_subclip" | "cutagent.action.storage.matte.add" | "cutagent.action.storage.matte.timeline_add" | "cutagent.action.storage.reveal" | "cutagent.action.system.keyframe_mode.set" | "cutagent.action.text.insert" | "cutagent.action.text.insert_preset" | "cutagent.action.text.insert_template" | "cutagent.action.text.insert_template_batch" | "cutagent.action.text.update" | "cutagent.action.timeline.auto_caption" | "cutagent.action.timeline.clip_color.batch" | "cutagent.action.timeline.compound_create" | "cutagent.action.timeline.create" | "cutagent.action.timeline.delete" | "cutagent.action.timeline.dolby.analyze" | "cutagent.action.timeline.duplicate" | "cutagent.action.timeline.export" | "cutagent.action.timeline.fairlight_preset.apply" | "cutagent.action.timeline.frame_export" | "cutagent.action.timeline.fusion_clip.create" | "cutagent.action.timeline.fusion_composition.insert" | "cutagent.action.timeline.grab_still" | "cutagent.action.timeline.import" | "cutagent.action.timeline.import_into" | "cutagent.action.timeline.insert_generator" | "cutagent.action.timeline.insert_title" | "cutagent.action.timeline.inspect_export" | "cutagent.action.timeline.items.delete" | "cutagent.action.timeline.items.move" | "cutagent.action.timeline.items.set_duration" | "cutagent.action.timeline.layer.ensure_media" | "cutagent.action.timeline.mark.clear" | "cutagent.action.timeline.mark.set" | "cutagent.action.timeline.marker.add" | "cutagent.action.timeline.marker.delete" | "cutagent.action.timeline.marker.update" | "cutagent.action.timeline.output_blanking.set" | "cutagent.action.timeline.playhead.set" | "cutagent.action.timeline.preview_export" | "cutagent.action.timeline.rename" | "cutagent.action.timeline.set_start_tc" | "cutagent.action.timeline.settings_set" | "cutagent.action.timeline.start_tc" | "cutagent.action.timeline.still.grab_all" | "cutagent.action.timeline.subtitle.export" | "cutagent.action.timeline.subtitle.insert" | "cutagent.action.timeline.switch" | "cutagent.action.timeline.sync_clips" | "cutagent.action.timeline.thumbnail" | "cutagent.action.timeline.track.add" | "cutagent.action.timeline.track.delete" | "cutagent.action.timeline.track.disable" | "cutagent.action.timeline.track.enable" | "cutagent.action.timeline.track.lock" | "cutagent.action.timeline.track.rename" | "cutagent.action.timeline.track.unlock" | "cutagent.action.timeline.voice_isolation.set" | "cutagent.action.transcript.create" | "cutagent.action.version.create" | "cutagent.action.version.prune" | "cutagent.action.version.restore";
 /** @beta */
 export type OptionalIdempotencyActionId = "cutagent.action.color.page.false_color_read" | "cutagent.action.color.page.scope_read" | "cutagent.action.color.page.shot_match_analyze" | "cutagent.action.color.page.viewer_before_after" | "cutagent.action.color.thumbnail" | "cutagent.action.multicam.audio_activity.calibrate";
 /** @beta */
@@ -2700,6 +2773,9 @@ export interface ActionInputMap {
   readonly "cutagent.action.audio.voice_list": { readonly "accent"?: string; readonly "age"?: string; readonly "gender"?: string; readonly "includeCustomRates"?: boolean; readonly "language"?: string; readonly "limit"?: number; readonly "page"?: number; readonly "pageToken"?: string; readonly "search"?: string; readonly "sort"?: "trending" | "usage_character_count_1y" | "cloned_by_count" | "created_date"; readonly "source"?: "account" | "library"; readonly "useCase"?: string; };
   readonly "cutagent.action.audio.voice_place": { readonly "assetDigest": string; readonly "assetId": ArtifactId; readonly "projectId": ProjectId; readonly "recordFrame": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "trackIndex": number; };
   readonly "cutagent.action.audio.waveform_offset": { readonly "fps"?: number; readonly "priorOffsetSeconds"?: number; readonly "referencePath": string; readonly "targetPath": string; readonly "useMetadata"?: boolean; readonly "windowCount"?: number; readonly "windowSeconds"?: number; };
+  readonly "cutagent.action.bulk.disable": { readonly "failurePolicy": "stop"; readonly "projectId": ProjectId; readonly "targets": readonly ({ readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video" | "audio"; })[]; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; };
+  readonly "cutagent.action.bulk.enable": { readonly "failurePolicy": "stop"; readonly "projectId": ProjectId; readonly "targets": readonly ({ readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video" | "audio"; })[]; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; };
+  readonly "cutagent.action.bulk.property_set": { readonly "failurePolicy": "stop"; readonly "items": readonly ({ readonly "properties": { readonly "anchorX"?: number; readonly "anchorY"?: number; readonly "cropBottom"?: number; readonly "cropLeft"?: number; readonly "cropRight"?: number; readonly "cropTop"?: number; readonly "distortion"?: number; readonly "dynamicZoomEase"?: "linear" | "in" | "out" | "inout"; readonly "flipX"?: boolean; readonly "flipY"?: boolean; readonly "opacity"?: number; readonly "pitch"?: number; readonly "positionX"?: number; readonly "positionY"?: number; readonly "rotation"?: number; readonly "yaw"?: number; readonly "zoomX"?: number; readonly "zoomY"?: number; }; readonly "target": { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video"; }; })[]; readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; };
   readonly "cutagent.action.burnin.load": { readonly "presetName": string; };
   readonly "cutagent.action.burnin.preset.export": { readonly "outputPath": string; readonly "presetName": string; };
   readonly "cutagent.action.burnin.preset.import": { readonly "inputPath": string; };
@@ -2763,7 +2839,7 @@ export interface ActionInputMap {
   readonly "cutagent.action.clip.take.list": { readonly "clipName"?: string; };
   readonly "cutagent.action.clip.take.select": { readonly "clipName"?: string; readonly "index": number; };
   readonly "cutagent.action.clip.track_info": { readonly "clipName"?: string; };
-  readonly "cutagent.action.clip.transform": { readonly "projectId": ProjectId; readonly "target": { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video"; }; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "transform": ({ readonly "anchorX"?: number; readonly "anchorY"?: number; readonly "cropBottom"?: number; readonly "cropLeft"?: number; readonly "cropRight"?: number; readonly "cropTop"?: number; readonly "distortion"?: number; readonly "dynamicZoomEase"?: "linear" | "in" | "out" | "inout"; readonly "flipX"?: boolean; readonly "flipY"?: boolean; readonly "opacity"?: number; readonly "pitch"?: number; readonly "positionX"?: number; readonly "positionY"?: number; readonly "rotation"?: number; readonly "yaw"?: number; readonly "zoomX"?: number; readonly "zoomY"?: number; }) & (({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({})); };
+  readonly "cutagent.action.clip.transform": ({ readonly "projectId": ProjectId; readonly "target": { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video"; }; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "transform": ({ readonly "anchorX"?: number; readonly "anchorY"?: number; readonly "cropBottom"?: number; readonly "cropLeft"?: number; readonly "cropRight"?: number; readonly "cropTop"?: number; readonly "distortion"?: number; readonly "dynamicZoomEase"?: "linear" | "in" | "out" | "inout"; readonly "flipX"?: boolean; readonly "flipY"?: boolean; readonly "opacity"?: number; readonly "pitch"?: number; readonly "positionX"?: number; readonly "positionY"?: number; readonly "rotation"?: number; readonly "yaw"?: number; readonly "zoomX"?: number; readonly "zoomY"?: number; }) & (({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({})); }) | ({ readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "transforms": readonly ({ readonly "target": { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video"; }; readonly "transform": ({ readonly "anchorX"?: number; readonly "anchorY"?: number; readonly "cropBottom"?: number; readonly "cropLeft"?: number; readonly "cropRight"?: number; readonly "cropTop"?: number; readonly "distortion"?: number; readonly "dynamicZoomEase"?: "linear" | "in" | "out" | "inout"; readonly "flipX"?: boolean; readonly "flipY"?: boolean; readonly "opacity"?: number; readonly "pitch"?: number; readonly "positionX"?: number; readonly "positionY"?: number; readonly "rotation"?: number; readonly "yaw"?: number; readonly "zoomX"?: number; readonly "zoomY"?: number; }) & (({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({})); })[]; });
   readonly "cutagent.action.clip.unlink": { readonly "clipName": string; };
   readonly "cutagent.action.clip.update_sidecar": { readonly "clip"?: string; };
   readonly "cutagent.action.clip.voice_isolation": { readonly "amount"?: number; readonly "enable"?: boolean; readonly "name"?: string; };
@@ -2805,7 +2881,7 @@ export interface ActionInputMap {
   readonly "cutagent.action.color.group.rename": { readonly "groupId": string; readonly "newName": string; readonly "projectId": ProjectId; readonly "revision": Revision; };
   readonly "cutagent.action.color.huesat": { readonly "destinationArtifactId": ArtifactId; readonly "hueShift": number; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "saturationBoost": number; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "valueBoost": number; };
   readonly "cutagent.action.color.inspect": { readonly "nodeStackLayerIndex": number; readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; };
-  readonly "cutagent.action.color.lut": { readonly "clear": boolean; readonly "colorRevision": Revision; readonly "lutName": string; readonly "nodeIndex": number; readonly "nodeStackLayerIndex": number; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; };
+  readonly "cutagent.action.color.lut": ({ readonly "clear": boolean; readonly "colorRevision": Revision; readonly "lutName": string; readonly "nodeIndex": number; readonly "nodeStackLayerIndex": number; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; }) | ({ readonly "failurePolicy": "continue" | "stop"; readonly "items": readonly ({ readonly "clear": false; readonly "colorRevision": Revision; readonly "lutName": string; readonly "nodeIndex": number; readonly "nodeStackLayerIndex": number; readonly "timelineItemId": TimelineItemId; })[]; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; });
   readonly "cutagent.action.color.lut_refresh": { readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; };
   readonly "cutagent.action.color.mask.inspect": { readonly "compIndex": number; readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; };
   readonly "cutagent.action.color.node.cache": { readonly "cacheMode": -1 | 0 | 1; readonly "nodeIndex": number; readonly "nodeStackLayerIndex": number; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; };
@@ -2936,6 +3012,7 @@ export interface ActionInputMap {
   readonly "cutagent.action.color.window.rectangle": { readonly "center": readonly (number)[]; readonly "colorRevision": Revision; readonly "compIndex": number; readonly "height": number; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "softness": number; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "width": number; };
   readonly "cutagent.action.color.window.reorder": { readonly "compIndex": number; readonly "order": readonly (string)[]; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; };
   readonly "cutagent.action.dctl.apply": { readonly "dctlArtifactId": ArtifactId; readonly "nodeIndex"?: number; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; };
+  readonly "cutagent.action.dctl.validate_source": { readonly "source": string; };
   readonly "cutagent.action.edit.auto_subtitle": { readonly "charsPerLine"?: number; readonly "gapFrames"?: number; readonly "language"?: string; readonly "lineBreak"?: "single" | "double"; readonly "preset"?: "default" | "teletext" | "netflix"; readonly "projectId": ProjectId; readonly "sourceAudioTargets": readonly ({ readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "audio"; })[]; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; };
   readonly "cutagent.action.edit.blade": { readonly "linkedMedia": "preserve"; readonly "projectId": ProjectId; readonly "recordFrame": number; readonly "target": { readonly "id": TimelineItemId; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video" | "audio"; }; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; };
   readonly "cutagent.action.edit.camera_pip": ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: never; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt"?: never; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness"?: never; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan"?: never; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity"?: never; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor"?: never; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels"?: never; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius"?: never; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; }) | ({ readonly "anchor": "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center"; readonly "backgroundMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "backgroundTrackIndex": number; readonly "cameraMedia": { readonly "id": MediaPoolItemId; readonly "name": string; }; readonly "cameraTrackIndex": number; readonly "cornerRadius": number; readonly "durationFrames": number; readonly "marginPixels": number; readonly "opacity": number; readonly "pan": number; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "softness": number; readonly "tilt": number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom": number; });
@@ -2954,6 +3031,7 @@ export interface ActionInputMap {
   readonly "cutagent.action.edit.social_crop": { readonly "format": "9:16" | "1:1" | "4:5" | "16:9"; readonly "pan"?: number; readonly "projectId": ProjectId; readonly "setTimelineResolution": true; readonly "sourceAspect": string; readonly "targets": readonly ({ readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video"; })[]; readonly "tilt"?: number; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "zoom"?: number; };
   readonly "cutagent.action.edit.split": { readonly "linkedAudio": "preserve" | "exclude"; readonly "projectId": ProjectId; readonly "recordFrame": number; readonly "respectLocks": true; readonly "targets": readonly ({ readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video" | "audio"; })[]; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; };
   readonly "cutagent.action.edit.transition.add": ({ readonly "durationFrames": number; readonly "editFrame": number; readonly "incoming": { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video" | "audio"; }; readonly "linkedAudioTargets": readonly ({ readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "audio"; })[]; readonly "outgoing": { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video" | "audio"; }; readonly "placement": "start" | "end" | "both"; readonly "projectId": ProjectId; readonly "scope": "linked" | "video" | "audio"; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "transitionType": string; }) & ((({ readonly "scope": "linked"; }) & ({ readonly "incoming"?: { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video"; }; readonly "outgoing"?: { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video"; }; })) | (({ readonly "scope": "video"; }) & ({ readonly "incoming"?: { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video"; }; readonly "outgoing"?: { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video"; }; })) | (({ readonly "scope": "audio"; }) & ({ readonly "incoming"?: { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "audio"; }; readonly "outgoing"?: { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "audio"; }; })));
+  readonly "cutagent.action.edit.transition.batch": { readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "transitions": ({ readonly "durationFrames": number; readonly "editFrame": number; readonly "incoming": { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video"; }; readonly "linkedAudioTargets": readonly ({ readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "audio"; })[]; readonly "outgoing": { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video"; }; readonly "placement": "start" | "end" | "both"; readonly "transitionType": string; }) | (readonly ({ readonly "durationFrames": number; readonly "editFrame": number; readonly "incoming": { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video"; }; readonly "linkedAudioTargets": readonly ({ readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "audio"; })[]; readonly "outgoing": { readonly "id": TimelineItemId; readonly "linkedItemIds": readonly (TimelineItemId)[]; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; readonly "trackType": "video"; }; readonly "placement": "start" | "end" | "both"; readonly "transitionType": string; })[]); };
   readonly "cutagent.action.fairlight.add": { readonly "index"?: number; readonly "trackType"?: string; };
   readonly "cutagent.action.fairlight.adr.info": { readonly "limit"?: number; };
   readonly "cutagent.action.fairlight.ai.dialogue_leveler": { readonly "cleaner"?: boolean; readonly "clip"?: string; readonly "gain"?: number; readonly "lifter"?: boolean; };
@@ -3062,8 +3140,10 @@ export interface ActionInputMap {
   readonly "cutagent.action.fusion.effect.sharpen": { readonly "amount"?: number; readonly "clipName"?: string; readonly "compositionIndex": number; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "videoTrackIndex"?: number; };
   readonly "cutagent.action.fusion.effect.transform": { readonly "clipName"?: string; readonly "compositionIndex": number; readonly "position"?: { readonly "x": number; readonly "y": number; }; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "rotationDegrees"?: number; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "videoTrackIndex"?: number; readonly "zoom"?: number; };
   readonly "cutagent.action.fusion.generate": { readonly "boldStyle"?: string; readonly "destinationArtifactId": ArtifactId; readonly "imageArtifactId"?: ArtifactId; readonly "templateArtifactId": ArtifactId; readonly "text"?: string; };
+  readonly "cutagent.action.fusion.image.batch": { readonly "contractVersion": 1; readonly "items": readonly ({ readonly "compositionIndex": number; readonly "compositionRevision": Revision; readonly "groupInputName"?: string; readonly "groupToolName"?: string; readonly "imageArtifactId": ArtifactId; readonly "importMedia"?: boolean; readonly "position"?: { readonly "x": number; readonly "y": number; }; readonly "timelineItemId": TimelineItemId; readonly "zoom"?: { readonly "x": number; readonly "y": number; }; })[]; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; };
   readonly "cutagent.action.fusion.image.set": { readonly "clipName"?: string; readonly "compositionIndex": number; readonly "groupInputName"?: string; readonly "groupToolName"?: string; readonly "imageArtifactId": ArtifactId; readonly "importMedia"?: boolean; readonly "position"?: { readonly "x": number; readonly "y": number; }; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "videoTrackIndex"?: number; readonly "zoom"?: { readonly "x": number; readonly "y": number; }; };
   readonly "cutagent.action.fusion.insert_setting": { readonly "boldStyle"?: string; readonly "clipDuration": FrameDuration; readonly "clipName"?: string; readonly "imageArtifactId"?: ArtifactId; readonly "position"?: { readonly "x": number; readonly "y": number; }; readonly "projectId": ProjectId; readonly "recordPosition": TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "settingArtifactId": ArtifactId; readonly "styleMarkdown"?: boolean; readonly "text"?: string; readonly "timelineId": TimelineId; readonly "videoTrackIndex"?: number; };
+  readonly "cutagent.action.fusion.insert_settings.batch": { readonly "items": readonly ({ readonly "boldStyle"?: string; readonly "clipDuration": FrameDuration; readonly "clipName"?: string; readonly "imageArtifactId"?: ArtifactId; readonly "position"?: { readonly "x": number; readonly "y": number; }; readonly "recordPosition": TimelineRecordPositionOf<Frames | BoundFrames>; readonly "settingArtifactId": ArtifactId; readonly "styleMarkdown"?: boolean; readonly "text"?: string; readonly "videoTrackIndex"?: number; })[]; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; };
   readonly "cutagent.action.fusion.keyer.chroma": { readonly "clipName"?: string; readonly "compositionIndex": number; readonly "keyColor"?: "green" | "blue" | "red"; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "threshold"?: number; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "videoTrackIndex"?: number; };
   readonly "cutagent.action.fusion.keyframe.add": { readonly "clipName"?: string; readonly "compositionIndex": number; readonly "inputName": string; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "sourcePosition": SourcePositionOf<Frames | BoundFrames>; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "toolName": string; readonly "value": (null) | (boolean) | (number) | (string) | ({ readonly "x": number; readonly "y": number; }) | (readonly (number)[]); readonly "videoTrackIndex"?: number; };
   readonly "cutagent.action.fusion.keyframe.clear": { readonly "clipName"?: string; readonly "compositionIndex": number; readonly "inputName": string; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "toolName": string; readonly "videoTrackIndex"?: number; };
@@ -3073,6 +3153,7 @@ export interface ActionInputMap {
   readonly "cutagent.action.fusion.mask.ellipse": { readonly "center"?: { readonly "x": number; readonly "y": number; }; readonly "clipName"?: string; readonly "compositionIndex": number; readonly "height"?: number; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "softness"?: number; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "videoTrackIndex"?: number; readonly "width"?: number; };
   readonly "cutagent.action.fusion.mask.polygon": { readonly "clipName"?: string; readonly "compositionIndex": number; readonly "points": readonly ({ readonly "x": number; readonly "y": number; })[]; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "videoTrackIndex"?: number; };
   readonly "cutagent.action.fusion.mask.rectangle": { readonly "center"?: { readonly "x": number; readonly "y": number; }; readonly "clipName"?: string; readonly "compositionIndex": number; readonly "height"?: number; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "softness"?: number; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "videoTrackIndex"?: number; readonly "width"?: number; };
+  readonly "cutagent.action.fusion.nested_text.batch": { readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "updates": readonly ({ readonly "body"?: string; readonly "bodyClipName"?: string; readonly "boldStyle"?: string; readonly "compositionIndex": number; readonly "header"?: string; readonly "headerClipName"?: string; readonly "headerDoubleSpaces"?: boolean; readonly "headerUppercase"?: boolean; readonly "timelineItemId": TimelineItemId; })[]; };
   readonly "cutagent.action.fusion.nested_text.update": { readonly "body"?: string; readonly "bodyClipName"?: string; readonly "boldStyle"?: string; readonly "clipName"?: string; readonly "compositionIndex": number; readonly "header"?: string; readonly "headerClipName"?: string; readonly "headerDoubleSpaces"?: boolean; readonly "headerUppercase"?: boolean; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "videoTrackIndex"?: number; };
   readonly "cutagent.action.fusion.node.add": { readonly "clipName"?: string; readonly "compositionIndex": number; readonly "flowPosition"?: { readonly "x": number; readonly "y": number; }; readonly "name"?: string; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "toolType": string; readonly "videoTrackIndex"?: number; };
   readonly "cutagent.action.fusion.node.connect": { readonly "clipName"?: string; readonly "compositionIndex": number; readonly "destination": { readonly "portName": string; readonly "toolName": string; }; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "source": { readonly "portName": string; readonly "toolName": string; }; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "videoTrackIndex"?: number; };
@@ -3096,6 +3177,7 @@ export interface ActionInputMap {
   readonly "cutagent.action.fusion.template.show": { readonly "name": string; };
   readonly "cutagent.action.fusion.template.uninstall": { readonly "kind": "title" | "generator" | "effect" | "transition"; readonly "name": string; };
   readonly "cutagent.action.fusion.template.validate": { readonly "artifactId": ArtifactId; };
+  readonly "cutagent.action.fusion.text.batch": { readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "updates": readonly ({ readonly "compositionIndex": number; readonly "compositionRevision": Revision; readonly "inputName": string; readonly "text": string; readonly "timelineItemId": TimelineItemId; readonly "toolName": string; })[]; };
   readonly "cutagent.action.fusion.text.set": { readonly "boldStyle"?: string; readonly "clipName"?: string; readonly "compositionIndex": number; readonly "doubleSpaces"?: boolean; readonly "inputNames"?: readonly (string)[]; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "role"?: "body" | "header"; readonly "styled"?: boolean; readonly "stylingToolCandidates"?: readonly (string)[]; readonly "text": string; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "toolCandidates"?: readonly (string)[]; readonly "toolName"?: string; readonly "uppercase"?: boolean; readonly "videoTrackIndex"?: number; };
   readonly "cutagent.action.fusion.tool.active": { readonly "clipName"?: string; readonly "compositionIndex": number; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "toolName": string; readonly "videoTrackIndex"?: number; };
   readonly "cutagent.action.fusion.tool.add": { readonly "clipName"?: string; readonly "compositionIndex": number; readonly "flowPosition"?: { readonly "x": number; readonly "y": number; }; readonly "name"?: string; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "toolType": string; readonly "videoTrackIndex"?: number; };
@@ -3107,6 +3189,7 @@ export interface ActionInputMap {
   readonly "cutagent.action.fusion.tool.inputs": { readonly "clipName"?: string; readonly "compositionIndex": number; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "toolName": string; readonly "videoTrackIndex"?: number; };
   readonly "cutagent.action.fusion.tool.list": { readonly "clipName"?: string; readonly "compositionIndex": number; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "selectedOnly"?: boolean; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "videoTrackIndex"?: number; };
   readonly "cutagent.action.fusion.tool.outputs": { readonly "clipName"?: string; readonly "compositionIndex": number; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "toolName": string; readonly "videoTrackIndex"?: number; };
+  readonly "cutagent.action.fusion.tool.registry": { readonly "category"?: string; readonly "limit"?: number; readonly "query"?: string; };
   readonly "cutagent.action.fusion.tool.set": { readonly "clipName"?: string; readonly "compositionIndex": number; readonly "inputName": string; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "sourcePosition": SourcePositionOf<Frames | BoundFrames>; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "toolName": string; readonly "value": (null) | (boolean) | (number) | (string) | ({ readonly "x": number; readonly "y": number; }) | (readonly (number)[]); readonly "videoTrackIndex"?: number; };
   readonly "cutagent.action.fusion.tracker.add": { readonly "clipName"?: string; readonly "compositionIndex": number; readonly "patternCenter"?: { readonly "x": number; readonly "y": number; }; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "videoTrackIndex"?: number; };
   readonly "cutagent.action.lut_refresh": { readonly "projectId": ProjectId; readonly "revision": Revision; };
@@ -3122,7 +3205,7 @@ export interface ActionInputMap {
   readonly "cutagent.action.media.color.clear": { readonly "name": string; };
   readonly "cutagent.action.media.color.set": { readonly "color": string; readonly "name": string; };
   readonly "cutagent.action.media.create_timeline": { readonly "clips": readonly (string)[]; readonly "timelineName": string; };
-  readonly "cutagent.action.media.delete": { readonly "name": string; };
+  readonly "cutagent.action.media.delete": ({ readonly "name": string; }) | ({ readonly "name": readonly (string)[]; }) | ({ readonly "assetIds": readonly (string)[]; readonly "precondition": string; readonly "projectId": string; });
   readonly "cutagent.action.media.duplicate": { readonly "name": string; readonly "newName"?: string; };
   readonly "cutagent.action.media.extract_template": { readonly "clip": string; readonly "exact"?: boolean; readonly "fields"?: readonly ("text" | "image")[]; readonly "folder"?: string; readonly "includeNested"?: boolean; };
   readonly "cutagent.action.media.flag.add": { readonly "color": string; readonly "name": string; };
@@ -3150,7 +3233,7 @@ export interface ActionInputMap {
   readonly "cutagent.action.media.matte.list": { readonly "clip": string; };
   readonly "cutagent.action.media.metadata": { readonly "operation": ({ readonly "clipName": string; readonly "kind": "list"; }) | ({ readonly "clipName": string; readonly "key": string; readonly "kind": "get"; }) | ({ readonly "clipName": string; readonly "key": string; readonly "kind": "set"; readonly "value": string; }); };
   readonly "cutagent.action.media.metadata.export": { readonly "clips"?: readonly (string)[]; readonly "file": string; };
-  readonly "cutagent.action.media.move": { readonly "name": string; readonly "target": string; };
+  readonly "cutagent.action.media.move": ({ readonly "name": string; readonly "target": string; }) | ({ readonly "moves": readonly ({ readonly "name": string; readonly "target": string; })[]; });
   readonly "cutagent.action.media.property_set": { readonly "key": string; readonly "name": string; readonly "value": string; };
   readonly "cutagent.action.media.proxy": { readonly "clipName": string; readonly "operation": ({ readonly "kind": "generate"; }) | ({ readonly "kind": "link"; readonly "path": string; }) | ({ readonly "kind": "unlink"; }); };
   readonly "cutagent.action.media.proxy.link_fullres": { readonly "clip": string; readonly "path": string; };
@@ -3183,7 +3266,6 @@ export interface ActionInputMap {
   readonly "cutagent.action.multicam.set_start_timecode": { readonly "multicamId": MulticamId; readonly "multicamRevision": Revision; readonly "projectId": ProjectId; readonly "startTimecode": string; };
   readonly "cutagent.action.multicam.settings": { readonly "audioMode": "all_angles" | "reference_audio"; readonly "fullClipExtents": boolean; readonly "mediaPoolRevision": Revision; readonly "name": string; readonly "projectId": ProjectId; readonly "sourceLayout": "contiguous" | "sparse"; readonly "sources": readonly ({ readonly "angleLabel": string; readonly "mediaPoolItemId": MediaPoolItemId; })[]; readonly "syncMode": "in" | "out" | "timecode" | "sound" | "marker"; readonly "timelineName": string; };
   readonly "cutagent.action.multicam.smart_switch": { readonly "activityFloorDb": number; readonly "activityMarginDb": number; readonly "analysisWindowMs": number; readonly "audioSources": readonly ({ readonly "angleId": MulticamAngleId; readonly "mediaPoolItemId": MediaPoolItemId; })[]; readonly "audioSync": "prealigned" | "waveform"; readonly "dominanceMarginDb": number; readonly "editChangeDelayMs": number; readonly "maxSilenceHoldMs": number; readonly "minimumEditDurationMs": number; readonly "multicamId": MulticamId; readonly "multicamRevision": Revision; readonly "projectId": ProjectId; readonly "scope": "video" | "linked"; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "useAudioOnlyFastAnalysis": boolean; readonly "useWideAngleForIntroOutro": boolean; readonly "useWideAngleForSilence": boolean; readonly "videoSourceOffsets": readonly ({ readonly "angleId": MulticamAngleId; readonly "offsetFrames": number; })[]; readonly "wideAngleFrequency": "off" | "low" | "medium" | "high"; readonly "wideAngleId"?: MulticamAngleId; readonly "wideAngleMode": "automatic" | "manual"; };
-  readonly "cutagent.action.multicam.source.grade_cdl": { readonly "angleId": MulticamAngleId; readonly "multicamId": MulticamId; readonly "multicamRevision": Revision; readonly "offset"?: readonly (number)[]; readonly "power"?: readonly (number)[]; readonly "projectId": ProjectId; readonly "recordFrame": number; readonly "saturation"?: number; readonly "slope"?: readonly (number)[]; readonly "sourceMediaPoolItemId": MediaPoolItemId; readonly "versionName"?: string; };
   readonly "cutagent.action.multicam.source.move": { readonly "angleId": MulticamAngleId; readonly "multicamId": MulticamId; readonly "multicamRevision": Revision; readonly "projectId": ProjectId; readonly "recordStartFrame": number; readonly "scope": "video" | "audio" | "both"; readonly "sourceMediaPoolItemId": MediaPoolItemId; };
   readonly "cutagent.action.multicam.source.property_set": { readonly "angleId": MulticamAngleId; readonly "mediaType": "video" | "audio"; readonly "multicamId": MulticamId; readonly "multicamRevision": Revision; readonly "projectId": ProjectId; readonly "property": string; readonly "recordFrame": number; readonly "sourceMediaPoolItemId": MediaPoolItemId; readonly "value": string; };
   readonly "cutagent.action.multicam.source.raw_braw_set": { readonly "adjustments": { readonly "exposure"?: number; readonly "iso"?: number; readonly "whiteBalanceKelvin"?: number; readonly "whiteBalanceTint"?: number; }; readonly "angleId": MulticamAngleId; readonly "multicamId": MulticamId; readonly "multicamRevision": Revision; readonly "projectId": ProjectId; readonly "recordFrame": number; readonly "sourceMediaPoolItemId": MediaPoolItemId; };
@@ -3217,6 +3299,7 @@ export interface ActionInputMap {
   readonly "cutagent.action.project.library.switch": { readonly "libraryKind"?: "disk"; readonly "libraryName": string; };
   readonly "cutagent.action.project.list": Readonly<Record<string, never>>;
   readonly "cutagent.action.project.open": { readonly "name": string; };
+  readonly "cutagent.action.project.preset.export": { readonly "destinationArtifactId": ArtifactId; readonly "name": string; };
   readonly "cutagent.action.project.preset.list": Readonly<Record<string, never>>;
   readonly "cutagent.action.project.preset.load": { readonly "name": string; };
   readonly "cutagent.action.project.preset.save": { readonly "name": string; };
@@ -3233,6 +3316,8 @@ export interface ActionInputMap {
   readonly "cutagent.action.render.jobs": Readonly<Record<string, never>>;
   readonly "cutagent.action.render.mode.get": Readonly<Record<string, never>>;
   readonly "cutagent.action.render.mode.set": { readonly "mode": "individual" | "single"; };
+  readonly "cutagent.action.render.preset_save": { readonly "presetName": string; };
+  readonly "cutagent.action.render.preset_update": { readonly "presetName": string; };
   readonly "cutagent.action.render.presets": Readonly<Record<string, never>>;
   readonly "cutagent.action.render.quick_export_presets": Readonly<Record<string, never>>;
   readonly "cutagent.action.render.resolutions": { readonly "codec"?: string; readonly "format"?: string; };
@@ -3247,6 +3332,8 @@ export interface ActionInputMap {
   readonly "cutagent.action.storage.matte.timeline_add": { readonly "matteArtifactIds": readonly (ArtifactId)[]; readonly "precondition": Revision; readonly "projectId": ProjectId; };
   readonly "cutagent.action.storage.reveal": { readonly "artifactId": ArtifactId; };
   readonly "cutagent.action.storage.volumes": Readonly<Record<string, never>>;
+  readonly "cutagent.action.system.keyboard_preset.current": Readonly<Record<string, never>>;
+  readonly "cutagent.action.system.keyboard_preset.list": Readonly<Record<string, never>>;
   readonly "cutagent.action.system.keyframe_mode.get": Readonly<Record<string, never>>;
   readonly "cutagent.action.system.keyframe_mode.set": { readonly "mode": "all" | "color" | "sizing"; };
   readonly "cutagent.action.text.insert": { readonly "boldStyle"?: string; readonly "clipName"?: string; readonly "duration"?: FrameDuration; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "templatePath"?: string; readonly "text": string; readonly "videoTrackIndex"?: number; };
@@ -3257,6 +3344,7 @@ export interface ActionInputMap {
   readonly "cutagent.action.text.list_presets": Readonly<Record<string, never>>;
   readonly "cutagent.action.text.update": { readonly "allowPartialFields"?: boolean; readonly "boldStyle"?: string; readonly "clipName"?: string; readonly "doubleSpaces"?: boolean; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames>; readonly "role"?: "body" | "header"; readonly "styled"?: boolean; readonly "text": string; readonly "toolName"?: string; readonly "uppercase"?: boolean; readonly "videoTrackIndex"?: number; };
   readonly "cutagent.action.timeline.auto_caption": { readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "precondition": Revision; readonly "language"?: "auto" | "danish" | "dutch" | "english" | "french" | "german" | "italian" | "japanese" | "korean" | "mandarin-simplified" | "mandarin-traditional" | "norwegian" | "portuguese" | "russian" | "spanish" | "swedish"; readonly "preset"?: "default" | "teletext" | "netflix"; readonly "charsPerLine"?: number; readonly "lineBreak"?: "single" | "double"; readonly "gap"?: number; };
+  readonly "cutagent.action.timeline.clip_color.batch": { readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "updates": readonly ({ readonly "color": (string) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotTimelineItemId": SnapshotTimelineItemId; readonly "timelineItemId": TimelineItemId; readonly "trackIndex": number; readonly "trackType": "video" | "audio"; })[]; };
   readonly "cutagent.action.timeline.clip_markers.list": { readonly "color"?: string; readonly "expectedRevision"?: Revision; readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "trackIndexes"?: readonly (number)[]; readonly "trackType"?: "all" | "video" | "audio" | "subtitle"; readonly "visibleOnly"?: boolean; };
   readonly "cutagent.action.timeline.compound_create": { readonly "name"?: string; readonly "projectId": ProjectId; readonly "range": TimelineRecordRangeOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "startTimecode"?: TimelineRecordPositionOf<Frames | BoundFrames | Timecode>; readonly "timelineId": TimelineId; readonly "trackIndex": number; readonly "trackType": "video" | "audio" | "subtitle"; };
   readonly "cutagent.action.timeline.create": { readonly "frameRate"?: number; readonly "height"?: number; readonly "name": string; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "width"?: number; };
@@ -3267,7 +3355,7 @@ export interface ActionInputMap {
   readonly "cutagent.action.timeline.duration": { readonly "expectedRevision"?: Revision; readonly "projectId": ProjectId; readonly "timelineId": TimelineId; };
   readonly "cutagent.action.timeline.export": { readonly "destinationArtifactId": ArtifactId; readonly "format": "drt" | "xml" | "fcpxml" | "edl" | "otio"; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; };
   readonly "cutagent.action.timeline.fairlight_preset.apply": { readonly "presetName": string; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; };
-  readonly "cutagent.action.timeline.frame_export": { readonly "destinationArtifactId": ArtifactId; readonly "format": "png" | "jpg" | "jpeg"; readonly "position": TimelineRecordPositionOf<Frames | BoundFrames | Timecode>; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; };
+  readonly "cutagent.action.timeline.frame_export": ({ readonly "destinationArtifactId": ArtifactId; readonly "format": "png" | "jpg" | "jpeg"; readonly "position": TimelineRecordPositionOf<Frames | BoundFrames | Timecode>; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; }) | ({ readonly "exports": readonly ({ readonly "destinationArtifactId": ArtifactId; readonly "format": "png" | "jpg" | "jpeg"; readonly "position": TimelineRecordPositionOf<Frames | BoundFrames | Timecode>; })[]; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; });
   readonly "cutagent.action.timeline.fusion_clip.create": { readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemIds": readonly (TimelineItemId)[]; };
   readonly "cutagent.action.timeline.fusion_composition.insert": { readonly "duration": FrameDuration; readonly "projectId": ProjectId; readonly "recordPosition": TimelineRecordPositionOf<Frames | BoundFrames | Timecode>; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "trackIndex": number; };
   readonly "cutagent.action.timeline.grab_still": { readonly "operation": ({ readonly "kind": "gallery"; }) | ({ readonly "destinationArtifactId": ArtifactId; readonly "format": "png" | "jpg" | "jpeg"; readonly "kind": "export"; }); readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; };
@@ -3280,18 +3368,20 @@ export interface ActionInputMap {
   readonly "cutagent.action.timeline.item_at": { readonly "expectedRevision"?: Revision; readonly "projectId": ProjectId; readonly "recordPosition": TimelineRecordPositionOf<Frames | BoundFrames | Timecode>; readonly "timelineId": TimelineId; readonly "trackIndex"?: number; readonly "trackType": "all" | "video" | "audio" | "subtitle"; };
   readonly "cutagent.action.timeline.items.delete": { readonly "operation": "clip_remove"; readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "affectedTracks": readonly ({ readonly "type": "video" | "audio" | "subtitle"; readonly "index": number; })[]; readonly "affectedItemIds": readonly (TimelineItemId)[]; readonly "protectedItemIds": readonly (TimelineItemId)[]; readonly "clipId": TimelineItemId; readonly "track": { readonly "type": "video" | "audio" | "subtitle"; readonly "index": number; }; readonly "expectedLinkTransitions"?: readonly ({ readonly "itemId": TimelineItemId; readonly "beforeLinkedItemIds": readonly (TimelineItemId)[]; readonly "afterLinkedItemIds": readonly (TimelineItemId)[]; })[]; readonly "range": { readonly "start": number; readonly "endExclusive": number; }; readonly "name": string; };
   readonly "cutagent.action.timeline.items.move": { readonly "collisionPolicy": "reject" | "allow"; readonly "destination": { readonly "recordStartFrame": number; readonly "trackIndex": number; }; readonly "linkedAudio": "preserve" | "exclude"; readonly "linkedAudioTargets": readonly ({ readonly "id": TimelineItemId; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; })[]; readonly "projectId": ProjectId; readonly "target": { readonly "id": TimelineItemId; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "name": string; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "snapshotId": SnapshotTimelineItemId; readonly "trackIndex": number; }; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; };
-  readonly "cutagent.action.timeline.items.set_duration": ({ readonly "allowOverlap"?: boolean; readonly "duration"?: FrameDuration; readonly "enforceSourceBounds"?: boolean; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames | Timecode>; readonly "revision": Revision; readonly "targetEnd"?: TimelineRecordPositionOf<Frames | BoundFrames | Timecode>; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "trackIndex"?: number; readonly "trackType"?: "video" | "audio" | "subtitle"; }) & (({ readonly "duration": {}; }) | ({ readonly "targetEnd": {}; }));
+  readonly "cutagent.action.timeline.items.set_duration": ({ readonly "allowOverlap"?: boolean; readonly "duration"?: FrameDuration; readonly "enforceSourceBounds"?: boolean; readonly "projectId": ProjectId; readonly "recordPosition"?: TimelineRecordPositionOf<Frames | BoundFrames | Timecode>; readonly "revision": Revision; readonly "targetEnd"?: TimelineRecordPositionOf<Frames | BoundFrames | Timecode>; readonly "timelineId": TimelineId; readonly "timelineItemId"?: TimelineItemId; readonly "trackIndex"?: number; readonly "trackType"?: "video" | "audio" | "subtitle"; readonly "updates"?: readonly (({ readonly "allowOverlap"?: boolean; readonly "duration"?: FrameDuration; readonly "enforceSourceBounds"?: boolean; readonly "targetEnd"?: TimelineRecordPositionOf<Frames | BoundFrames | Timecode>; readonly "timelineItemId": TimelineItemId; }) & (({}) | ({})))[]; }) & (({}) | ({}) | ({}));
   readonly "cutagent.action.timeline.layer.ensure_media": { readonly "allowExtend"?: boolean; readonly "allowInsert"?: boolean; readonly "duration": FrameDuration; readonly "gapPolicy"?: "leave" | "extend"; readonly "mediaPoolItemId": MediaPoolItemId; readonly "projectId": ProjectId; readonly "recordPosition": TimelineRecordPositionOf<Frames | BoundFrames | Timecode>; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "trackIndex": number; };
   readonly "cutagent.action.timeline.list": { readonly "expectedRevision"?: Revision; readonly "projectId": ProjectId; };
   readonly "cutagent.action.timeline.mark.clear": { readonly "markType": "in" | "out" | "both"; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; };
   readonly "cutagent.action.timeline.mark.get": { readonly "expectedRevision"?: Revision; readonly "projectId": ProjectId; readonly "timelineId": TimelineId; };
   readonly "cutagent.action.timeline.mark.set": { readonly "projectId": ProjectId; readonly "range": TimelineRecordRangeOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "timelineId": TimelineId; };
   readonly "cutagent.action.timeline.marker.add": { readonly "color": string; readonly "duration": FrameDuration; readonly "name": string; readonly "note": string; readonly "position": TimelineRecordPositionOf<Frames | BoundFrames | Timecode>; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; };
-  readonly "cutagent.action.timeline.marker.delete": { readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "markerId": MarkerId; };
+  readonly "cutagent.action.timeline.marker.delete": ({ readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "markerId": MarkerId; }) | ({ readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "markerIds": readonly (MarkerId)[]; });
   readonly "cutagent.action.timeline.marker.list": { readonly "expectedRevision"?: Revision; readonly "projectId": ProjectId; readonly "timelineId": TimelineId; };
-  readonly "cutagent.action.timeline.marker.update": { readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "markerId": MarkerId; readonly "marker": { readonly "recordFrame": number; readonly "color": string; readonly "name": string; readonly "note": string; readonly "durationFrames": number; }; };
+  readonly "cutagent.action.timeline.marker.update": ({ readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "markerId": MarkerId; readonly "marker": { readonly "recordFrame": number; readonly "color": string; readonly "name": string; readonly "note": string; readonly "durationFrames": number; }; }) | ({ readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; readonly "updates": readonly ({ readonly "markerId": MarkerId; readonly "marker": { readonly "recordFrame": number; readonly "color": string; readonly "name": string; readonly "note": string; readonly "durationFrames": number; }; })[]; });
   readonly "cutagent.action.timeline.media_pool_item": { readonly "expectedRevision"?: Revision; readonly "projectId": ProjectId; readonly "timelineId": TimelineId; };
   readonly "cutagent.action.timeline.node_graph.inspect": { readonly "expectedRevision"?: Revision; readonly "projectId": ProjectId; readonly "timelineId": TimelineId; };
+  readonly "cutagent.action.timeline.output_blanking.get": { readonly "expectedRevision"?: Revision; readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "timelineItemId"?: TimelineItemId; };
+  readonly "cutagent.action.timeline.output_blanking.set": { readonly "operation": ({ readonly "blanking": { readonly "bottom": number; readonly "left": number; readonly "right": number; readonly "top": number; }; readonly "kind": "edges"; }) | ({ readonly "kind": "inheritance"; readonly "useTimeline": boolean; }); readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId"?: TimelineItemId; };
   readonly "cutagent.action.timeline.playhead.get": { readonly "expectedRevision"?: Revision; readonly "projectId": ProjectId; readonly "timelineId": TimelineId; };
   readonly "cutagent.action.timeline.playhead.set": { readonly "position": TimelineRecordPositionOf<Frames | BoundFrames | Timecode>; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; };
   readonly "cutagent.action.timeline.preview_export": { readonly "destinationArtifactId": ArtifactId; readonly "format": "mp4" | "gif"; readonly "frameArtifactIds": readonly (ArtifactId)[]; readonly "frameRate": number; readonly "projectId": ProjectId; readonly "range": TimelineRecordRangeOf<Frames | BoundFrames>; readonly "revision": Revision; readonly "step": number; readonly "timelineId": TimelineId; };
@@ -3339,6 +3429,9 @@ export interface ActionResultMap {
   readonly "cutagent.action.audio.voice_list": { readonly "actionId": "cutagent.action.audio.voice_list"; readonly "data": { readonly "nextPageToken": string | null; readonly "voices": readonly ({ readonly "accent": string | null; readonly "language": string | null; readonly "name": string; readonly "source": "account" | "library"; readonly "voiceId": string; })[]; }; };
   readonly "cutagent.action.audio.voice_place": { readonly "assetId": ArtifactId; readonly "mediaPoolItemId": string | null; readonly "projectId": ProjectId; readonly "recordFrame": number; readonly "timelineId": TimelineId; readonly "timelineItemId": string | null; readonly "timelineRevision": Revision; readonly "trackIndex": number; };
   readonly "cutagent.action.audio.waveform_offset": { readonly "actionId": "cutagent.action.audio.waveform_offset"; readonly "data": { readonly "confidence": number; readonly "driftFrames": number; readonly "fps": number; readonly "offsetFrames": number; readonly "offsetSeconds": number; readonly "referencePath": string; readonly "targetPath": string; readonly "warnings": readonly (string)[]; }; };
+  readonly "cutagent.action.bulk.disable": { readonly "actionId": "cutagent.action.bulk.disable"; readonly "items": readonly ({ readonly "after": false; readonly "before": boolean; readonly "changed": boolean; readonly "name": string; readonly "timelineItemId": TimelineItemId; })[]; readonly "timelineRevision": Revision; };
+  readonly "cutagent.action.bulk.enable": { readonly "actionId": "cutagent.action.bulk.enable"; readonly "items": readonly ({ readonly "after": true; readonly "before": boolean; readonly "changed": boolean; readonly "name": string; readonly "timelineItemId": TimelineItemId; })[]; readonly "timelineRevision": Revision; };
+  readonly "cutagent.action.bulk.property_set": { readonly "actionId": "cutagent.action.bulk.property_set"; readonly "items": readonly ({ readonly "after": { readonly "anchorX"?: number; readonly "anchorY"?: number; readonly "cropBottom"?: number; readonly "cropLeft"?: number; readonly "cropRight"?: number; readonly "cropTop"?: number; readonly "distortion"?: number; readonly "dynamicZoomEase"?: "linear" | "in" | "out" | "inout"; readonly "flipX"?: boolean; readonly "flipY"?: boolean; readonly "opacity"?: number; readonly "pitch"?: number; readonly "positionX"?: number; readonly "positionY"?: number; readonly "rotation"?: number; readonly "yaw"?: number; readonly "zoomX"?: number; readonly "zoomY"?: number; }; readonly "before": { readonly "anchorX"?: number; readonly "anchorY"?: number; readonly "cropBottom"?: number; readonly "cropLeft"?: number; readonly "cropRight"?: number; readonly "cropTop"?: number; readonly "distortion"?: number; readonly "dynamicZoomEase"?: "linear" | "in" | "out" | "inout"; readonly "flipX"?: boolean; readonly "flipY"?: boolean; readonly "opacity"?: number; readonly "pitch"?: number; readonly "positionX"?: number; readonly "positionY"?: number; readonly "rotation"?: number; readonly "yaw"?: number; readonly "zoomX"?: number; readonly "zoomY"?: number; }; readonly "changed": boolean; readonly "clipId": TimelineItemId; })[]; readonly "protectedStatePreserved": true; readonly "stoppedAfterFailure": false; readonly "timelineRevision": Revision; };
   readonly "cutagent.action.burnin.load": { readonly "actionId": "cutagent.action.burnin.load"; readonly "data": { readonly "loaded": boolean; readonly "presetName": string; }; };
   readonly "cutagent.action.burnin.preset.export": { readonly "actionId": "cutagent.action.burnin.preset.export"; readonly "data": { readonly "byteCount": number; readonly "outputPath": string; readonly "presetName": string; }; };
   readonly "cutagent.action.burnin.preset.import": { readonly "actionId": "cutagent.action.burnin.preset.import"; readonly "data": { readonly "imported": boolean; readonly "inputPath": string; readonly "presetName": string; }; };
@@ -3402,7 +3495,7 @@ export interface ActionResultMap {
   readonly "cutagent.action.clip.take.list": { readonly "actionId": "cutagent.action.clip.take.list"; readonly "takeStack": { readonly "clipName": string; readonly "selectedTakeIndex": number; readonly "takeCount": number; readonly "takes": readonly ({ readonly "description": string; readonly "index": number; readonly "selected": boolean; })[]; }; };
   readonly "cutagent.action.clip.take.select": { readonly "actionId": "cutagent.action.clip.take.select"; readonly "payload": ({ readonly "change": { readonly "after": ({ readonly "finalized": boolean; readonly "takes": readonly ({ readonly "index": number; readonly "mediaPoolItemId": MediaPoolItemId; readonly "selected": boolean; readonly "sourceRange": { readonly "domain": "source_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; })[]; }) | (null); readonly "before": ({ readonly "finalized": boolean; readonly "takes": readonly ({ readonly "index": number; readonly "mediaPoolItemId": MediaPoolItemId; readonly "selected": boolean; readonly "sourceRange": { readonly "domain": "source_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; })[]; }) | (null); readonly "kind": "takes"; }; readonly "changed": boolean; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "revision": ({ readonly "after": Revision; readonly "before": Revision; readonly "relationship": "advanced"; }) | ({ readonly "current": Revision; readonly "relationship": "unchanged"; }) | ({ readonly "before": Revision; readonly "observedAfter": (Revision) | (null); readonly "relationship": "partial"; }) | ({ readonly "lastKnown": (Revision) | (null); readonly "relationship": "unknown"; }); readonly "status": "completed" | "no_change" | "partial" | "manual_recovery_required"; readonly "targets": readonly ({ readonly "linkedTimelineItemIds": readonly (TimelineItemId)[]; readonly "name": string; readonly "projectId": ProjectId; readonly "protectedNeighbors": readonly ({ readonly "recordRange": { readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; readonly "relationship": "previous" | "next" | "overlapping"; readonly "timelineItemId": TimelineItemId; })[]; readonly "recordRange": { readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; readonly "snapshotTimelineItemId": SnapshotTimelineItemId; readonly "sourceRange": ({ readonly "domain": "source_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }) | (null); readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "track": { readonly "index": number; readonly "type": "video" | "audio"; }; })[]; readonly "verification": { readonly "evidence": readonly ({ readonly "artifactId": (ArtifactId) | (null); readonly "kind": "structural_readback" | "rendered_frame" | "visual_review" | "audition" | "artifact_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "failed" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "change"?: { readonly "after"?: {}; readonly "before"?: {}; }; readonly "changed"?: true; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "advanced"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "no_change"; }) & ({ readonly "changed"?: false; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "unchanged"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "revision"?: { readonly "relationship"?: "partial"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "manual_recovery_required"; }) & ({ readonly "recovery"?: { readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "revision"?: { readonly "relationship"?: "partial" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "failed" | "manual_review_required"; }; }))); };
   readonly "cutagent.action.clip.track_info": { readonly "actionId": "cutagent.action.clip.track_info"; readonly "trackBinding": { readonly "clipName": string; readonly "trackIndex": number; readonly "trackType": "video" | "audio" | "subtitle"; }; };
-  readonly "cutagent.action.clip.transform": { readonly "actionId": "cutagent.action.clip.transform"; readonly "after": { readonly "values": ({ readonly "anchorX"?: number; readonly "anchorY"?: number; readonly "cropBottom"?: number; readonly "cropLeft"?: number; readonly "cropRight"?: number; readonly "cropTop"?: number; readonly "distortion"?: number; readonly "dynamicZoomEase"?: "linear" | "in" | "out" | "inout"; readonly "flipX"?: boolean; readonly "flipY"?: boolean; readonly "opacity"?: number; readonly "pitch"?: number; readonly "positionX"?: number; readonly "positionY"?: number; readonly "rotation"?: number; readonly "yaw"?: number; readonly "zoomX"?: number; readonly "zoomY"?: number; }) & (({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({})); }; readonly "before": { readonly "values": ({ readonly "anchorX"?: number; readonly "anchorY"?: number; readonly "cropBottom"?: number; readonly "cropLeft"?: number; readonly "cropRight"?: number; readonly "cropTop"?: number; readonly "distortion"?: number; readonly "dynamicZoomEase"?: "linear" | "in" | "out" | "inout"; readonly "flipX"?: boolean; readonly "flipY"?: boolean; readonly "opacity"?: number; readonly "pitch"?: number; readonly "positionX"?: number; readonly "positionY"?: number; readonly "rotation"?: number; readonly "yaw"?: number; readonly "zoomX"?: number; readonly "zoomY"?: number; }) & (({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({})); }; readonly "protectedStatePreserved": true; readonly "targetId": TimelineItemId; readonly "timelineRevision": Revision; };
+  readonly "cutagent.action.clip.transform": ({ readonly "actionId": "cutagent.action.clip.transform"; readonly "after": { readonly "values": ({ readonly "anchorX"?: number; readonly "anchorY"?: number; readonly "cropBottom"?: number; readonly "cropLeft"?: number; readonly "cropRight"?: number; readonly "cropTop"?: number; readonly "distortion"?: number; readonly "dynamicZoomEase"?: "linear" | "in" | "out" | "inout"; readonly "flipX"?: boolean; readonly "flipY"?: boolean; readonly "opacity"?: number; readonly "pitch"?: number; readonly "positionX"?: number; readonly "positionY"?: number; readonly "rotation"?: number; readonly "yaw"?: number; readonly "zoomX"?: number; readonly "zoomY"?: number; }) & (({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({})); }; readonly "before": { readonly "values": ({ readonly "anchorX"?: number; readonly "anchorY"?: number; readonly "cropBottom"?: number; readonly "cropLeft"?: number; readonly "cropRight"?: number; readonly "cropTop"?: number; readonly "distortion"?: number; readonly "dynamicZoomEase"?: "linear" | "in" | "out" | "inout"; readonly "flipX"?: boolean; readonly "flipY"?: boolean; readonly "opacity"?: number; readonly "pitch"?: number; readonly "positionX"?: number; readonly "positionY"?: number; readonly "rotation"?: number; readonly "yaw"?: number; readonly "zoomX"?: number; readonly "zoomY"?: number; }) & (({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({})); }; readonly "protectedStatePreserved": true; readonly "targetId": TimelineItemId; readonly "timelineRevision": Revision; }) | ({ readonly "actionId": "cutagent.action.clip.transform"; readonly "timelineRevision": Revision; readonly "protectedStatePreserved": true; readonly "results": readonly ({ readonly "actionId": "cutagent.action.clip.transform"; readonly "after": { readonly "values": ({ readonly "anchorX"?: number; readonly "anchorY"?: number; readonly "cropBottom"?: number; readonly "cropLeft"?: number; readonly "cropRight"?: number; readonly "cropTop"?: number; readonly "distortion"?: number; readonly "dynamicZoomEase"?: "linear" | "in" | "out" | "inout"; readonly "flipX"?: boolean; readonly "flipY"?: boolean; readonly "opacity"?: number; readonly "pitch"?: number; readonly "positionX"?: number; readonly "positionY"?: number; readonly "rotation"?: number; readonly "yaw"?: number; readonly "zoomX"?: number; readonly "zoomY"?: number; }) & (({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({})); }; readonly "before": { readonly "values": ({ readonly "anchorX"?: number; readonly "anchorY"?: number; readonly "cropBottom"?: number; readonly "cropLeft"?: number; readonly "cropRight"?: number; readonly "cropTop"?: number; readonly "distortion"?: number; readonly "dynamicZoomEase"?: "linear" | "in" | "out" | "inout"; readonly "flipX"?: boolean; readonly "flipY"?: boolean; readonly "opacity"?: number; readonly "pitch"?: number; readonly "positionX"?: number; readonly "positionY"?: number; readonly "rotation"?: number; readonly "yaw"?: number; readonly "zoomX"?: number; readonly "zoomY"?: number; }) & (({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({}) | ({})); }; readonly "protectedStatePreserved": true; readonly "targetId": TimelineItemId; readonly "timelineRevision": Revision; })[]; });
   readonly "cutagent.action.clip.unlink": { readonly "actionId": "cutagent.action.clip.unlink"; readonly "payload": ({ readonly "change": { readonly "after": ({ readonly "groups": readonly (readonly (TimelineItemId)[])[]; }) | (null); readonly "before": ({ readonly "groups": readonly (readonly (TimelineItemId)[])[]; }) | (null); readonly "kind": "links"; }; readonly "changed": boolean; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "revision": ({ readonly "after": Revision; readonly "before": Revision; readonly "relationship": "advanced"; }) | ({ readonly "current": Revision; readonly "relationship": "unchanged"; }) | ({ readonly "before": Revision; readonly "observedAfter": (Revision) | (null); readonly "relationship": "partial"; }) | ({ readonly "lastKnown": (Revision) | (null); readonly "relationship": "unknown"; }); readonly "status": "completed" | "no_change" | "partial" | "manual_recovery_required"; readonly "targets": readonly ({ readonly "linkedTimelineItemIds": readonly (TimelineItemId)[]; readonly "name": string; readonly "projectId": ProjectId; readonly "protectedNeighbors": readonly ({ readonly "recordRange": { readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; readonly "relationship": "previous" | "next" | "overlapping"; readonly "timelineItemId": TimelineItemId; })[]; readonly "recordRange": { readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; readonly "snapshotTimelineItemId": SnapshotTimelineItemId; readonly "sourceRange": ({ readonly "domain": "source_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }) | (null); readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "track": { readonly "index": number; readonly "type": "video" | "audio"; }; })[]; readonly "verification": { readonly "evidence": readonly ({ readonly "artifactId": (ArtifactId) | (null); readonly "kind": "structural_readback" | "rendered_frame" | "visual_review" | "audition" | "artifact_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "failed" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "change"?: { readonly "after"?: {}; readonly "before"?: {}; }; readonly "changed"?: true; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "advanced"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "no_change"; }) & ({ readonly "changed"?: false; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "unchanged"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "revision"?: { readonly "relationship"?: "partial"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "manual_recovery_required"; }) & ({ readonly "recovery"?: { readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "revision"?: { readonly "relationship"?: "partial" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "failed" | "manual_review_required"; }; }))); };
   readonly "cutagent.action.clip.update_sidecar": { readonly "actionId": "cutagent.action.clip.update_sidecar"; readonly "payload": ({ readonly "change": { readonly "after": { readonly "artifactId": ArtifactId; readonly "byteCount": number; readonly "exists": boolean; readonly "kind": "sidecar"; readonly "sha256": string; }; readonly "before": { readonly "artifactId": ArtifactId; readonly "byteCount": number; readonly "exists": boolean; readonly "kind": "sidecar"; readonly "sha256": string; }; readonly "kind": "sidecar"; readonly "timelineChanged": false; }; readonly "changed": boolean; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "revision": ({ readonly "after": Revision; readonly "before": Revision; readonly "relationship": "advanced"; }) | ({ readonly "current": Revision; readonly "relationship": "unchanged"; }) | ({ readonly "before": Revision; readonly "observedAfter": (Revision) | (null); readonly "relationship": "partial"; }) | ({ readonly "lastKnown": (Revision) | (null); readonly "relationship": "unknown"; }); readonly "status": "completed" | "no_change" | "partial" | "manual_recovery_required"; readonly "targets": readonly ({ readonly "linkedTimelineItemIds": readonly (TimelineItemId)[]; readonly "name": string; readonly "projectId": ProjectId; readonly "protectedNeighbors": readonly ({ readonly "recordRange": { readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; readonly "relationship": "previous" | "next" | "overlapping"; readonly "timelineItemId": TimelineItemId; })[]; readonly "recordRange": { readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; readonly "snapshotTimelineItemId": SnapshotTimelineItemId; readonly "sourceRange": ({ readonly "domain": "source_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }) | (null); readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "track": { readonly "index": number; readonly "type": "video" | "audio"; }; })[]; readonly "verification": { readonly "evidence": readonly ({ readonly "artifactId": (ArtifactId) | (null); readonly "kind": "structural_readback" | "rendered_frame" | "visual_review" | "audition" | "artifact_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "failed" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "change"?: { readonly "after"?: {}; readonly "before"?: {}; }; readonly "changed"?: true; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "advanced"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; }) & ({ readonly "change"?: { readonly "after"?: { readonly "exists"?: true; }; }; })) | (({ readonly "status": "no_change"; }) & ({ readonly "changed"?: false; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "unchanged"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; }) & ({ readonly "change"?: { readonly "after"?: { readonly "exists"?: true; }; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "revision"?: { readonly "relationship"?: "partial"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "manual_recovery_required"; }) & ({ readonly "recovery"?: { readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "revision"?: { readonly "relationship"?: "partial" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "failed" | "manual_review_required"; }; }))); };
   readonly "cutagent.action.clip.voice_isolation": { readonly "actionId": "cutagent.action.clip.voice_isolation"; readonly "payload": (({ readonly "data": { readonly "state": { readonly "kind": "voice_isolation"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }; }; readonly "status": "completed"; readonly "targets": readonly ({ readonly "linkedTimelineItemIds": readonly (TimelineItemId)[]; readonly "name": string; readonly "projectId": ProjectId; readonly "protectedNeighbors": readonly ({ readonly "recordRange": { readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; readonly "relationship": "previous" | "next" | "overlapping"; readonly "timelineItemId": TimelineItemId; })[]; readonly "recordRange": { readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; readonly "snapshotTimelineItemId": SnapshotTimelineItemId; readonly "sourceRange": ({ readonly "domain": "source_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }) | (null); readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "track": { readonly "index": number; readonly "type": "video" | "audio"; }; })[]; readonly "verification": { readonly "evidence": readonly ({ readonly "artifactId": (ArtifactId) | (null); readonly "kind": "structural_readback" | "rendered_frame" | "visual_review" | "audition" | "artifact_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "failed" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; }; })) | (({ readonly "change": { readonly "after": ({ readonly "kind": "voice_isolation"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }) | (null); readonly "before": ({ readonly "kind": "voice_isolation"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }) | (null); readonly "kind": "voice_isolation"; }; readonly "changed": boolean; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "revision": ({ readonly "after": Revision; readonly "before": Revision; readonly "relationship": "advanced"; }) | ({ readonly "current": Revision; readonly "relationship": "unchanged"; }) | ({ readonly "before": Revision; readonly "observedAfter": (Revision) | (null); readonly "relationship": "partial"; }) | ({ readonly "lastKnown": (Revision) | (null); readonly "relationship": "unknown"; }); readonly "status": "completed" | "no_change" | "partial" | "manual_recovery_required"; readonly "targets": readonly ({ readonly "linkedTimelineItemIds": readonly (TimelineItemId)[]; readonly "name": string; readonly "projectId": ProjectId; readonly "protectedNeighbors": readonly ({ readonly "recordRange": { readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; readonly "relationship": "previous" | "next" | "overlapping"; readonly "timelineItemId": TimelineItemId; })[]; readonly "recordRange": { readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; readonly "snapshotTimelineItemId": SnapshotTimelineItemId; readonly "sourceRange": ({ readonly "domain": "source_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }) | (null); readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "track": { readonly "index": number; readonly "type": "video" | "audio"; }; })[]; readonly "verification": { readonly "evidence": readonly ({ readonly "artifactId": (ArtifactId) | (null); readonly "kind": "structural_readback" | "rendered_frame" | "visual_review" | "audition" | "artifact_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "failed" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "change"?: { readonly "after"?: {}; readonly "before"?: {}; }; readonly "changed"?: true; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "advanced"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "no_change"; }) & ({ readonly "changed"?: false; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "unchanged"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "revision"?: { readonly "relationship"?: "partial"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "manual_recovery_required"; }) & ({ readonly "recovery"?: { readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "revision"?: { readonly "relationship"?: "partial" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "failed" | "manual_review_required"; }; })))); };
@@ -3444,7 +3537,7 @@ export interface ActionResultMap {
   readonly "cutagent.action.color.group.rename": { readonly "actionId": "cutagent.action.color.group.rename"; readonly "groupChange": { readonly "groupId": string; readonly "name": string; readonly "operation": "rename"; readonly "projectId": ProjectId; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "verified": true; }; };
   readonly "cutagent.action.color.huesat": { readonly "actionId": "cutagent.action.color.huesat"; readonly "payload": ({ readonly "changed": boolean; readonly "data": { readonly "artifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteLength": number; readonly "kind": "drx" | "lut" | "still" | "frame" | "thumbnail" | "analysis" | "graph" | "other"; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "entities": readonly ({ readonly "enabled": (boolean) | (null); readonly "id": string; readonly "index": (number) | (null); readonly "kind": "node" | "parameter" | "lut" | "clip"; readonly "name": (string) | (null); readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; })[]; readonly "kind": "grade"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "status": "completed" | "no_change" | "partial" | "manual_recovery_required"; readonly "targets": readonly ({ readonly "albumId": (string) | (null); readonly "colorRevision": (Revision) | (null); readonly "groupId": (string) | (null); readonly "nodeIndex": (number) | (null); readonly "projectId": ProjectId; readonly "projectRevision": Revision; readonly "recordFrame": (number) | (null); readonly "snapshotTimelineItemId": (SnapshotTimelineItemId) | (null); readonly "stillId": (string) | (null); readonly "timelineId": (TimelineId) | (null); readonly "timelineItemId": (TimelineItemId) | (null); readonly "timelineRevision": (Revision) | (null); readonly "trackIndex": (number) | (null); readonly "trackerId": (string) | (null); readonly "windowId": (string) | (null); })[]; readonly "verification": { readonly "evidence": readonly ({ readonly "artifactId": (ArtifactId) | (null); readonly "kind": "structural_readback" | "rendered_frame" | "visual_review" | "artifact_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "failed" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ((({ readonly "status": "completed"; }) & (({ readonly "data"?: { readonly "artifacts"?: {}; }; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; }; }) & ({ readonly "changed"?: true; }))) | (({ readonly "status": "no_change"; }) & (({ readonly "data"?: { readonly "artifacts"?: {}; }; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; }; }) & ({ readonly "changed"?: false; }))) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "manual_recovery_required"; }) & ({ readonly "recovery"?: { readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "failed" | "manual_review_required"; }; }))); };
   readonly "cutagent.action.color.inspect": { readonly "actionId": "cutagent.action.color.inspect"; readonly "payload": ({ readonly "data": { readonly "artifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteLength": number; readonly "kind": "drx" | "lut" | "still" | "frame" | "thumbnail" | "analysis" | "graph" | "other"; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "entities": readonly ({ readonly "enabled": (boolean) | (null); readonly "id": string; readonly "index": (number) | (null); readonly "kind": "other" | "clip" | "node" | "parameter"; readonly "name": (string) | (null); readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; })[]; readonly "kind": "inspection"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }; readonly "status": "completed"; readonly "targets": readonly ({ readonly "albumId": (string) | (null); readonly "colorRevision": (Revision) | (null); readonly "groupId": (string) | (null); readonly "nodeIndex": (number) | (null); readonly "projectId": ProjectId; readonly "projectRevision": Revision; readonly "recordFrame": (number) | (null); readonly "snapshotTimelineItemId": (SnapshotTimelineItemId) | (null); readonly "stillId": (string) | (null); readonly "timelineId": (TimelineId) | (null); readonly "timelineItemId": (TimelineItemId) | (null); readonly "timelineRevision": (Revision) | (null); readonly "trackIndex": (number) | (null); readonly "trackerId": (string) | (null); readonly "windowId": (string) | (null); })[]; readonly "verification": { readonly "evidence": readonly ({ readonly "artifactId": (ArtifactId) | (null); readonly "kind": "structural_readback" | "rendered_frame" | "visual_review" | "artifact_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "failed" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; }; }); };
-  readonly "cutagent.action.color.lut": { readonly "actionId": "cutagent.action.color.lut"; readonly "payload": ({ readonly "change": { readonly "after": ({ readonly "artifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteLength": number; readonly "kind": "drx" | "lut" | "still" | "frame" | "thumbnail" | "analysis" | "graph" | "other"; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "entities": readonly ({ readonly "enabled": (boolean) | (null); readonly "id": string; readonly "index": (number) | (null); readonly "kind": "lut" | "still" | "version"; readonly "name": (string) | (null); readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; })[]; readonly "kind": "grade_asset"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }) | (null); readonly "before": ({ readonly "artifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteLength": number; readonly "kind": "drx" | "lut" | "still" | "frame" | "thumbnail" | "analysis" | "graph" | "other"; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "entities": readonly ({ readonly "enabled": (boolean) | (null); readonly "id": string; readonly "index": (number) | (null); readonly "kind": "lut" | "still" | "version"; readonly "name": (string) | (null); readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; })[]; readonly "kind": "grade_asset"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }) | (null); readonly "kind": "grade_asset"; }; readonly "changed": boolean; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "revision": ({ readonly "after": Revision; readonly "before": Revision; readonly "relationship": "advanced"; }) | ({ readonly "current": Revision; readonly "relationship": "unchanged"; }) | ({ readonly "before": Revision; readonly "observedAfter": (Revision) | (null); readonly "relationship": "partial"; }) | ({ readonly "lastKnown": (Revision) | (null); readonly "relationship": "unknown"; }); readonly "status": "completed" | "no_change" | "partial" | "manual_recovery_required"; readonly "targets": readonly ({ readonly "albumId": (string) | (null); readonly "colorRevision": (Revision) | (null); readonly "groupId": (string) | (null); readonly "nodeIndex": (number) | (null); readonly "projectId": ProjectId; readonly "projectRevision": Revision; readonly "recordFrame": (number) | (null); readonly "snapshotTimelineItemId": (SnapshotTimelineItemId) | (null); readonly "stillId": (string) | (null); readonly "timelineId": (TimelineId) | (null); readonly "timelineItemId": (TimelineItemId) | (null); readonly "timelineRevision": (Revision) | (null); readonly "trackIndex": (number) | (null); readonly "trackerId": (string) | (null); readonly "windowId": (string) | (null); })[]; readonly "verification": { readonly "evidence": readonly ({ readonly "artifactId": (ArtifactId) | (null); readonly "kind": "structural_readback" | "rendered_frame" | "visual_review" | "artifact_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "failed" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "change"?: { readonly "after"?: {}; readonly "before"?: {}; }; readonly "changed"?: true; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "advanced"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "no_change"; }) & ({ readonly "changed"?: false; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "unchanged"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "revision"?: { readonly "relationship"?: "partial"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "manual_recovery_required"; }) & ({ readonly "recovery"?: { readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "revision"?: { readonly "relationship"?: "partial" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "failed" | "manual_review_required"; }; }))); };
+  readonly "cutagent.action.color.lut": ({ readonly "actionId": "cutagent.action.color.lut"; readonly "payload": ({ readonly "change": { readonly "after": ({ readonly "artifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteLength": number; readonly "kind": "drx" | "lut" | "still" | "frame" | "thumbnail" | "analysis" | "graph" | "other"; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "entities": readonly ({ readonly "enabled": (boolean) | (null); readonly "id": string; readonly "index": (number) | (null); readonly "kind": "lut" | "still" | "version"; readonly "name": (string) | (null); readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; })[]; readonly "kind": "grade_asset"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }) | (null); readonly "before": ({ readonly "artifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteLength": number; readonly "kind": "drx" | "lut" | "still" | "frame" | "thumbnail" | "analysis" | "graph" | "other"; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "entities": readonly ({ readonly "enabled": (boolean) | (null); readonly "id": string; readonly "index": (number) | (null); readonly "kind": "lut" | "still" | "version"; readonly "name": (string) | (null); readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; })[]; readonly "kind": "grade_asset"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }) | (null); readonly "kind": "grade_asset"; }; readonly "changed": boolean; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "revision": ({ readonly "after": Revision; readonly "before": Revision; readonly "relationship": "advanced"; }) | ({ readonly "current": Revision; readonly "relationship": "unchanged"; }) | ({ readonly "before": Revision; readonly "observedAfter": (Revision) | (null); readonly "relationship": "partial"; }) | ({ readonly "lastKnown": (Revision) | (null); readonly "relationship": "unknown"; }); readonly "status": "completed" | "no_change" | "partial" | "manual_recovery_required"; readonly "targets": readonly ({ readonly "albumId": (string) | (null); readonly "colorRevision": (Revision) | (null); readonly "groupId": (string) | (null); readonly "nodeIndex": (number) | (null); readonly "projectId": ProjectId; readonly "projectRevision": Revision; readonly "recordFrame": (number) | (null); readonly "snapshotTimelineItemId": (SnapshotTimelineItemId) | (null); readonly "stillId": (string) | (null); readonly "timelineId": (TimelineId) | (null); readonly "timelineItemId": (TimelineItemId) | (null); readonly "timelineRevision": (Revision) | (null); readonly "trackIndex": (number) | (null); readonly "trackerId": (string) | (null); readonly "windowId": (string) | (null); })[]; readonly "verification": { readonly "evidence": readonly ({ readonly "artifactId": (ArtifactId) | (null); readonly "kind": "structural_readback" | "rendered_frame" | "visual_review" | "artifact_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "failed" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "change"?: { readonly "after"?: {}; readonly "before"?: {}; }; readonly "changed"?: true; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "advanced"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "no_change"; }) & ({ readonly "changed"?: false; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "unchanged"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "revision"?: { readonly "relationship"?: "partial"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "manual_recovery_required"; }) & ({ readonly "recovery"?: { readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "revision"?: { readonly "relationship"?: "partial" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "failed" | "manual_review_required"; }; }))); }) | ({ readonly "actionId": "cutagent.action.color.lut"; readonly "payload": { readonly "changed": boolean; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "results": readonly ({ readonly "errorCode": (string) | (null); readonly "lutName": string; readonly "nodeIndex": number; readonly "readbackLutName": (string) | (null); readonly "status": "applied" | "failed" | "skipped"; readonly "timelineItemId": TimelineItemId; })[]; readonly "status": "completed" | "partial"; readonly "verification": { readonly "evidence": readonly ({ readonly "artifactId": (ArtifactId) | (null); readonly "kind": "structural_readback" | "rendered_frame" | "visual_review" | "artifact_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "failed" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }; });
   readonly "cutagent.action.color.lut_refresh": { readonly "actionId": "cutagent.action.color.lut_refresh"; readonly "payload": ({ readonly "change": { readonly "after": ({ readonly "artifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteLength": number; readonly "kind": "drx" | "lut" | "still" | "frame" | "thumbnail" | "analysis" | "graph" | "other"; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "entities": readonly ({ readonly "enabled": (boolean) | (null); readonly "id": string; readonly "index": (number) | (null); readonly "kind": "lut" | "still" | "version"; readonly "name": (string) | (null); readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; })[]; readonly "kind": "grade_asset"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }) | (null); readonly "before": ({ readonly "artifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteLength": number; readonly "kind": "drx" | "lut" | "still" | "frame" | "thumbnail" | "analysis" | "graph" | "other"; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "entities": readonly ({ readonly "enabled": (boolean) | (null); readonly "id": string; readonly "index": (number) | (null); readonly "kind": "lut" | "still" | "version"; readonly "name": (string) | (null); readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; })[]; readonly "kind": "grade_asset"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }) | (null); readonly "kind": "grade_asset"; }; readonly "changed": boolean; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "revision": ({ readonly "after": Revision; readonly "before": Revision; readonly "relationship": "advanced"; }) | ({ readonly "current": Revision; readonly "relationship": "unchanged"; }) | ({ readonly "before": Revision; readonly "observedAfter": (Revision) | (null); readonly "relationship": "partial"; }) | ({ readonly "lastKnown": (Revision) | (null); readonly "relationship": "unknown"; }); readonly "status": "completed" | "no_change" | "partial" | "manual_recovery_required"; readonly "targets": readonly ({ readonly "albumId": (string) | (null); readonly "colorRevision": (Revision) | (null); readonly "groupId": (string) | (null); readonly "nodeIndex": (number) | (null); readonly "projectId": ProjectId; readonly "projectRevision": Revision; readonly "recordFrame": (number) | (null); readonly "snapshotTimelineItemId": (SnapshotTimelineItemId) | (null); readonly "stillId": (string) | (null); readonly "timelineId": (TimelineId) | (null); readonly "timelineItemId": (TimelineItemId) | (null); readonly "timelineRevision": (Revision) | (null); readonly "trackIndex": (number) | (null); readonly "trackerId": (string) | (null); readonly "windowId": (string) | (null); })[]; readonly "verification": { readonly "evidence": readonly ({ readonly "artifactId": (ArtifactId) | (null); readonly "kind": "structural_readback" | "rendered_frame" | "visual_review" | "artifact_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "failed" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "change"?: { readonly "after"?: {}; readonly "before"?: {}; }; readonly "changed"?: true; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "advanced"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "no_change"; }) & ({ readonly "changed"?: false; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "unchanged"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "revision"?: { readonly "relationship"?: "partial"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "manual_recovery_required"; }) & ({ readonly "recovery"?: { readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "revision"?: { readonly "relationship"?: "partial" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "failed" | "manual_review_required"; }; }))); };
   readonly "cutagent.action.color.mask.inspect": { readonly "actionId": "cutagent.action.color.mask.inspect"; readonly "payload": ({ readonly "data": { readonly "artifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteLength": number; readonly "kind": "drx" | "lut" | "still" | "frame" | "thumbnail" | "analysis" | "graph" | "other"; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "entities": readonly ({ readonly "enabled": (boolean) | (null); readonly "id": string; readonly "index": (number) | (null); readonly "kind": "window" | "tracker"; readonly "name": (string) | (null); readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; })[]; readonly "kind": "mask"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }; readonly "status": "completed"; readonly "targets": readonly ({ readonly "albumId": (string) | (null); readonly "colorRevision": (Revision) | (null); readonly "groupId": (string) | (null); readonly "nodeIndex": (number) | (null); readonly "projectId": ProjectId; readonly "projectRevision": Revision; readonly "recordFrame": (number) | (null); readonly "snapshotTimelineItemId": (SnapshotTimelineItemId) | (null); readonly "stillId": (string) | (null); readonly "timelineId": (TimelineId) | (null); readonly "timelineItemId": (TimelineItemId) | (null); readonly "timelineRevision": (Revision) | (null); readonly "trackIndex": (number) | (null); readonly "trackerId": (string) | (null); readonly "windowId": (string) | (null); })[]; readonly "verification": { readonly "evidence": readonly ({ readonly "artifactId": (ArtifactId) | (null); readonly "kind": "structural_readback" | "rendered_frame" | "visual_review" | "artifact_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "failed" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; }; }); };
   readonly "cutagent.action.color.node.cache": { readonly "actionId": "cutagent.action.color.node.cache"; readonly "payload": ({ readonly "change": { readonly "after": ({ readonly "artifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteLength": number; readonly "kind": "drx" | "lut" | "still" | "frame" | "thumbnail" | "analysis" | "graph" | "other"; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "entities": readonly ({ readonly "enabled": (boolean) | (null); readonly "id": string; readonly "index": (number) | (null); readonly "kind": "node" | "effect" | "parameter"; readonly "name": (string) | (null); readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; })[]; readonly "kind": "node_graph"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }) | (null); readonly "before": ({ readonly "artifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteLength": number; readonly "kind": "drx" | "lut" | "still" | "frame" | "thumbnail" | "analysis" | "graph" | "other"; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "entities": readonly ({ readonly "enabled": (boolean) | (null); readonly "id": string; readonly "index": (number) | (null); readonly "kind": "node" | "effect" | "parameter"; readonly "name": (string) | (null); readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; })[]; readonly "kind": "node_graph"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }) | (null); readonly "kind": "node_graph"; }; readonly "changed": boolean; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "revision": ({ readonly "after": Revision; readonly "before": Revision; readonly "relationship": "advanced"; }) | ({ readonly "current": Revision; readonly "relationship": "unchanged"; }) | ({ readonly "before": Revision; readonly "observedAfter": (Revision) | (null); readonly "relationship": "partial"; }) | ({ readonly "lastKnown": (Revision) | (null); readonly "relationship": "unknown"; }); readonly "status": "completed" | "no_change" | "partial" | "manual_recovery_required"; readonly "targets": readonly ({ readonly "albumId": (string) | (null); readonly "colorRevision": (Revision) | (null); readonly "groupId": (string) | (null); readonly "nodeIndex": (number) | (null); readonly "projectId": ProjectId; readonly "projectRevision": Revision; readonly "recordFrame": (number) | (null); readonly "snapshotTimelineItemId": (SnapshotTimelineItemId) | (null); readonly "stillId": (string) | (null); readonly "timelineId": (TimelineId) | (null); readonly "timelineItemId": (TimelineItemId) | (null); readonly "timelineRevision": (Revision) | (null); readonly "trackIndex": (number) | (null); readonly "trackerId": (string) | (null); readonly "windowId": (string) | (null); })[]; readonly "verification": { readonly "evidence": readonly ({ readonly "artifactId": (ArtifactId) | (null); readonly "kind": "structural_readback" | "rendered_frame" | "visual_review" | "artifact_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "failed" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "change"?: { readonly "after"?: {}; readonly "before"?: {}; }; readonly "changed"?: true; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "advanced"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "no_change"; }) & ({ readonly "changed"?: false; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "unchanged"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "revision"?: { readonly "relationship"?: "partial"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "manual_recovery_required"; }) & ({ readonly "recovery"?: { readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "revision"?: { readonly "relationship"?: "partial" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "failed" | "manual_review_required"; }; }))); };
@@ -3575,6 +3668,7 @@ export interface ActionResultMap {
   readonly "cutagent.action.color.window.rectangle": { readonly "actionId": "cutagent.action.color.window.rectangle"; readonly "payload": ({ readonly "change": { readonly "after": ({ readonly "artifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteLength": number; readonly "kind": "drx" | "lut" | "still" | "frame" | "thumbnail" | "analysis" | "graph" | "other"; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "entities": readonly ({ readonly "enabled": (boolean) | (null); readonly "id": string; readonly "index": (number) | (null); readonly "kind": "window" | "tracker"; readonly "name": (string) | (null); readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; })[]; readonly "kind": "mask"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }) | (null); readonly "before": ({ readonly "artifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteLength": number; readonly "kind": "drx" | "lut" | "still" | "frame" | "thumbnail" | "analysis" | "graph" | "other"; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "entities": readonly ({ readonly "enabled": (boolean) | (null); readonly "id": string; readonly "index": (number) | (null); readonly "kind": "window" | "tracker"; readonly "name": (string) | (null); readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; })[]; readonly "kind": "mask"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }) | (null); readonly "kind": "mask"; }; readonly "changed": boolean; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "revision": ({ readonly "after": Revision; readonly "before": Revision; readonly "relationship": "advanced"; }) | ({ readonly "current": Revision; readonly "relationship": "unchanged"; }) | ({ readonly "before": Revision; readonly "observedAfter": (Revision) | (null); readonly "relationship": "partial"; }) | ({ readonly "lastKnown": (Revision) | (null); readonly "relationship": "unknown"; }); readonly "status": "completed" | "no_change" | "partial" | "manual_recovery_required"; readonly "targets": readonly ({ readonly "albumId": (string) | (null); readonly "colorRevision": (Revision) | (null); readonly "groupId": (string) | (null); readonly "nodeIndex": (number) | (null); readonly "projectId": ProjectId; readonly "projectRevision": Revision; readonly "recordFrame": (number) | (null); readonly "snapshotTimelineItemId": (SnapshotTimelineItemId) | (null); readonly "stillId": (string) | (null); readonly "timelineId": (TimelineId) | (null); readonly "timelineItemId": (TimelineItemId) | (null); readonly "timelineRevision": (Revision) | (null); readonly "trackIndex": (number) | (null); readonly "trackerId": (string) | (null); readonly "windowId": (string) | (null); })[]; readonly "verification": { readonly "evidence": readonly ({ readonly "artifactId": (ArtifactId) | (null); readonly "kind": "structural_readback" | "rendered_frame" | "visual_review" | "artifact_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "failed" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "change"?: { readonly "after"?: {}; readonly "before"?: {}; }; readonly "changed"?: true; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "advanced"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "no_change"; }) & ({ readonly "changed"?: false; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "unchanged"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "revision"?: { readonly "relationship"?: "partial"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "manual_recovery_required"; }) & ({ readonly "recovery"?: { readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "revision"?: { readonly "relationship"?: "partial" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "failed" | "manual_review_required"; }; }))); };
   readonly "cutagent.action.color.window.reorder": { readonly "actionId": "cutagent.action.color.window.reorder"; readonly "payload": ({ readonly "change": { readonly "after": ({ readonly "artifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteLength": number; readonly "kind": "drx" | "lut" | "still" | "frame" | "thumbnail" | "analysis" | "graph" | "other"; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "entities": readonly ({ readonly "enabled": (boolean) | (null); readonly "id": string; readonly "index": (number) | (null); readonly "kind": "window" | "tracker"; readonly "name": (string) | (null); readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; })[]; readonly "kind": "mask"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }) | (null); readonly "before": ({ readonly "artifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteLength": number; readonly "kind": "drx" | "lut" | "still" | "frame" | "thumbnail" | "analysis" | "graph" | "other"; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "entities": readonly ({ readonly "enabled": (boolean) | (null); readonly "id": string; readonly "index": (number) | (null); readonly "kind": "window" | "tracker"; readonly "name": (string) | (null); readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; })[]; readonly "kind": "mask"; readonly "values": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | (readonly (number)[]); })[]; }) | (null); readonly "kind": "mask"; }; readonly "changed": boolean; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "revision": ({ readonly "after": Revision; readonly "before": Revision; readonly "relationship": "advanced"; }) | ({ readonly "current": Revision; readonly "relationship": "unchanged"; }) | ({ readonly "before": Revision; readonly "observedAfter": (Revision) | (null); readonly "relationship": "partial"; }) | ({ readonly "lastKnown": (Revision) | (null); readonly "relationship": "unknown"; }); readonly "status": "completed" | "no_change" | "partial" | "manual_recovery_required"; readonly "targets": readonly ({ readonly "albumId": (string) | (null); readonly "colorRevision": (Revision) | (null); readonly "groupId": (string) | (null); readonly "nodeIndex": (number) | (null); readonly "projectId": ProjectId; readonly "projectRevision": Revision; readonly "recordFrame": (number) | (null); readonly "snapshotTimelineItemId": (SnapshotTimelineItemId) | (null); readonly "stillId": (string) | (null); readonly "timelineId": (TimelineId) | (null); readonly "timelineItemId": (TimelineItemId) | (null); readonly "timelineRevision": (Revision) | (null); readonly "trackIndex": (number) | (null); readonly "trackerId": (string) | (null); readonly "windowId": (string) | (null); })[]; readonly "verification": { readonly "evidence": readonly ({ readonly "artifactId": (ArtifactId) | (null); readonly "kind": "structural_readback" | "rendered_frame" | "visual_review" | "artifact_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "failed" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "change"?: { readonly "after"?: {}; readonly "before"?: {}; }; readonly "changed"?: true; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "advanced"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "no_change"; }) & ({ readonly "changed"?: false; readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "revision"?: { readonly "relationship"?: "unchanged"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "revision"?: { readonly "relationship"?: "partial"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "manual_recovery_required"; }) & ({ readonly "recovery"?: { readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "revision"?: { readonly "relationship"?: "partial" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "failed" | "manual_review_required"; }; }))); };
   readonly "cutagent.action.dctl.apply": { readonly "actionId": "cutagent.action.dctl.apply"; readonly "application": { readonly "applied": true; readonly "dctlArtifactId": ArtifactId; readonly "nodeIndex": number; readonly "projectId": ProjectId; readonly "readbackName": string; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; }; };
+  readonly "cutagent.action.dctl.validate_source": { readonly "actionId": "cutagent.action.dctl.validate_source"; readonly "validation": { readonly "diagnostics": string | null; readonly "valid": boolean; readonly "validator": "davinci_resolve_native"; }; };
   readonly "cutagent.action.edit.auto_subtitle": ({ readonly "actionId": "cutagent.action.edit.auto_subtitle"; readonly "affected": { readonly "linkedAudio": ({ readonly "changed": boolean; readonly "preserved": boolean; readonly "requested": "linked" | "video_only" | "audio_only" | "not_applicable"; }) & (({ readonly "changed"?: false; readonly "preserved"?: true; }) | ({ readonly "changed"?: true; readonly "preserved"?: false; })) & ((({ readonly "requested": "linked"; })) | (({ readonly "requested": "video_only"; })) | (({ readonly "requested": "audio_only"; })) | (({ readonly "requested": "not_applicable"; }) & ({ readonly "changed"?: false; readonly "preserved"?: true; }))); }; readonly "details": (null) | ({ readonly "coveredRecordRange": (null) | ({ readonly "durationFrames": number; readonly "startOffsetFrames": number; }); readonly "createdCaptions": { readonly "completeItems": Readonly<Record<string, { readonly "recordRange": { readonly "durationFrames": number; readonly "startOffsetFrames": number; }; readonly "sourceRange": (null) | ({ readonly "durationFrames": number; readonly "startFrame": number; }); }>>; readonly "resultPage": { readonly "collectionId": "details.createdCaptions"; readonly "defaultPageSize": 128; readonly "digest": string; readonly "kind": "identity_map"; readonly "totalItems": number; }; }; readonly "subtitleTrack": { readonly "index": number; readonly "type": "subtitle"; }; }); readonly "recovery": { readonly "guidance": string; readonly "manualRecoveryRequired": boolean; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "checkpoint_available" | "restored" | "manual_required" | "unknown"; }; readonly "revision": Revision; readonly "status": "completed" | "no_op" | "partial" | "recovered" | "manual_review_required"; readonly "target": { readonly "project": { readonly "id": ProjectId; readonly "name": string; }; readonly "timeline": { readonly "id": TimelineId; readonly "name": string; readonly "startFrame": number; }; }; readonly "verification": { readonly "checks": readonly ({ readonly "name": string; readonly "passed": boolean; })[]; readonly "evidence": readonly ({ readonly "kind": "structural_readback" | "artifact_readback" | "rendered_frame" | "visual_review" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "partial" | "not_proven" | "not_applicable"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "details"?: {  }; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; }) & ({ readonly "details"?: { readonly "createdCaptions"?: { readonly "completeItems"?: {}; }; }; })) | (({ readonly "status": "no_op"; }) & ({ readonly "affected"?: { readonly "linkedAudio"?: { readonly "changed"?: false; readonly "preserved"?: true; }; }; readonly "details"?: null; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "retry"?: "inspect_state_first"; readonly "state"?: "checkpoint_available" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "recovered"; }) & ({ readonly "affected"?: { readonly "linkedAudio"?: { readonly "changed"?: false; readonly "preserved"?: true; }; }; readonly "details"?: null; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "retry"?: "safe"; readonly "state"?: "restored"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "manual_review_required"; }) & ({ readonly "recovery"?: { readonly "manualRecoveryRequired"?: true; readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "verification"?: { readonly "outcome"?: "manual_review_required"; }; })));
   readonly "cutagent.action.edit.blade": { readonly "actionId": "cutagent.action.edit.blade"; readonly "protectedStatePreserved": true; readonly "segments": readonly ({ readonly "id": TimelineItemId; readonly "mediaPoolItemId": (MediaPoolItemId) | (null); readonly "originalId": TimelineItemId; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "role": "target" | "linked"; readonly "side": "left" | "right"; readonly "sourceEndFrame": number | null; readonly "sourceStartFrame": number | null; readonly "trackIndex": number; readonly "trackType": "video" | "audio"; })[]; readonly "splitFrame": number; readonly "timelineRevision": Revision; };
   readonly "cutagent.action.edit.camera_pip": ({ readonly "actionId": "cutagent.action.edit.camera_pip"; readonly "affected": { readonly "linkedAudio": ({ readonly "changed": boolean; readonly "preserved": boolean; readonly "requested": "linked" | "video_only" | "audio_only" | "not_applicable"; }) & (({ readonly "changed"?: false; readonly "preserved"?: true; }) | ({ readonly "changed"?: true; readonly "preserved"?: false; })) & ((({ readonly "requested": "linked"; })) | (({ readonly "requested": "video_only"; })) | (({ readonly "requested": "audio_only"; })) | (({ readonly "requested": "not_applicable"; }) & ({ readonly "changed"?: false; readonly "preserved"?: true; }))); }; readonly "details": (null) | ({ readonly "itemIds": readonly [string, string]; readonly "itemStates": readonly [{ readonly "name": string; readonly "recordRange": { readonly "durationFrames": number; readonly "startOffsetFrames": number; }; readonly "sourceRange": (null) | ({ readonly "durationFrames": number; readonly "startFrame": number; }); readonly "track": { readonly "index": number; readonly "type": "video"; }; }, { readonly "name": string; readonly "recordRange": { readonly "durationFrames": number; readonly "startOffsetFrames": number; }; readonly "sourceRange": (null) | ({ readonly "durationFrames": number; readonly "startFrame": number; }); readonly "track": { readonly "index": number; readonly "type": "video"; }; }]; readonly "mode": "append" | "apply_existing"; readonly "renderedPlacementVerified": boolean; readonly "roundedCropApplied": boolean; readonly "transform": { readonly "opacity": number; readonly "pan": number; readonly "tilt": number; readonly "zoomX": number; readonly "zoomY": number; }; }); readonly "recovery": { readonly "guidance": string; readonly "manualRecoveryRequired": boolean; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "checkpoint_available" | "restored" | "manual_required" | "unknown"; }; readonly "revision": Revision; readonly "status": "completed" | "no_op" | "partial" | "recovered" | "manual_review_required"; readonly "target": { readonly "project": { readonly "id": ProjectId; readonly "name": string; }; readonly "timeline": { readonly "id": TimelineId; readonly "name": string; readonly "startFrame": number; }; }; readonly "verification": { readonly "checks": readonly ({ readonly "name": string; readonly "passed": boolean; })[]; readonly "evidence": readonly ({ readonly "kind": "structural_readback" | "artifact_readback" | "rendered_frame" | "visual_review" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "partial" | "not_proven" | "not_applicable"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "details"?: {  }; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; }) & ({ readonly "details"?: { readonly "renderedPlacementVerified"?: true; }; readonly "verification"?: { readonly "evidence"?: {}; }; })) | (({ readonly "status": "no_op"; }) & ({ readonly "affected"?: { readonly "linkedAudio"?: { readonly "changed"?: false; readonly "preserved"?: true; }; }; readonly "details"?: null; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "retry"?: "inspect_state_first"; readonly "state"?: "checkpoint_available" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "recovered"; }) & ({ readonly "affected"?: { readonly "linkedAudio"?: { readonly "changed"?: false; readonly "preserved"?: true; }; }; readonly "details"?: null; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "retry"?: "safe"; readonly "state"?: "restored"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "manual_review_required"; }) & ({ readonly "recovery"?: { readonly "manualRecoveryRequired"?: true; readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "verification"?: { readonly "outcome"?: "manual_review_required"; }; })));
@@ -3593,6 +3687,7 @@ export interface ActionResultMap {
   readonly "cutagent.action.edit.social_crop": ({ readonly "actionId": "cutagent.action.edit.social_crop"; readonly "affected": { readonly "linkedAudio": ({ readonly "changed": boolean; readonly "preserved": boolean; readonly "requested": "linked" | "video_only" | "audio_only" | "not_applicable"; }) & (({ readonly "changed"?: false; readonly "preserved"?: true; }) | ({ readonly "changed"?: true; readonly "preserved"?: false; })) & ((({ readonly "requested": "linked"; })) | (({ readonly "requested": "video_only"; })) | (({ readonly "requested": "audio_only"; })) | (({ readonly "requested": "not_applicable"; }) & ({ readonly "changed"?: false; readonly "preserved"?: true; }))); }; readonly "details": (null) | ({ readonly "format": "9:16" | "1:1" | "4:5" | "16:9"; readonly "timelineResolutionAfter": { readonly "height": number; readonly "width": number; }; readonly "timelineResolutionBefore": { readonly "height": number; readonly "width": number; }; readonly "timelineSettingApplied": boolean; readonly "transformedItems": { readonly "completeItems": Readonly<Record<string, { readonly "recordRange": { readonly "durationFrames": number; readonly "startOffsetFrames": number; }; readonly "sourceRange": (null) | ({ readonly "durationFrames": number; readonly "startFrame": number; }); readonly "track": { readonly "index": number; readonly "type": "video"; }; }>>; readonly "resultPage": { readonly "collectionId": "details.transformedItems"; readonly "defaultPageSize": 128; readonly "digest": string; readonly "kind": "identity_map"; readonly "totalItems": number; }; }; }); readonly "recovery": { readonly "guidance": string; readonly "manualRecoveryRequired": boolean; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "checkpoint_available" | "restored" | "manual_required" | "unknown"; }; readonly "revision": Revision; readonly "status": "completed" | "no_op" | "partial" | "recovered" | "manual_review_required"; readonly "target": { readonly "project": { readonly "id": ProjectId; readonly "name": string; }; readonly "timeline": { readonly "id": TimelineId; readonly "name": string; readonly "startFrame": number; }; }; readonly "verification": { readonly "checks": readonly ({ readonly "name": string; readonly "passed": boolean; })[]; readonly "evidence": readonly ({ readonly "kind": "structural_readback" | "artifact_readback" | "rendered_frame" | "visual_review" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "partial" | "not_proven" | "not_applicable"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "details"?: {  }; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; }) & ({ readonly "details"?: ({ readonly "timelineSettingApplied"?: true; readonly "transformedItems"?: { readonly "completeItems"?: {}; }; }) & (({ readonly "format"?: "9:16"; readonly "timelineResolutionAfter"?: { readonly "height"?: 1920; readonly "width"?: 1080; }; }) | ({ readonly "format"?: "1:1"; readonly "timelineResolutionAfter"?: { readonly "height"?: 1080; readonly "width"?: 1080; }; }) | ({ readonly "format"?: "4:5"; readonly "timelineResolutionAfter"?: { readonly "height"?: 1350; readonly "width"?: 1080; }; }) | ({ readonly "format"?: "16:9"; readonly "timelineResolutionAfter"?: { readonly "height"?: 1080; readonly "width"?: 1920; }; })); })) | (({ readonly "status": "no_op"; }) & ({ readonly "affected"?: { readonly "linkedAudio"?: { readonly "changed"?: false; readonly "preserved"?: true; }; }; readonly "details"?: null; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "retry"?: "inspect_state_first"; readonly "state"?: "checkpoint_available" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "recovered"; }) & ({ readonly "affected"?: { readonly "linkedAudio"?: { readonly "changed"?: false; readonly "preserved"?: true; }; }; readonly "details"?: null; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "retry"?: "safe"; readonly "state"?: "restored"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "manual_review_required"; }) & ({ readonly "recovery"?: { readonly "manualRecoveryRequired"?: true; readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "verification"?: { readonly "outcome"?: "manual_review_required"; }; })));
   readonly "cutagent.action.edit.split": ({ readonly "actionId": "cutagent.action.edit.split"; readonly "affected": { readonly "linkedAudio": ({ readonly "changed": boolean; readonly "preserved": boolean; readonly "requested": "linked" | "video_only" | "audio_only" | "not_applicable"; }) & (({ readonly "changed"?: false; readonly "preserved"?: true; }) | ({ readonly "changed"?: true; readonly "preserved"?: false; })) & ((({ readonly "requested": "linked"; })) | (({ readonly "requested": "video_only"; })) | (({ readonly "requested": "audio_only"; })) | (({ readonly "requested": "not_applicable"; }) & ({ readonly "changed"?: false; readonly "preserved"?: true; }))); }; readonly "details": (null) | ({ readonly "cuts": readonly ({ readonly "itemIds": readonly [string, string, string]; readonly "recordOffsetFrames": number; readonly "track": { readonly "index": number; readonly "type": "video" | "audio"; }; })[]; }); readonly "recovery": { readonly "guidance": string; readonly "manualRecoveryRequired": boolean; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "checkpoint_available" | "restored" | "manual_required" | "unknown"; }; readonly "revision": Revision; readonly "status": "completed" | "no_op" | "partial" | "recovered" | "manual_review_required"; readonly "target": { readonly "project": { readonly "id": ProjectId; readonly "name": string; }; readonly "timeline": { readonly "id": TimelineId; readonly "name": string; readonly "startFrame": number; }; }; readonly "verification": { readonly "checks": readonly ({ readonly "name": string; readonly "passed": boolean; })[]; readonly "evidence": readonly ({ readonly "kind": "structural_readback" | "artifact_readback" | "rendered_frame" | "visual_review" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "partial" | "not_proven" | "not_applicable"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "details"?: {  }; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; }) & ({ readonly "details"?: { readonly "cuts"?: {}; }; })) | (({ readonly "status": "no_op"; }) & ({ readonly "affected"?: { readonly "linkedAudio"?: { readonly "changed"?: false; readonly "preserved"?: true; }; }; readonly "details"?: null; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "retry"?: "inspect_state_first"; readonly "state"?: "checkpoint_available" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "recovered"; }) & ({ readonly "affected"?: { readonly "linkedAudio"?: { readonly "changed"?: false; readonly "preserved"?: true; }; }; readonly "details"?: null; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "retry"?: "safe"; readonly "state"?: "restored"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "manual_review_required"; }) & ({ readonly "recovery"?: { readonly "manualRecoveryRequired"?: true; readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "verification"?: { readonly "outcome"?: "manual_review_required"; }; })));
   readonly "cutagent.action.edit.transition.add": ({ readonly "actionId": "cutagent.action.edit.transition.add"; readonly "affected": { readonly "linkedAudio": ({ readonly "changed": boolean; readonly "preserved": boolean; readonly "requested": "linked" | "video_only" | "audio_only" | "not_applicable"; }) & (({ readonly "changed"?: false; readonly "preserved"?: true; }) | ({ readonly "changed"?: true; readonly "preserved"?: false; })) & ((({ readonly "requested": "linked"; })) | (({ readonly "requested": "video_only"; })) | (({ readonly "requested": "audio_only"; })) | (({ readonly "requested": "not_applicable"; }) & ({ readonly "changed"?: false; readonly "preserved"?: true; }))); }; readonly "details": (null) | ({ readonly "targetItem": { readonly "id": string; readonly "name": string; readonly "recordRange": { readonly "durationFrames": number; readonly "startOffsetFrames": number; }; readonly "sourceRange": (null) | ({ readonly "durationFrames": number; readonly "startFrame": number; }); readonly "track": { readonly "index": number; readonly "type": "video"; }; }; readonly "transitions": Readonly<Record<string, { readonly "durationFrames": number; readonly "name": string; readonly "placement": "start" | "end" | "both"; }>>; }); readonly "recovery": { readonly "guidance": string; readonly "manualRecoveryRequired": boolean; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "checkpoint_available" | "restored" | "manual_required" | "unknown"; }; readonly "revision": Revision; readonly "status": "completed" | "no_op" | "partial" | "recovered" | "manual_review_required"; readonly "target": { readonly "project": { readonly "id": ProjectId; readonly "name": string; }; readonly "timeline": { readonly "id": TimelineId; readonly "name": string; readonly "startFrame": number; }; }; readonly "verification": { readonly "checks": readonly ({ readonly "name": string; readonly "passed": boolean; })[]; readonly "evidence": readonly ({ readonly "kind": "structural_readback" | "artifact_readback" | "rendered_frame" | "visual_review" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "partial" | "not_proven" | "not_applicable"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "details"?: {  }; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; }) & ({ readonly "details"?: { readonly "transitions"?: {}; }; })) | (({ readonly "status": "no_op"; }) & ({ readonly "affected"?: { readonly "linkedAudio"?: { readonly "changed"?: false; readonly "preserved"?: true; }; }; readonly "details"?: null; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "retry"?: "inspect_state_first"; readonly "state"?: "checkpoint_available" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "recovered"; }) & ({ readonly "affected"?: { readonly "linkedAudio"?: { readonly "changed"?: false; readonly "preserved"?: true; }; }; readonly "details"?: null; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "retry"?: "safe"; readonly "state"?: "restored"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "manual_review_required"; }) & ({ readonly "recovery"?: { readonly "manualRecoveryRequired"?: true; readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "verification"?: { readonly "outcome"?: "manual_review_required"; }; })));
+  readonly "cutagent.action.edit.transition.batch": ({ readonly "actionId": "cutagent.action.edit.transition.batch"; readonly "affected": { readonly "linkedAudio": ({ readonly "changed": boolean; readonly "preserved": boolean; readonly "requested": "linked" | "video_only" | "audio_only" | "not_applicable"; }) & (({ readonly "changed"?: false; readonly "preserved"?: true; }) | ({ readonly "changed"?: true; readonly "preserved"?: false; })) & ((({ readonly "requested": "linked"; })) | (({ readonly "requested": "video_only"; })) | (({ readonly "requested": "audio_only"; })) | (({ readonly "requested": "not_applicable"; }) & ({ readonly "changed"?: false; readonly "preserved"?: true; }))); }; readonly "details": (null) | ({ readonly "results": readonly ({ readonly "index": number; readonly "status": "completed" | "no_op"; readonly "targetItem": { readonly "id": string; readonly "name": string; readonly "recordRange": { readonly "durationFrames": number; readonly "startOffsetFrames": number; }; readonly "sourceRange": (null) | ({ readonly "durationFrames": number; readonly "startFrame": number; }); readonly "track": { readonly "index": number; readonly "type": "video"; }; }; readonly "transitions": Readonly<Record<string, { readonly "durationFrames": number; readonly "name": string; readonly "placement": "start" | "end" | "both"; }>>; })[]; }); readonly "recovery": { readonly "guidance": string; readonly "manualRecoveryRequired": boolean; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "checkpoint_available" | "restored" | "manual_required" | "unknown"; }; readonly "revision": Revision; readonly "status": "completed" | "no_op" | "partial" | "recovered" | "manual_review_required"; readonly "target": { readonly "project": { readonly "id": ProjectId; readonly "name": string; }; readonly "timeline": { readonly "id": TimelineId; readonly "name": string; readonly "startFrame": number; }; }; readonly "verification": { readonly "checks": readonly ({ readonly "name": string; readonly "passed": boolean; })[]; readonly "evidence": readonly ({ readonly "kind": "structural_readback" | "artifact_readback" | "rendered_frame" | "visual_review" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "partial" | "not_proven" | "not_applicable"; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "details"?: {  }; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; }) & ({ readonly "details"?: { readonly "results"?: {}; }; })) | (({ readonly "status": "no_op"; }) & ({ readonly "affected"?: { readonly "linkedAudio"?: { readonly "changed"?: false; readonly "preserved"?: true; }; }; readonly "details"?: null; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "retry"?: "inspect_state_first"; readonly "state"?: "checkpoint_available" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "recovered"; }) & ({ readonly "affected"?: { readonly "linkedAudio"?: { readonly "changed"?: false; readonly "preserved"?: true; }; }; readonly "details"?: null; readonly "recovery"?: { readonly "manualRecoveryRequired"?: false; readonly "retry"?: "safe"; readonly "state"?: "restored"; }; readonly "verification"?: { readonly "checks"?: {}; readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "manual_review_required"; }) & ({ readonly "recovery"?: { readonly "manualRecoveryRequired"?: true; readonly "retry"?: "manual_only"; readonly "state"?: "manual_required"; }; readonly "verification"?: { readonly "outcome"?: "manual_review_required"; }; })));
   readonly "cutagent.action.fairlight.add": ({ readonly "actionId": "cutagent.action.fairlight.add"; readonly "affectedCount": number; readonly "after": ({ readonly "track": { readonly "timelineId": TimelineId; readonly "trackIndex": number; readonly "trackName": (string) | (null); readonly "trackType": "audio"; }; readonly "trackCount": number; }) | (null); readonly "before": ({ readonly "track": { readonly "timelineId": TimelineId; readonly "trackIndex": number; readonly "trackName": (string) | (null); readonly "trackType": "audio"; }; readonly "trackCount": number; }) | (null); readonly "evidence": { readonly "audition": { readonly "required": boolean; readonly "status": "not_run" | "passed" | "failed" | "unavailable"; }; readonly "checks": readonly ({ readonly "kind": "structural_readback" | "audio_audition" | "file_probe" | "operation_terminal" | "target_audio_absent"; readonly "status": "passed" | "failed" | "unavailable"; readonly "summary": string; })[]; }; readonly "outcome": "succeeded" | "no_change" | "partial"; readonly "recovery": { readonly "guidance": (string) | (null); readonly "manualRecoveryRequired": boolean; readonly "required": boolean; readonly "state": "none" | "readback_required" | "manual_recovery_required"; }; readonly "target": { readonly "kind": "timeline"; readonly "timelineId": TimelineId; }; }) & ((({ readonly "outcome": "succeeded"; }) & ({ readonly "recovery": { readonly "state": "none"; }; }) & ({ readonly "affectedCount"?: number; readonly "after"?: { readonly "track": { readonly "timelineId": TimelineId; readonly "trackIndex": number; readonly "trackName": (string) | (null); readonly "trackType": "audio"; }; readonly "trackCount": number; }; readonly "before"?: null; readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; readonly "checks": {}; }; readonly "recovery"?: { readonly "guidance": null; readonly "manualRecoveryRequired": false; readonly "required": false; readonly "state": "none"; }; })) | (({ readonly "outcome": "succeeded"; }) & ({ readonly "recovery": { readonly "state": "readback_required"; }; }) & ({ readonly "affectedCount"?: number; readonly "after"?: { readonly "track": { readonly "timelineId": TimelineId; readonly "trackIndex": number; readonly "trackName": (string) | (null); readonly "trackType": "audio"; }; readonly "trackCount": number; }; readonly "before"?: null; readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; readonly "checks": {}; }; readonly "recovery"?: { readonly "guidance": null; readonly "manualRecoveryRequired": false; readonly "required": false; readonly "state": "none"; }; })) | (({ readonly "outcome": "succeeded"; }) & ({ readonly "recovery": { readonly "state": "manual_recovery_required"; }; }) & ({ readonly "affectedCount"?: number; readonly "after"?: { readonly "track": { readonly "timelineId": TimelineId; readonly "trackIndex": number; readonly "trackName": (string) | (null); readonly "trackType": "audio"; }; readonly "trackCount": number; }; readonly "before"?: null; readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; readonly "checks": {}; }; readonly "recovery"?: { readonly "guidance": null; readonly "manualRecoveryRequired": false; readonly "required": false; readonly "state": "none"; }; })) | (({ readonly "outcome": "no_change"; }) & ({ readonly "recovery": { readonly "state": "none"; }; }) & ({ readonly "affectedCount"?: 0; readonly "after"?: null; readonly "before"?: { readonly "track": { readonly "timelineId": TimelineId; readonly "trackIndex": number; readonly "trackName": (string) | (null); readonly "trackType": "audio"; }; readonly "trackCount": number; }; readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; readonly "checks": {}; }; readonly "recovery"?: { readonly "guidance": null; readonly "manualRecoveryRequired": false; readonly "required": false; readonly "state": "none"; }; })) | (({ readonly "outcome": "no_change"; }) & ({ readonly "recovery": { readonly "state": "readback_required"; }; }) & ({ readonly "affectedCount"?: 0; readonly "after"?: null; readonly "before"?: { readonly "track": { readonly "timelineId": TimelineId; readonly "trackIndex": number; readonly "trackName": (string) | (null); readonly "trackType": "audio"; }; readonly "trackCount": number; }; readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; readonly "checks": {}; }; readonly "recovery"?: { readonly "guidance": null; readonly "manualRecoveryRequired": false; readonly "required": false; readonly "state": "none"; }; })) | (({ readonly "outcome": "no_change"; }) & ({ readonly "recovery": { readonly "state": "manual_recovery_required"; }; }) & ({ readonly "affectedCount"?: 0; readonly "after"?: null; readonly "before"?: { readonly "track": { readonly "timelineId": TimelineId; readonly "trackIndex": number; readonly "trackName": (string) | (null); readonly "trackType": "audio"; }; readonly "trackCount": number; }; readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; readonly "checks": {}; }; readonly "recovery"?: { readonly "guidance": null; readonly "manualRecoveryRequired": false; readonly "required": false; readonly "state": "none"; }; })) | (({ readonly "outcome": "partial"; }) & ({ readonly "recovery": { readonly "state": "none"; }; }) & ({ readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; }; readonly "recovery"?: { readonly "required": true; readonly "state": "readback_required" | "manual_recovery_required"; }; }) & ({ readonly "evidence"?: ({ readonly "checks": {}; }) | ({ readonly "audition": { readonly "status": "failed" | "unavailable"; }; }); })) | (({ readonly "outcome": "partial"; }) & ({ readonly "recovery": { readonly "state": "readback_required"; }; }) & ({ readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; }; readonly "recovery"?: { readonly "required": true; readonly "state": "readback_required" | "manual_recovery_required"; }; }) & ({ readonly "evidence"?: ({ readonly "checks": {}; }) | ({ readonly "audition": { readonly "status": "failed" | "unavailable"; }; }); }) & ({ readonly "recovery"?: { readonly "guidance": string; readonly "manualRecoveryRequired": false; }; })) | (({ readonly "outcome": "partial"; }) & ({ readonly "recovery": { readonly "state": "manual_recovery_required"; }; }) & ({ readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; }; readonly "recovery"?: { readonly "required": true; readonly "state": "readback_required" | "manual_recovery_required"; }; }) & ({ readonly "evidence"?: ({ readonly "checks": {}; }) | ({ readonly "audition": { readonly "status": "failed" | "unavailable"; }; }); }) & ({ readonly "recovery"?: { readonly "guidance": string; readonly "manualRecoveryRequired": true; }; })));
   readonly "cutagent.action.fairlight.adr.info": { readonly "actionId": "cutagent.action.fairlight.adr.info"; readonly "adr": { readonly "cueCount": number; readonly "cues": readonly ({ readonly "cueId": string; readonly "name": string; readonly "recordRange": { readonly "durationFrames": number; readonly "recordEndFrame": number; readonly "recordStartFrame": number; }; })[]; }; readonly "affectedCount": 0; readonly "evidence": { readonly "audition": { readonly "required": boolean; readonly "status": "not_run" | "passed" | "failed" | "unavailable"; }; readonly "checks": readonly ({ readonly "kind": "structural_readback" | "audio_audition" | "file_probe" | "operation_terminal" | "target_audio_absent"; readonly "status": "passed" | "failed" | "unavailable"; readonly "summary": string; })[]; }; };
   readonly "cutagent.action.fairlight.ai.dialogue_leveler": ({ readonly "actionId": "cutagent.action.fairlight.ai.dialogue_leveler"; readonly "affectedCount": number; readonly "after": ({ readonly "clip": { readonly "clipName": string; readonly "range": { readonly "durationFrames": number; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "sourceEndFrame": number; readonly "sourceStartFrame": number; }; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "trackIndex": number; }; readonly "settings": { readonly "cleaner": boolean; readonly "enabled": boolean; readonly "gainDb": number; readonly "lifter": boolean; }; }) | (null); readonly "before": ({ readonly "clip": { readonly "clipName": string; readonly "range": { readonly "durationFrames": number; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "sourceEndFrame": number; readonly "sourceStartFrame": number; }; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "trackIndex": number; }; readonly "settings": { readonly "cleaner": boolean; readonly "enabled": boolean; readonly "gainDb": number; readonly "lifter": boolean; }; }) | (null); readonly "evidence": { readonly "audition": { readonly "required": boolean; readonly "status": "not_run" | "passed" | "failed" | "unavailable"; }; readonly "checks": readonly ({ readonly "kind": "structural_readback" | "audio_audition" | "file_probe" | "operation_terminal" | "target_audio_absent"; readonly "status": "passed" | "failed" | "unavailable"; readonly "summary": string; })[]; }; readonly "outcome": "succeeded" | "no_change" | "partial"; readonly "recovery": { readonly "guidance": (string) | (null); readonly "manualRecoveryRequired": boolean; readonly "required": boolean; readonly "state": "none" | "readback_required" | "manual_recovery_required"; }; readonly "target": { readonly "clip": { readonly "clipName": string; readonly "range": { readonly "durationFrames": number; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "sourceEndFrame": number; readonly "sourceStartFrame": number; }; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "trackIndex": number; }; readonly "kind": "clip"; }; }) & ((({ readonly "outcome": "succeeded"; }) & ({ readonly "recovery": { readonly "state": "none"; }; }) & ({ readonly "affectedCount"?: number; readonly "after"?: { readonly "clip": { readonly "clipName": string; readonly "range": { readonly "durationFrames": number; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "sourceEndFrame": number; readonly "sourceStartFrame": number; }; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "trackIndex": number; }; readonly "settings": { readonly "cleaner": boolean; readonly "enabled": boolean; readonly "gainDb": number; readonly "lifter": boolean; }; }; readonly "before"?: null; readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; readonly "checks": {}; }; readonly "recovery"?: { readonly "guidance": null; readonly "manualRecoveryRequired": false; readonly "required": false; readonly "state": "none"; }; })) | (({ readonly "outcome": "succeeded"; }) & ({ readonly "recovery": { readonly "state": "readback_required"; }; }) & ({ readonly "affectedCount"?: number; readonly "after"?: { readonly "clip": { readonly "clipName": string; readonly "range": { readonly "durationFrames": number; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "sourceEndFrame": number; readonly "sourceStartFrame": number; }; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "trackIndex": number; }; readonly "settings": { readonly "cleaner": boolean; readonly "enabled": boolean; readonly "gainDb": number; readonly "lifter": boolean; }; }; readonly "before"?: null; readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; readonly "checks": {}; }; readonly "recovery"?: { readonly "guidance": null; readonly "manualRecoveryRequired": false; readonly "required": false; readonly "state": "none"; }; })) | (({ readonly "outcome": "succeeded"; }) & ({ readonly "recovery": { readonly "state": "manual_recovery_required"; }; }) & ({ readonly "affectedCount"?: number; readonly "after"?: { readonly "clip": { readonly "clipName": string; readonly "range": { readonly "durationFrames": number; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "sourceEndFrame": number; readonly "sourceStartFrame": number; }; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "trackIndex": number; }; readonly "settings": { readonly "cleaner": boolean; readonly "enabled": boolean; readonly "gainDb": number; readonly "lifter": boolean; }; }; readonly "before"?: null; readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; readonly "checks": {}; }; readonly "recovery"?: { readonly "guidance": null; readonly "manualRecoveryRequired": false; readonly "required": false; readonly "state": "none"; }; })) | (({ readonly "outcome": "no_change"; }) & ({ readonly "recovery": { readonly "state": "none"; }; }) & ({ readonly "affectedCount"?: 0; readonly "after"?: null; readonly "before"?: { readonly "clip": { readonly "clipName": string; readonly "range": { readonly "durationFrames": number; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "sourceEndFrame": number; readonly "sourceStartFrame": number; }; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "trackIndex": number; }; readonly "settings": { readonly "cleaner": boolean; readonly "enabled": boolean; readonly "gainDb": number; readonly "lifter": boolean; }; }; readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; readonly "checks": {}; }; readonly "recovery"?: { readonly "guidance": null; readonly "manualRecoveryRequired": false; readonly "required": false; readonly "state": "none"; }; })) | (({ readonly "outcome": "no_change"; }) & ({ readonly "recovery": { readonly "state": "readback_required"; }; }) & ({ readonly "affectedCount"?: 0; readonly "after"?: null; readonly "before"?: { readonly "clip": { readonly "clipName": string; readonly "range": { readonly "durationFrames": number; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "sourceEndFrame": number; readonly "sourceStartFrame": number; }; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "trackIndex": number; }; readonly "settings": { readonly "cleaner": boolean; readonly "enabled": boolean; readonly "gainDb": number; readonly "lifter": boolean; }; }; readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; readonly "checks": {}; }; readonly "recovery"?: { readonly "guidance": null; readonly "manualRecoveryRequired": false; readonly "required": false; readonly "state": "none"; }; })) | (({ readonly "outcome": "no_change"; }) & ({ readonly "recovery": { readonly "state": "manual_recovery_required"; }; }) & ({ readonly "affectedCount"?: 0; readonly "after"?: null; readonly "before"?: { readonly "clip": { readonly "clipName": string; readonly "range": { readonly "durationFrames": number; readonly "recordEndFrame": number; readonly "recordStartFrame": number; readonly "sourceEndFrame": number; readonly "sourceStartFrame": number; }; readonly "timelineId": TimelineId; readonly "timelineItemId": TimelineItemId; readonly "trackIndex": number; }; readonly "settings": { readonly "cleaner": boolean; readonly "enabled": boolean; readonly "gainDb": number; readonly "lifter": boolean; }; }; readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; readonly "checks": {}; }; readonly "recovery"?: { readonly "guidance": null; readonly "manualRecoveryRequired": false; readonly "required": false; readonly "state": "none"; }; })) | (({ readonly "outcome": "partial"; }) & ({ readonly "recovery": { readonly "state": "none"; }; }) & ({ readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; }; readonly "recovery"?: { readonly "required": true; readonly "state": "readback_required" | "manual_recovery_required"; }; }) & ({ readonly "evidence"?: ({ readonly "checks": {}; }) | ({ readonly "audition": { readonly "status": "failed" | "unavailable"; }; }); })) | (({ readonly "outcome": "partial"; }) & ({ readonly "recovery": { readonly "state": "readback_required"; }; }) & ({ readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; }; readonly "recovery"?: { readonly "required": true; readonly "state": "readback_required" | "manual_recovery_required"; }; }) & ({ readonly "evidence"?: ({ readonly "checks": {}; }) | ({ readonly "audition": { readonly "status": "failed" | "unavailable"; }; }); }) & ({ readonly "recovery"?: { readonly "guidance": string; readonly "manualRecoveryRequired": false; }; })) | (({ readonly "outcome": "partial"; }) & ({ readonly "recovery": { readonly "state": "manual_recovery_required"; }; }) & ({ readonly "evidence"?: { readonly "audition": { readonly "required": false; readonly "status": "not_run"; }; }; readonly "recovery"?: { readonly "required": true; readonly "state": "readback_required" | "manual_recovery_required"; }; }) & ({ readonly "evidence"?: ({ readonly "checks": {}; }) | ({ readonly "audition": { readonly "status": "failed" | "unavailable"; }; }); }) & ({ readonly "recovery"?: { readonly "guidance": string; readonly "manualRecoveryRequired": true; }; })));
@@ -3701,8 +3796,10 @@ export interface ActionResultMap {
   readonly "cutagent.action.fusion.effect.sharpen": { readonly "actionId": "cutagent.action.fusion.effect.sharpen"; readonly "effect": { readonly "amount": number; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "tool": { readonly "name": string; readonly "type": string; }; }; };
   readonly "cutagent.action.fusion.effect.transform": { readonly "actionId": "cutagent.action.fusion.effect.transform"; readonly "effect": { readonly "position": { readonly "x": number; readonly "y": number; }; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "rotationDegrees": number; readonly "tool": { readonly "name": string; readonly "type": string; }; readonly "zoom": number; }; };
   readonly "cutagent.action.fusion.generate": { readonly "actionId": "cutagent.action.fusion.generate"; readonly "generatedSetting": { readonly "artifactId": ArtifactId; readonly "byteCount": number; readonly "mediaType": string; readonly "sha256": string; }; };
+  readonly "cutagent.action.fusion.image.batch": { readonly "actionId": "cutagent.action.fusion.image.batch"; readonly "durationMs": number; readonly "failureCount": number; readonly "protectedStatePreserved": true; readonly "results": readonly (({ readonly "compositionIndex": number; readonly "durationMs": number; readonly "imageArtifactId": ArtifactId; readonly "index": number; readonly "inputName": string; readonly "ok": true; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; readonly "timelineItemId": TimelineItemId; readonly "toolName": string; readonly "verified": true; }) | ({ readonly "compositionIndex": number; readonly "durationMs": number; readonly "error": { readonly "code": string; readonly "message": string; }; readonly "imageArtifactId": ArtifactId; readonly "index": number; readonly "ok": false; readonly "timelineItemId": TimelineItemId; }))[]; readonly "successCount": number; };
   readonly "cutagent.action.fusion.image.set": { readonly "actionId": "cutagent.action.fusion.image.set"; readonly "imageUpdate": { readonly "imageArtifactId": ArtifactId; readonly "inputName": string; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "timelineItemId": TimelineItemId; readonly "toolName": string; readonly "verified": boolean; }; };
   readonly "cutagent.action.fusion.insert_setting": { readonly "actionId": "cutagent.action.fusion.insert_setting"; readonly "insertedItem": { readonly "clipDuration": { readonly "domain": "duration"; readonly "value": { readonly "kind": "frames"; readonly "value": number; }; }; readonly "clipName": string; readonly "recordPosition": { readonly "domain": "timeline_record"; readonly "value": { readonly "kind": "frames"; readonly "value": number; }; }; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "timelineItemId": TimelineItemId; readonly "videoTrackIndex": number; }; };
+  readonly "cutagent.action.fusion.insert_settings.batch": { readonly "actionId": "cutagent.action.fusion.insert_settings.batch"; readonly "insertedItems": { readonly "items": readonly ({ readonly "clipDuration": { readonly "domain": "duration"; readonly "value": { readonly "kind": "frames"; readonly "value": number; }; }; readonly "clipName": string; readonly "recordPosition": { readonly "domain": "timeline_record"; readonly "value": { readonly "kind": "frames"; readonly "value": number; }; }; readonly "timelineItemId": TimelineItemId; readonly "videoTrackIndex": number; })[]; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; }; };
   readonly "cutagent.action.fusion.keyer.chroma": { readonly "actionId": "cutagent.action.fusion.keyer.chroma"; readonly "keyer": { readonly "keyColor": "green" | "blue" | "red"; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "threshold": number; readonly "tool": { readonly "name": string; readonly "type": string; }; }; };
   readonly "cutagent.action.fusion.keyframe.add": { readonly "actionId": "cutagent.action.fusion.keyframe.add"; readonly "keyframe": { readonly "inputName": string; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "sourcePosition": { readonly "domain": "source"; readonly "value": { readonly "kind": "frames"; readonly "value": number; }; }; readonly "toolName": string; readonly "value": (null) | (boolean) | (number) | (string) | ({ readonly "x": number; readonly "y": number; }) | (readonly (number)[]); }; };
   readonly "cutagent.action.fusion.keyframe.clear": { readonly "actionId": "cutagent.action.fusion.keyframe.clear"; readonly "keyframes": { readonly "inputName": string; readonly "removedCount": number; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "toolName": string; }; };
@@ -3712,8 +3809,9 @@ export interface ActionResultMap {
   readonly "cutagent.action.fusion.mask.ellipse": { readonly "actionId": "cutagent.action.fusion.mask.ellipse"; readonly "mask": { readonly "center": { readonly "x": number; readonly "y": number; }; readonly "height": number; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "softness": number; readonly "tool": { readonly "name": string; readonly "type": string; }; readonly "width": number; }; };
   readonly "cutagent.action.fusion.mask.polygon": { readonly "actionId": "cutagent.action.fusion.mask.polygon"; readonly "mask": { readonly "points": readonly ({ readonly "x": number; readonly "y": number; })[]; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "tool": { readonly "name": string; readonly "type": string; }; }; };
   readonly "cutagent.action.fusion.mask.rectangle": { readonly "actionId": "cutagent.action.fusion.mask.rectangle"; readonly "mask": { readonly "center": { readonly "x": number; readonly "y": number; }; readonly "height": number; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "softness": number; readonly "tool": { readonly "name": string; readonly "type": string; }; readonly "width": number; }; };
+  readonly "cutagent.action.fusion.nested_text.batch": { readonly "actionId": "cutagent.action.fusion.nested_text.batch"; readonly "changed": boolean; readonly "failureCount": number; readonly "projectId": ProjectId; readonly "protectedStatePreserved": true; readonly "results": readonly (({ readonly "bodyUpdated": boolean; readonly "headerUpdated": boolean; readonly "index": number; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; readonly "status": "succeeded"; readonly "timelineItemId": TimelineItemId; }) | ({ readonly "code": string; readonly "index": number; readonly "message": string; readonly "status": "failed"; readonly "timelineItemId": TimelineItemId; }))[]; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; readonly "successCount": number; readonly "timelineId": TimelineId; };
   readonly "cutagent.action.fusion.nested_text.update": { readonly "actionId": "cutagent.action.fusion.nested_text.update"; readonly "nestedText": { readonly "bodyUpdated": boolean; readonly "headerUpdated": boolean; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "timelineItemId": TimelineItemId; }; };
-  readonly "cutagent.action.fusion.node.add": { readonly "actionId": "cutagent.action.fusion.node.add"; readonly "node": { readonly "flowPosition": { readonly "x": number; readonly "y": number; }; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "tool": { readonly "name": string; readonly "type": string; }; }; };
+  readonly "cutagent.action.fusion.node.add": { readonly "actionId": "cutagent.action.fusion.node.add"; readonly "node": { readonly "flowPosition": ({ readonly "x": number; readonly "y": number; }) | (null); readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "tool": { readonly "name": string; readonly "type": string; }; }; };
   readonly "cutagent.action.fusion.node.connect": { readonly "actionId": "cutagent.action.fusion.node.connect"; readonly "connection": { readonly "connected": boolean; readonly "destination": { readonly "portName": string; readonly "toolName": string; }; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "source": { readonly "portName": string; readonly "toolName": string; }; }; };
   readonly "cutagent.action.fusion.node.delete": { readonly "actionId": "cutagent.action.fusion.node.delete"; readonly "node": { readonly "deleted": boolean; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "toolName": string; }; };
   readonly "cutagent.action.fusion.node.disconnect": { readonly "actionId": "cutagent.action.fusion.node.disconnect"; readonly "connection": { readonly "destination": { readonly "portName": string; readonly "toolName": string; }; readonly "disconnected": boolean; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; }; };
@@ -3735,9 +3833,10 @@ export interface ActionResultMap {
   readonly "cutagent.action.fusion.template.show": { readonly "actionId": "cutagent.action.fusion.template.show"; readonly "template": { readonly "artifactId": ArtifactId; readonly "name": string; }; };
   readonly "cutagent.action.fusion.template.uninstall": { readonly "actionId": "cutagent.action.fusion.template.uninstall"; readonly "uninstall": { readonly "kind": "title" | "generator" | "effect" | "transition"; readonly "name": string; readonly "removed": boolean; }; };
   readonly "cutagent.action.fusion.template.validate": { readonly "actionId": "cutagent.action.fusion.template.validate"; readonly "validation": { readonly "artifactId": ArtifactId; readonly "errors": readonly (string)[]; readonly "valid": boolean; readonly "warnings": readonly (string)[]; }; };
+  readonly "cutagent.action.fusion.text.batch": { readonly "actionId": "cutagent.action.fusion.text.batch"; readonly "textUpdates": { readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "updates": readonly ({ readonly "compositionIndex": number; readonly "inputName": string; readonly "text": string; readonly "timelineItemId": TimelineItemId; readonly "toolName": string; readonly "verified": boolean; })[]; }; };
   readonly "cutagent.action.fusion.text.set": { readonly "actionId": "cutagent.action.fusion.text.set"; readonly "textUpdate": { readonly "inputName": string; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "styled": boolean; readonly "text": string; readonly "timelineItemId": TimelineItemId; readonly "toolName": string; readonly "verified": boolean; }; };
   readonly "cutagent.action.fusion.tool.active": { readonly "actionId": "cutagent.action.fusion.tool.active"; readonly "activeTool": { readonly "changed": boolean; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "tool": { readonly "name": string; readonly "type": string; }; }; };
-  readonly "cutagent.action.fusion.tool.add": { readonly "actionId": "cutagent.action.fusion.tool.add"; readonly "tool": { readonly "flowPosition": { readonly "x": number; readonly "y": number; }; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "tool": { readonly "name": string; readonly "type": string; }; }; };
+  readonly "cutagent.action.fusion.tool.add": { readonly "actionId": "cutagent.action.fusion.tool.add"; readonly "tool": { readonly "flowPosition": ({ readonly "x": number; readonly "y": number; }) | (null); readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "tool": { readonly "name": string; readonly "type": string; }; }; };
   readonly "cutagent.action.fusion.tool.attrs": { readonly "actionId": "cutagent.action.fusion.tool.attrs"; readonly "attributes": readonly ({ readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | ({ readonly "x": number; readonly "y": number; }) | (readonly (number)[]); })[]; };
   readonly "cutagent.action.fusion.tool.connect": { readonly "actionId": "cutagent.action.fusion.tool.connect"; readonly "connection": { readonly "connected": boolean; readonly "destination": { readonly "portName": string; readonly "toolName": string; }; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "source": { readonly "portName": string; readonly "toolName": string; }; }; };
   readonly "cutagent.action.fusion.tool.delete": { readonly "actionId": "cutagent.action.fusion.tool.delete"; readonly "tool": { readonly "deleted": boolean; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "toolName": string; }; };
@@ -3746,6 +3845,7 @@ export interface ActionResultMap {
   readonly "cutagent.action.fusion.tool.inputs": { readonly "actionId": "cutagent.action.fusion.tool.inputs"; readonly "inputs": readonly ({ readonly "id": string; readonly "name": string; readonly "value": (null) | (boolean) | (number) | (string) | ({ readonly "x": number; readonly "y": number; }) | (readonly (number)[]); })[]; };
   readonly "cutagent.action.fusion.tool.list": { readonly "actionId": "cutagent.action.fusion.tool.list"; readonly "tools": readonly ({ readonly "name": string; readonly "type": string; })[]; };
   readonly "cutagent.action.fusion.tool.outputs": { readonly "actionId": "cutagent.action.fusion.tool.outputs"; readonly "outputs": readonly ({ readonly "id": string; readonly "name": string; })[]; };
+  readonly "cutagent.action.fusion.tool.registry": { readonly "actionId": "cutagent.action.fusion.tool.registry"; readonly "registry": { readonly "returned": number; readonly "tools": readonly ({ readonly "category": string; readonly "id": string; readonly "name": string; })[]; readonly "total": number; readonly "truncated": boolean; }; };
   readonly "cutagent.action.fusion.tool.set": { readonly "actionId": "cutagent.action.fusion.tool.set"; readonly "toolValue": { readonly "compositionIndex": number; readonly "inputName": string; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "sourcePosition": { readonly "domain": "source"; readonly "value": { readonly "kind": "frames"; readonly "value": number; }; }; readonly "timelineItemId": TimelineItemId; readonly "toolName": string; readonly "value": (null) | (boolean) | (number) | (string) | ({ readonly "x": number; readonly "y": number; }) | (readonly (number)[]); }; };
   readonly "cutagent.action.fusion.tracker.add": { readonly "actionId": "cutagent.action.fusion.tracker.add"; readonly "tracker": { readonly "patternCenter": { readonly "x": number; readonly "y": number; }; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "tool": { readonly "name": string; readonly "type": string; }; }; };
   readonly "cutagent.action.lut_refresh": { readonly "actionId": "cutagent.action.lut_refresh"; readonly "refresh": { readonly "apiAcknowledged": boolean | null; readonly "changed": boolean; readonly "projectId": ProjectId; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; readonly "verificationStatus": "planned" | "pending_manual"; }; };
@@ -3822,7 +3922,6 @@ export interface ActionResultMap {
   readonly "cutagent.action.multicam.set_start_timecode": { readonly "actionId": "cutagent.action.multicam.set_start_timecode"; readonly "affectedMediaPoolItemIds": readonly (MediaPoolItemId)[]; readonly "changedAngleIds": readonly (MulticamAngleId)[]; readonly "multicamId": MulticamId; readonly "multicamRevision": Revision; readonly "previousRevision": Revision; readonly "projectId": ProjectId; };
   readonly "cutagent.action.multicam.settings": { readonly "actionId": "cutagent.action.multicam.settings"; readonly "effectiveSettings": { readonly "angleOrder": readonly (string)[]; readonly "audioMode": string; readonly "defaultAudioAngle": string; readonly "defaultVideoAngle": string; readonly "fullClipExtents": boolean; readonly "multicamName": string; readonly "sourceLayout": "contiguous" | "sparse"; readonly "syncMode": string; readonly "timelineName": string; }; readonly "mediaPoolRevision": Revision; readonly "projectId": ProjectId; };
   readonly "cutagent.action.multicam.smart_switch": { readonly "actionId": "cutagent.action.multicam.smart_switch"; readonly "changedSegments": number; readonly "multicamId": MulticamId; readonly "multicamRevision": Revision; readonly "projectId": ProjectId; readonly "timelineId": TimelineId; readonly "timelineRevision": Revision; };
-  readonly "cutagent.action.multicam.source.grade_cdl": { readonly "actionId": "cutagent.action.multicam.source.grade_cdl"; readonly "affectedMediaPoolItemIds": readonly (MediaPoolItemId)[]; readonly "changedAngleIds": readonly (MulticamAngleId)[]; readonly "multicamId": MulticamId; readonly "multicamRevision": Revision; readonly "previousRevision": Revision; readonly "projectId": ProjectId; };
   readonly "cutagent.action.multicam.source.move": { readonly "actionId": "cutagent.action.multicam.source.move"; readonly "affectedMediaPoolItemIds": readonly (MediaPoolItemId)[]; readonly "changedAngleIds": readonly (MulticamAngleId)[]; readonly "multicamId": MulticamId; readonly "multicamRevision": Revision; readonly "previousRevision": Revision; readonly "projectId": ProjectId; };
   readonly "cutagent.action.multicam.source.property_set": { readonly "actionId": "cutagent.action.multicam.source.property_set"; readonly "affectedMediaPoolItemIds": readonly (MediaPoolItemId)[]; readonly "changedAngleIds": readonly (MulticamAngleId)[]; readonly "multicamId": MulticamId; readonly "multicamRevision": Revision; readonly "previousRevision": Revision; readonly "projectId": ProjectId; };
   readonly "cutagent.action.multicam.source.raw_braw_set": { readonly "actionId": "cutagent.action.multicam.source.raw_braw_set"; readonly "affectedMediaPoolItemIds": readonly (MediaPoolItemId)[]; readonly "changedAngleIds": readonly (MulticamAngleId)[]; readonly "multicamId": MulticamId; readonly "multicamRevision": Revision; readonly "previousRevision": Revision; readonly "projectId": ProjectId; };
@@ -3856,6 +3955,7 @@ export interface ActionResultMap {
   readonly "cutagent.action.project.library.switch": { readonly "actionId": "cutagent.action.project.library.switch"; readonly "payload": ({ readonly "changed": boolean; readonly "data": { readonly "previousLibrary": (null) | ({ readonly "kind": "disk" | "postgresql"; readonly "name": string; }); }; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "status": "completed" | "partial" | "manual_review_required"; readonly "target": { readonly "kind": "disk"; readonly "name": string; }; readonly "verification": { readonly "evidence": readonly ({ readonly "kind": "structural_readback" | "artifact_readback" | "context_readback" | "checkpoint_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "manual_review_required"; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "manual_review_required"; }; }))); };
   readonly "cutagent.action.project.list": { readonly "actionId": "cutagent.action.project.list"; readonly "payload": ({ readonly "data": { readonly "projects": readonly ({ readonly "current": boolean; readonly "index": number; readonly "project": { readonly "id": ProjectId; readonly "name": string; }; })[]; }; readonly "status": "completed"; readonly "verification": { readonly "evidence": readonly ({ readonly "kind": "structural_readback" | "artifact_readback" | "context_readback" | "checkpoint_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "not_applicable"; }; }))); };
   readonly "cutagent.action.project.open": { readonly "actionId": "cutagent.action.project.open"; readonly "payload": ({ readonly "changed": boolean; readonly "data": { readonly "alreadyOpen": boolean; }; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "status": "completed" | "partial" | "manual_review_required"; readonly "target": { readonly "id": ProjectId; readonly "name": string; }; readonly "verification": { readonly "evidence": readonly ({ readonly "kind": "structural_readback" | "artifact_readback" | "context_readback" | "checkpoint_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "data": { readonly "alreadyOpen": false; }; }) & ({ readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; }) & ({ readonly "changed"?: true; })) | (({ readonly "status": "completed"; }) & ({ readonly "data": { readonly "alreadyOpen": true; }; }) & ({ readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; }) & ({ readonly "changed"?: false; })) | (({ readonly "status": "partial"; }) & ({ readonly "data": { readonly "alreadyOpen": false; }; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; }) & ({ readonly "changed"?: true; })) | (({ readonly "status": "partial"; }) & ({ readonly "data": { readonly "alreadyOpen": true; }; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; }) & ({ readonly "changed"?: false; })) | (({ readonly "status": "manual_review_required"; }) & ({ readonly "data": { readonly "alreadyOpen": false; }; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "manual_review_required"; }; }) & ({ readonly "changed"?: true; })) | (({ readonly "status": "manual_review_required"; }) & ({ readonly "data": { readonly "alreadyOpen": true; }; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "manual_review_required"; }; }) & ({ readonly "changed"?: false; }))); };
+  readonly "cutagent.action.project.preset.export": { readonly "actionId": "cutagent.action.project.preset.export"; readonly "payload": ({ readonly "changed": true; readonly "data": { readonly "artifact": { readonly "artifactId": ArtifactId; readonly "byteCount": number; readonly "mediaType": "application/octet-stream"; readonly "sha256": string; }; }; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "status": "completed" | "partial" | "manual_review_required"; readonly "target": { readonly "name": string; }; readonly "verification": { readonly "evidence": readonly ({ readonly "kind": "structural_readback" | "artifact_readback" | "context_readback" | "checkpoint_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; }; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "manual_review_required"; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "manual_review_required"; }; }))); };
   readonly "cutagent.action.project.preset.list": { readonly "actionId": "cutagent.action.project.preset.list"; readonly "payload": ({ readonly "data": { readonly "presets": readonly ({ readonly "name": string; })[]; }; readonly "status": "completed"; readonly "verification": { readonly "evidence": readonly ({ readonly "kind": "structural_readback" | "artifact_readback" | "context_readback" | "checkpoint_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "not_applicable"; }; }))); };
   readonly "cutagent.action.project.preset.load": { readonly "actionId": "cutagent.action.project.preset.load"; readonly "payload": ({ readonly "changed": boolean; readonly "data": { readonly "loaded": true; }; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "status": "completed" | "partial" | "manual_review_required"; readonly "target": { readonly "name": string; }; readonly "verification": { readonly "evidence": readonly ({ readonly "kind": "structural_readback" | "artifact_readback" | "context_readback" | "checkpoint_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; }; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "manual_review_required"; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "manual_review_required"; }; }))); };
   readonly "cutagent.action.project.preset.save": { readonly "actionId": "cutagent.action.project.preset.save"; readonly "payload": ({ readonly "changed": true; readonly "data": { readonly "saved": true; }; readonly "recovery": { readonly "guidance": string; readonly "retry": "safe" | "same_idempotency_key_required" | "inspect_state_first" | "manual_only"; readonly "state": "not_needed" | "available" | "manual_required" | "unknown"; }; readonly "status": "completed" | "partial" | "manual_review_required"; readonly "target": { readonly "name": string; }; readonly "verification": { readonly "evidence": readonly ({ readonly "kind": "structural_readback" | "artifact_readback" | "context_readback" | "checkpoint_readback" | "manual_review"; readonly "summary": string; })[]; readonly "outcome": "passed" | "partial" | "not_performed" | "manual_review_required"; readonly "protectedState": "preserved" | "not_applicable" | "not_proven" | "partial"; }; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; }; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; }; }) & ((({ readonly "status": "completed"; }) & ({ readonly "recovery"?: { readonly "state"?: "not_needed"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "passed"; readonly "protectedState"?: "preserved"; }; })) | (({ readonly "status": "partial"; }) & ({ readonly "recovery"?: { readonly "retry"?: "inspect_state_first" | "manual_only"; readonly "state"?: "available" | "manual_required" | "unknown"; }; readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "partial"; }; })) | (({ readonly "status": "manual_review_required"; }) & ({ readonly "verification"?: { readonly "evidence"?: {}; readonly "outcome"?: "manual_review_required"; }; }))); };
@@ -3872,6 +3972,8 @@ export interface ActionResultMap {
   readonly "cutagent.action.render.jobs": { readonly "actionId": "cutagent.action.render.jobs"; readonly "data": { readonly "jobs": readonly ({ readonly "completionPercent": number; readonly "jobId": string; readonly "name": string; readonly "status": string; })[]; }; };
   readonly "cutagent.action.render.mode.get": { readonly "actionId": "cutagent.action.render.mode.get"; readonly "data": { readonly "mode": "individual" | "single"; }; };
   readonly "cutagent.action.render.mode.set": { readonly "actionId": "cutagent.action.render.mode.set"; readonly "data": { readonly "changed": boolean; readonly "mode": "individual" | "single"; }; };
+  readonly "cutagent.action.render.preset_save": { readonly "actionId": "cutagent.action.render.preset_save"; readonly "data": { readonly "presetName": string; readonly "saved": boolean; }; };
+  readonly "cutagent.action.render.preset_update": { readonly "actionId": "cutagent.action.render.preset_update"; readonly "data": { readonly "presetName": string; readonly "updated": boolean; }; };
   readonly "cutagent.action.render.presets": { readonly "actionId": "cutagent.action.render.presets"; readonly "data": { readonly "presetNames": readonly (string)[]; }; };
   readonly "cutagent.action.render.quick_export_presets": { readonly "actionId": "cutagent.action.render.quick_export_presets"; readonly "data": { readonly "presetNames": readonly (string)[]; }; };
   readonly "cutagent.action.render.resolutions": { readonly "actionId": "cutagent.action.render.resolutions"; readonly "data": { readonly "resolutions": readonly ({ readonly "height": number; readonly "width": number; })[]; }; };
@@ -3886,6 +3988,8 @@ export interface ActionResultMap {
   readonly "cutagent.action.storage.matte.timeline_add": { readonly "actionId": "cutagent.action.storage.matte.timeline_add"; readonly "data": { readonly "addedCount": number; readonly "matteArtifactIds": readonly (string)[]; readonly "projectId": string; readonly "revision": Revision; }; };
   readonly "cutagent.action.storage.reveal": { readonly "actionId": "cutagent.action.storage.reveal"; readonly "data": { readonly "artifactId": string; readonly "revealed": boolean; }; };
   readonly "cutagent.action.storage.volumes": { readonly "actionId": "cutagent.action.storage.volumes"; readonly "data": { readonly "volumes": readonly ({ readonly "available": boolean; readonly "name": string; readonly "volumeId": string; })[]; }; };
+  readonly "cutagent.action.system.keyboard_preset.current": { readonly "actionId": "cutagent.action.system.keyboard_preset.current"; readonly "data": { readonly "presetName": string; }; };
+  readonly "cutagent.action.system.keyboard_preset.list": { readonly "actionId": "cutagent.action.system.keyboard_preset.list"; readonly "data": { readonly "presetNames": readonly (string)[]; }; };
   readonly "cutagent.action.system.keyframe_mode.get": { readonly "actionId": "cutagent.action.system.keyframe_mode.get"; readonly "data": { readonly "mode": "all" | "color" | "sizing" | null; }; };
   readonly "cutagent.action.system.keyframe_mode.set": { readonly "actionId": "cutagent.action.system.keyframe_mode.set"; readonly "data": { readonly "changed": boolean; readonly "mode": "all" | "color" | "sizing"; }; };
   readonly "cutagent.action.text.insert": { readonly "actionId": "cutagent.action.text.insert"; readonly "data": { readonly "item": { readonly "itemId": string; readonly "name": string; readonly "recordEndFrameExclusive": number; readonly "recordStartFrame": number; readonly "videoTrackIndex": number; }; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "text": string; }; };
@@ -3896,6 +4000,7 @@ export interface ActionResultMap {
   readonly "cutagent.action.text.list_presets": { readonly "actionId": "cutagent.action.text.list_presets"; readonly "data": { readonly "presets": readonly ({ readonly "kind": "title" | "fusion_title"; readonly "name": string; })[]; }; };
   readonly "cutagent.action.text.update": { readonly "actionId": "cutagent.action.text.update"; readonly "data": { readonly "item": { readonly "itemId": string; readonly "name": string; readonly "recordEndFrameExclusive": number; readonly "recordStartFrame": number; readonly "videoTrackIndex": number; }; readonly "revision": { readonly "changed": boolean; readonly "revisionAfter": Revision; readonly "revisionBefore": Revision; }; readonly "updatedFieldNames": readonly (string)[]; }; };
   readonly "cutagent.action.timeline.auto_caption": { readonly "createdItems": number; readonly "verification": { readonly "evidenceCount": number; readonly "revision": Revision; }; };
+  readonly "cutagent.action.timeline.clip_color.batch": { readonly "actionId": "cutagent.action.timeline.clip_color.batch"; readonly "clips": readonly ({ readonly "actualColor": (string) | (null); readonly "changed": boolean; readonly "clipId": TimelineItemId; readonly "name": string; readonly "requestedColor": (string) | (null); })[]; readonly "timelineRevision": Revision; };
   readonly "cutagent.action.timeline.clip_markers.list": { readonly "actionId": "cutagent.action.timeline.clip_markers.list"; readonly "clipMarkers": readonly ({ readonly "color": string; readonly "duration": { readonly "domain": "duration"; readonly "value": { readonly "kind": "frames"; readonly "value": number; }; }; readonly "name": string; readonly "note": string; readonly "recordPosition": { readonly "domain": "timeline_record"; readonly "value": ({ readonly "kind": "frames"; readonly "value": number; }) | ({ readonly "kind": "timecode"; readonly "value": string; }); }; readonly "sourcePosition": { readonly "domain": "source"; readonly "value": ({ readonly "kind": "frames"; readonly "value": number; }) | ({ readonly "kind": "timecode"; readonly "value": string; }); }; readonly "timelineItemId": TimelineItemId; readonly "trackIndex": number; readonly "trackType": "video" | "audio" | "subtitle"; })[]; };
   readonly "cutagent.action.timeline.compound_create": { readonly "actionId": "cutagent.action.timeline.compound_create"; readonly "item": { readonly "mediaPoolItemId"?: MediaPoolItemId; readonly "name": string; readonly "recordRange": { readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; readonly "timelineItemId": TimelineItemId; readonly "trackIndex": number; readonly "trackType": "video" | "audio" | "subtitle"; }; readonly "revisionChange": { readonly "after": Revision; readonly "before": Revision; readonly "changed": boolean; }; };
   readonly "cutagent.action.timeline.create": { readonly "actionId": "cutagent.action.timeline.create"; readonly "revisionChange": { readonly "after": Revision; readonly "before": Revision; readonly "changed": boolean; }; readonly "timeline": { readonly "name": string; readonly "projectId": ProjectId; readonly "revision": Revision; readonly "timelineId": TimelineId; }; };
@@ -3906,7 +4011,7 @@ export interface ActionResultMap {
   readonly "cutagent.action.timeline.duration": { readonly "actionId": "cutagent.action.timeline.duration"; readonly "duration": { readonly "domain": "duration"; readonly "value": { readonly "kind": "frames"; readonly "value": number; }; }; readonly "frameRate": number; readonly "recordRange": { readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; };
   readonly "cutagent.action.timeline.export": { readonly "actionId": "cutagent.action.timeline.export"; readonly "artifact": { readonly "artifactId": ArtifactId; readonly "byteCount": number; readonly "mediaType": string; readonly "sha256": string; }; };
   readonly "cutagent.action.timeline.fairlight_preset.apply": { readonly "actionId": "cutagent.action.timeline.fairlight_preset.apply"; readonly "presetName": string; readonly "revisionChange": { readonly "after": Revision; readonly "before": Revision; readonly "changed": boolean; }; };
-  readonly "cutagent.action.timeline.frame_export": { readonly "actionId": "cutagent.action.timeline.frame_export"; readonly "artifact": { readonly "artifactId": ArtifactId; readonly "byteCount": number; readonly "mediaType": string; readonly "sha256": string; }; readonly "originalPlayheadRestored": boolean; readonly "position": { readonly "domain": "timeline_record"; readonly "value": ({ readonly "kind": "frames"; readonly "value": number; }) | ({ readonly "kind": "timecode"; readonly "value": string; }); }; };
+  readonly "cutagent.action.timeline.frame_export": ({ readonly "actionId": "cutagent.action.timeline.frame_export"; readonly "artifact": { readonly "artifactId": ArtifactId; readonly "byteCount": number; readonly "mediaType": string; readonly "sha256": string; }; readonly "originalPlayheadRestored": boolean; readonly "position": { readonly "domain": "timeline_record"; readonly "value": ({ readonly "kind": "frames"; readonly "value": number; }) | ({ readonly "kind": "timecode"; readonly "value": string; }); }; }) | ({ readonly "actionId": "cutagent.action.timeline.frame_export"; readonly "exports": readonly ({ readonly "artifact": { readonly "artifactId": ArtifactId; readonly "byteCount": number; readonly "mediaType": string; readonly "sha256": string; }; readonly "position": { readonly "domain": "timeline_record"; readonly "value": ({ readonly "kind": "frames"; readonly "value": number; }) | ({ readonly "kind": "timecode"; readonly "value": string; }); }; })[]; readonly "originalPlayheadRestored": boolean; });
   readonly "cutagent.action.timeline.fusion_clip.create": { readonly "actionId": "cutagent.action.timeline.fusion_clip.create"; readonly "item": { readonly "mediaPoolItemId"?: MediaPoolItemId; readonly "name": string; readonly "recordRange": { readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; readonly "timelineItemId": TimelineItemId; readonly "trackIndex": number; readonly "trackType": "video" | "audio" | "subtitle"; }; readonly "revisionChange": { readonly "after": Revision; readonly "before": Revision; readonly "changed": boolean; }; };
   readonly "cutagent.action.timeline.fusion_composition.insert": { readonly "actionId": "cutagent.action.timeline.fusion_composition.insert"; readonly "item": { readonly "mediaPoolItemId"?: MediaPoolItemId; readonly "name": string; readonly "recordRange": { readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }; readonly "timelineItemId": TimelineItemId; readonly "trackIndex": number; readonly "trackType": "video" | "audio" | "subtitle"; }; readonly "revisionChange": { readonly "after": Revision; readonly "before": Revision; readonly "changed": boolean; }; };
   readonly "cutagent.action.timeline.grab_still": { readonly "actionId": "cutagent.action.timeline.grab_still"; readonly "revisionChange": { readonly "after": Revision; readonly "before": Revision; readonly "changed": boolean; }; readonly "still": ({ readonly "grabbed": true; readonly "kind": "gallery"; }) | ({ readonly "artifact": { readonly "artifactId": ArtifactId; readonly "byteCount": number; readonly "mediaType": string; readonly "sha256": string; }; readonly "kind": "export"; }); };
@@ -3926,11 +4031,13 @@ export interface ActionResultMap {
   readonly "cutagent.action.timeline.mark.get": { readonly "actionId": "cutagent.action.timeline.mark.get"; readonly "markedRange": ({ readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }) | (null); };
   readonly "cutagent.action.timeline.mark.set": { readonly "actionId": "cutagent.action.timeline.mark.set"; readonly "markedRange": ({ readonly "domain": "timeline_record_range"; readonly "endExclusive": number; readonly "start": number; readonly "unit": "frames"; }) | (null); readonly "revisionChange": { readonly "after": Revision; readonly "before": Revision; readonly "changed": boolean; }; };
   readonly "cutagent.action.timeline.marker.add": { readonly "actionId": "cutagent.action.timeline.marker.add"; readonly "marker": ({ readonly "color": string; readonly "duration": number; readonly "frame": number; readonly "name": string; readonly "note": string; readonly "recordFrame": number; }) | (null); readonly "previousMarker": ({ readonly "color": string; readonly "duration": number; readonly "frame": number; readonly "name": string; readonly "note": string; readonly "recordFrame": number; }) | (null); };
-  readonly "cutagent.action.timeline.marker.delete": { readonly "action": "delete"; readonly "marker": ({ readonly "id": MarkerId; readonly "recordFrame": number; readonly "color": string; readonly "name": string; readonly "note": string; readonly "durationFrames": number; }) | (null); readonly "previousMarker": ({ readonly "id": MarkerId; readonly "recordFrame": number; readonly "color": string; readonly "name": string; readonly "note": string; readonly "durationFrames": number; }) | (null); readonly "timelineRevision": Revision; };
+  readonly "cutagent.action.timeline.marker.delete": ({ readonly "action"?: "delete"; }) & (({ readonly "action": "create" | "update" | "delete"; readonly "marker": ({ readonly "id": MarkerId; readonly "recordFrame": number; readonly "color": string; readonly "name": string; readonly "note": string; readonly "durationFrames": number; }) | (null); readonly "previousMarker": ({ readonly "id": MarkerId; readonly "recordFrame": number; readonly "color": string; readonly "name": string; readonly "note": string; readonly "durationFrames": number; }) | (null); readonly "timelineRevision": Revision; }) | ({ readonly "action": "create" | "update" | "delete"; readonly "markers": readonly ({ readonly "id": MarkerId; readonly "recordFrame": number; readonly "color": string; readonly "name": string; readonly "note": string; readonly "durationFrames": number; })[]; readonly "previousMarkers": readonly ({ readonly "id": MarkerId; readonly "recordFrame": number; readonly "color": string; readonly "name": string; readonly "note": string; readonly "durationFrames": number; })[]; readonly "timelineRevision": Revision; }));
   readonly "cutagent.action.timeline.marker.list": { readonly "actionId": "cutagent.action.timeline.marker.list"; readonly "markers": readonly ({ readonly "color": string; readonly "duration": { readonly "domain": "duration"; readonly "value": { readonly "kind": "frames"; readonly "value": number; }; }; readonly "name": string; readonly "note": string; readonly "position": { readonly "domain": "timeline_record"; readonly "value": ({ readonly "kind": "frames"; readonly "value": number; }) | ({ readonly "kind": "timecode"; readonly "value": string; }); }; })[]; };
-  readonly "cutagent.action.timeline.marker.update": { readonly "action": "update"; readonly "marker": ({ readonly "id": MarkerId; readonly "recordFrame": number; readonly "color": string; readonly "name": string; readonly "note": string; readonly "durationFrames": number; }) | (null); readonly "previousMarker": ({ readonly "id": MarkerId; readonly "recordFrame": number; readonly "color": string; readonly "name": string; readonly "note": string; readonly "durationFrames": number; }) | (null); readonly "timelineRevision": Revision; };
+  readonly "cutagent.action.timeline.marker.update": ({ readonly "action"?: "update"; }) & (({ readonly "action": "create" | "update" | "delete"; readonly "marker": ({ readonly "id": MarkerId; readonly "recordFrame": number; readonly "color": string; readonly "name": string; readonly "note": string; readonly "durationFrames": number; }) | (null); readonly "previousMarker": ({ readonly "id": MarkerId; readonly "recordFrame": number; readonly "color": string; readonly "name": string; readonly "note": string; readonly "durationFrames": number; }) | (null); readonly "timelineRevision": Revision; }) | ({ readonly "action": "create" | "update" | "delete"; readonly "markers": readonly ({ readonly "id": MarkerId; readonly "recordFrame": number; readonly "color": string; readonly "name": string; readonly "note": string; readonly "durationFrames": number; })[]; readonly "previousMarkers": readonly ({ readonly "id": MarkerId; readonly "recordFrame": number; readonly "color": string; readonly "name": string; readonly "note": string; readonly "durationFrames": number; })[]; readonly "timelineRevision": Revision; }));
   readonly "cutagent.action.timeline.media_pool_item": { readonly "actionId": "cutagent.action.timeline.media_pool_item"; readonly "mediaPoolItemId": MediaPoolItemId; };
   readonly "cutagent.action.timeline.node_graph.inspect": { readonly "actionId": "cutagent.action.timeline.node_graph.inspect"; readonly "nodeGraph": { readonly "present": boolean; }; };
+  readonly "cutagent.action.timeline.output_blanking.get": { readonly "actionId": "cutagent.action.timeline.output_blanking.get"; readonly "state": { readonly "blanking": ({ readonly "bottom": number; readonly "left": number; readonly "right": number; readonly "top": number; }) | (null); readonly "effectiveBlanking": { readonly "bottom": number; readonly "left": number; readonly "right": number; readonly "top": number; }; readonly "useTimeline": (boolean) | (null); }; };
+  readonly "cutagent.action.timeline.output_blanking.set": { readonly "actionId": "cutagent.action.timeline.output_blanking.set"; readonly "revisionChange": { readonly "after": Revision; readonly "before": Revision; readonly "changed": boolean; }; readonly "state": { readonly "blanking": ({ readonly "bottom": number; readonly "left": number; readonly "right": number; readonly "top": number; }) | (null); readonly "effectiveBlanking": { readonly "bottom": number; readonly "left": number; readonly "right": number; readonly "top": number; }; readonly "useTimeline": (boolean) | (null); }; };
   readonly "cutagent.action.timeline.playhead.get": { readonly "actionId": "cutagent.action.timeline.playhead.get"; readonly "position": { readonly "domain": "timeline_record"; readonly "value": ({ readonly "kind": "frames"; readonly "value": number; }) | ({ readonly "kind": "timecode"; readonly "value": string; }); }; };
   readonly "cutagent.action.timeline.playhead.set": { readonly "actionId": "cutagent.action.timeline.playhead.set"; readonly "position": { readonly "domain": "timeline_record"; readonly "value": ({ readonly "kind": "frames"; readonly "value": number; }) | ({ readonly "kind": "timecode"; readonly "value": string; }); }; readonly "revisionChange": { readonly "after": Revision; readonly "before": Revision; readonly "changed": boolean; }; };
   readonly "cutagent.action.timeline.preview_export": { readonly "actionId": "cutagent.action.timeline.preview_export"; readonly "artifact": { readonly "artifactId": ArtifactId; readonly "byteCount": number; readonly "mediaType": string; readonly "sha256": string; }; readonly "frameArtifacts": readonly ({ readonly "artifactId": ArtifactId; readonly "byteCount": number; readonly "mediaType": string; readonly "sha256": string; })[]; readonly "originalPlayheadRestored": boolean; };
@@ -24150,6 +24257,634 @@ export const ACTION_SCHEMA_DEFINITIONS: Readonly<Record<string, object>> = /* @_
       "verification"
     ],
     "type": "object"
+  },
+  "cutagent.action.clip.transform.input": {
+    "additionalProperties": false,
+    "properties": {
+      "projectId": {
+        "maxLength": 160,
+        "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "target": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "maxLength": 160,
+            "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
+          },
+          "linkedItemIds": {
+            "items": {
+              "maxLength": 160,
+              "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "mediaPoolItemId": {
+            "oneOf": [
+              {
+                "maxLength": 160,
+                "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "type": "string"
+          },
+          "recordEndFrame": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "recordStartFrame": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "snapshotId": {
+            "maxLength": 160,
+            "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
+          },
+          "trackIndex": {
+            "maximum": 4096,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "trackType": {
+            "const": "video"
+          }
+        },
+        "required": [
+          "snapshotId",
+          "id",
+          "trackType",
+          "trackIndex",
+          "recordStartFrame",
+          "recordEndFrame",
+          "name",
+          "mediaPoolItemId",
+          "linkedItemIds"
+        ],
+        "type": "object"
+      },
+      "timelineId": {
+        "maxLength": 160,
+        "pattern": "^timeline_(?!item_)[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "timelineRevision": {
+        "maxLength": 160,
+        "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "transform": {
+        "additionalProperties": false,
+        "anyOf": [
+          {
+            "required": [
+              "zoomX"
+            ]
+          },
+          {
+            "required": [
+              "zoomY"
+            ]
+          },
+          {
+            "required": [
+              "positionX"
+            ]
+          },
+          {
+            "required": [
+              "positionY"
+            ]
+          },
+          {
+            "required": [
+              "rotation"
+            ]
+          },
+          {
+            "required": [
+              "anchorX"
+            ]
+          },
+          {
+            "required": [
+              "anchorY"
+            ]
+          },
+          {
+            "required": [
+              "pitch"
+            ]
+          },
+          {
+            "required": [
+              "yaw"
+            ]
+          },
+          {
+            "required": [
+              "flipX"
+            ]
+          },
+          {
+            "required": [
+              "flipY"
+            ]
+          },
+          {
+            "required": [
+              "opacity"
+            ]
+          },
+          {
+            "required": [
+              "cropLeft"
+            ]
+          },
+          {
+            "required": [
+              "cropRight"
+            ]
+          },
+          {
+            "required": [
+              "cropTop"
+            ]
+          },
+          {
+            "required": [
+              "cropBottom"
+            ]
+          },
+          {
+            "required": [
+              "distortion"
+            ]
+          },
+          {
+            "required": [
+              "dynamicZoomEase"
+            ]
+          }
+        ],
+        "properties": {
+          "anchorX": {
+            "type": "number"
+          },
+          "anchorY": {
+            "type": "number"
+          },
+          "cropBottom": {
+            "type": "number"
+          },
+          "cropLeft": {
+            "type": "number"
+          },
+          "cropRight": {
+            "type": "number"
+          },
+          "cropTop": {
+            "type": "number"
+          },
+          "distortion": {
+            "type": "number"
+          },
+          "dynamicZoomEase": {
+            "enum": [
+              "linear",
+              "in",
+              "out",
+              "inout"
+            ]
+          },
+          "flipX": {
+            "type": "boolean"
+          },
+          "flipY": {
+            "type": "boolean"
+          },
+          "opacity": {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "number"
+          },
+          "pitch": {
+            "type": "number"
+          },
+          "positionX": {
+            "type": "number"
+          },
+          "positionY": {
+            "type": "number"
+          },
+          "rotation": {
+            "type": "number"
+          },
+          "yaw": {
+            "type": "number"
+          },
+          "zoomX": {
+            "type": "number"
+          },
+          "zoomY": {
+            "type": "number"
+          }
+        },
+        "required": [],
+        "type": "object"
+      }
+    },
+    "required": [
+      "projectId",
+      "timelineId",
+      "timelineRevision",
+      "target",
+      "transform"
+    ],
+    "type": "object"
+  },
+  "cutagent.action.clip.transform.result": {
+    "additionalProperties": false,
+    "properties": {
+      "actionId": {
+        "const": "cutagent.action.clip.transform"
+      },
+      "after": {
+        "additionalProperties": false,
+        "properties": {
+          "values": {
+            "additionalProperties": false,
+            "anyOf": [
+              {
+                "required": [
+                  "zoomX"
+                ]
+              },
+              {
+                "required": [
+                  "zoomY"
+                ]
+              },
+              {
+                "required": [
+                  "positionX"
+                ]
+              },
+              {
+                "required": [
+                  "positionY"
+                ]
+              },
+              {
+                "required": [
+                  "rotation"
+                ]
+              },
+              {
+                "required": [
+                  "anchorX"
+                ]
+              },
+              {
+                "required": [
+                  "anchorY"
+                ]
+              },
+              {
+                "required": [
+                  "pitch"
+                ]
+              },
+              {
+                "required": [
+                  "yaw"
+                ]
+              },
+              {
+                "required": [
+                  "flipX"
+                ]
+              },
+              {
+                "required": [
+                  "flipY"
+                ]
+              },
+              {
+                "required": [
+                  "opacity"
+                ]
+              },
+              {
+                "required": [
+                  "cropLeft"
+                ]
+              },
+              {
+                "required": [
+                  "cropRight"
+                ]
+              },
+              {
+                "required": [
+                  "cropTop"
+                ]
+              },
+              {
+                "required": [
+                  "cropBottom"
+                ]
+              },
+              {
+                "required": [
+                  "distortion"
+                ]
+              },
+              {
+                "required": [
+                  "dynamicZoomEase"
+                ]
+              }
+            ],
+            "properties": {
+              "anchorX": {
+                "type": "number"
+              },
+              "anchorY": {
+                "type": "number"
+              },
+              "cropBottom": {
+                "type": "number"
+              },
+              "cropLeft": {
+                "type": "number"
+              },
+              "cropRight": {
+                "type": "number"
+              },
+              "cropTop": {
+                "type": "number"
+              },
+              "distortion": {
+                "type": "number"
+              },
+              "dynamicZoomEase": {
+                "enum": [
+                  "linear",
+                  "in",
+                  "out",
+                  "inout"
+                ]
+              },
+              "flipX": {
+                "type": "boolean"
+              },
+              "flipY": {
+                "type": "boolean"
+              },
+              "opacity": {
+                "maximum": 100,
+                "minimum": 0,
+                "type": "number"
+              },
+              "pitch": {
+                "type": "number"
+              },
+              "positionX": {
+                "type": "number"
+              },
+              "positionY": {
+                "type": "number"
+              },
+              "rotation": {
+                "type": "number"
+              },
+              "yaw": {
+                "type": "number"
+              },
+              "zoomX": {
+                "type": "number"
+              },
+              "zoomY": {
+                "type": "number"
+              }
+            },
+            "required": [],
+            "type": "object"
+          }
+        },
+        "required": [
+          "values"
+        ],
+        "type": "object"
+      },
+      "before": {
+        "additionalProperties": false,
+        "properties": {
+          "values": {
+            "additionalProperties": false,
+            "anyOf": [
+              {
+                "required": [
+                  "zoomX"
+                ]
+              },
+              {
+                "required": [
+                  "zoomY"
+                ]
+              },
+              {
+                "required": [
+                  "positionX"
+                ]
+              },
+              {
+                "required": [
+                  "positionY"
+                ]
+              },
+              {
+                "required": [
+                  "rotation"
+                ]
+              },
+              {
+                "required": [
+                  "anchorX"
+                ]
+              },
+              {
+                "required": [
+                  "anchorY"
+                ]
+              },
+              {
+                "required": [
+                  "pitch"
+                ]
+              },
+              {
+                "required": [
+                  "yaw"
+                ]
+              },
+              {
+                "required": [
+                  "flipX"
+                ]
+              },
+              {
+                "required": [
+                  "flipY"
+                ]
+              },
+              {
+                "required": [
+                  "opacity"
+                ]
+              },
+              {
+                "required": [
+                  "cropLeft"
+                ]
+              },
+              {
+                "required": [
+                  "cropRight"
+                ]
+              },
+              {
+                "required": [
+                  "cropTop"
+                ]
+              },
+              {
+                "required": [
+                  "cropBottom"
+                ]
+              },
+              {
+                "required": [
+                  "distortion"
+                ]
+              },
+              {
+                "required": [
+                  "dynamicZoomEase"
+                ]
+              }
+            ],
+            "properties": {
+              "anchorX": {
+                "type": "number"
+              },
+              "anchorY": {
+                "type": "number"
+              },
+              "cropBottom": {
+                "type": "number"
+              },
+              "cropLeft": {
+                "type": "number"
+              },
+              "cropRight": {
+                "type": "number"
+              },
+              "cropTop": {
+                "type": "number"
+              },
+              "distortion": {
+                "type": "number"
+              },
+              "dynamicZoomEase": {
+                "enum": [
+                  "linear",
+                  "in",
+                  "out",
+                  "inout"
+                ]
+              },
+              "flipX": {
+                "type": "boolean"
+              },
+              "flipY": {
+                "type": "boolean"
+              },
+              "opacity": {
+                "maximum": 100,
+                "minimum": 0,
+                "type": "number"
+              },
+              "pitch": {
+                "type": "number"
+              },
+              "positionX": {
+                "type": "number"
+              },
+              "positionY": {
+                "type": "number"
+              },
+              "rotation": {
+                "type": "number"
+              },
+              "yaw": {
+                "type": "number"
+              },
+              "zoomX": {
+                "type": "number"
+              },
+              "zoomY": {
+                "type": "number"
+              }
+            },
+            "required": [],
+            "type": "object"
+          }
+        },
+        "required": [
+          "values"
+        ],
+        "type": "object"
+      },
+      "protectedStatePreserved": {
+        "const": true
+      },
+      "targetId": {
+        "maxLength": 160,
+        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "timelineRevision": {
+        "maxLength": 160,
+        "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      }
+    },
+    "required": [
+      "actionId",
+      "targetId",
+      "timelineRevision",
+      "protectedStatePreserved",
+      "before",
+      "after"
+    ],
+    "type": "object"
   }
 });
 /** Runtime-only strict contracts. They contain semantic schemas, never command lowering metadata. @internal */
@@ -25315,6 +26050,822 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
       "required": [
         "actionId",
         "data"
+      ],
+      "type": "object"
+    }
+  },
+  "cutagent.action.bulk.disable": {
+    "operationClass": "mutation",
+    "capabilityId": null,
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "declared_unverified",
+        "x86_64": "declared_unverified"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "20.0"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "declared_unverified",
+        "windows": "declared_unverified"
+      },
+      "overall": "partial",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "live_state_revision",
+    "idempotencyCategory": "requires_idempotency_key",
+    "verificationCategory": "terminal_and_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "failurePolicy": {
+          "const": "stop"
+        },
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 9,
+          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "targets": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "maxLength": 160,
+                "minLength": 15,
+                "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              },
+              "linkedItemIds": {
+                "items": {
+                  "maxLength": 160,
+                  "minLength": 15,
+                  "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "minItems": 0,
+                "type": "array"
+              },
+              "mediaPoolItemId": {
+                "oneOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 17,
+                    "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "name": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "recordEndFrame": {
+                "type": "integer"
+              },
+              "recordStartFrame": {
+                "type": "integer"
+              },
+              "snapshotId": {
+                "maxLength": 256,
+                "minLength": 24,
+                "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              },
+              "trackIndex": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "trackType": {
+                "enum": [
+                  "video",
+                  "audio"
+                ]
+              }
+            },
+            "required": [
+              "snapshotId",
+              "id",
+              "trackType",
+              "trackIndex",
+              "recordStartFrame",
+              "recordEndFrame",
+              "name",
+              "mediaPoolItemId",
+              "linkedItemIds"
+            ],
+            "type": "object"
+          },
+          "maxItems": 1000,
+          "minItems": 1,
+          "type": "array"
+        },
+        "timelineId": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineRevision": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "projectId",
+        "timelineId",
+        "timelineRevision",
+        "targets",
+        "failurePolicy"
+      ],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.bulk.disable"
+        },
+        "items": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "after": {
+                "const": false
+              },
+              "before": {
+                "type": "boolean"
+              },
+              "changed": {
+                "type": "boolean"
+              },
+              "name": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "timelineItemId": {
+                "maxLength": 160,
+                "minLength": 15,
+                "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "timelineItemId",
+              "name",
+              "before",
+              "after",
+              "changed"
+            ],
+            "type": "object"
+          },
+          "maxItems": 1000,
+          "minItems": 1,
+          "type": "array"
+        },
+        "timelineRevision": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "actionId",
+        "items",
+        "timelineRevision"
+      ],
+      "type": "object"
+    }
+  },
+  "cutagent.action.bulk.enable": {
+    "operationClass": "mutation",
+    "capabilityId": null,
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "declared_unverified",
+        "x86_64": "declared_unverified"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "20.0"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "declared_unverified",
+        "windows": "declared_unverified"
+      },
+      "overall": "partial",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "live_state_revision",
+    "idempotencyCategory": "requires_idempotency_key",
+    "verificationCategory": "terminal_and_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "failurePolicy": {
+          "const": "stop"
+        },
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 9,
+          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "targets": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "maxLength": 160,
+                "minLength": 15,
+                "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              },
+              "linkedItemIds": {
+                "items": {
+                  "maxLength": 160,
+                  "minLength": 15,
+                  "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "minItems": 0,
+                "type": "array"
+              },
+              "mediaPoolItemId": {
+                "oneOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 17,
+                    "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "name": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "recordEndFrame": {
+                "type": "integer"
+              },
+              "recordStartFrame": {
+                "type": "integer"
+              },
+              "snapshotId": {
+                "maxLength": 256,
+                "minLength": 24,
+                "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              },
+              "trackIndex": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "trackType": {
+                "enum": [
+                  "video",
+                  "audio"
+                ]
+              }
+            },
+            "required": [
+              "snapshotId",
+              "id",
+              "trackType",
+              "trackIndex",
+              "recordStartFrame",
+              "recordEndFrame",
+              "name",
+              "mediaPoolItemId",
+              "linkedItemIds"
+            ],
+            "type": "object"
+          },
+          "maxItems": 1000,
+          "minItems": 1,
+          "type": "array"
+        },
+        "timelineId": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineRevision": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "projectId",
+        "timelineId",
+        "timelineRevision",
+        "targets",
+        "failurePolicy"
+      ],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.bulk.enable"
+        },
+        "items": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "after": {
+                "const": true
+              },
+              "before": {
+                "type": "boolean"
+              },
+              "changed": {
+                "type": "boolean"
+              },
+              "name": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "timelineItemId": {
+                "maxLength": 160,
+                "minLength": 15,
+                "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "timelineItemId",
+              "name",
+              "before",
+              "after",
+              "changed"
+            ],
+            "type": "object"
+          },
+          "maxItems": 1000,
+          "minItems": 1,
+          "type": "array"
+        },
+        "timelineRevision": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "actionId",
+        "items",
+        "timelineRevision"
+      ],
+      "type": "object"
+    }
+  },
+  "cutagent.action.bulk.property_set": {
+    "operationClass": "mutation",
+    "capabilityId": null,
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "declared_unverified",
+        "x86_64": "declared_unverified"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "20.0"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "declared_unverified",
+        "windows": "declared_unverified"
+      },
+      "overall": "partial",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "live_state_revision",
+    "idempotencyCategory": "requires_idempotency_key",
+    "verificationCategory": "terminal_and_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "failurePolicy": {
+          "const": "stop"
+        },
+        "items": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "properties": {
+                "additionalProperties": false,
+                "minProperties": 1,
+                "properties": {
+                  "anchorX": {
+                    "type": "number"
+                  },
+                  "anchorY": {
+                    "type": "number"
+                  },
+                  "cropBottom": {
+                    "type": "number"
+                  },
+                  "cropLeft": {
+                    "type": "number"
+                  },
+                  "cropRight": {
+                    "type": "number"
+                  },
+                  "cropTop": {
+                    "type": "number"
+                  },
+                  "distortion": {
+                    "type": "number"
+                  },
+                  "dynamicZoomEase": {
+                    "enum": [
+                      "linear",
+                      "in",
+                      "out",
+                      "inout"
+                    ]
+                  },
+                  "flipX": {
+                    "type": "boolean"
+                  },
+                  "flipY": {
+                    "type": "boolean"
+                  },
+                  "opacity": {
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "pitch": {
+                    "type": "number"
+                  },
+                  "positionX": {
+                    "type": "number"
+                  },
+                  "positionY": {
+                    "type": "number"
+                  },
+                  "rotation": {
+                    "type": "number"
+                  },
+                  "yaw": {
+                    "type": "number"
+                  },
+                  "zoomX": {
+                    "type": "number"
+                  },
+                  "zoomY": {
+                    "type": "number"
+                  }
+                },
+                "type": "object"
+              },
+              "target": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "maxLength": 160,
+                    "minLength": 15,
+                    "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  },
+                  "linkedItemIds": {
+                    "items": {
+                      "maxLength": 160,
+                      "minLength": 15,
+                      "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                      "type": "string"
+                    },
+                    "maxItems": 64,
+                    "minItems": 0,
+                    "type": "array"
+                  },
+                  "mediaPoolItemId": {
+                    "oneOf": [
+                      {
+                        "maxLength": 160,
+                        "minLength": 17,
+                        "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "name": {
+                    "maxLength": 1024,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "recordEndFrame": {
+                    "type": "integer"
+                  },
+                  "recordStartFrame": {
+                    "type": "integer"
+                  },
+                  "snapshotId": {
+                    "maxLength": 256,
+                    "minLength": 24,
+                    "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  },
+                  "trackIndex": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "trackType": {
+                    "const": "video"
+                  }
+                },
+                "required": [
+                  "snapshotId",
+                  "id",
+                  "trackType",
+                  "trackIndex",
+                  "recordStartFrame",
+                  "recordEndFrame",
+                  "name",
+                  "mediaPoolItemId",
+                  "linkedItemIds"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "target",
+              "properties"
+            ],
+            "type": "object"
+          },
+          "maxItems": 1000,
+          "minItems": 1,
+          "type": "array"
+        },
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 9,
+          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineId": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineRevision": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "projectId",
+        "timelineId",
+        "timelineRevision",
+        "items",
+        "failurePolicy"
+      ],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.bulk.property_set"
+        },
+        "items": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "after": {
+                "additionalProperties": false,
+                "minProperties": 1,
+                "properties": {
+                  "anchorX": {
+                    "type": "number"
+                  },
+                  "anchorY": {
+                    "type": "number"
+                  },
+                  "cropBottom": {
+                    "type": "number"
+                  },
+                  "cropLeft": {
+                    "type": "number"
+                  },
+                  "cropRight": {
+                    "type": "number"
+                  },
+                  "cropTop": {
+                    "type": "number"
+                  },
+                  "distortion": {
+                    "type": "number"
+                  },
+                  "dynamicZoomEase": {
+                    "enum": [
+                      "linear",
+                      "in",
+                      "out",
+                      "inout"
+                    ]
+                  },
+                  "flipX": {
+                    "type": "boolean"
+                  },
+                  "flipY": {
+                    "type": "boolean"
+                  },
+                  "opacity": {
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "pitch": {
+                    "type": "number"
+                  },
+                  "positionX": {
+                    "type": "number"
+                  },
+                  "positionY": {
+                    "type": "number"
+                  },
+                  "rotation": {
+                    "type": "number"
+                  },
+                  "yaw": {
+                    "type": "number"
+                  },
+                  "zoomX": {
+                    "type": "number"
+                  },
+                  "zoomY": {
+                    "type": "number"
+                  }
+                },
+                "type": "object"
+              },
+              "before": {
+                "additionalProperties": false,
+                "minProperties": 1,
+                "properties": {
+                  "anchorX": {
+                    "type": "number"
+                  },
+                  "anchorY": {
+                    "type": "number"
+                  },
+                  "cropBottom": {
+                    "type": "number"
+                  },
+                  "cropLeft": {
+                    "type": "number"
+                  },
+                  "cropRight": {
+                    "type": "number"
+                  },
+                  "cropTop": {
+                    "type": "number"
+                  },
+                  "distortion": {
+                    "type": "number"
+                  },
+                  "dynamicZoomEase": {
+                    "enum": [
+                      "linear",
+                      "in",
+                      "out",
+                      "inout"
+                    ]
+                  },
+                  "flipX": {
+                    "type": "boolean"
+                  },
+                  "flipY": {
+                    "type": "boolean"
+                  },
+                  "opacity": {
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "pitch": {
+                    "type": "number"
+                  },
+                  "positionX": {
+                    "type": "number"
+                  },
+                  "positionY": {
+                    "type": "number"
+                  },
+                  "rotation": {
+                    "type": "number"
+                  },
+                  "yaw": {
+                    "type": "number"
+                  },
+                  "zoomX": {
+                    "type": "number"
+                  },
+                  "zoomY": {
+                    "type": "number"
+                  }
+                },
+                "type": "object"
+              },
+              "changed": {
+                "type": "boolean"
+              },
+              "clipId": {
+                "maxLength": 160,
+                "minLength": 15,
+                "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "clipId",
+              "before",
+              "after",
+              "changed"
+            ],
+            "type": "object"
+          },
+          "maxItems": 1000,
+          "minItems": 1,
+          "type": "array"
+        },
+        "protectedStatePreserved": {
+          "const": true
+        },
+        "stoppedAfterFailure": {
+          "const": false
+        },
+        "timelineRevision": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "actionId",
+        "items",
+        "timelineRevision",
+        "protectedStatePreserved",
+        "stoppedAfterFailure"
       ],
       "type": "object"
     }
@@ -72586,632 +74137,323 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
     "idempotencyCategory": "requires_idempotency_key",
     "verificationCategory": "structural_readback",
     "input": {
-      "additionalProperties": false,
-      "properties": {
-        "projectId": {
-          "maxLength": 160,
-          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
+      "oneOf": [
+        {
+          "$ref": "#/$defs/cutagent.action.clip.transform.input"
         },
-        "target": {
+        {
           "additionalProperties": false,
           "properties": {
-            "id": {
+            "projectId": {
               "maxLength": 160,
-              "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
               "type": "string"
             },
-            "linkedItemIds": {
-              "items": {
-                "maxLength": 160,
-                "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-                "type": "string"
-              },
-              "maxItems": 64,
+            "timelineId": {
+              "maxLength": 160,
+              "pattern": "^timeline_(?!item_)[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "timelineRevision": {
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "transforms": {
               "type": "array",
-              "uniqueItems": true
-            },
-            "mediaPoolItemId": {
-              "oneOf": [
-                {
-                  "maxLength": 160,
-                  "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-                  "type": "string"
+              "minItems": 1,
+              "maxItems": 100,
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "maxLength": 160,
+                        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "linkedItemIds": {
+                        "items": {
+                          "maxLength": 160,
+                          "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        "maxItems": 64,
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "mediaPoolItemId": {
+                        "oneOf": [
+                          {
+                            "maxLength": 160,
+                            "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "name": {
+                        "maxLength": 4096,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "recordEndFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "recordStartFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "snapshotId": {
+                        "maxLength": 160,
+                        "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "trackIndex": {
+                        "maximum": 4096,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "trackType": {
+                        "const": "video"
+                      }
+                    },
+                    "required": [
+                      "snapshotId",
+                      "id",
+                      "trackType",
+                      "trackIndex",
+                      "recordStartFrame",
+                      "recordEndFrame",
+                      "name",
+                      "mediaPoolItemId",
+                      "linkedItemIds"
+                    ],
+                    "type": "object"
+                  },
+                  "transform": {
+                    "additionalProperties": false,
+                    "anyOf": [
+                      {
+                        "required": [
+                          "zoomX"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "zoomY"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "positionX"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "positionY"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "rotation"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "anchorX"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "anchorY"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "pitch"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "yaw"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "flipX"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "flipY"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "opacity"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "cropLeft"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "cropRight"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "cropTop"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "cropBottom"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "distortion"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "dynamicZoomEase"
+                        ]
+                      }
+                    ],
+                    "properties": {
+                      "anchorX": {
+                        "type": "number"
+                      },
+                      "anchorY": {
+                        "type": "number"
+                      },
+                      "cropBottom": {
+                        "type": "number"
+                      },
+                      "cropLeft": {
+                        "type": "number"
+                      },
+                      "cropRight": {
+                        "type": "number"
+                      },
+                      "cropTop": {
+                        "type": "number"
+                      },
+                      "distortion": {
+                        "type": "number"
+                      },
+                      "dynamicZoomEase": {
+                        "enum": [
+                          "linear",
+                          "in",
+                          "out",
+                          "inout"
+                        ]
+                      },
+                      "flipX": {
+                        "type": "boolean"
+                      },
+                      "flipY": {
+                        "type": "boolean"
+                      },
+                      "opacity": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "pitch": {
+                        "type": "number"
+                      },
+                      "positionX": {
+                        "type": "number"
+                      },
+                      "positionY": {
+                        "type": "number"
+                      },
+                      "rotation": {
+                        "type": "number"
+                      },
+                      "yaw": {
+                        "type": "number"
+                      },
+                      "zoomX": {
+                        "type": "number"
+                      },
+                      "zoomY": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [],
+                    "type": "object"
+                  }
                 },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "name": {
-              "maxLength": 4096,
-              "minLength": 1,
-              "type": "string"
-            },
-            "recordEndFrame": {
-              "maximum": 9007199254740991,
-              "minimum": 1,
-              "type": "integer"
-            },
-            "recordStartFrame": {
-              "maximum": 9007199254740991,
-              "minimum": 0,
-              "type": "integer"
-            },
-            "snapshotId": {
-              "maxLength": 160,
-              "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-              "type": "string"
-            },
-            "trackIndex": {
-              "maximum": 4096,
-              "minimum": 1,
-              "type": "integer"
-            },
-            "trackType": {
-              "const": "video"
+                "required": [
+                  "target",
+                  "transform"
+                ],
+                "type": "object"
+              }
             }
           },
           "required": [
-            "snapshotId",
-            "id",
-            "trackType",
-            "trackIndex",
-            "recordStartFrame",
-            "recordEndFrame",
-            "name",
-            "mediaPoolItemId",
-            "linkedItemIds"
+            "projectId",
+            "timelineId",
+            "timelineRevision",
+            "transforms"
           ],
-          "type": "object"
-        },
-        "timelineId": {
-          "maxLength": 160,
-          "pattern": "^timeline_(?!item_)[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "timelineRevision": {
-          "maxLength": 160,
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "transform": {
-          "additionalProperties": false,
-          "anyOf": [
-            {
-              "required": [
-                "zoomX"
-              ]
-            },
-            {
-              "required": [
-                "zoomY"
-              ]
-            },
-            {
-              "required": [
-                "positionX"
-              ]
-            },
-            {
-              "required": [
-                "positionY"
-              ]
-            },
-            {
-              "required": [
-                "rotation"
-              ]
-            },
-            {
-              "required": [
-                "anchorX"
-              ]
-            },
-            {
-              "required": [
-                "anchorY"
-              ]
-            },
-            {
-              "required": [
-                "pitch"
-              ]
-            },
-            {
-              "required": [
-                "yaw"
-              ]
-            },
-            {
-              "required": [
-                "flipX"
-              ]
-            },
-            {
-              "required": [
-                "flipY"
-              ]
-            },
-            {
-              "required": [
-                "opacity"
-              ]
-            },
-            {
-              "required": [
-                "cropLeft"
-              ]
-            },
-            {
-              "required": [
-                "cropRight"
-              ]
-            },
-            {
-              "required": [
-                "cropTop"
-              ]
-            },
-            {
-              "required": [
-                "cropBottom"
-              ]
-            },
-            {
-              "required": [
-                "distortion"
-              ]
-            },
-            {
-              "required": [
-                "dynamicZoomEase"
-              ]
-            }
-          ],
-          "properties": {
-            "anchorX": {
-              "type": "number"
-            },
-            "anchorY": {
-              "type": "number"
-            },
-            "cropBottom": {
-              "type": "number"
-            },
-            "cropLeft": {
-              "type": "number"
-            },
-            "cropRight": {
-              "type": "number"
-            },
-            "cropTop": {
-              "type": "number"
-            },
-            "distortion": {
-              "type": "number"
-            },
-            "dynamicZoomEase": {
-              "enum": [
-                "linear",
-                "in",
-                "out",
-                "inout"
-              ]
-            },
-            "flipX": {
-              "type": "boolean"
-            },
-            "flipY": {
-              "type": "boolean"
-            },
-            "opacity": {
-              "maximum": 100,
-              "minimum": 0,
-              "type": "number"
-            },
-            "pitch": {
-              "type": "number"
-            },
-            "positionX": {
-              "type": "number"
-            },
-            "positionY": {
-              "type": "number"
-            },
-            "rotation": {
-              "type": "number"
-            },
-            "yaw": {
-              "type": "number"
-            },
-            "zoomX": {
-              "type": "number"
-            },
-            "zoomY": {
-              "type": "number"
-            }
-          },
-          "required": [],
           "type": "object"
         }
-      },
-      "required": [
-        "projectId",
-        "timelineId",
-        "timelineRevision",
-        "target",
-        "transform"
-      ],
-      "type": "object"
+      ]
     },
     "result": {
-      "additionalProperties": false,
-      "properties": {
-        "actionId": {
-          "const": "cutagent.action.clip.transform"
+      "oneOf": [
+        {
+          "$ref": "#/$defs/cutagent.action.clip.transform.result"
         },
-        "after": {
+        {
           "additionalProperties": false,
           "properties": {
-            "values": {
-              "additionalProperties": false,
-              "anyOf": [
-                {
-                  "required": [
-                    "zoomX"
-                  ]
-                },
-                {
-                  "required": [
-                    "zoomY"
-                  ]
-                },
-                {
-                  "required": [
-                    "positionX"
-                  ]
-                },
-                {
-                  "required": [
-                    "positionY"
-                  ]
-                },
-                {
-                  "required": [
-                    "rotation"
-                  ]
-                },
-                {
-                  "required": [
-                    "anchorX"
-                  ]
-                },
-                {
-                  "required": [
-                    "anchorY"
-                  ]
-                },
-                {
-                  "required": [
-                    "pitch"
-                  ]
-                },
-                {
-                  "required": [
-                    "yaw"
-                  ]
-                },
-                {
-                  "required": [
-                    "flipX"
-                  ]
-                },
-                {
-                  "required": [
-                    "flipY"
-                  ]
-                },
-                {
-                  "required": [
-                    "opacity"
-                  ]
-                },
-                {
-                  "required": [
-                    "cropLeft"
-                  ]
-                },
-                {
-                  "required": [
-                    "cropRight"
-                  ]
-                },
-                {
-                  "required": [
-                    "cropTop"
-                  ]
-                },
-                {
-                  "required": [
-                    "cropBottom"
-                  ]
-                },
-                {
-                  "required": [
-                    "distortion"
-                  ]
-                },
-                {
-                  "required": [
-                    "dynamicZoomEase"
-                  ]
-                }
-              ],
-              "properties": {
-                "anchorX": {
-                  "type": "number"
-                },
-                "anchorY": {
-                  "type": "number"
-                },
-                "cropBottom": {
-                  "type": "number"
-                },
-                "cropLeft": {
-                  "type": "number"
-                },
-                "cropRight": {
-                  "type": "number"
-                },
-                "cropTop": {
-                  "type": "number"
-                },
-                "distortion": {
-                  "type": "number"
-                },
-                "dynamicZoomEase": {
-                  "enum": [
-                    "linear",
-                    "in",
-                    "out",
-                    "inout"
-                  ]
-                },
-                "flipX": {
-                  "type": "boolean"
-                },
-                "flipY": {
-                  "type": "boolean"
-                },
-                "opacity": {
-                  "maximum": 100,
-                  "minimum": 0,
-                  "type": "number"
-                },
-                "pitch": {
-                  "type": "number"
-                },
-                "positionX": {
-                  "type": "number"
-                },
-                "positionY": {
-                  "type": "number"
-                },
-                "rotation": {
-                  "type": "number"
-                },
-                "yaw": {
-                  "type": "number"
-                },
-                "zoomX": {
-                  "type": "number"
-                },
-                "zoomY": {
-                  "type": "number"
-                }
-              },
-              "required": [],
-              "type": "object"
+            "actionId": {
+              "const": "cutagent.action.clip.transform"
+            },
+            "timelineRevision": {
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "protectedStatePreserved": {
+              "const": true
+            },
+            "results": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 100,
+              "items": {
+                "$ref": "#/$defs/cutagent.action.clip.transform.result"
+              }
             }
           },
           "required": [
-            "values"
+            "actionId",
+            "timelineRevision",
+            "protectedStatePreserved",
+            "results"
           ],
           "type": "object"
-        },
-        "before": {
-          "additionalProperties": false,
-          "properties": {
-            "values": {
-              "additionalProperties": false,
-              "anyOf": [
-                {
-                  "required": [
-                    "zoomX"
-                  ]
-                },
-                {
-                  "required": [
-                    "zoomY"
-                  ]
-                },
-                {
-                  "required": [
-                    "positionX"
-                  ]
-                },
-                {
-                  "required": [
-                    "positionY"
-                  ]
-                },
-                {
-                  "required": [
-                    "rotation"
-                  ]
-                },
-                {
-                  "required": [
-                    "anchorX"
-                  ]
-                },
-                {
-                  "required": [
-                    "anchorY"
-                  ]
-                },
-                {
-                  "required": [
-                    "pitch"
-                  ]
-                },
-                {
-                  "required": [
-                    "yaw"
-                  ]
-                },
-                {
-                  "required": [
-                    "flipX"
-                  ]
-                },
-                {
-                  "required": [
-                    "flipY"
-                  ]
-                },
-                {
-                  "required": [
-                    "opacity"
-                  ]
-                },
-                {
-                  "required": [
-                    "cropLeft"
-                  ]
-                },
-                {
-                  "required": [
-                    "cropRight"
-                  ]
-                },
-                {
-                  "required": [
-                    "cropTop"
-                  ]
-                },
-                {
-                  "required": [
-                    "cropBottom"
-                  ]
-                },
-                {
-                  "required": [
-                    "distortion"
-                  ]
-                },
-                {
-                  "required": [
-                    "dynamicZoomEase"
-                  ]
-                }
-              ],
-              "properties": {
-                "anchorX": {
-                  "type": "number"
-                },
-                "anchorY": {
-                  "type": "number"
-                },
-                "cropBottom": {
-                  "type": "number"
-                },
-                "cropLeft": {
-                  "type": "number"
-                },
-                "cropRight": {
-                  "type": "number"
-                },
-                "cropTop": {
-                  "type": "number"
-                },
-                "distortion": {
-                  "type": "number"
-                },
-                "dynamicZoomEase": {
-                  "enum": [
-                    "linear",
-                    "in",
-                    "out",
-                    "inout"
-                  ]
-                },
-                "flipX": {
-                  "type": "boolean"
-                },
-                "flipY": {
-                  "type": "boolean"
-                },
-                "opacity": {
-                  "maximum": 100,
-                  "minimum": 0,
-                  "type": "number"
-                },
-                "pitch": {
-                  "type": "number"
-                },
-                "positionX": {
-                  "type": "number"
-                },
-                "positionY": {
-                  "type": "number"
-                },
-                "rotation": {
-                  "type": "number"
-                },
-                "yaw": {
-                  "type": "number"
-                },
-                "zoomX": {
-                  "type": "number"
-                },
-                "zoomY": {
-                  "type": "number"
-                }
-              },
-              "required": [],
-              "type": "object"
-            }
-          },
-          "required": [
-            "values"
-          ],
-          "type": "object"
-        },
-        "protectedStatePreserved": {
-          "const": true
-        },
-        "targetId": {
-          "maxLength": 160,
-          "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "timelineRevision": {
-          "maxLength": 160,
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
         }
-      },
-      "required": [
-        "actionId",
-        "targetId",
-        "timelineRevision",
-        "protectedStatePreserved",
-        "before",
-        "after"
-      ],
-      "type": "object"
+      ]
     }
   },
   "cutagent.action.clip.unlink": {
@@ -80470,79 +81712,375 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
     "idempotencyCategory": "requires_idempotency_key",
     "verificationCategory": "structural_readback",
     "input": {
-      "additionalProperties": false,
-      "properties": {
-        "clear": {
-          "type": "boolean"
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "clear": {
+              "type": "boolean"
+            },
+            "colorRevision": {
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "lutName": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "nodeIndex": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "nodeStackLayerIndex": {
+              "maximum": 4096,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "projectId": {
+              "maxLength": 160,
+              "minLength": 9,
+              "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "revision": {
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "timelineId": {
+              "maxLength": 160,
+              "minLength": 10,
+              "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "timelineItemId": {
+              "maxLength": 160,
+              "minLength": 15,
+              "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "timelineId",
+            "timelineItemId",
+            "revision",
+            "nodeIndex",
+            "lutName",
+            "clear",
+            "nodeStackLayerIndex",
+            "colorRevision"
+          ],
+          "type": "object"
         },
-        "colorRevision": {
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "lutName": {
-          "minLength": 1,
-          "type": "string"
-        },
-        "nodeIndex": {
-          "minimum": 1,
-          "type": "integer"
-        },
-        "nodeStackLayerIndex": {
-          "maximum": 4096,
-          "minimum": 1,
-          "type": "integer"
-        },
-        "projectId": {
-          "maxLength": 160,
-          "minLength": 9,
-          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "revision": {
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "timelineId": {
-          "maxLength": 160,
-          "minLength": 10,
-          "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "timelineItemId": {
-          "maxLength": 160,
-          "minLength": 15,
-          "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
+        {
+          "additionalProperties": false,
+          "properties": {
+            "failurePolicy": {
+              "enum": [
+                "continue",
+                "stop"
+              ]
+            },
+            "items": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "clear": {
+                    "const": false
+                  },
+                  "colorRevision": {
+                    "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  },
+                  "lutName": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "nodeIndex": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "nodeStackLayerIndex": {
+                    "maximum": 4096,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "timelineItemId": {
+                    "maxLength": 160,
+                    "minLength": 15,
+                    "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "timelineItemId",
+                  "colorRevision",
+                  "nodeStackLayerIndex",
+                  "nodeIndex",
+                  "lutName",
+                  "clear"
+                ],
+                "type": "object"
+              },
+              "maxItems": 128,
+              "minItems": 1,
+              "type": "array"
+            },
+            "projectId": {
+              "maxLength": 160,
+              "minLength": 9,
+              "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "revision": {
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "timelineId": {
+              "maxLength": 160,
+              "minLength": 10,
+              "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "timelineId",
+            "revision",
+            "items",
+            "failurePolicy"
+          ],
+          "type": "object"
         }
-      },
-      "required": [
-        "projectId",
-        "timelineId",
-        "timelineItemId",
-        "revision",
-        "nodeIndex",
-        "lutName",
-        "clear",
-        "nodeStackLayerIndex",
-        "colorRevision"
-      ],
-      "type": "object"
+      ]
     },
     "result": {
-      "additionalProperties": false,
-      "properties": {
-        "actionId": {
-          "const": "cutagent.action.color.lut"
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "actionId": {
+              "const": "cutagent.action.color.lut"
+            },
+            "payload": {
+              "$ref": "#/$defs/colorResult.mutation.grade_asset"
+            }
+          },
+          "required": [
+            "actionId",
+            "payload"
+          ],
+          "type": "object"
         },
-        "payload": {
-          "$ref": "#/$defs/colorResult.mutation.grade_asset"
+        {
+          "additionalProperties": false,
+          "properties": {
+            "actionId": {
+              "const": "cutagent.action.color.lut"
+            },
+            "payload": {
+              "additionalProperties": false,
+              "properties": {
+                "changed": {
+                  "type": "boolean"
+                },
+                "recovery": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "guidance": {
+                      "maxLength": 500,
+                      "minLength": 1,
+                      "pattern": "^(?!/(?!/)[A-Za-z0-9._~-]+(?:/|$))(?![\\s\\S]*(?:[^A-Za-z0-9._~-]/(?!/)[A-Za-z0-9._~-]+(?:/|$|[^A-Za-z0-9._~-])|[Ff][Ii][Ll][Ee]:/{2,3}|[A-Za-z]:\\\\|\\\\\\\\|~/|[a-z]+_(?:native|gui)|[a-z]+(?:[./-][a-z_]+)+|[Aa][Rr][Gg][Vv]|[Ss][Qq][Ll][Ii][Tt][Ee]|[Pp][Rr][Oo][Jj][Ee][Cc][Tt][.][Dd][Bb]|[Ww][Oo][Rr][Kk][Aa][Rr][Oo][Uu][Nn][Dd]|[Ee][Xx][Ee][Cc][Uu][Tt][Ii][Oo][Nn][Rr][Oo][Uu][Tt][Ee]))[^\\r\\n]*$",
+                      "type": "string"
+                    },
+                    "retry": {
+                      "enum": [
+                        "safe",
+                        "same_idempotency_key_required",
+                        "inspect_state_first",
+                        "manual_only"
+                      ]
+                    },
+                    "state": {
+                      "enum": [
+                        "not_needed",
+                        "available",
+                        "manual_required",
+                        "unknown"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "state",
+                    "retry",
+                    "guidance"
+                  ],
+                  "type": "object"
+                },
+                "results": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "errorCode": {
+                        "oneOf": [
+                          {
+                            "maxLength": 128,
+                            "minLength": 1,
+                            "pattern": "^[A-Z][A-Z0-9_]*$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "lutName": {
+                        "maxLength": 4096,
+                        "minLength": 1,
+                        "pattern": "^(?!/|~/|file:/{2,3}|[A-Za-z]:[\\\\/]|\\\\\\\\)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\r\\n\\\\]+$",
+                        "type": "string"
+                      },
+                      "nodeIndex": {
+                        "maximum": 9007199254740991,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "readbackLutName": {
+                        "oneOf": [
+                          {
+                            "maxLength": 4096,
+                            "minLength": 1,
+                            "pattern": "^(?!/|~/|file:/{2,3}|[A-Za-z]:[\\\\/]|\\\\\\\\)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\r\\n\\\\]+$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "status": {
+                        "enum": [
+                          "applied",
+                          "failed",
+                          "skipped"
+                        ]
+                      },
+                      "timelineItemId": {
+                        "maxLength": 256,
+                        "minLength": 15,
+                        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "timelineItemId",
+                      "nodeIndex",
+                      "lutName",
+                      "status",
+                      "readbackLutName",
+                      "errorCode"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 128,
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "status": {
+                  "enum": [
+                    "completed",
+                    "partial"
+                  ]
+                },
+                "verification": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "evidence": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "artifactId": {
+                            "oneOf": [
+                              {
+                                "maxLength": 256,
+                                "minLength": 10,
+                                "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "kind": {
+                            "enum": [
+                              "structural_readback",
+                              "rendered_frame",
+                              "visual_review",
+                              "artifact_readback",
+                              "manual_review"
+                            ]
+                          },
+                          "summary": {
+                            "maxLength": 500,
+                            "minLength": 1,
+                            "pattern": "^(?!/(?!/)[A-Za-z0-9._~-]+(?:/|$))(?![\\s\\S]*(?:[^A-Za-z0-9._~-]/(?!/)[A-Za-z0-9._~-]+(?:/|$|[^A-Za-z0-9._~-])|[Ff][Ii][Ll][Ee]:/{2,3}|[A-Za-z]:\\\\|\\\\\\\\|~/|[a-z]+_(?:native|gui)|[a-z]+(?:[./-][a-z_]+)+|[Aa][Rr][Gg][Vv]|[Ss][Qq][Ll][Ii][Tt][Ee]|[Pp][Rr][Oo][Jj][Ee][Cc][Tt][.][Dd][Bb]|[Ww][Oo][Rr][Kk][Aa][Rr][Oo][Uu][Nn][Dd]|[Ee][Xx][Ee][Cc][Uu][Tt][Ii][Oo][Nn][Rr][Oo][Uu][Tt][Ee]))[^\\r\\n]*$",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "summary",
+                          "artifactId"
+                        ],
+                        "type": "object"
+                      },
+                      "maxItems": 32,
+                      "type": "array"
+                    },
+                    "outcome": {
+                      "enum": [
+                        "passed",
+                        "partial",
+                        "failed",
+                        "not_performed",
+                        "manual_review_required"
+                      ]
+                    },
+                    "protectedState": {
+                      "enum": [
+                        "preserved",
+                        "not_applicable",
+                        "not_proven",
+                        "partial"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "outcome",
+                    "evidence",
+                    "protectedState"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "status",
+                "changed",
+                "results",
+                "verification",
+                "recovery"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "actionId",
+            "payload"
+          ],
+          "type": "object"
         }
-      },
-      "required": [
-        "actionId",
-        "payload"
-      ],
-      "type": "object"
+      ]
     }
   },
   "cutagent.action.color.lut_refresh": {
@@ -94665,6 +96203,88 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
       "required": [
         "actionId",
         "application"
+      ],
+      "type": "object"
+    }
+  },
+  "cutagent.action.dctl.validate_source": {
+    "operationClass": "read",
+    "capabilityId": null,
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "declared_unverified",
+        "x86_64": "declared_unverified"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "20.0"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "declared_unverified",
+        "windows": "declared_unverified"
+      },
+      "overall": "partial",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "connection",
+    "idempotencyCategory": "safe_repeat",
+    "verificationCategory": "structural_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "maxLength": 65536,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "source"
+      ],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.dctl.validate_source"
+        },
+        "validation": {
+          "additionalProperties": false,
+          "properties": {
+            "diagnostics": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "valid": {
+              "type": "boolean"
+            },
+            "validator": {
+              "const": "davinci_resolve_native"
+            }
+          },
+          "required": [
+            "valid",
+            "diagnostics",
+            "validator"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "actionId",
+        "validation"
       ],
       "type": "object"
     }
@@ -111187,6 +112807,1349 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
               "required": [
                 "targetItem",
                 "transitions"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "recovery": {
+          "additionalProperties": false,
+          "properties": {
+            "guidance": {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            "manualRecoveryRequired": {
+              "type": "boolean"
+            },
+            "retry": {
+              "enum": [
+                "safe",
+                "same_idempotency_key_required",
+                "inspect_state_first",
+                "manual_only"
+              ]
+            },
+            "state": {
+              "enum": [
+                "not_needed",
+                "checkpoint_available",
+                "restored",
+                "manual_required",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "state",
+            "retry",
+            "manualRecoveryRequired",
+            "guidance"
+          ],
+          "type": "object"
+        },
+        "revision": {
+          "maxLength": 160,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "no_op",
+            "partial",
+            "recovered",
+            "manual_review_required"
+          ]
+        },
+        "target": {
+          "additionalProperties": false,
+          "properties": {
+            "project": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "maxLength": 160,
+                  "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                  "type": "string"
+                },
+                "name": {
+                  "maxLength": 1024,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "type": "object"
+            },
+            "timeline": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "maxLength": 160,
+                  "pattern": "^timeline_(?!item_)[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                  "type": "string"
+                },
+                "name": {
+                  "maxLength": 1024,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "startFrame": {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "startFrame"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "project",
+            "timeline"
+          ],
+          "type": "object"
+        },
+        "verification": {
+          "additionalProperties": false,
+          "properties": {
+            "checks": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "passed": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "passed"
+                ],
+                "type": "object"
+              },
+              "maxItems": 64,
+              "type": "array"
+            },
+            "evidence": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "structural_readback",
+                      "artifact_readback",
+                      "rendered_frame",
+                      "visual_review",
+                      "manual_review"
+                    ]
+                  },
+                  "summary": {
+                    "maxLength": 500,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "summary"
+                ],
+                "type": "object"
+              },
+              "maxItems": 32,
+              "type": "array"
+            },
+            "outcome": {
+              "enum": [
+                "passed",
+                "partial",
+                "not_performed",
+                "manual_review_required"
+              ]
+            },
+            "protectedState": {
+              "enum": [
+                "preserved",
+                "partial",
+                "not_proven",
+                "not_applicable"
+              ]
+            }
+          },
+          "required": [
+            "outcome",
+            "evidence",
+            "checks",
+            "protectedState"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "actionId",
+        "status",
+        "target",
+        "revision",
+        "affected",
+        "details",
+        "verification",
+        "recovery"
+      ],
+      "type": "object"
+    }
+  },
+  "cutagent.action.edit.transition.batch": {
+    "operationClass": "mutation",
+    "capabilityId": "edit.transitions_native",
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "unknown",
+        "x86_64": "unknown"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "20.0"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "unknown",
+        "windows": "unknown"
+      },
+      "overall": "unknown",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "live_state_revision",
+    "idempotencyCategory": "requires_idempotency_key",
+    "verificationCategory": "structural_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "projectId": {
+          "maxLength": 160,
+          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineId": {
+          "maxLength": 160,
+          "pattern": "^timeline_(?!item_)[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineRevision": {
+          "maxLength": 160,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "transitions": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "durationFrames": {
+                  "maximum": 9007199254740991,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "editFrame": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "incoming": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "maxLength": 160,
+                      "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                      "type": "string"
+                    },
+                    "linkedItemIds": {
+                      "items": {
+                        "maxLength": 160,
+                        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "maxItems": 64,
+                      "type": "array",
+                      "uniqueItems": true
+                    },
+                    "mediaPoolItemId": {
+                      "oneOf": [
+                        {
+                          "maxLength": 160,
+                          "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "name": {
+                      "maxLength": 4096,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "recordEndFrame": {
+                      "maximum": 9007199254740991,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "recordStartFrame": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "snapshotId": {
+                      "maxLength": 160,
+                      "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                      "type": "string"
+                    },
+                    "trackIndex": {
+                      "maximum": 4096,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "trackType": {
+                      "enum": [
+                        "video"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "snapshotId",
+                    "id",
+                    "trackType",
+                    "trackIndex",
+                    "recordStartFrame",
+                    "recordEndFrame",
+                    "name",
+                    "mediaPoolItemId",
+                    "linkedItemIds"
+                  ],
+                  "type": "object"
+                },
+                "linkedAudioTargets": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "maxLength": 160,
+                        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "linkedItemIds": {
+                        "items": {
+                          "maxLength": 160,
+                          "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        "maxItems": 64,
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "mediaPoolItemId": {
+                        "oneOf": [
+                          {
+                            "maxLength": 160,
+                            "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "name": {
+                        "maxLength": 4096,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "recordEndFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "recordStartFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "snapshotId": {
+                        "maxLength": 160,
+                        "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "trackIndex": {
+                        "maximum": 4096,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "trackType": {
+                        "enum": [
+                          "audio"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "snapshotId",
+                      "id",
+                      "trackType",
+                      "trackIndex",
+                      "recordStartFrame",
+                      "recordEndFrame",
+                      "name",
+                      "mediaPoolItemId",
+                      "linkedItemIds"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 4096,
+                  "minItems": 0,
+                  "type": "array"
+                },
+                "outgoing": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "maxLength": 160,
+                      "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                      "type": "string"
+                    },
+                    "linkedItemIds": {
+                      "items": {
+                        "maxLength": 160,
+                        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "maxItems": 64,
+                      "type": "array",
+                      "uniqueItems": true
+                    },
+                    "mediaPoolItemId": {
+                      "oneOf": [
+                        {
+                          "maxLength": 160,
+                          "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "name": {
+                      "maxLength": 4096,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "recordEndFrame": {
+                      "maximum": 9007199254740991,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "recordStartFrame": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "snapshotId": {
+                      "maxLength": 160,
+                      "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                      "type": "string"
+                    },
+                    "trackIndex": {
+                      "maximum": 4096,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "trackType": {
+                      "enum": [
+                        "video"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "snapshotId",
+                    "id",
+                    "trackType",
+                    "trackIndex",
+                    "recordStartFrame",
+                    "recordEndFrame",
+                    "name",
+                    "mediaPoolItemId",
+                    "linkedItemIds"
+                  ],
+                  "type": "object"
+                },
+                "placement": {
+                  "enum": [
+                    "start",
+                    "end",
+                    "both"
+                  ]
+                },
+                "transitionType": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "outgoing",
+                "incoming",
+                "linkedAudioTargets",
+                "editFrame",
+                "transitionType",
+                "durationFrames",
+                "placement"
+              ],
+              "type": "object"
+            },
+            {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "durationFrames": {
+                    "maximum": 9007199254740991,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "editFrame": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "incoming": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "maxLength": 160,
+                        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "linkedItemIds": {
+                        "items": {
+                          "maxLength": 160,
+                          "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        "maxItems": 64,
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "mediaPoolItemId": {
+                        "oneOf": [
+                          {
+                            "maxLength": 160,
+                            "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "name": {
+                        "maxLength": 4096,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "recordEndFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "recordStartFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "snapshotId": {
+                        "maxLength": 160,
+                        "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "trackIndex": {
+                        "maximum": 4096,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "trackType": {
+                        "enum": [
+                          "video"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "snapshotId",
+                      "id",
+                      "trackType",
+                      "trackIndex",
+                      "recordStartFrame",
+                      "recordEndFrame",
+                      "name",
+                      "mediaPoolItemId",
+                      "linkedItemIds"
+                    ],
+                    "type": "object"
+                  },
+                  "linkedAudioTargets": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "maxLength": 160,
+                          "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        "linkedItemIds": {
+                          "items": {
+                            "maxLength": 160,
+                            "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                            "type": "string"
+                          },
+                          "maxItems": 64,
+                          "type": "array",
+                          "uniqueItems": true
+                        },
+                        "mediaPoolItemId": {
+                          "oneOf": [
+                            {
+                              "maxLength": 160,
+                              "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "name": {
+                          "maxLength": 4096,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "recordEndFrame": {
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "recordStartFrame": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "snapshotId": {
+                          "maxLength": 160,
+                          "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        "trackIndex": {
+                          "maximum": 4096,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "trackType": {
+                          "enum": [
+                            "audio"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "snapshotId",
+                        "id",
+                        "trackType",
+                        "trackIndex",
+                        "recordStartFrame",
+                        "recordEndFrame",
+                        "name",
+                        "mediaPoolItemId",
+                        "linkedItemIds"
+                      ],
+                      "type": "object"
+                    },
+                    "maxItems": 4096,
+                    "minItems": 0,
+                    "type": "array"
+                  },
+                  "outgoing": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "maxLength": 160,
+                        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "linkedItemIds": {
+                        "items": {
+                          "maxLength": 160,
+                          "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        "maxItems": 64,
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "mediaPoolItemId": {
+                        "oneOf": [
+                          {
+                            "maxLength": 160,
+                            "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "name": {
+                        "maxLength": 4096,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "recordEndFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "recordStartFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "snapshotId": {
+                        "maxLength": 160,
+                        "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "trackIndex": {
+                        "maximum": 4096,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "trackType": {
+                        "enum": [
+                          "video"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "snapshotId",
+                      "id",
+                      "trackType",
+                      "trackIndex",
+                      "recordStartFrame",
+                      "recordEndFrame",
+                      "name",
+                      "mediaPoolItemId",
+                      "linkedItemIds"
+                    ],
+                    "type": "object"
+                  },
+                  "placement": {
+                    "enum": [
+                      "start",
+                      "end",
+                      "both"
+                    ]
+                  },
+                  "transitionType": {
+                    "maxLength": 256,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "outgoing",
+                  "incoming",
+                  "linkedAudioTargets",
+                  "editFrame",
+                  "transitionType",
+                  "durationFrames",
+                  "placement"
+                ],
+                "type": "object"
+              },
+              "maxItems": 24,
+              "minItems": 1,
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "required": [
+        "projectId",
+        "timelineId",
+        "timelineRevision",
+        "transitions"
+      ],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "completed"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "details": {
+                "type": "object"
+              },
+              "recovery": {
+                "properties": {
+                  "manualRecoveryRequired": {
+                    "const": false
+                  },
+                  "state": {
+                    "const": "not_needed"
+                  }
+                }
+              },
+              "verification": {
+                "properties": {
+                  "checks": {
+                    "items": {
+                      "properties": {
+                        "passed": {
+                          "const": true
+                        }
+                      }
+                    },
+                    "minItems": 1
+                  },
+                  "evidence": {
+                    "minItems": 1
+                  },
+                  "outcome": {
+                    "const": "passed"
+                  },
+                  "protectedState": {
+                    "const": "preserved"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "no_op"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "affected": {
+                "properties": {
+                  "linkedAudio": {
+                    "properties": {
+                      "changed": {
+                        "const": false
+                      },
+                      "preserved": {
+                        "const": true
+                      }
+                    }
+                  }
+                }
+              },
+              "details": {
+                "type": "null"
+              },
+              "recovery": {
+                "properties": {
+                  "manualRecoveryRequired": {
+                    "const": false
+                  },
+                  "state": {
+                    "const": "not_needed"
+                  }
+                }
+              },
+              "verification": {
+                "properties": {
+                  "checks": {
+                    "items": {
+                      "properties": {
+                        "passed": {
+                          "const": true
+                        }
+                      }
+                    },
+                    "minItems": 1
+                  },
+                  "evidence": {
+                    "minItems": 1
+                  },
+                  "outcome": {
+                    "const": "passed"
+                  },
+                  "protectedState": {
+                    "const": "preserved"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "partial"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "recovery": {
+                "properties": {
+                  "manualRecoveryRequired": {
+                    "const": false
+                  },
+                  "retry": {
+                    "const": "inspect_state_first"
+                  },
+                  "state": {
+                    "enum": [
+                      "checkpoint_available",
+                      "unknown"
+                    ]
+                  }
+                }
+              },
+              "verification": {
+                "properties": {
+                  "evidence": {
+                    "minItems": 1
+                  },
+                  "outcome": {
+                    "const": "partial"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "recovered"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "affected": {
+                "properties": {
+                  "linkedAudio": {
+                    "properties": {
+                      "changed": {
+                        "const": false
+                      },
+                      "preserved": {
+                        "const": true
+                      }
+                    }
+                  }
+                }
+              },
+              "details": {
+                "type": "null"
+              },
+              "recovery": {
+                "properties": {
+                  "manualRecoveryRequired": {
+                    "const": false
+                  },
+                  "retry": {
+                    "const": "safe"
+                  },
+                  "state": {
+                    "const": "restored"
+                  }
+                }
+              },
+              "verification": {
+                "properties": {
+                  "checks": {
+                    "items": {
+                      "properties": {
+                        "passed": {
+                          "const": true
+                        }
+                      }
+                    },
+                    "minItems": 1
+                  },
+                  "evidence": {
+                    "minItems": 1
+                  },
+                  "outcome": {
+                    "const": "passed"
+                  },
+                  "protectedState": {
+                    "const": "preserved"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "manual_review_required"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "recovery": {
+                "properties": {
+                  "manualRecoveryRequired": {
+                    "const": true
+                  },
+                  "retry": {
+                    "const": "manual_only"
+                  },
+                  "state": {
+                    "const": "manual_required"
+                  }
+                }
+              },
+              "verification": {
+                "properties": {
+                  "outcome": {
+                    "const": "manual_review_required"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "completed"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "details": {
+                "properties": {
+                  "results": {
+                    "minItems": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.edit.transition.batch"
+        },
+        "affected": {
+          "additionalProperties": false,
+          "properties": {
+            "linkedAudio": {
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "changed": {
+                          "const": false
+                        },
+                        "preserved": {
+                          "const": true
+                        }
+                      }
+                    },
+                    {
+                      "properties": {
+                        "changed": {
+                          "const": true
+                        },
+                        "preserved": {
+                          "const": false
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "requested": {
+                        "const": "not_applicable"
+                      }
+                    },
+                    "required": [
+                      "requested"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "changed": {
+                        "const": false
+                      },
+                      "preserved": {
+                        "const": true
+                      }
+                    }
+                  }
+                }
+              ],
+              "properties": {
+                "changed": {
+                  "type": "boolean"
+                },
+                "preserved": {
+                  "type": "boolean"
+                },
+                "requested": {
+                  "enum": [
+                    "linked",
+                    "video_only",
+                    "audio_only",
+                    "not_applicable"
+                  ]
+                }
+              },
+              "required": [
+                "requested",
+                "preserved",
+                "changed"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "linkedAudio"
+          ],
+          "type": "object"
+        },
+        "details": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "results": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "index": {
+                        "maximum": 23,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "status": {
+                        "enum": [
+                          "completed",
+                          "no_op"
+                        ]
+                      },
+                      "targetItem": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "maxLength": 160,
+                            "pattern": "^(?:timeline_item_|snapshot_timeline_item_)[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                            "type": "string"
+                          },
+                          "name": {
+                            "maxLength": 1024,
+                            "type": "string"
+                          },
+                          "recordRange": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "durationFrames": {
+                                "maximum": 9007199254740991,
+                                "minimum": 1,
+                                "type": "integer"
+                              },
+                              "startOffsetFrames": {
+                                "maximum": 9007199254740991,
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "startOffsetFrames",
+                              "durationFrames"
+                            ],
+                            "type": "object"
+                          },
+                          "sourceRange": {
+                            "oneOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "durationFrames": {
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "startFrame": {
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "startFrame",
+                                  "durationFrames"
+                                ],
+                                "type": "object"
+                              }
+                            ]
+                          },
+                          "track": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "index": {
+                                "maximum": 9007199254740991,
+                                "minimum": 1,
+                                "type": "integer"
+                              },
+                              "type": {
+                                "const": "video"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "index"
+                            ],
+                            "type": "object"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "track",
+                          "recordRange",
+                          "sourceRange"
+                        ],
+                        "type": "object"
+                      },
+                      "transitions": {
+                        "additionalProperties": false,
+                        "maxProperties": 32,
+                        "patternProperties": {
+                          "^transition_[A-Za-z0-9][A-Za-z0-9._~-]*$": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "durationFrames": {
+                                "maximum": 9007199254740991,
+                                "minimum": 1,
+                                "type": "integer"
+                              },
+                              "name": {
+                                "maxLength": 1024,
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "placement": {
+                                "enum": [
+                                  "start",
+                                  "end",
+                                  "both"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "placement",
+                              "durationFrames"
+                            ],
+                            "type": "object"
+                          }
+                        },
+                        "propertyNames": {
+                          "maxLength": 256,
+                          "pattern": "^transition_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "status",
+                      "targetItem",
+                      "transitions"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 24,
+                  "minItems": 1,
+                  "type": "array"
+                }
+              },
+              "required": [
+                "results"
               ],
               "type": "object"
             }
@@ -173589,6 +176552,326 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
       "type": "object"
     }
   },
+  "cutagent.action.fusion.image.batch": {
+    "operationClass": "mutation",
+    "capabilityId": "fusion.mutation",
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "unknown",
+        "x86_64": "unknown"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "20.0"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "unknown",
+        "windows": "unknown"
+      },
+      "overall": "unknown",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "live_state_revision",
+    "idempotencyCategory": "requires_idempotency_key",
+    "verificationCategory": "structural_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "contractVersion": {
+          "const": 1
+        },
+        "items": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "compositionIndex": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "compositionRevision": {
+                "maxLength": 160,
+                "minLength": 10,
+                "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              },
+              "groupInputName": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "groupToolName": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "imageArtifactId": {
+                "maxLength": 160,
+                "minLength": 10,
+                "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              },
+              "importMedia": {
+                "type": "boolean"
+              },
+              "position": {
+                "additionalProperties": false,
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "type": "object"
+              },
+              "timelineItemId": {
+                "maxLength": 160,
+                "minLength": 15,
+                "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              },
+              "zoom": {
+                "additionalProperties": false,
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "timelineItemId",
+              "compositionIndex",
+              "compositionRevision",
+              "imageArtifactId"
+            ],
+            "type": "object"
+          },
+          "maxItems": 512,
+          "minItems": 1,
+          "type": "array"
+        },
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 9,
+          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "revision": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineId": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "projectId",
+        "timelineId",
+        "revision",
+        "contractVersion",
+        "items"
+      ],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.fusion.image.batch"
+        },
+        "durationMs": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "failureCount": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "protectedStatePreserved": {
+          "const": true
+        },
+        "results": {
+          "items": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "compositionIndex": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "durationMs": {
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "imageArtifactId": {
+                    "maxLength": 160,
+                    "minLength": 10,
+                    "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  },
+                  "index": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "inputName": {
+                    "maxLength": 1024,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "ok": {
+                    "const": true
+                  },
+                  "revisionAfter": {
+                    "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  },
+                  "revisionBefore": {
+                    "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  },
+                  "timelineItemId": {
+                    "maxLength": 160,
+                    "minLength": 15,
+                    "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  },
+                  "toolName": {
+                    "maxLength": 1024,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "verified": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "index",
+                  "ok",
+                  "timelineItemId",
+                  "compositionIndex",
+                  "imageArtifactId",
+                  "durationMs",
+                  "toolName",
+                  "inputName",
+                  "verified",
+                  "revisionBefore",
+                  "revisionAfter"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "compositionIndex": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "durationMs": {
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "error": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "code": {
+                        "maxLength": 1024,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "message": {
+                        "maxLength": 1024,
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "code",
+                      "message"
+                    ],
+                    "type": "object"
+                  },
+                  "imageArtifactId": {
+                    "maxLength": 160,
+                    "minLength": 10,
+                    "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  },
+                  "index": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "ok": {
+                    "const": false
+                  },
+                  "timelineItemId": {
+                    "maxLength": 160,
+                    "minLength": 15,
+                    "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "index",
+                  "ok",
+                  "timelineItemId",
+                  "compositionIndex",
+                  "imageArtifactId",
+                  "durationMs",
+                  "error"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "maxItems": 512,
+          "minItems": 1,
+          "type": "array"
+        },
+        "successCount": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "actionId",
+        "results",
+        "successCount",
+        "failureCount",
+        "durationMs",
+        "protectedStatePreserved"
+      ],
+      "type": "object"
+    }
+  },
   "cutagent.action.fusion.image.set": {
     "operationClass": "mutation",
     "capabilityId": "fusion.mutation",
@@ -174126,6 +177409,334 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
       "required": [
         "actionId",
         "insertedItem"
+      ],
+      "type": "object"
+    }
+  },
+  "cutagent.action.fusion.insert_settings.batch": {
+    "operationClass": "mutation",
+    "capabilityId": "fusion.mutation",
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "unknown",
+        "x86_64": "unknown"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "20.0"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "unknown",
+        "windows": "unknown"
+      },
+      "overall": "unknown",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "live_state_revision",
+    "idempotencyCategory": "requires_idempotency_key",
+    "verificationCategory": "structural_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "boldStyle": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "clipDuration": {
+                "additionalProperties": false,
+                "properties": {
+                  "domain": {
+                    "const": "duration"
+                  },
+                  "value": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "frames"
+                      },
+                      "value": {
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "value"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "domain",
+                  "value"
+                ],
+                "type": "object"
+              },
+              "clipName": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "imageArtifactId": {
+                "maxLength": 160,
+                "minLength": 10,
+                "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              },
+              "position": {
+                "additionalProperties": false,
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "type": "object"
+              },
+              "recordPosition": {
+                "additionalProperties": false,
+                "properties": {
+                  "domain": {
+                    "const": "timeline_record"
+                  },
+                  "value": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "frames"
+                      },
+                      "value": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "value"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "domain",
+                  "value"
+                ],
+                "type": "object"
+              },
+              "settingArtifactId": {
+                "maxLength": 160,
+                "minLength": 10,
+                "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              },
+              "styleMarkdown": {
+                "type": "boolean"
+              },
+              "text": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "videoTrackIndex": {
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "settingArtifactId",
+              "recordPosition",
+              "clipDuration"
+            ],
+            "type": "object"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "type": "array"
+        },
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 9,
+          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "revision": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineId": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "projectId",
+        "timelineId",
+        "revision",
+        "items"
+      ],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.fusion.insert_settings.batch"
+        },
+        "insertedItems": {
+          "additionalProperties": false,
+          "properties": {
+            "items": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "clipDuration": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "domain": {
+                        "const": "duration"
+                      },
+                      "value": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "const": "frames"
+                          },
+                          "value": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "value"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "domain",
+                      "value"
+                    ],
+                    "type": "object"
+                  },
+                  "clipName": {
+                    "maxLength": 1024,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "recordPosition": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "domain": {
+                        "const": "timeline_record"
+                      },
+                      "value": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "const": "frames"
+                          },
+                          "value": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "value"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "domain",
+                      "value"
+                    ],
+                    "type": "object"
+                  },
+                  "timelineItemId": {
+                    "maxLength": 160,
+                    "minLength": 15,
+                    "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  },
+                  "videoTrackIndex": {
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "timelineItemId",
+                  "clipName",
+                  "recordPosition",
+                  "clipDuration",
+                  "videoTrackIndex"
+                ],
+                "type": "object"
+              },
+              "maxItems": 100,
+              "minItems": 1,
+              "type": "array"
+            },
+            "revision": {
+              "additionalProperties": false,
+              "properties": {
+                "changed": {
+                  "type": "boolean"
+                },
+                "revisionAfter": {
+                  "maxLength": 160,
+                  "minLength": 10,
+                  "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                  "type": "string"
+                },
+                "revisionBefore": {
+                  "maxLength": 160,
+                  "minLength": 10,
+                  "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "revisionBefore",
+                "revisionAfter",
+                "changed"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "items",
+            "revision"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "actionId",
+        "insertedItems"
       ],
       "type": "object"
     }
@@ -176376,6 +179987,279 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
       "type": "object"
     }
   },
+  "cutagent.action.fusion.nested_text.batch": {
+    "operationClass": "mutation",
+    "capabilityId": "fusion.mutation",
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "unknown",
+        "x86_64": "unknown"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "20.0"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "unknown",
+        "windows": "unknown"
+      },
+      "overall": "unknown",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "live_state_revision",
+    "idempotencyCategory": "requires_idempotency_key",
+    "verificationCategory": "structural_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 9,
+          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "revision": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineId": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "updates": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "body": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "bodyClipName": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "boldStyle": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "compositionIndex": {
+                "maximum": 128,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "header": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "headerClipName": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "headerDoubleSpaces": {
+                "type": "boolean"
+              },
+              "headerUppercase": {
+                "type": "boolean"
+              },
+              "timelineItemId": {
+                "maxLength": 160,
+                "minLength": 15,
+                "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "timelineItemId",
+              "compositionIndex"
+            ],
+            "type": "object"
+          },
+          "maxItems": 256,
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "projectId",
+        "timelineId",
+        "revision",
+        "updates"
+      ],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.fusion.nested_text.batch"
+        },
+        "changed": {
+          "type": "boolean"
+        },
+        "failureCount": {
+          "maximum": 256,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 9,
+          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "protectedStatePreserved": {
+          "const": true
+        },
+        "results": {
+          "items": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "bodyUpdated": {
+                    "type": "boolean"
+                  },
+                  "headerUpdated": {
+                    "type": "boolean"
+                  },
+                  "index": {
+                    "maximum": 255,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "revisionAfter": {
+                    "maxLength": 160,
+                    "minLength": 10,
+                    "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  },
+                  "revisionBefore": {
+                    "maxLength": 160,
+                    "minLength": 10,
+                    "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  },
+                  "status": {
+                    "const": "succeeded"
+                  },
+                  "timelineItemId": {
+                    "maxLength": 160,
+                    "minLength": 15,
+                    "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "index",
+                  "status",
+                  "timelineItemId",
+                  "headerUpdated",
+                  "bodyUpdated",
+                  "revisionBefore",
+                  "revisionAfter"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "code": {
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "index": {
+                    "maximum": 255,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "message": {
+                    "maxLength": 4096,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "status": {
+                    "const": "failed"
+                  },
+                  "timelineItemId": {
+                    "maxLength": 160,
+                    "minLength": 15,
+                    "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "index",
+                  "status",
+                  "timelineItemId",
+                  "code",
+                  "message"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "maxItems": 256,
+          "minItems": 1,
+          "type": "array"
+        },
+        "revisionAfter": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "revisionBefore": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "successCount": {
+          "maximum": 256,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "timelineId": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "actionId",
+        "projectId",
+        "timelineId",
+        "revisionBefore",
+        "revisionAfter",
+        "changed",
+        "successCount",
+        "failureCount",
+        "results",
+        "protectedStatePreserved"
+      ],
+      "type": "object"
+    }
+  },
   "cutagent.action.fusion.nested_text.update": {
     "operationClass": "mutation",
     "capabilityId": "fusion.mutation",
@@ -176728,20 +180612,27 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
           "additionalProperties": false,
           "properties": {
             "flowPosition": {
-              "additionalProperties": false,
-              "properties": {
-                "x": {
-                  "type": "number"
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    },
+                    "y": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y"
+                  ],
+                  "type": "object"
                 },
-                "y": {
-                  "type": "number"
+                {
+                  "type": "null"
                 }
-              },
-              "required": [
-                "x",
-                "y"
-              ],
-              "type": "object"
+              ]
             },
             "revision": {
               "additionalProperties": false,
@@ -179327,6 +183218,214 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
       "type": "object"
     }
   },
+  "cutagent.action.fusion.text.batch": {
+    "operationClass": "mutation",
+    "capabilityId": "fusion.mutation",
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "unknown",
+        "x86_64": "unknown"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "20.0"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "unknown",
+        "windows": "unknown"
+      },
+      "overall": "unknown",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "live_state_revision",
+    "idempotencyCategory": "requires_idempotency_key",
+    "verificationCategory": "structural_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 9,
+          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "revision": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineId": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "updates": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "compositionIndex": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "compositionRevision": {
+                "maxLength": 160,
+                "minLength": 10,
+                "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              },
+              "inputName": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "text": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "timelineItemId": {
+                "maxLength": 160,
+                "minLength": 15,
+                "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              },
+              "toolName": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "timelineItemId",
+              "compositionIndex",
+              "compositionRevision",
+              "toolName",
+              "inputName",
+              "text"
+            ],
+            "type": "object"
+          },
+          "maxItems": 256,
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "projectId",
+        "timelineId",
+        "revision",
+        "updates"
+      ],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.fusion.text.batch"
+        },
+        "textUpdates": {
+          "additionalProperties": false,
+          "properties": {
+            "revision": {
+              "additionalProperties": false,
+              "properties": {
+                "changed": {
+                  "type": "boolean"
+                },
+                "revisionAfter": {
+                  "maxLength": 160,
+                  "minLength": 10,
+                  "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                  "type": "string"
+                },
+                "revisionBefore": {
+                  "maxLength": 160,
+                  "minLength": 10,
+                  "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "revisionBefore",
+                "revisionAfter",
+                "changed"
+              ],
+              "type": "object"
+            },
+            "updates": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "compositionIndex": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "inputName": {
+                    "maxLength": 1024,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "text": {
+                    "maxLength": 1024,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "timelineItemId": {
+                    "maxLength": 160,
+                    "minLength": 15,
+                    "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
+                  },
+                  "toolName": {
+                    "maxLength": 1024,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "verified": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "timelineItemId",
+                  "compositionIndex",
+                  "toolName",
+                  "inputName",
+                  "text",
+                  "verified"
+                ],
+                "type": "object"
+              },
+              "maxItems": 256,
+              "minItems": 1,
+              "type": "array"
+            }
+          },
+          "required": [
+            "updates",
+            "revision"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "actionId",
+        "textUpdates"
+      ],
+      "type": "object"
+    }
+  },
   "cutagent.action.fusion.text.set": {
     "operationClass": "mutation",
     "capabilityId": "fusion.mutation",
@@ -179917,20 +184016,27 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
           "additionalProperties": false,
           "properties": {
             "flowPosition": {
-              "additionalProperties": false,
-              "properties": {
-                "x": {
-                  "type": "number"
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    },
+                    "y": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y"
+                  ],
+                  "type": "object"
                 },
-                "y": {
-                  "type": "number"
+                {
+                  "type": "null"
                 }
-              },
-              "required": [
-                "x",
-                "y"
-              ],
-              "type": "object"
+              ]
             },
             "revision": {
               "additionalProperties": false,
@@ -181550,6 +185656,124 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
       "required": [
         "actionId",
         "outputs"
+      ],
+      "type": "object"
+    }
+  },
+  "cutagent.action.fusion.tool.registry": {
+    "operationClass": "read",
+    "capabilityId": "fusion.tool_list_get_set",
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "unknown",
+        "x86_64": "unknown"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "20.0"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "unknown",
+        "windows": "unknown"
+      },
+      "overall": "unknown",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "connection",
+    "idempotencyCategory": "safe_repeat",
+    "verificationCategory": "structural_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "maxLength": 256,
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 2048,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "query": {
+          "maxLength": 256,
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.fusion.tool.registry"
+        },
+        "registry": {
+          "additionalProperties": false,
+          "properties": {
+            "returned": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "tools": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "category": {
+                    "maxLength": 512,
+                    "type": "string"
+                  },
+                  "id": {
+                    "maxLength": 256,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "name": {
+                    "maxLength": 512,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "category"
+                ],
+                "type": "object"
+              },
+              "maxItems": 2048,
+              "minItems": 0,
+              "type": "array"
+            },
+            "total": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "truncated": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "tools",
+            "total",
+            "returned",
+            "truncated"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "actionId",
+        "registry"
       ],
       "type": "object"
     }
@@ -184828,16 +189052,69 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
     "idempotencyCategory": "requires_idempotency_key",
     "verificationCategory": "structural_readback",
     "input": {
-      "additionalProperties": false,
-      "properties": {
-        "name": {
-          "type": "string"
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 1000,
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "assetIds": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 1000,
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "precondition": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "projectId": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "precondition",
+            "assetIds"
+          ],
+          "type": "object"
         }
-      },
-      "required": [
-        "name"
-      ],
-      "type": "object"
+      ]
     },
     "result": {
       "additionalProperties": false,
@@ -196587,20 +200864,58 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
     "idempotencyCategory": "requires_idempotency_key",
     "verificationCategory": "structural_readback",
     "input": {
-      "additionalProperties": false,
-      "properties": {
-        "name": {
-          "type": "string"
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "target": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "target"
+          ],
+          "type": "object"
         },
-        "target": {
-          "type": "string"
+        {
+          "additionalProperties": false,
+          "properties": {
+            "moves": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "target": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "target"
+                ],
+                "type": "object"
+              },
+              "maxItems": 1000,
+              "minItems": 1,
+              "type": "array"
+            }
+          },
+          "required": [
+            "moves"
+          ],
+          "type": "object"
         }
-      },
-      "required": [
-        "name",
-        "target"
-      ],
-      "type": "object"
+      ]
     },
     "result": {
       "additionalProperties": false,
@@ -206851,175 +211166,6 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
       "type": "object"
     }
   },
-  "cutagent.action.multicam.source.grade_cdl": {
-    "operationClass": "mutation",
-    "capabilityId": "multicam.source.grade_cdl",
-    "availability": "unknown",
-    "environmentApplicability": {
-      "architecture": {
-        "arm64": "unknown",
-        "x86_64": "unknown"
-      },
-      "davinci_resolve_version": {
-        "evidence": "declared_unverified",
-        "maximum_declared": null,
-        "minimum_declared": "20.0"
-      },
-      "edition": {
-        "free": "declared_unverified",
-        "studio": "declared_unverified"
-      },
-      "operating_system": {
-        "macos": "unknown",
-        "windows": "unknown"
-      },
-      "overall": "unknown",
-      "transport": {
-        "embedded_free": "declared_unverified",
-        "studio_external": "declared_unverified"
-      }
-    },
-    "preconditionCategory": "live_state_revision",
-    "idempotencyCategory": "requires_idempotency_key",
-    "verificationCategory": "terminal_and_readback",
-    "input": {
-      "additionalProperties": false,
-      "properties": {
-        "angleId": {
-          "maxLength": 160,
-          "pattern": "^multicam_angle_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "multicamId": {
-          "maxLength": 160,
-          "pattern": "^multicam_(?!angle_)[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "multicamRevision": {
-          "maxLength": 160,
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "offset": {
-          "items": {
-            "type": "number"
-          },
-          "maxItems": 3,
-          "minItems": 3,
-          "type": "array"
-        },
-        "power": {
-          "items": {
-            "type": "number"
-          },
-          "maxItems": 3,
-          "minItems": 3,
-          "type": "array"
-        },
-        "projectId": {
-          "maxLength": 160,
-          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "recordFrame": {
-          "maximum": 9007199254740991,
-          "minimum": 0,
-          "type": "integer"
-        },
-        "saturation": {
-          "maximum": 16,
-          "minimum": 0,
-          "type": "number"
-        },
-        "slope": {
-          "items": {
-            "type": "number"
-          },
-          "maxItems": 3,
-          "minItems": 3,
-          "type": "array"
-        },
-        "sourceMediaPoolItemId": {
-          "maxLength": 160,
-          "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "versionName": {
-          "maxLength": 1024,
-          "minLength": 1,
-          "type": "string",
-          "x-cutagent-maxUtf16CodeUnits": 1024
-        }
-      },
-      "required": [
-        "projectId",
-        "multicamId",
-        "multicamRevision",
-        "angleId",
-        "sourceMediaPoolItemId",
-        "recordFrame"
-      ],
-      "type": "object"
-    },
-    "result": {
-      "additionalProperties": false,
-      "properties": {
-        "actionId": {
-          "const": "cutagent.action.multicam.source.grade_cdl"
-        },
-        "affectedMediaPoolItemIds": {
-          "items": {
-            "maxLength": 160,
-            "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-            "type": "string"
-          },
-          "maxItems": 512,
-          "type": "array",
-          "uniqueItems": true
-        },
-        "changedAngleIds": {
-          "items": {
-            "maxLength": 160,
-            "pattern": "^multicam_angle_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-            "type": "string"
-          },
-          "maxItems": 256,
-          "type": "array",
-          "uniqueItems": true
-        },
-        "multicamId": {
-          "maxLength": 160,
-          "pattern": "^multicam_(?!angle_)[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "multicamRevision": {
-          "maxLength": 160,
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "previousRevision": {
-          "maxLength": 160,
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "projectId": {
-          "maxLength": 160,
-          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        }
-      },
-      "required": [
-        "actionId",
-        "projectId",
-        "multicamId",
-        "previousRevision",
-        "multicamRevision",
-        "changedAngleIds",
-        "affectedMediaPoolItemIds"
-      ],
-      "type": "object"
-    }
-  },
   "cutagent.action.multicam.source.move": {
     "operationClass": "mutation",
     "capabilityId": "multicam.source.move",
@@ -216825,6 +220971,382 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
       "type": "object"
     }
   },
+  "cutagent.action.project.preset.export": {
+    "operationClass": "mutation",
+    "capabilityId": "project.preset_import_export",
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "unknown",
+        "x86_64": "unknown"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "21.1"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "unknown",
+        "windows": "unknown"
+      },
+      "overall": "unknown",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "live_state_revision",
+    "idempotencyCategory": "requires_idempotency_key",
+    "verificationCategory": "structural_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "destinationArtifactId": {
+          "maxLength": 256,
+          "minLength": 10,
+          "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "destinationArtifactId"
+      ],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.project.preset.export"
+        },
+        "payload": {
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "completed"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "recovery": {
+                    "properties": {
+                      "state": {
+                        "const": "not_needed"
+                      }
+                    }
+                  },
+                  "verification": {
+                    "properties": {
+                      "evidence": {
+                        "minItems": 1
+                      },
+                      "outcome": {
+                        "const": "passed"
+                      },
+                      "protectedState": {
+                        "const": "preserved"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "partial"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "recovery": {
+                    "properties": {
+                      "retry": {
+                        "enum": [
+                          "inspect_state_first",
+                          "manual_only"
+                        ]
+                      },
+                      "state": {
+                        "enum": [
+                          "available",
+                          "manual_required",
+                          "unknown"
+                        ]
+                      }
+                    }
+                  },
+                  "verification": {
+                    "properties": {
+                      "evidence": {
+                        "minItems": 1
+                      },
+                      "outcome": {
+                        "const": "partial"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "manual_review_required"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "verification": {
+                    "properties": {
+                      "evidence": {
+                        "minItems": 1
+                      },
+                      "outcome": {
+                        "const": "manual_review_required"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "verification": {
+                  "properties": {
+                    "evidence": {
+                      "contains": {
+                        "properties": {
+                          "kind": {
+                            "const": "artifact_readback"
+                          }
+                        },
+                        "required": [
+                          "kind"
+                        ]
+                      },
+                      "minContains": 1
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "verification": {
+                  "properties": {
+                    "evidence": {
+                      "contains": {
+                        "properties": {
+                          "kind": {
+                            "const": "context_readback"
+                          }
+                        },
+                        "required": [
+                          "kind"
+                        ]
+                      },
+                      "minContains": 1
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "properties": {
+            "changed": {
+              "const": true
+            },
+            "data": {
+              "additionalProperties": false,
+              "properties": {
+                "artifact": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "artifactId": {
+                      "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                      "type": "string"
+                    },
+                    "byteCount": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "mediaType": {
+                      "const": "application/octet-stream"
+                    },
+                    "sha256": {
+                      "pattern": "^sha256:[a-f0-9]{64}$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "artifactId",
+                    "mediaType",
+                    "byteCount",
+                    "sha256"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "artifact"
+              ],
+              "type": "object"
+            },
+            "recovery": {
+              "additionalProperties": false,
+              "properties": {
+                "guidance": {
+                  "maxLength": 500,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "retry": {
+                  "enum": [
+                    "safe",
+                    "same_idempotency_key_required",
+                    "inspect_state_first",
+                    "manual_only"
+                  ]
+                },
+                "state": {
+                  "enum": [
+                    "not_needed",
+                    "available",
+                    "manual_required",
+                    "unknown"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "retry",
+                "guidance"
+              ],
+              "type": "object"
+            },
+            "status": {
+              "enum": [
+                "completed",
+                "partial",
+                "manual_review_required"
+              ]
+            },
+            "target": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "maxLength": 1024,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "type": "object"
+            },
+            "verification": {
+              "additionalProperties": false,
+              "properties": {
+                "evidence": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "structural_readback",
+                          "artifact_readback",
+                          "context_readback",
+                          "checkpoint_readback",
+                          "manual_review"
+                        ]
+                      },
+                      "summary": {
+                        "maxLength": 500,
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "summary"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 32,
+                  "type": "array"
+                },
+                "outcome": {
+                  "enum": [
+                    "passed",
+                    "partial",
+                    "not_performed",
+                    "manual_review_required"
+                  ]
+                },
+                "protectedState": {
+                  "enum": [
+                    "preserved",
+                    "not_applicable",
+                    "not_proven",
+                    "partial"
+                  ]
+                }
+              },
+              "required": [
+                "outcome",
+                "evidence",
+                "protectedState"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "status",
+            "changed",
+            "target",
+            "data",
+            "verification",
+            "recovery"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "actionId",
+        "payload"
+      ],
+      "type": "object"
+    }
+  },
   "cutagent.action.project.preset.list": {
     "operationClass": "read",
     "capabilityId": "project.preset_list",
@@ -219994,6 +224516,158 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
       "type": "object"
     }
   },
+  "cutagent.action.render.preset_save": {
+    "operationClass": "mutation",
+    "capabilityId": "render.preset_save",
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "unknown",
+        "x86_64": "unknown"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "20.0"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "unknown",
+        "windows": "unknown"
+      },
+      "overall": "unknown",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "live_state_revision",
+    "idempotencyCategory": "requires_idempotency_key",
+    "verificationCategory": "structural_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "presetName": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "presetName"
+      ],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.render.preset_save"
+        },
+        "data": {
+          "additionalProperties": false,
+          "properties": {
+            "presetName": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "saved": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "presetName",
+            "saved"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "actionId",
+        "data"
+      ],
+      "type": "object"
+    }
+  },
+  "cutagent.action.render.preset_update": {
+    "operationClass": "mutation",
+    "capabilityId": "render.preset_save",
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "unknown",
+        "x86_64": "unknown"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "20.0"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "unknown",
+        "windows": "unknown"
+      },
+      "overall": "unknown",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "live_state_revision",
+    "idempotencyCategory": "requires_idempotency_key",
+    "verificationCategory": "structural_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "presetName": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "pattern": "^\\S(?:[\\s\\S]*\\S)?(?![\\s\\S])",
+          "type": "string"
+        }
+      },
+      "required": [
+        "presetName"
+      ],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.render.preset_update"
+        },
+        "data": {
+          "additionalProperties": false,
+          "properties": {
+            "presetName": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "updated": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "presetName",
+            "updated"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "actionId",
+        "data"
+      ],
+      "type": "object"
+    }
+  },
   "cutagent.action.render.presets": {
     "operationClass": "read",
     "capabilityId": "render.presets",
@@ -221474,6 +226148,137 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
           },
           "required": [
             "volumes"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "actionId",
+        "data"
+      ],
+      "type": "object"
+    }
+  },
+  "cutagent.action.system.keyboard_preset.current": {
+    "operationClass": "read",
+    "capabilityId": "system.keyboard_preset_read",
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "unknown",
+        "x86_64": "unknown"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "21.1"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "unknown",
+        "windows": "unknown"
+      },
+      "overall": "unknown",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "connection",
+    "idempotencyCategory": "safe_repeat",
+    "verificationCategory": "structural_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.system.keyboard_preset.current"
+        },
+        "data": {
+          "additionalProperties": false,
+          "properties": {
+            "presetName": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "presetName"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "actionId",
+        "data"
+      ],
+      "type": "object"
+    }
+  },
+  "cutagent.action.system.keyboard_preset.list": {
+    "operationClass": "read",
+    "capabilityId": "system.keyboard_preset_read",
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "unknown",
+        "x86_64": "unknown"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "21.1"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "unknown",
+        "windows": "unknown"
+      },
+      "overall": "unknown",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "connection",
+    "idempotencyCategory": "safe_repeat",
+    "verificationCategory": "structural_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.system.keyboard_preset.list"
+        },
+        "data": {
+          "additionalProperties": false,
+          "properties": {
+            "presetNames": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "presetNames"
           ],
           "type": "object"
         }
@@ -223107,6 +227912,210 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
       "required": [
         "createdItems",
         "verification"
+      ],
+      "type": "object"
+    }
+  },
+  "cutagent.action.timeline.clip_color.batch": {
+    "operationClass": "mutation",
+    "capabilityId": "timeline.clip_color_batch",
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "unknown",
+        "x86_64": "unknown"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "20.0"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "unknown",
+        "windows": "unknown"
+      },
+      "overall": "unknown",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "live_state_revision",
+    "idempotencyCategory": "requires_idempotency_key",
+    "verificationCategory": "structural_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 9,
+          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "revision": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineId": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "updates": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "color": {
+                "oneOf": [
+                  {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "name": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "recordEndFrame": {
+                "type": "integer"
+              },
+              "recordStartFrame": {
+                "type": "integer"
+              },
+              "snapshotTimelineItemId": {
+                "maxLength": 256,
+                "minLength": 24,
+                "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              },
+              "timelineItemId": {
+                "maxLength": 160,
+                "minLength": 15,
+                "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              },
+              "trackIndex": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "trackType": {
+                "enum": [
+                  "video",
+                  "audio"
+                ]
+              }
+            },
+            "required": [
+              "timelineItemId",
+              "snapshotTimelineItemId",
+              "trackType",
+              "trackIndex",
+              "recordStartFrame",
+              "recordEndFrame",
+              "name",
+              "color"
+            ],
+            "type": "object"
+          },
+          "maxItems": 1000,
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "projectId",
+        "timelineId",
+        "revision",
+        "updates"
+      ],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.timeline.clip_color.batch"
+        },
+        "clips": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "actualColor": {
+                "oneOf": [
+                  {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "changed": {
+                "type": "boolean"
+              },
+              "clipId": {
+                "maxLength": 160,
+                "minLength": 15,
+                "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "requestedColor": {
+                "oneOf": [
+                  {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "clipId",
+              "name",
+              "requestedColor",
+              "actualColor",
+              "changed"
+            ],
+            "type": "object"
+          },
+          "maxItems": 1000,
+          "minItems": 1,
+          "type": "array"
+        },
+        "timelineRevision": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "actionId",
+        "clips",
+        "timelineRevision"
       ],
       "type": "object"
     }
@@ -224769,201 +229778,434 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
     "idempotencyCategory": "requires_idempotency_key",
     "verificationCategory": "structural_readback",
     "input": {
-      "additionalProperties": false,
-      "properties": {
-        "destinationArtifactId": {
-          "maxLength": 160,
-          "minLength": 10,
-          "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "format": {
-          "enum": [
-            "png",
-            "jpg",
-            "jpeg"
-          ]
-        },
-        "position": {
+      "oneOf": [
+        {
           "additionalProperties": false,
           "properties": {
-            "domain": {
-              "const": "timeline_record"
-            },
-            "value": {
-              "oneOf": [
-                {
-                  "additionalProperties": false,
-                  "properties": {
-                    "kind": {
-                      "const": "frames"
-                    },
-                    "value": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "kind",
-                    "value"
-                  ],
-                  "type": "object"
-                },
-                {
-                  "additionalProperties": false,
-                  "properties": {
-                    "kind": {
-                      "const": "timecode"
-                    },
-                    "value": {
-                      "pattern": "^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$",
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "kind",
-                    "value"
-                  ],
-                  "type": "object"
-                }
-              ]
-            }
-          },
-          "required": [
-            "domain",
-            "value"
-          ],
-          "type": "object"
-        },
-        "projectId": {
-          "maxLength": 160,
-          "minLength": 9,
-          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "revision": {
-          "maxLength": 160,
-          "minLength": 10,
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        },
-        "timelineId": {
-          "maxLength": 160,
-          "minLength": 10,
-          "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-          "type": "string"
-        }
-      },
-      "required": [
-        "projectId",
-        "timelineId",
-        "revision",
-        "position",
-        "destinationArtifactId",
-        "format"
-      ],
-      "type": "object"
-    },
-    "result": {
-      "additionalProperties": false,
-      "properties": {
-        "actionId": {
-          "const": "cutagent.action.timeline.frame_export"
-        },
-        "artifact": {
-          "additionalProperties": false,
-          "properties": {
-            "artifactId": {
+            "destinationArtifactId": {
               "maxLength": 160,
               "minLength": 10,
               "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
               "type": "string"
             },
-            "byteCount": {
-              "minimum": 0,
-              "type": "integer"
+            "format": {
+              "enum": [
+                "png",
+                "jpg",
+                "jpeg"
+              ]
             },
-            "mediaType": {
-              "maxLength": 255,
-              "minLength": 3,
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}$",
+            "position": {
+              "additionalProperties": false,
+              "properties": {
+                "domain": {
+                  "const": "timeline_record"
+                },
+                "value": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "frames"
+                        },
+                        "value": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "value"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "timecode"
+                        },
+                        "value": {
+                          "pattern": "^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "value"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "domain",
+                "value"
+              ],
+              "type": "object"
+            },
+            "projectId": {
+              "maxLength": 160,
+              "minLength": 9,
+              "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
               "type": "string"
             },
-            "sha256": {
-              "maxLength": 64,
-              "minLength": 64,
-              "pattern": "^[a-f0-9]{64}$",
+            "revision": {
+              "maxLength": 160,
+              "minLength": 10,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "timelineId": {
+              "maxLength": 160,
+              "minLength": 10,
+              "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
               "type": "string"
             }
           },
           "required": [
-            "artifactId",
-            "mediaType",
-            "byteCount",
-            "sha256"
+            "projectId",
+            "timelineId",
+            "revision",
+            "position",
+            "destinationArtifactId",
+            "format"
           ],
           "type": "object"
         },
-        "originalPlayheadRestored": {
-          "type": "boolean"
-        },
-        "position": {
+        {
           "additionalProperties": false,
           "properties": {
-            "domain": {
-              "const": "timeline_record"
-            },
-            "value": {
-              "oneOf": [
-                {
-                  "additionalProperties": false,
-                  "properties": {
-                    "kind": {
-                      "const": "frames"
-                    },
-                    "value": {
-                      "type": "integer"
-                    }
+            "exports": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "destinationArtifactId": {
+                    "maxLength": 160,
+                    "minLength": 10,
+                    "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                    "type": "string"
                   },
-                  "required": [
-                    "kind",
-                    "value"
-                  ],
-                  "type": "object"
+                  "format": {
+                    "enum": [
+                      "png",
+                      "jpg",
+                      "jpeg"
+                    ]
+                  },
+                  "position": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "domain": {
+                        "const": "timeline_record"
+                      },
+                      "value": {
+                        "oneOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "frames"
+                              },
+                              "value": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "value"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "timecode"
+                              },
+                              "value": {
+                                "pattern": "^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "value"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "domain",
+                      "value"
+                    ],
+                    "type": "object"
+                  }
                 },
-                {
-                  "additionalProperties": false,
-                  "properties": {
-                    "kind": {
-                      "const": "timecode"
-                    },
-                    "value": {
-                      "pattern": "^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$",
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "kind",
-                    "value"
-                  ],
-                  "type": "object"
-                }
-              ]
+                "required": [
+                  "position",
+                  "destinationArtifactId",
+                  "format"
+                ],
+                "type": "object"
+              },
+              "maxItems": 1000,
+              "minItems": 1,
+              "type": "array"
+            },
+            "projectId": {
+              "maxLength": 160,
+              "minLength": 9,
+              "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "revision": {
+              "maxLength": 160,
+              "minLength": 10,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "timelineId": {
+              "maxLength": 160,
+              "minLength": 10,
+              "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
             }
           },
           "required": [
-            "domain",
-            "value"
+            "projectId",
+            "timelineId",
+            "revision",
+            "exports"
           ],
           "type": "object"
         }
-      },
-      "required": [
-        "actionId",
-        "artifact",
-        "position",
-        "originalPlayheadRestored"
-      ],
-      "type": "object"
+      ]
+    },
+    "result": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "actionId": {
+              "const": "cutagent.action.timeline.frame_export"
+            },
+            "artifact": {
+              "additionalProperties": false,
+              "properties": {
+                "artifactId": {
+                  "maxLength": 160,
+                  "minLength": 10,
+                  "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                  "type": "string"
+                },
+                "byteCount": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "mediaType": {
+                  "maxLength": 255,
+                  "minLength": 3,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}$",
+                  "type": "string"
+                },
+                "sha256": {
+                  "maxLength": 64,
+                  "minLength": 64,
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "artifactId",
+                "mediaType",
+                "byteCount",
+                "sha256"
+              ],
+              "type": "object"
+            },
+            "originalPlayheadRestored": {
+              "type": "boolean"
+            },
+            "position": {
+              "additionalProperties": false,
+              "properties": {
+                "domain": {
+                  "const": "timeline_record"
+                },
+                "value": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "frames"
+                        },
+                        "value": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "value"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "timecode"
+                        },
+                        "value": {
+                          "pattern": "^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "value"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "domain",
+                "value"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "actionId",
+            "artifact",
+            "position",
+            "originalPlayheadRestored"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "actionId": {
+              "const": "cutagent.action.timeline.frame_export"
+            },
+            "exports": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "artifact": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "artifactId": {
+                        "maxLength": 160,
+                        "minLength": 10,
+                        "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "byteCount": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "mediaType": {
+                        "maxLength": 255,
+                        "minLength": 3,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}$",
+                        "type": "string"
+                      },
+                      "sha256": {
+                        "maxLength": 64,
+                        "minLength": 64,
+                        "pattern": "^[a-f0-9]{64}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "artifactId",
+                      "mediaType",
+                      "byteCount",
+                      "sha256"
+                    ],
+                    "type": "object"
+                  },
+                  "position": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "domain": {
+                        "const": "timeline_record"
+                      },
+                      "value": {
+                        "oneOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "frames"
+                              },
+                              "value": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "value"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "timecode"
+                              },
+                              "value": {
+                                "pattern": "^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "value"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "domain",
+                      "value"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "artifact",
+                  "position"
+                ],
+                "type": "object"
+              },
+              "maxItems": 1000,
+              "minItems": 1,
+              "type": "array"
+            },
+            "originalPlayheadRestored": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "actionId",
+            "exports",
+            "originalPlayheadRestored"
+          ],
+          "type": "object"
+        }
+      ]
     }
   },
   "cutagent.action.timeline.fusion_clip.create": {
@@ -227974,21 +233216,69 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
     "verificationCategory": "structural_readback",
     "input": {
       "additionalProperties": false,
-      "anyOf": [
+      "oneOf": [
         {
-          "properties": {
-            "duration": {}
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "targetEnd"
+                ]
+              },
+              {
+                "required": [
+                  "updates"
+                ]
+              }
+            ]
           },
           "required": [
+            "timelineItemId",
             "duration"
           ]
         },
         {
-          "properties": {
-            "targetEnd": {}
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "duration"
+                ]
+              },
+              {
+                "required": [
+                  "updates"
+                ]
+              }
+            ]
           },
           "required": [
+            "timelineItemId",
             "targetEnd"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "timelineItemId"
+                ]
+              },
+              {
+                "required": [
+                  "duration"
+                ]
+              },
+              {
+                "required": [
+                  "targetEnd"
+                ]
+              }
+            ]
+          },
+          "required": [
+            "updates"
           ]
         }
       ],
@@ -228163,13 +233453,140 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
             "audio",
             "subtitle"
           ]
+        },
+        "updates": {
+          "items": {
+            "additionalProperties": false,
+            "oneOf": [
+              {
+                "not": {
+                  "required": [
+                    "targetEnd"
+                  ]
+                },
+                "required": [
+                  "duration"
+                ]
+              },
+              {
+                "not": {
+                  "required": [
+                    "duration"
+                  ]
+                },
+                "required": [
+                  "targetEnd"
+                ]
+              }
+            ],
+            "properties": {
+              "allowOverlap": {
+                "type": "boolean"
+              },
+              "duration": {
+                "additionalProperties": false,
+                "properties": {
+                  "domain": {
+                    "const": "duration"
+                  },
+                  "value": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "frames"
+                      },
+                      "value": {
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "value"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "domain",
+                  "value"
+                ],
+                "type": "object"
+              },
+              "enforceSourceBounds": {
+                "type": "boolean"
+              },
+              "targetEnd": {
+                "additionalProperties": false,
+                "properties": {
+                  "domain": {
+                    "const": "timeline_record"
+                  },
+                  "value": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "const": "frames"
+                          },
+                          "value": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "value"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "const": "timecode"
+                          },
+                          "value": {
+                            "pattern": "^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "value"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "domain",
+                  "value"
+                ],
+                "type": "object"
+              },
+              "timelineItemId": {
+                "maxLength": 160,
+                "minLength": 15,
+                "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "timelineItemId"
+            ],
+            "type": "object"
+          },
+          "maxItems": 10000,
+          "minItems": 1,
+          "type": "array"
         }
       },
       "required": [
         "projectId",
         "timelineId",
-        "revision",
-        "timelineItemId"
+        "revision"
       ],
       "type": "object"
     },
@@ -229361,154 +234778,326 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
     "idempotencyCategory": "requires_idempotency_key",
     "verificationCategory": "structural_readback",
     "input": {
-      "type": "object",
-      "properties": {
-        "projectId": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "projectId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "timelineId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^timeline_(?!(?:item_))[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "timelineRevision": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "markerId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            }
+          },
+          "required": [
+            "projectId",
+            "timelineId",
+            "timelineRevision",
+            "markerId"
+          ],
+          "additionalProperties": false
         },
-        "timelineId": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^timeline_(?!(?:item_))[A-Za-z0-9][A-Za-z0-9._~-]*$"
-        },
-        "timelineRevision": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-        },
-        "markerId": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+        {
+          "type": "object",
+          "properties": {
+            "projectId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "timelineId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^timeline_(?!(?:item_))[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "timelineRevision": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "markerIds": {
+              "minItems": 1,
+              "maxItems": 10000,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 160,
+                "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+              }
+            }
+          },
+          "required": [
+            "projectId",
+            "timelineId",
+            "timelineRevision",
+            "markerIds"
+          ],
+          "additionalProperties": false
         }
-      },
-      "required": [
-        "projectId",
-        "timelineId",
-        "timelineRevision",
-        "markerId"
-      ],
-      "additionalProperties": false
+      ]
     },
     "result": {
-      "type": "object",
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "create",
+                "update",
+                "delete"
+              ]
+            },
+            "marker": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 160,
+                      "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                    },
+                    "recordFrame": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "color": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 4096
+                    },
+                    "note": {
+                      "type": "string",
+                      "maxLength": 65536
+                    },
+                    "durationFrames": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "recordFrame",
+                    "color",
+                    "name",
+                    "note",
+                    "durationFrames"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "previousMarker": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 160,
+                      "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                    },
+                    "recordFrame": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "color": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 4096
+                    },
+                    "note": {
+                      "type": "string",
+                      "maxLength": 65536
+                    },
+                    "durationFrames": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "recordFrame",
+                    "color",
+                    "name",
+                    "note",
+                    "durationFrames"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "timelineRevision": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            }
+          },
+          "required": [
+            "action",
+            "marker",
+            "previousMarker",
+            "timelineRevision"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "create",
+                "update",
+                "delete"
+              ]
+            },
+            "markers": {
+              "maxItems": 10000,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                  },
+                  "recordFrame": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "color": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 65536
+                  },
+                  "durationFrames": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 2147483647
+                  }
+                },
+                "required": [
+                  "id",
+                  "recordFrame",
+                  "color",
+                  "name",
+                  "note",
+                  "durationFrames"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "previousMarkers": {
+              "maxItems": 10000,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                  },
+                  "recordFrame": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "color": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 65536
+                  },
+                  "durationFrames": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 2147483647
+                  }
+                },
+                "required": [
+                  "id",
+                  "recordFrame",
+                  "color",
+                  "name",
+                  "note",
+                  "durationFrames"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "timelineRevision": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            }
+          },
+          "required": [
+            "action",
+            "markers",
+            "previousMarkers",
+            "timelineRevision"
+          ],
+          "additionalProperties": false
+        }
+      ],
       "properties": {
         "action": {
           "const": "delete"
-        },
-        "marker": {
-          "anyOf": [
-            {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "maxLength": 160,
-                  "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-                },
-                "recordFrame": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 9007199254740991
-                },
-                "color": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 64
-                },
-                "name": {
-                  "type": "string",
-                  "maxLength": 4096
-                },
-                "note": {
-                  "type": "string",
-                  "maxLength": 65536
-                },
-                "durationFrames": {
-                  "type": "integer",
-                  "exclusiveMinimum": 0,
-                  "maximum": 2147483647
-                }
-              },
-              "required": [
-                "id",
-                "recordFrame",
-                "color",
-                "name",
-                "note",
-                "durationFrames"
-              ],
-              "additionalProperties": false
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "previousMarker": {
-          "anyOf": [
-            {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "maxLength": 160,
-                  "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-                },
-                "recordFrame": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 9007199254740991
-                },
-                "color": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 64
-                },
-                "name": {
-                  "type": "string",
-                  "maxLength": 4096
-                },
-                "note": {
-                  "type": "string",
-                  "maxLength": 65536
-                },
-                "durationFrames": {
-                  "type": "integer",
-                  "exclusiveMinimum": 0,
-                  "maximum": 2147483647
-                }
-              },
-              "required": [
-                "id",
-                "recordFrame",
-                "color",
-                "name",
-                "note",
-                "durationFrames"
-              ],
-              "additionalProperties": false
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "timelineRevision": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
         }
-      },
-      "required": [
-        "action",
-        "marker",
-        "previousMarker",
-        "timelineRevision"
-      ],
-      "additionalProperties": false
+      }
     }
   },
   "cutagent.action.timeline.marker.list": {
@@ -229728,191 +235317,409 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
     "idempotencyCategory": "requires_idempotency_key",
     "verificationCategory": "structural_readback",
     "input": {
-      "type": "object",
-      "properties": {
-        "projectId": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-        },
-        "timelineId": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^timeline_(?!(?:item_))[A-Za-z0-9][A-Za-z0-9._~-]*$"
-        },
-        "timelineRevision": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-        },
-        "markerId": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-        },
-        "marker": {
+      "anyOf": [
+        {
           "type": "object",
           "properties": {
-            "recordFrame": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 9007199254740991
-            },
-            "color": {
+            "projectId": {
               "type": "string",
-              "minLength": 1,
-              "maxLength": 64
+              "maxLength": 160,
+              "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$"
             },
-            "name": {
+            "timelineId": {
               "type": "string",
-              "maxLength": 4096
+              "maxLength": 160,
+              "pattern": "^timeline_(?!(?:item_))[A-Za-z0-9][A-Za-z0-9._~-]*$"
             },
-            "note": {
+            "timelineRevision": {
               "type": "string",
-              "maxLength": 65536
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
             },
-            "durationFrames": {
-              "type": "integer",
-              "exclusiveMinimum": 0,
-              "maximum": 2147483647
+            "markerId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "marker": {
+              "type": "object",
+              "properties": {
+                "recordFrame": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "color": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "name": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "note": {
+                  "type": "string",
+                  "maxLength": 65536
+                },
+                "durationFrames": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "required": [
+                "recordFrame",
+                "color",
+                "name",
+                "note",
+                "durationFrames"
+              ],
+              "additionalProperties": false
             }
           },
           "required": [
-            "recordFrame",
-            "color",
-            "name",
-            "note",
-            "durationFrames"
+            "projectId",
+            "timelineId",
+            "timelineRevision",
+            "markerId",
+            "marker"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "projectId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "timelineId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^timeline_(?!(?:item_))[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "timelineRevision": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "updates": {
+              "minItems": 1,
+              "maxItems": 10000,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "markerId": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                  },
+                  "marker": {
+                    "type": "object",
+                    "properties": {
+                      "recordFrame": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "color": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "note": {
+                        "type": "string",
+                        "maxLength": 65536
+                      },
+                      "durationFrames": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 2147483647
+                      }
+                    },
+                    "required": [
+                      "recordFrame",
+                      "color",
+                      "name",
+                      "note",
+                      "durationFrames"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "markerId",
+                  "marker"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "projectId",
+            "timelineId",
+            "timelineRevision",
+            "updates"
           ],
           "additionalProperties": false
         }
-      },
-      "required": [
-        "projectId",
-        "timelineId",
-        "timelineRevision",
-        "markerId",
-        "marker"
-      ],
-      "additionalProperties": false
+      ]
     },
     "result": {
-      "type": "object",
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "create",
+                "update",
+                "delete"
+              ]
+            },
+            "marker": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 160,
+                      "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                    },
+                    "recordFrame": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "color": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 4096
+                    },
+                    "note": {
+                      "type": "string",
+                      "maxLength": 65536
+                    },
+                    "durationFrames": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "recordFrame",
+                    "color",
+                    "name",
+                    "note",
+                    "durationFrames"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "previousMarker": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 160,
+                      "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                    },
+                    "recordFrame": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "color": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 4096
+                    },
+                    "note": {
+                      "type": "string",
+                      "maxLength": 65536
+                    },
+                    "durationFrames": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "recordFrame",
+                    "color",
+                    "name",
+                    "note",
+                    "durationFrames"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "timelineRevision": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            }
+          },
+          "required": [
+            "action",
+            "marker",
+            "previousMarker",
+            "timelineRevision"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "create",
+                "update",
+                "delete"
+              ]
+            },
+            "markers": {
+              "maxItems": 10000,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                  },
+                  "recordFrame": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "color": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 65536
+                  },
+                  "durationFrames": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 2147483647
+                  }
+                },
+                "required": [
+                  "id",
+                  "recordFrame",
+                  "color",
+                  "name",
+                  "note",
+                  "durationFrames"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "previousMarkers": {
+              "maxItems": 10000,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                  },
+                  "recordFrame": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "color": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 65536
+                  },
+                  "durationFrames": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 2147483647
+                  }
+                },
+                "required": [
+                  "id",
+                  "recordFrame",
+                  "color",
+                  "name",
+                  "note",
+                  "durationFrames"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "timelineRevision": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            }
+          },
+          "required": [
+            "action",
+            "markers",
+            "previousMarkers",
+            "timelineRevision"
+          ],
+          "additionalProperties": false
+        }
+      ],
       "properties": {
         "action": {
           "const": "update"
-        },
-        "marker": {
-          "anyOf": [
-            {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "maxLength": 160,
-                  "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-                },
-                "recordFrame": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 9007199254740991
-                },
-                "color": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 64
-                },
-                "name": {
-                  "type": "string",
-                  "maxLength": 4096
-                },
-                "note": {
-                  "type": "string",
-                  "maxLength": 65536
-                },
-                "durationFrames": {
-                  "type": "integer",
-                  "exclusiveMinimum": 0,
-                  "maximum": 2147483647
-                }
-              },
-              "required": [
-                "id",
-                "recordFrame",
-                "color",
-                "name",
-                "note",
-                "durationFrames"
-              ],
-              "additionalProperties": false
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "previousMarker": {
-          "anyOf": [
-            {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "maxLength": 160,
-                  "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-                },
-                "recordFrame": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 9007199254740991
-                },
-                "color": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 64
-                },
-                "name": {
-                  "type": "string",
-                  "maxLength": 4096
-                },
-                "note": {
-                  "type": "string",
-                  "maxLength": 65536
-                },
-                "durationFrames": {
-                  "type": "integer",
-                  "exclusiveMinimum": 0,
-                  "maximum": 2147483647
-                }
-              },
-              "required": [
-                "id",
-                "recordFrame",
-                "color",
-                "name",
-                "note",
-                "durationFrames"
-              ],
-              "additionalProperties": false
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "timelineRevision": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
         }
-      },
-      "required": [
-        "action",
-        "marker",
-        "previousMarker",
-        "timelineRevision"
-      ],
-      "additionalProperties": false
+      }
     }
   },
   "cutagent.action.timeline.media_pool_item": {
@@ -230075,6 +235882,442 @@ export const ACTION_RUNTIME_CONTRACTS: Readonly<Record<ActionId, { readonly oper
       "required": [
         "actionId",
         "nodeGraph"
+      ],
+      "type": "object"
+    }
+  },
+  "cutagent.action.timeline.output_blanking.get": {
+    "operationClass": "read",
+    "capabilityId": "timeline.output_blanking",
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "unknown",
+        "x86_64": "unknown"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "20.0"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "unknown",
+        "windows": "unknown"
+      },
+      "overall": "unknown",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "connection",
+    "idempotencyCategory": "safe_repeat",
+    "verificationCategory": "structural_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 9,
+          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineId": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineItemId": {
+          "maxLength": 160,
+          "minLength": 15,
+          "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "projectId",
+        "timelineId"
+      ],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.timeline.output_blanking.get"
+        },
+        "state": {
+          "additionalProperties": false,
+          "properties": {
+            "blanking": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "bottom": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "left": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "right": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "top": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "top",
+                    "bottom",
+                    "left",
+                    "right"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effectiveBlanking": {
+              "additionalProperties": false,
+              "properties": {
+                "bottom": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "left": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "right": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "top": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "top",
+                "bottom",
+                "left",
+                "right"
+              ],
+              "type": "object"
+            },
+            "useTimeline": {
+              "oneOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "blanking",
+            "useTimeline",
+            "effectiveBlanking"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "actionId",
+        "state"
+      ],
+      "type": "object"
+    }
+  },
+  "cutagent.action.timeline.output_blanking.set": {
+    "operationClass": "mutation",
+    "capabilityId": "timeline.output_blanking",
+    "availability": "unknown",
+    "environmentApplicability": {
+      "architecture": {
+        "arm64": "unknown",
+        "x86_64": "unknown"
+      },
+      "davinci_resolve_version": {
+        "evidence": "declared_unverified",
+        "maximum_declared": null,
+        "minimum_declared": "20.0"
+      },
+      "edition": {
+        "free": "declared_unverified",
+        "studio": "declared_unverified"
+      },
+      "operating_system": {
+        "macos": "unknown",
+        "windows": "unknown"
+      },
+      "overall": "unknown",
+      "transport": {
+        "embedded_free": "declared_unverified",
+        "studio_external": "declared_unverified"
+      }
+    },
+    "preconditionCategory": "live_state_revision",
+    "idempotencyCategory": "requires_idempotency_key",
+    "verificationCategory": "structural_readback",
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "operation": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "blanking": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "bottom": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "left": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "right": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "top": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "top",
+                    "bottom",
+                    "left",
+                    "right"
+                  ],
+                  "type": "object"
+                },
+                "kind": {
+                  "const": "edges"
+                }
+              },
+              "required": [
+                "kind",
+                "blanking"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "inheritance"
+                },
+                "useTimeline": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "kind",
+                "useTimeline"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 9,
+          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "revision": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineId": {
+          "maxLength": 160,
+          "minLength": 10,
+          "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineItemId": {
+          "maxLength": 160,
+          "minLength": 15,
+          "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "projectId",
+        "timelineId",
+        "revision",
+        "operation"
+      ],
+      "type": "object"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "actionId": {
+          "const": "cutagent.action.timeline.output_blanking.set"
+        },
+        "revisionChange": {
+          "additionalProperties": false,
+          "properties": {
+            "after": {
+              "maxLength": 160,
+              "minLength": 10,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "before": {
+              "maxLength": 160,
+              "minLength": 10,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "changed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "before",
+            "after",
+            "changed"
+          ],
+          "type": "object"
+        },
+        "state": {
+          "additionalProperties": false,
+          "properties": {
+            "blanking": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "bottom": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "left": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "right": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "top": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "top",
+                    "bottom",
+                    "left",
+                    "right"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effectiveBlanking": {
+              "additionalProperties": false,
+              "properties": {
+                "bottom": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "left": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "right": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "top": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "top",
+                "bottom",
+                "left",
+                "right"
+              ],
+              "type": "object"
+            },
+            "useTimeline": {
+              "oneOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "blanking",
+            "useTimeline",
+            "effectiveBlanking"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "actionId",
+        "state",
+        "revisionChange"
       ],
       "type": "object"
     }

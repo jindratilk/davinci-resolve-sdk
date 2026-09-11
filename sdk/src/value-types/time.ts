@@ -281,7 +281,7 @@ interface TimeIdentityRegistry {
   sourceRanges: WeakSet<object>;
 }
 
-const registryKey = Symbol.for("davinci-resolve-sdk.authoring-time.v1");
+const registryKey = Symbol.for("cutagent.authoring-time.v1");
 const globalRegistry = globalThis as unknown as Record<symbol, TimeIdentityRegistry | undefined>;
 const identityRegistry = globalRegistry[registryKey] ??= {
   rates: new WeakSet(), frames: new WeakSet(), boundFrames: new WeakSet(), seconds: new WeakSet(),

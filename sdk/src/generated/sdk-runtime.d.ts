@@ -31,7 +31,7 @@ export declare const sdkCompatibilityHandshakeRequestSchema: z.ZodObject<{
         standalone_local: "standalone_local";
         plugin_managed: "plugin_managed";
     }>;
-    protocolDigest: z.ZodLiteral<"sha256:7c591bff196489464626d07d0acf139ce1e9529ca114cd4dbb1d31c9253e9ee5">;
+    protocolDigest: z.ZodLiteral<"sha256:c4b2684c055d52723f658d7e3a52be420c1f20e9cf0d6eb3a66f34cccff45f94">;
 }, z.core.$strict>;
 export declare const sdkCompatibilityDescriptorSchema: z.ZodObject<{
     sdkApiVersion: z.ZodString;
@@ -43,7 +43,7 @@ export declare const sdkCompatibilityDescriptorSchema: z.ZodObject<{
     }>;
     distributionVersion: z.ZodString;
     cliVersion: z.ZodString;
-    protocolDigest: z.ZodLiteral<"sha256:7c591bff196489464626d07d0acf139ce1e9529ca114cd4dbb1d31c9253e9ee5">;
+    protocolDigest: z.ZodLiteral<"sha256:c4b2684c055d52723f658d7e3a52be420c1f20e9cf0d6eb3a66f34cccff45f94">;
     runtimeFingerprint: z.core.$ZodBranded<z.ZodString, "SdkRuntimeFingerprint", "out">;
 }, z.core.$strict>;
 export declare const sdkCompatibilityHandshakeResponseSchema: z.ZodObject<{
@@ -58,7 +58,7 @@ export declare const sdkCompatibilityHandshakeResponseSchema: z.ZodObject<{
         }>;
         distributionVersion: z.ZodString;
         cliVersion: z.ZodString;
-        protocolDigest: z.ZodLiteral<"sha256:7c591bff196489464626d07d0acf139ce1e9529ca114cd4dbb1d31c9253e9ee5">;
+        protocolDigest: z.ZodLiteral<"sha256:c4b2684c055d52723f658d7e3a52be420c1f20e9cf0d6eb3a66f34cccff45f94">;
         runtimeFingerprint: z.core.$ZodBranded<z.ZodString, "SdkRuntimeFingerprint", "out">;
     }, z.core.$strict>;
 }, z.core.$strict>;
@@ -85,7 +85,7 @@ export declare const sdkRuntimeSessionConnectRequestSchema: z.ZodObject<{
             standalone_local: "standalone_local";
             plugin_managed: "plugin_managed";
         }>;
-        protocolDigest: z.ZodLiteral<"sha256:7c591bff196489464626d07d0acf139ce1e9529ca114cd4dbb1d31c9253e9ee5">;
+        protocolDigest: z.ZodLiteral<"sha256:c4b2684c055d52723f658d7e3a52be420c1f20e9cf0d6eb3a66f34cccff45f94">;
     }, z.core.$strict>;
 }, z.core.$strict>;
 /** Desktop carrier envelope around the transport-independent connect request. */
@@ -100,7 +100,7 @@ export declare const sdkRuntimeConnectRequestSchema: z.ZodObject<{
             standalone_local: "standalone_local";
             plugin_managed: "plugin_managed";
         }>;
-        protocolDigest: z.ZodLiteral<"sha256:7c591bff196489464626d07d0acf139ce1e9529ca114cd4dbb1d31c9253e9ee5">;
+        protocolDigest: z.ZodLiteral<"sha256:c4b2684c055d52723f658d7e3a52be420c1f20e9cf0d6eb3a66f34cccff45f94">;
     }, z.core.$strict>;
     runtimeInstanceId: z.core.$ZodBranded<z.ZodString, "SdkRuntimeInstanceId", "out">;
     bootstrapToken: z.ZodString;
@@ -140,7 +140,7 @@ export declare const sdkRuntimeConnectSuccessSchema: z.ZodObject<{
         }>;
         distributionVersion: z.ZodString;
         cliVersion: z.ZodString;
-        protocolDigest: z.ZodLiteral<"sha256:7c591bff196489464626d07d0acf139ce1e9529ca114cd4dbb1d31c9253e9ee5">;
+        protocolDigest: z.ZodLiteral<"sha256:c4b2684c055d52723f658d7e3a52be420c1f20e9cf0d6eb3a66f34cccff45f94">;
         runtimeFingerprint: z.core.$ZodBranded<z.ZodString, "SdkRuntimeFingerprint", "out">;
     }, z.core.$strict>;
     session: z.ZodObject<{
@@ -280,7 +280,7 @@ export declare const sdkRuntimeConnectResponseSchema: z.ZodUnion<readonly [z.Zod
         }>;
         distributionVersion: z.ZodString;
         cliVersion: z.ZodString;
-        protocolDigest: z.ZodLiteral<"sha256:7c591bff196489464626d07d0acf139ce1e9529ca114cd4dbb1d31c9253e9ee5">;
+        protocolDigest: z.ZodLiteral<"sha256:c4b2684c055d52723f658d7e3a52be420c1f20e9cf0d6eb3a66f34cccff45f94">;
         runtimeFingerprint: z.core.$ZodBranded<z.ZodString, "SdkRuntimeFingerprint", "out">;
     }, z.core.$strict>;
     session: z.ZodObject<{
@@ -731,6 +731,36 @@ export declare const sdkTimelineSnapshotSchema: z.ZodObject<{
                     not_exposed_by_runtime: "not_exposed_by_runtime";
                 }>;
             }, z.core.$strict>], "status">;
+            fadeInCurve: z.ZodOptional<z.ZodDiscriminatedUnion<[z.ZodObject<{
+                status: z.ZodLiteral<"available">;
+                value: z.ZodObject<{
+                    controlPoint: z.ZodNullable<z.ZodObject<{
+                        x: z.ZodNumber;
+                        y: z.ZodNumber;
+                    }, z.core.$strict>>;
+                }, z.core.$strict>;
+            }, z.core.$strict>, z.ZodObject<{
+                status: z.ZodLiteral<"unavailable">;
+                reason: z.ZodEnum<{
+                    readback_unavailable: "readback_unavailable";
+                    not_exposed_by_runtime: "not_exposed_by_runtime";
+                }>;
+            }, z.core.$strict>], "status">>;
+            fadeOutCurve: z.ZodOptional<z.ZodDiscriminatedUnion<[z.ZodObject<{
+                status: z.ZodLiteral<"available">;
+                value: z.ZodObject<{
+                    controlPoint: z.ZodNullable<z.ZodObject<{
+                        x: z.ZodNumber;
+                        y: z.ZodNumber;
+                    }, z.core.$strict>>;
+                }, z.core.$strict>;
+            }, z.core.$strict>, z.ZodObject<{
+                status: z.ZodLiteral<"unavailable">;
+                reason: z.ZodEnum<{
+                    readback_unavailable: "readback_unavailable";
+                    not_exposed_by_runtime: "not_exposed_by_runtime";
+                }>;
+            }, z.core.$strict>], "status">>;
         }, z.core.$strict>>>;
         buses: z.ZodDiscriminatedUnion<[z.ZodObject<{
             status: z.ZodLiteral<"available">;
@@ -821,6 +851,7 @@ export declare const sdkMediaPoolAssetSnapshotSchema: z.ZodObject<{
     snapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotMediaPoolItemId", "out">;
     folderSnapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotMediaPoolFolderId", "out">;
     snapshotRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+    assetCustodyRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
     name: z.ZodString;
     kind: z.ZodEnum<{
         unknown: "unknown";
@@ -839,6 +870,7 @@ export declare const sdkMediaPoolAssetSnapshotSchema: z.ZodObject<{
     resolution: z.ZodNullable<z.ZodString>;
     frameRate: z.ZodNullable<z.ZodString>;
     startTimecode: z.ZodNullable<z.ZodString>;
+    metadataAvailable: z.ZodBoolean;
     metadata: z.ZodArray<z.ZodObject<{
         key: z.ZodEnum<{
             description: "description";
@@ -904,6 +936,7 @@ export declare const sdkMediaPoolPageSchema: z.ZodObject<{
         snapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotMediaPoolItemId", "out">;
         folderSnapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotMediaPoolFolderId", "out">;
         snapshotRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+        assetCustodyRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
         name: z.ZodString;
         kind: z.ZodEnum<{
             unknown: "unknown";
@@ -922,6 +955,7 @@ export declare const sdkMediaPoolPageSchema: z.ZodObject<{
         resolution: z.ZodNullable<z.ZodString>;
         frameRate: z.ZodNullable<z.ZodString>;
         startTimecode: z.ZodNullable<z.ZodString>;
+        metadataAvailable: z.ZodBoolean;
         metadata: z.ZodArray<z.ZodObject<{
             key: z.ZodEnum<{
                 description: "description";
@@ -938,6 +972,24 @@ export declare const sdkMediaPoolPageSchema: z.ZodObject<{
                 clipColor: "clipColor";
             }>;
             value: z.ZodString;
+        }, z.core.$strict>>;
+    }, z.core.$strict>>;
+}, z.core.$strict>;
+export declare const sdkMediaPoolTranscriptionSchema: z.ZodObject<{
+    projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+    assetId: z.core.$ZodBranded<z.ZodString, "MediaPoolItemId", "out">;
+    useNestedClipTranscription: z.ZodBoolean;
+    available: z.ZodBoolean;
+    language: z.ZodNullable<z.ZodString>;
+    segments: z.ZodArray<z.ZodObject<{
+        start: z.ZodNullable<z.ZodString>;
+        end: z.ZodNullable<z.ZodString>;
+        text: z.ZodString;
+        speaker: z.ZodNullable<z.ZodString>;
+        words: z.ZodArray<z.ZodObject<{
+            start: z.ZodNullable<z.ZodString>;
+            end: z.ZodNullable<z.ZodString>;
+            text: z.ZodString;
         }, z.core.$strict>>;
     }, z.core.$strict>>;
 }, z.core.$strict>;
@@ -1220,6 +1272,74 @@ export declare const sdkRenderDiscoverySchema: z.ZodObject<{
                 availability: z.ZodLiteral<"unknown_version">;
                 reason: z.ZodLiteral<"unrecognized_response">;
             }, z.core.$strict>], "availability">;
+        }, z.core.$strict>>;
+        codecSupport: z.ZodDiscriminatedUnion<[z.ZodObject<{
+            availability: z.ZodLiteral<"supported">;
+        }, z.core.$strict>, z.ZodObject<{
+            availability: z.ZodLiteral<"unavailable">;
+            reason: z.ZodEnum<{
+                api_unavailable: "api_unavailable";
+                edition_unavailable: "edition_unavailable";
+                temporarily_unavailable: "temporarily_unavailable";
+            }>;
+        }, z.core.$strict>, z.ZodObject<{
+            availability: z.ZodLiteral<"unknown_version">;
+            reason: z.ZodLiteral<"unrecognized_response">;
+        }, z.core.$strict>], "availability">;
+    }, z.core.$strict>>;
+    audioFormatSupport: z.ZodDiscriminatedUnion<[z.ZodObject<{
+        availability: z.ZodLiteral<"supported">;
+    }, z.core.$strict>, z.ZodObject<{
+        availability: z.ZodLiteral<"unavailable">;
+        reason: z.ZodEnum<{
+            api_unavailable: "api_unavailable";
+            edition_unavailable: "edition_unavailable";
+            temporarily_unavailable: "temporarily_unavailable";
+        }>;
+    }, z.core.$strict>, z.ZodObject<{
+        availability: z.ZodLiteral<"unknown_version">;
+        reason: z.ZodLiteral<"unrecognized_response">;
+    }, z.core.$strict>], "availability">;
+    audioFormats: z.ZodArray<z.ZodObject<{
+        format: z.ZodDiscriminatedUnion<[z.ZodObject<{
+            kind: z.ZodLiteral<"known">;
+            value: z.ZodEnum<{
+                quicktime: "quicktime";
+                mp4: "mp4";
+                mxf: "mxf";
+                wave: "wave";
+                aiff: "aiff";
+                dcp: "dcp";
+                image_sequence: "image_sequence";
+            }>;
+        }, z.core.$strict>, z.ZodObject<{
+            kind: z.ZodLiteral<"unknown_version">;
+            label: z.ZodString;
+        }, z.core.$strict>], "kind">;
+        label: z.ZodString;
+        extension: z.ZodNullable<z.ZodString>;
+        codecs: z.ZodArray<z.ZodObject<{
+            codec: z.ZodDiscriminatedUnion<[z.ZodObject<{
+                kind: z.ZodLiteral<"known">;
+                value: z.ZodEnum<{
+                    h264: "h264";
+                    h265: "h265";
+                    prores: "prores";
+                    dnxhr: "dnxhr";
+                    av1: "av1";
+                    linear_pcm: "linear_pcm";
+                    aac: "aac";
+                    flac: "flac";
+                    exr: "exr";
+                    dpx: "dpx";
+                    tiff: "tiff";
+                    jpeg: "jpeg";
+                }>;
+            }, z.core.$strict>, z.ZodObject<{
+                kind: z.ZodLiteral<"unknown_version">;
+                label: z.ZodString;
+            }, z.core.$strict>], "kind">;
+            label: z.ZodString;
         }, z.core.$strict>>;
         codecSupport: z.ZodDiscriminatedUnion<[z.ZodObject<{
             availability: z.ZodLiteral<"supported">;
@@ -1626,7 +1746,6 @@ export declare const sdkManagedTimelinePreviewSchema: z.ZodObject<{
     protectedStateDigest: z.ZodString;
     previewDigest: z.ZodString;
     ownershipGeneration: z.ZodNumber;
-    policyRevision: z.ZodString;
     capabilityDigest: z.ZodString;
     drift: z.ZodArray<z.ZodObject<{
         kind: z.ZodEnum<{
@@ -1700,6 +1819,7 @@ export declare const sdkManagedTimelineExportSchema: z.ZodDiscriminatedUnion<[z.
         snapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotMediaPoolItemId", "out">;
         folderSnapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotMediaPoolFolderId", "out">;
         snapshotRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+        assetCustodyRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
         name: z.ZodString;
         kind: z.ZodEnum<{
             unknown: "unknown";
@@ -1718,6 +1838,7 @@ export declare const sdkManagedTimelineExportSchema: z.ZodDiscriminatedUnion<[z.
         resolution: z.ZodNullable<z.ZodString>;
         frameRate: z.ZodNullable<z.ZodString>;
         startTimecode: z.ZodNullable<z.ZodString>;
+        metadataAvailable: z.ZodBoolean;
         metadata: z.ZodArray<z.ZodObject<{
             key: z.ZodEnum<{
                 description: "description";
@@ -1964,6 +2085,16 @@ export declare const sdkRuntimeReadRequestSchema: z.ZodDiscriminatedUnion<[z.Zod
     requestId: z.core.$ZodBranded<z.ZodString, "RequestId", "out">;
     sessionId: z.core.$ZodBranded<z.ZodString, "SdkSessionId", "out">;
     deadlineAtMs: z.ZodNumber;
+    operation: z.ZodLiteral<"mediaPool.transcription">;
+    projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+    mediaPoolItemId: z.core.$ZodBranded<z.ZodString, "MediaPoolItemId", "out">;
+    expectedRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+    useNestedClipTranscription: z.ZodBoolean;
+}, z.core.$strict>, z.ZodObject<{
+    protocolVersion: z.ZodLiteral<1>;
+    requestId: z.core.$ZodBranded<z.ZodString, "RequestId", "out">;
+    sessionId: z.core.$ZodBranded<z.ZodString, "SdkSessionId", "out">;
+    deadlineAtMs: z.ZodNumber;
     operation: z.ZodLiteral<"color.current">;
     projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
     timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
@@ -2031,7 +2162,7 @@ export declare const sdkRuntimeReadRequestSchema: z.ZodDiscriminatedUnion<[z.Zod
     sessionId: z.core.$ZodBranded<z.ZodString, "SdkSessionId", "out">;
     deadlineAtMs: z.ZodNumber;
     operation: z.ZodLiteral<"timeline.edit.preview">;
-    intent: z.ZodDiscriminatedUnion<[z.ZodObject<{
+    intent: z.ZodOptional<z.ZodDiscriminatedUnion<[z.ZodObject<{
         action: z.ZodEnum<{
             insert: "insert";
             overwrite: "overwrite";
@@ -2107,7 +2238,84 @@ export declare const sdkRuntimeReadRequestSchema: z.ZodDiscriminatedUnion<[z.Zod
             endExclusive: z.ZodNumber;
         }, z.core.$strict>;
         linkedItems: z.ZodLiteral<"exclude">;
-    }, z.core.$strict>], "action">;
+    }, z.core.$strict>], "action">>;
+    intents: z.ZodOptional<z.ZodArray<z.ZodDiscriminatedUnion<[z.ZodObject<{
+        action: z.ZodEnum<{
+            insert: "insert";
+            overwrite: "overwrite";
+        }>;
+        placement: z.ZodDefault<z.ZodEnum<{
+            video: "video";
+            audio: "audio";
+        }>>;
+        projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+        timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
+        timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+        source: z.ZodObject<{
+            id: z.core.$ZodBranded<z.ZodString, "MediaPoolItemId", "out">;
+            name: z.ZodString;
+            snapshotRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+        }, z.core.$strict>;
+        sourceRange: z.ZodObject<{
+            domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+            unit: z.ZodLiteral<"frames">;
+            start: z.ZodNumber;
+            endExclusive: z.ZodNumber;
+        }, z.core.$strict>;
+        at: z.ZodObject<{
+            domain: z.ZodLiteral<"timeline_record">;
+            value: z.ZodObject<{
+                kind: z.ZodLiteral<"frames">;
+                value: z.ZodNumber;
+            }, z.core.$strict>;
+        }, z.core.$strict>;
+        videoTrackIndex: z.ZodNullable<z.ZodNumber>;
+        audioTrackIndex: z.ZodNullable<z.ZodNumber>;
+        linkedAudio: z.ZodEnum<{
+            include: "include";
+            exclude: "exclude";
+        }>;
+    }, z.core.$strict>, z.ZodObject<{
+        action: z.ZodLiteral<"trim">;
+        projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+        timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
+        timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+        clipId: z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">;
+        clipName: z.ZodString;
+        trackIndex: z.ZodNumber;
+        currentRecordRange: z.ZodObject<{
+            domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+            unit: z.ZodLiteral<"frames">;
+            start: z.ZodNumber;
+            endExclusive: z.ZodNumber;
+        }, z.core.$strict>;
+        headFrames: z.ZodNumber;
+        tailFrames: z.ZodNumber;
+        linkedAudio: z.ZodEnum<{
+            exclude: "exclude";
+            preserve: "preserve";
+        }>;
+    }, z.core.$strict>, z.ZodObject<{
+        action: z.ZodLiteral<"remove">;
+        projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+        timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
+        timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+        clipId: z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">;
+        clipName: z.ZodString;
+        trackType: z.ZodEnum<{
+            video: "video";
+            audio: "audio";
+            subtitle: "subtitle";
+        }>;
+        trackIndex: z.ZodNumber;
+        currentRecordRange: z.ZodObject<{
+            domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+            unit: z.ZodLiteral<"frames">;
+            start: z.ZodNumber;
+            endExclusive: z.ZodNumber;
+        }, z.core.$strict>;
+        linkedItems: z.ZodLiteral<"exclude">;
+    }, z.core.$strict>], "action">>>;
 }, z.core.$strict>, z.ZodObject<{
     protocolVersion: z.ZodLiteral<1>;
     requestId: z.core.$ZodBranded<z.ZodString, "RequestId", "out">;
@@ -2355,6 +2563,36 @@ export declare const sdkRuntimeReadSuccessSchema: z.ZodDiscriminatedUnion<[z.Zod
                         not_exposed_by_runtime: "not_exposed_by_runtime";
                     }>;
                 }, z.core.$strict>], "status">;
+                fadeInCurve: z.ZodOptional<z.ZodDiscriminatedUnion<[z.ZodObject<{
+                    status: z.ZodLiteral<"available">;
+                    value: z.ZodObject<{
+                        controlPoint: z.ZodNullable<z.ZodObject<{
+                            x: z.ZodNumber;
+                            y: z.ZodNumber;
+                        }, z.core.$strict>>;
+                    }, z.core.$strict>;
+                }, z.core.$strict>, z.ZodObject<{
+                    status: z.ZodLiteral<"unavailable">;
+                    reason: z.ZodEnum<{
+                        readback_unavailable: "readback_unavailable";
+                        not_exposed_by_runtime: "not_exposed_by_runtime";
+                    }>;
+                }, z.core.$strict>], "status">>;
+                fadeOutCurve: z.ZodOptional<z.ZodDiscriminatedUnion<[z.ZodObject<{
+                    status: z.ZodLiteral<"available">;
+                    value: z.ZodObject<{
+                        controlPoint: z.ZodNullable<z.ZodObject<{
+                            x: z.ZodNumber;
+                            y: z.ZodNumber;
+                        }, z.core.$strict>>;
+                    }, z.core.$strict>;
+                }, z.core.$strict>, z.ZodObject<{
+                    status: z.ZodLiteral<"unavailable">;
+                    reason: z.ZodEnum<{
+                        readback_unavailable: "readback_unavailable";
+                        not_exposed_by_runtime: "not_exposed_by_runtime";
+                    }>;
+                }, z.core.$strict>], "status">>;
             }, z.core.$strict>>>;
             buses: z.ZodDiscriminatedUnion<[z.ZodObject<{
                 status: z.ZodLiteral<"available">;
@@ -2481,6 +2719,7 @@ export declare const sdkRuntimeReadSuccessSchema: z.ZodDiscriminatedUnion<[z.Zod
             snapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotMediaPoolItemId", "out">;
             folderSnapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotMediaPoolFolderId", "out">;
             snapshotRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+            assetCustodyRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
             name: z.ZodString;
             kind: z.ZodEnum<{
                 unknown: "unknown";
@@ -2499,6 +2738,7 @@ export declare const sdkRuntimeReadSuccessSchema: z.ZodDiscriminatedUnion<[z.Zod
             resolution: z.ZodNullable<z.ZodString>;
             frameRate: z.ZodNullable<z.ZodString>;
             startTimecode: z.ZodNullable<z.ZodString>;
+            metadataAvailable: z.ZodBoolean;
             metadata: z.ZodArray<z.ZodObject<{
                 key: z.ZodEnum<{
                     description: "description";
@@ -2515,6 +2755,29 @@ export declare const sdkRuntimeReadSuccessSchema: z.ZodDiscriminatedUnion<[z.Zod
                     clipColor: "clipColor";
                 }>;
                 value: z.ZodString;
+            }, z.core.$strict>>;
+        }, z.core.$strict>>;
+    }, z.core.$strict>;
+}, z.core.$strict>, z.ZodObject<{
+    ok: z.ZodLiteral<true>;
+    protocolVersion: z.ZodLiteral<1>;
+    requestId: z.core.$ZodBranded<z.ZodString, "RequestId", "out">;
+    operation: z.ZodLiteral<"mediaPool.transcription">;
+    data: z.ZodObject<{
+        projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+        assetId: z.core.$ZodBranded<z.ZodString, "MediaPoolItemId", "out">;
+        useNestedClipTranscription: z.ZodBoolean;
+        available: z.ZodBoolean;
+        language: z.ZodNullable<z.ZodString>;
+        segments: z.ZodArray<z.ZodObject<{
+            start: z.ZodNullable<z.ZodString>;
+            end: z.ZodNullable<z.ZodString>;
+            text: z.ZodString;
+            speaker: z.ZodNullable<z.ZodString>;
+            words: z.ZodArray<z.ZodObject<{
+                start: z.ZodNullable<z.ZodString>;
+                end: z.ZodNullable<z.ZodString>;
+                text: z.ZodString;
             }, z.core.$strict>>;
         }, z.core.$strict>>;
     }, z.core.$strict>;
@@ -2821,6 +3084,74 @@ export declare const sdkRuntimeReadSuccessSchema: z.ZodDiscriminatedUnion<[z.Zod
                 reason: z.ZodLiteral<"unrecognized_response">;
             }, z.core.$strict>], "availability">;
         }, z.core.$strict>>;
+        audioFormatSupport: z.ZodDiscriminatedUnion<[z.ZodObject<{
+            availability: z.ZodLiteral<"supported">;
+        }, z.core.$strict>, z.ZodObject<{
+            availability: z.ZodLiteral<"unavailable">;
+            reason: z.ZodEnum<{
+                api_unavailable: "api_unavailable";
+                edition_unavailable: "edition_unavailable";
+                temporarily_unavailable: "temporarily_unavailable";
+            }>;
+        }, z.core.$strict>, z.ZodObject<{
+            availability: z.ZodLiteral<"unknown_version">;
+            reason: z.ZodLiteral<"unrecognized_response">;
+        }, z.core.$strict>], "availability">;
+        audioFormats: z.ZodArray<z.ZodObject<{
+            format: z.ZodDiscriminatedUnion<[z.ZodObject<{
+                kind: z.ZodLiteral<"known">;
+                value: z.ZodEnum<{
+                    quicktime: "quicktime";
+                    mp4: "mp4";
+                    mxf: "mxf";
+                    wave: "wave";
+                    aiff: "aiff";
+                    dcp: "dcp";
+                    image_sequence: "image_sequence";
+                }>;
+            }, z.core.$strict>, z.ZodObject<{
+                kind: z.ZodLiteral<"unknown_version">;
+                label: z.ZodString;
+            }, z.core.$strict>], "kind">;
+            label: z.ZodString;
+            extension: z.ZodNullable<z.ZodString>;
+            codecs: z.ZodArray<z.ZodObject<{
+                codec: z.ZodDiscriminatedUnion<[z.ZodObject<{
+                    kind: z.ZodLiteral<"known">;
+                    value: z.ZodEnum<{
+                        h264: "h264";
+                        h265: "h265";
+                        prores: "prores";
+                        dnxhr: "dnxhr";
+                        av1: "av1";
+                        linear_pcm: "linear_pcm";
+                        aac: "aac";
+                        flac: "flac";
+                        exr: "exr";
+                        dpx: "dpx";
+                        tiff: "tiff";
+                        jpeg: "jpeg";
+                    }>;
+                }, z.core.$strict>, z.ZodObject<{
+                    kind: z.ZodLiteral<"unknown_version">;
+                    label: z.ZodString;
+                }, z.core.$strict>], "kind">;
+                label: z.ZodString;
+            }, z.core.$strict>>;
+            codecSupport: z.ZodDiscriminatedUnion<[z.ZodObject<{
+                availability: z.ZodLiteral<"supported">;
+            }, z.core.$strict>, z.ZodObject<{
+                availability: z.ZodLiteral<"unavailable">;
+                reason: z.ZodEnum<{
+                    api_unavailable: "api_unavailable";
+                    edition_unavailable: "edition_unavailable";
+                    temporarily_unavailable: "temporarily_unavailable";
+                }>;
+            }, z.core.$strict>, z.ZodObject<{
+                availability: z.ZodLiteral<"unknown_version">;
+                reason: z.ZodLiteral<"unrecognized_response">;
+            }, z.core.$strict>], "availability">;
+        }, z.core.$strict>>;
     }, z.core.$strict>;
 }, z.core.$strict>, z.ZodObject<{
     ok: z.ZodLiteral<true>;
@@ -3079,7 +3410,7 @@ export declare const sdkRuntimeReadSuccessSchema: z.ZodDiscriminatedUnion<[z.Zod
     protocolVersion: z.ZodLiteral<1>;
     requestId: z.core.$ZodBranded<z.ZodString, "RequestId", "out">;
     operation: z.ZodLiteral<"timeline.edit.preview">;
-    data: z.ZodObject<{
+    data: z.ZodUnion<readonly [z.ZodObject<{
         impactId: z.ZodString;
         action: z.ZodEnum<{
             trim: "trim";
@@ -3288,7 +3619,218 @@ export declare const sdkRuntimeReadSuccessSchema: z.ZodDiscriminatedUnion<[z.Zod
             "timeline.items_delete": "timeline.items_delete";
         }>;
         summary: z.ZodString;
-    }, z.core.$strict>;
+    }, z.core.$strict>, z.ZodObject<{
+        impacts: z.ZodArray<z.ZodObject<{
+            impactId: z.ZodString;
+            action: z.ZodEnum<{
+                trim: "trim";
+                insert: "insert";
+                overwrite: "overwrite";
+                remove: "remove";
+            }>;
+            projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+            timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
+            timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+            intent: z.ZodDiscriminatedUnion<[z.ZodObject<{
+                action: z.ZodEnum<{
+                    insert: "insert";
+                    overwrite: "overwrite";
+                }>;
+                placement: z.ZodDefault<z.ZodEnum<{
+                    video: "video";
+                    audio: "audio";
+                }>>;
+                projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+                timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
+                timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+                source: z.ZodObject<{
+                    id: z.core.$ZodBranded<z.ZodString, "MediaPoolItemId", "out">;
+                    name: z.ZodString;
+                    snapshotRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+                }, z.core.$strict>;
+                sourceRange: z.ZodObject<{
+                    domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                    unit: z.ZodLiteral<"frames">;
+                    start: z.ZodNumber;
+                    endExclusive: z.ZodNumber;
+                }, z.core.$strict>;
+                at: z.ZodObject<{
+                    domain: z.ZodLiteral<"timeline_record">;
+                    value: z.ZodObject<{
+                        kind: z.ZodLiteral<"frames">;
+                        value: z.ZodNumber;
+                    }, z.core.$strict>;
+                }, z.core.$strict>;
+                videoTrackIndex: z.ZodNullable<z.ZodNumber>;
+                audioTrackIndex: z.ZodNullable<z.ZodNumber>;
+                linkedAudio: z.ZodEnum<{
+                    include: "include";
+                    exclude: "exclude";
+                }>;
+            }, z.core.$strict>, z.ZodObject<{
+                action: z.ZodLiteral<"trim">;
+                projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+                timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
+                timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+                clipId: z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">;
+                clipName: z.ZodString;
+                trackIndex: z.ZodNumber;
+                currentRecordRange: z.ZodObject<{
+                    domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                    unit: z.ZodLiteral<"frames">;
+                    start: z.ZodNumber;
+                    endExclusive: z.ZodNumber;
+                }, z.core.$strict>;
+                headFrames: z.ZodNumber;
+                tailFrames: z.ZodNumber;
+                linkedAudio: z.ZodEnum<{
+                    exclude: "exclude";
+                    preserve: "preserve";
+                }>;
+            }, z.core.$strict>, z.ZodObject<{
+                action: z.ZodLiteral<"remove">;
+                projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+                timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
+                timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+                clipId: z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">;
+                clipName: z.ZodString;
+                trackType: z.ZodEnum<{
+                    video: "video";
+                    audio: "audio";
+                    subtitle: "subtitle";
+                }>;
+                trackIndex: z.ZodNumber;
+                currentRecordRange: z.ZodObject<{
+                    domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                    unit: z.ZodLiteral<"frames">;
+                    start: z.ZodNumber;
+                    endExclusive: z.ZodNumber;
+                }, z.core.$strict>;
+                linkedItems: z.ZodLiteral<"exclude">;
+            }, z.core.$strict>], "action">;
+            recordRange: z.ZodObject<{
+                domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                unit: z.ZodLiteral<"frames">;
+                start: z.ZodNumber;
+                endExclusive: z.ZodNumber;
+            }, z.core.$strict>;
+            affectedTracks: z.ZodArray<z.ZodObject<{
+                type: z.ZodEnum<{
+                    video: "video";
+                    audio: "audio";
+                    subtitle: "subtitle";
+                }>;
+                index: z.ZodNumber;
+                snapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotTrackId", "out">;
+            }, z.core.$strict>>;
+            affectedItems: z.ZodArray<z.ZodObject<{
+                id: z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">;
+                track: z.ZodObject<{
+                    type: z.ZodEnum<{
+                        video: "video";
+                        audio: "audio";
+                        subtitle: "subtitle";
+                    }>;
+                    index: z.ZodNumber;
+                    snapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotTrackId", "out">;
+                }, z.core.$strict>;
+                recordRange: z.ZodObject<{
+                    domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                    unit: z.ZodLiteral<"frames">;
+                    start: z.ZodNumber;
+                    endExclusive: z.ZodNumber;
+                }, z.core.$strict>;
+                role: z.ZodEnum<{
+                    replace: "replace";
+                    trim: "trim";
+                    remove: "remove";
+                    linked: "linked";
+                    protected_overlap: "protected_overlap";
+                    protected_neighbor: "protected_neighbor";
+                }>;
+            }, z.core.$strict>>;
+            protectedItems: z.ZodArray<z.ZodObject<{
+                id: z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">;
+                track: z.ZodObject<{
+                    type: z.ZodEnum<{
+                        video: "video";
+                        audio: "audio";
+                        subtitle: "subtitle";
+                    }>;
+                    index: z.ZodNumber;
+                    snapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotTrackId", "out">;
+                }, z.core.$strict>;
+                recordRange: z.ZodObject<{
+                    domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                    unit: z.ZodLiteral<"frames">;
+                    start: z.ZodNumber;
+                    endExclusive: z.ZodNumber;
+                }, z.core.$strict>;
+                role: z.ZodEnum<{
+                    replace: "replace";
+                    trim: "trim";
+                    remove: "remove";
+                    linked: "linked";
+                    protected_overlap: "protected_overlap";
+                    protected_neighbor: "protected_neighbor";
+                }>;
+            }, z.core.$strict>>;
+            expectedItems: z.ZodArray<z.ZodObject<{
+                role: z.ZodEnum<{
+                    replacement: "replacement";
+                    preserved_edge: "preserved_edge";
+                    trimmed: "trimmed";
+                    unlinked: "unlinked";
+                }>;
+                beforeItemId: z.ZodNullable<z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">>;
+                track: z.ZodObject<{
+                    type: z.ZodEnum<{
+                        video: "video";
+                        audio: "audio";
+                        subtitle: "subtitle";
+                    }>;
+                    index: z.ZodNumber;
+                    snapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotTrackId", "out">;
+                }, z.core.$strict>;
+                recordRange: z.ZodObject<{
+                    domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                    unit: z.ZodLiteral<"frames">;
+                    start: z.ZodNumber;
+                    endExclusive: z.ZodNumber;
+                }, z.core.$strict>;
+                sourceRange: z.ZodObject<{
+                    domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                    unit: z.ZodLiteral<"frames">;
+                    start: z.ZodNumber;
+                    endExclusive: z.ZodNumber;
+                }, z.core.$strict>;
+                sourceEndToleranceFrames: z.ZodNumber;
+                mediaPoolItemId: z.core.$ZodBranded<z.ZodString, "MediaPoolItemId", "out">;
+                name: z.ZodString;
+                linkedExpectedItemIndexes: z.ZodArray<z.ZodNumber>;
+                linkedExistingItemIds: z.ZodArray<z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">>;
+            }, z.core.$strict>>;
+            expectedLinkTransitions: z.ZodDefault<z.ZodArray<z.ZodObject<{
+                itemId: z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">;
+                beforeLinkedItemIds: z.ZodArray<z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">>;
+                afterLinkedItemIds: z.ZodArray<z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">>;
+            }, z.core.$strict>>>;
+            linkedAudio: z.ZodObject<{
+                behavior: z.ZodEnum<{
+                    include: "include";
+                    exclude: "exclude";
+                    preserve: "preserve";
+                }>;
+                topologyProven: z.ZodBoolean;
+            }, z.core.$strict>;
+            capabilityId: z.ZodEnum<{
+                "edit.insert_overwrite": "edit.insert_overwrite";
+                "edit.trim_workaround": "edit.trim_workaround";
+                "timeline.items_delete": "timeline.items_delete";
+            }>;
+            summary: z.ZodString;
+        }, z.core.$strict>>;
+    }, z.core.$strict>]>;
 }, z.core.$strict>, z.ZodObject<{
     ok: z.ZodLiteral<true>;
     protocolVersion: z.ZodLiteral<1>;
@@ -3316,7 +3858,6 @@ export declare const sdkRuntimeReadSuccessSchema: z.ZodDiscriminatedUnion<[z.Zod
         protectedStateDigest: z.ZodString;
         previewDigest: z.ZodString;
         ownershipGeneration: z.ZodNumber;
-        policyRevision: z.ZodString;
         capabilityDigest: z.ZodString;
         drift: z.ZodArray<z.ZodObject<{
             kind: z.ZodEnum<{
@@ -3395,6 +3936,7 @@ export declare const sdkRuntimeReadSuccessSchema: z.ZodDiscriminatedUnion<[z.Zod
             snapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotMediaPoolItemId", "out">;
             folderSnapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotMediaPoolFolderId", "out">;
             snapshotRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+            assetCustodyRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
             name: z.ZodString;
             kind: z.ZodEnum<{
                 unknown: "unknown";
@@ -3413,6 +3955,7 @@ export declare const sdkRuntimeReadSuccessSchema: z.ZodDiscriminatedUnion<[z.Zod
             resolution: z.ZodNullable<z.ZodString>;
             frameRate: z.ZodNullable<z.ZodString>;
             startTimecode: z.ZodNullable<z.ZodString>;
+            metadataAvailable: z.ZodBoolean;
             metadata: z.ZodArray<z.ZodObject<{
                 key: z.ZodEnum<{
                     description: "description";
@@ -3712,6 +4255,36 @@ export declare const sdkRuntimeReadResponseSchema: z.ZodUnion<readonly [z.ZodDis
                         not_exposed_by_runtime: "not_exposed_by_runtime";
                     }>;
                 }, z.core.$strict>], "status">;
+                fadeInCurve: z.ZodOptional<z.ZodDiscriminatedUnion<[z.ZodObject<{
+                    status: z.ZodLiteral<"available">;
+                    value: z.ZodObject<{
+                        controlPoint: z.ZodNullable<z.ZodObject<{
+                            x: z.ZodNumber;
+                            y: z.ZodNumber;
+                        }, z.core.$strict>>;
+                    }, z.core.$strict>;
+                }, z.core.$strict>, z.ZodObject<{
+                    status: z.ZodLiteral<"unavailable">;
+                    reason: z.ZodEnum<{
+                        readback_unavailable: "readback_unavailable";
+                        not_exposed_by_runtime: "not_exposed_by_runtime";
+                    }>;
+                }, z.core.$strict>], "status">>;
+                fadeOutCurve: z.ZodOptional<z.ZodDiscriminatedUnion<[z.ZodObject<{
+                    status: z.ZodLiteral<"available">;
+                    value: z.ZodObject<{
+                        controlPoint: z.ZodNullable<z.ZodObject<{
+                            x: z.ZodNumber;
+                            y: z.ZodNumber;
+                        }, z.core.$strict>>;
+                    }, z.core.$strict>;
+                }, z.core.$strict>, z.ZodObject<{
+                    status: z.ZodLiteral<"unavailable">;
+                    reason: z.ZodEnum<{
+                        readback_unavailable: "readback_unavailable";
+                        not_exposed_by_runtime: "not_exposed_by_runtime";
+                    }>;
+                }, z.core.$strict>], "status">>;
             }, z.core.$strict>>>;
             buses: z.ZodDiscriminatedUnion<[z.ZodObject<{
                 status: z.ZodLiteral<"available">;
@@ -3838,6 +4411,7 @@ export declare const sdkRuntimeReadResponseSchema: z.ZodUnion<readonly [z.ZodDis
             snapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotMediaPoolItemId", "out">;
             folderSnapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotMediaPoolFolderId", "out">;
             snapshotRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+            assetCustodyRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
             name: z.ZodString;
             kind: z.ZodEnum<{
                 unknown: "unknown";
@@ -3856,6 +4430,7 @@ export declare const sdkRuntimeReadResponseSchema: z.ZodUnion<readonly [z.ZodDis
             resolution: z.ZodNullable<z.ZodString>;
             frameRate: z.ZodNullable<z.ZodString>;
             startTimecode: z.ZodNullable<z.ZodString>;
+            metadataAvailable: z.ZodBoolean;
             metadata: z.ZodArray<z.ZodObject<{
                 key: z.ZodEnum<{
                     description: "description";
@@ -3872,6 +4447,29 @@ export declare const sdkRuntimeReadResponseSchema: z.ZodUnion<readonly [z.ZodDis
                     clipColor: "clipColor";
                 }>;
                 value: z.ZodString;
+            }, z.core.$strict>>;
+        }, z.core.$strict>>;
+    }, z.core.$strict>;
+}, z.core.$strict>, z.ZodObject<{
+    ok: z.ZodLiteral<true>;
+    protocolVersion: z.ZodLiteral<1>;
+    requestId: z.core.$ZodBranded<z.ZodString, "RequestId", "out">;
+    operation: z.ZodLiteral<"mediaPool.transcription">;
+    data: z.ZodObject<{
+        projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+        assetId: z.core.$ZodBranded<z.ZodString, "MediaPoolItemId", "out">;
+        useNestedClipTranscription: z.ZodBoolean;
+        available: z.ZodBoolean;
+        language: z.ZodNullable<z.ZodString>;
+        segments: z.ZodArray<z.ZodObject<{
+            start: z.ZodNullable<z.ZodString>;
+            end: z.ZodNullable<z.ZodString>;
+            text: z.ZodString;
+            speaker: z.ZodNullable<z.ZodString>;
+            words: z.ZodArray<z.ZodObject<{
+                start: z.ZodNullable<z.ZodString>;
+                end: z.ZodNullable<z.ZodString>;
+                text: z.ZodString;
             }, z.core.$strict>>;
         }, z.core.$strict>>;
     }, z.core.$strict>;
@@ -4178,6 +4776,74 @@ export declare const sdkRuntimeReadResponseSchema: z.ZodUnion<readonly [z.ZodDis
                 reason: z.ZodLiteral<"unrecognized_response">;
             }, z.core.$strict>], "availability">;
         }, z.core.$strict>>;
+        audioFormatSupport: z.ZodDiscriminatedUnion<[z.ZodObject<{
+            availability: z.ZodLiteral<"supported">;
+        }, z.core.$strict>, z.ZodObject<{
+            availability: z.ZodLiteral<"unavailable">;
+            reason: z.ZodEnum<{
+                api_unavailable: "api_unavailable";
+                edition_unavailable: "edition_unavailable";
+                temporarily_unavailable: "temporarily_unavailable";
+            }>;
+        }, z.core.$strict>, z.ZodObject<{
+            availability: z.ZodLiteral<"unknown_version">;
+            reason: z.ZodLiteral<"unrecognized_response">;
+        }, z.core.$strict>], "availability">;
+        audioFormats: z.ZodArray<z.ZodObject<{
+            format: z.ZodDiscriminatedUnion<[z.ZodObject<{
+                kind: z.ZodLiteral<"known">;
+                value: z.ZodEnum<{
+                    quicktime: "quicktime";
+                    mp4: "mp4";
+                    mxf: "mxf";
+                    wave: "wave";
+                    aiff: "aiff";
+                    dcp: "dcp";
+                    image_sequence: "image_sequence";
+                }>;
+            }, z.core.$strict>, z.ZodObject<{
+                kind: z.ZodLiteral<"unknown_version">;
+                label: z.ZodString;
+            }, z.core.$strict>], "kind">;
+            label: z.ZodString;
+            extension: z.ZodNullable<z.ZodString>;
+            codecs: z.ZodArray<z.ZodObject<{
+                codec: z.ZodDiscriminatedUnion<[z.ZodObject<{
+                    kind: z.ZodLiteral<"known">;
+                    value: z.ZodEnum<{
+                        h264: "h264";
+                        h265: "h265";
+                        prores: "prores";
+                        dnxhr: "dnxhr";
+                        av1: "av1";
+                        linear_pcm: "linear_pcm";
+                        aac: "aac";
+                        flac: "flac";
+                        exr: "exr";
+                        dpx: "dpx";
+                        tiff: "tiff";
+                        jpeg: "jpeg";
+                    }>;
+                }, z.core.$strict>, z.ZodObject<{
+                    kind: z.ZodLiteral<"unknown_version">;
+                    label: z.ZodString;
+                }, z.core.$strict>], "kind">;
+                label: z.ZodString;
+            }, z.core.$strict>>;
+            codecSupport: z.ZodDiscriminatedUnion<[z.ZodObject<{
+                availability: z.ZodLiteral<"supported">;
+            }, z.core.$strict>, z.ZodObject<{
+                availability: z.ZodLiteral<"unavailable">;
+                reason: z.ZodEnum<{
+                    api_unavailable: "api_unavailable";
+                    edition_unavailable: "edition_unavailable";
+                    temporarily_unavailable: "temporarily_unavailable";
+                }>;
+            }, z.core.$strict>, z.ZodObject<{
+                availability: z.ZodLiteral<"unknown_version">;
+                reason: z.ZodLiteral<"unrecognized_response">;
+            }, z.core.$strict>], "availability">;
+        }, z.core.$strict>>;
     }, z.core.$strict>;
 }, z.core.$strict>, z.ZodObject<{
     ok: z.ZodLiteral<true>;
@@ -4436,7 +5102,7 @@ export declare const sdkRuntimeReadResponseSchema: z.ZodUnion<readonly [z.ZodDis
     protocolVersion: z.ZodLiteral<1>;
     requestId: z.core.$ZodBranded<z.ZodString, "RequestId", "out">;
     operation: z.ZodLiteral<"timeline.edit.preview">;
-    data: z.ZodObject<{
+    data: z.ZodUnion<readonly [z.ZodObject<{
         impactId: z.ZodString;
         action: z.ZodEnum<{
             trim: "trim";
@@ -4645,7 +5311,218 @@ export declare const sdkRuntimeReadResponseSchema: z.ZodUnion<readonly [z.ZodDis
             "timeline.items_delete": "timeline.items_delete";
         }>;
         summary: z.ZodString;
-    }, z.core.$strict>;
+    }, z.core.$strict>, z.ZodObject<{
+        impacts: z.ZodArray<z.ZodObject<{
+            impactId: z.ZodString;
+            action: z.ZodEnum<{
+                trim: "trim";
+                insert: "insert";
+                overwrite: "overwrite";
+                remove: "remove";
+            }>;
+            projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+            timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
+            timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+            intent: z.ZodDiscriminatedUnion<[z.ZodObject<{
+                action: z.ZodEnum<{
+                    insert: "insert";
+                    overwrite: "overwrite";
+                }>;
+                placement: z.ZodDefault<z.ZodEnum<{
+                    video: "video";
+                    audio: "audio";
+                }>>;
+                projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+                timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
+                timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+                source: z.ZodObject<{
+                    id: z.core.$ZodBranded<z.ZodString, "MediaPoolItemId", "out">;
+                    name: z.ZodString;
+                    snapshotRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+                }, z.core.$strict>;
+                sourceRange: z.ZodObject<{
+                    domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                    unit: z.ZodLiteral<"frames">;
+                    start: z.ZodNumber;
+                    endExclusive: z.ZodNumber;
+                }, z.core.$strict>;
+                at: z.ZodObject<{
+                    domain: z.ZodLiteral<"timeline_record">;
+                    value: z.ZodObject<{
+                        kind: z.ZodLiteral<"frames">;
+                        value: z.ZodNumber;
+                    }, z.core.$strict>;
+                }, z.core.$strict>;
+                videoTrackIndex: z.ZodNullable<z.ZodNumber>;
+                audioTrackIndex: z.ZodNullable<z.ZodNumber>;
+                linkedAudio: z.ZodEnum<{
+                    include: "include";
+                    exclude: "exclude";
+                }>;
+            }, z.core.$strict>, z.ZodObject<{
+                action: z.ZodLiteral<"trim">;
+                projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+                timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
+                timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+                clipId: z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">;
+                clipName: z.ZodString;
+                trackIndex: z.ZodNumber;
+                currentRecordRange: z.ZodObject<{
+                    domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                    unit: z.ZodLiteral<"frames">;
+                    start: z.ZodNumber;
+                    endExclusive: z.ZodNumber;
+                }, z.core.$strict>;
+                headFrames: z.ZodNumber;
+                tailFrames: z.ZodNumber;
+                linkedAudio: z.ZodEnum<{
+                    exclude: "exclude";
+                    preserve: "preserve";
+                }>;
+            }, z.core.$strict>, z.ZodObject<{
+                action: z.ZodLiteral<"remove">;
+                projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+                timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
+                timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+                clipId: z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">;
+                clipName: z.ZodString;
+                trackType: z.ZodEnum<{
+                    video: "video";
+                    audio: "audio";
+                    subtitle: "subtitle";
+                }>;
+                trackIndex: z.ZodNumber;
+                currentRecordRange: z.ZodObject<{
+                    domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                    unit: z.ZodLiteral<"frames">;
+                    start: z.ZodNumber;
+                    endExclusive: z.ZodNumber;
+                }, z.core.$strict>;
+                linkedItems: z.ZodLiteral<"exclude">;
+            }, z.core.$strict>], "action">;
+            recordRange: z.ZodObject<{
+                domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                unit: z.ZodLiteral<"frames">;
+                start: z.ZodNumber;
+                endExclusive: z.ZodNumber;
+            }, z.core.$strict>;
+            affectedTracks: z.ZodArray<z.ZodObject<{
+                type: z.ZodEnum<{
+                    video: "video";
+                    audio: "audio";
+                    subtitle: "subtitle";
+                }>;
+                index: z.ZodNumber;
+                snapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotTrackId", "out">;
+            }, z.core.$strict>>;
+            affectedItems: z.ZodArray<z.ZodObject<{
+                id: z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">;
+                track: z.ZodObject<{
+                    type: z.ZodEnum<{
+                        video: "video";
+                        audio: "audio";
+                        subtitle: "subtitle";
+                    }>;
+                    index: z.ZodNumber;
+                    snapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotTrackId", "out">;
+                }, z.core.$strict>;
+                recordRange: z.ZodObject<{
+                    domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                    unit: z.ZodLiteral<"frames">;
+                    start: z.ZodNumber;
+                    endExclusive: z.ZodNumber;
+                }, z.core.$strict>;
+                role: z.ZodEnum<{
+                    replace: "replace";
+                    trim: "trim";
+                    remove: "remove";
+                    linked: "linked";
+                    protected_overlap: "protected_overlap";
+                    protected_neighbor: "protected_neighbor";
+                }>;
+            }, z.core.$strict>>;
+            protectedItems: z.ZodArray<z.ZodObject<{
+                id: z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">;
+                track: z.ZodObject<{
+                    type: z.ZodEnum<{
+                        video: "video";
+                        audio: "audio";
+                        subtitle: "subtitle";
+                    }>;
+                    index: z.ZodNumber;
+                    snapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotTrackId", "out">;
+                }, z.core.$strict>;
+                recordRange: z.ZodObject<{
+                    domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                    unit: z.ZodLiteral<"frames">;
+                    start: z.ZodNumber;
+                    endExclusive: z.ZodNumber;
+                }, z.core.$strict>;
+                role: z.ZodEnum<{
+                    replace: "replace";
+                    trim: "trim";
+                    remove: "remove";
+                    linked: "linked";
+                    protected_overlap: "protected_overlap";
+                    protected_neighbor: "protected_neighbor";
+                }>;
+            }, z.core.$strict>>;
+            expectedItems: z.ZodArray<z.ZodObject<{
+                role: z.ZodEnum<{
+                    replacement: "replacement";
+                    preserved_edge: "preserved_edge";
+                    trimmed: "trimmed";
+                    unlinked: "unlinked";
+                }>;
+                beforeItemId: z.ZodNullable<z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">>;
+                track: z.ZodObject<{
+                    type: z.ZodEnum<{
+                        video: "video";
+                        audio: "audio";
+                        subtitle: "subtitle";
+                    }>;
+                    index: z.ZodNumber;
+                    snapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotTrackId", "out">;
+                }, z.core.$strict>;
+                recordRange: z.ZodObject<{
+                    domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                    unit: z.ZodLiteral<"frames">;
+                    start: z.ZodNumber;
+                    endExclusive: z.ZodNumber;
+                }, z.core.$strict>;
+                sourceRange: z.ZodObject<{
+                    domain: z.ZodLiteral<"source_range" | "timeline_record_range">;
+                    unit: z.ZodLiteral<"frames">;
+                    start: z.ZodNumber;
+                    endExclusive: z.ZodNumber;
+                }, z.core.$strict>;
+                sourceEndToleranceFrames: z.ZodNumber;
+                mediaPoolItemId: z.core.$ZodBranded<z.ZodString, "MediaPoolItemId", "out">;
+                name: z.ZodString;
+                linkedExpectedItemIndexes: z.ZodArray<z.ZodNumber>;
+                linkedExistingItemIds: z.ZodArray<z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">>;
+            }, z.core.$strict>>;
+            expectedLinkTransitions: z.ZodDefault<z.ZodArray<z.ZodObject<{
+                itemId: z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">;
+                beforeLinkedItemIds: z.ZodArray<z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">>;
+                afterLinkedItemIds: z.ZodArray<z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">>;
+            }, z.core.$strict>>>;
+            linkedAudio: z.ZodObject<{
+                behavior: z.ZodEnum<{
+                    include: "include";
+                    exclude: "exclude";
+                    preserve: "preserve";
+                }>;
+                topologyProven: z.ZodBoolean;
+            }, z.core.$strict>;
+            capabilityId: z.ZodEnum<{
+                "edit.insert_overwrite": "edit.insert_overwrite";
+                "edit.trim_workaround": "edit.trim_workaround";
+                "timeline.items_delete": "timeline.items_delete";
+            }>;
+            summary: z.ZodString;
+        }, z.core.$strict>>;
+    }, z.core.$strict>]>;
 }, z.core.$strict>, z.ZodObject<{
     ok: z.ZodLiteral<true>;
     protocolVersion: z.ZodLiteral<1>;
@@ -4673,7 +5550,6 @@ export declare const sdkRuntimeReadResponseSchema: z.ZodUnion<readonly [z.ZodDis
         protectedStateDigest: z.ZodString;
         previewDigest: z.ZodString;
         ownershipGeneration: z.ZodNumber;
-        policyRevision: z.ZodString;
         capabilityDigest: z.ZodString;
         drift: z.ZodArray<z.ZodObject<{
             kind: z.ZodEnum<{
@@ -4752,6 +5628,7 @@ export declare const sdkRuntimeReadResponseSchema: z.ZodUnion<readonly [z.ZodDis
             snapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotMediaPoolItemId", "out">;
             folderSnapshotId: z.core.$ZodBranded<z.ZodString, "SnapshotMediaPoolFolderId", "out">;
             snapshotRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+            assetCustodyRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
             name: z.ZodString;
             kind: z.ZodEnum<{
                 unknown: "unknown";
@@ -4770,6 +5647,7 @@ export declare const sdkRuntimeReadResponseSchema: z.ZodUnion<readonly [z.ZodDis
             resolution: z.ZodNullable<z.ZodString>;
             frameRate: z.ZodNullable<z.ZodString>;
             startTimecode: z.ZodNullable<z.ZodString>;
+            metadataAvailable: z.ZodBoolean;
             metadata: z.ZodArray<z.ZodObject<{
                 key: z.ZodEnum<{
                     description: "description";
@@ -4887,6 +5765,7 @@ export type SdkProjectReference = z.infer<typeof sdkProjectReferenceSchema>;
 export type SdkTimelineReference = z.infer<typeof sdkTimelineReferenceSchema>;
 export type SdkTimelineSnapshot = z.infer<typeof sdkTimelineSnapshotSchema>;
 export type SdkMediaPoolPage = z.infer<typeof sdkMediaPoolPageSchema>;
+export type SdkMediaPoolTranscription = z.infer<typeof sdkMediaPoolTranscriptionSchema>;
 export type SdkMediaPoolSearch = z.infer<typeof sdkMediaPoolSearchSchema>;
 export type SdkColorTargetSnapshot = z.infer<typeof sdkColorTargetSnapshotSchema>;
 export type SdkRenderDiscovery = z.infer<typeof sdkRenderDiscoverySchema>;

@@ -803,7 +803,7 @@
       "error_codes": [
         "UNSUPPORTED_OPERATION"
       ],
-      "high_level_equivalent": "sdk.executeOperationBatch(client.workflows, sdk.defineSelectedClipBatch(selection, start, batchOptions), workflowOptions)",
+      "high_level_equivalent": "client.projects.current().then(project => project.timelines.current()).then(timeline => timeline.items.setColor(changes, options))",
       "id": "cutagent.action.bulk.clip_color_set",
       "idempotency_category": "unknown",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.bulk.clip_color_set.input",
@@ -818,11 +818,11 @@
       "verification_category": "required_unknown"
     },
     {
-      "availability": "unavailable",
-      "cancellation_category": "not_cancellable",
+      "availability": "unknown",
+      "cancellation_category": "local_wait_only",
       "capability_id": null,
-      "contract_status": "planned",
-      "disposition": "high_level_equivalent",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
       "environment_applicability": {
         "architecture": {
           "arm64": "declared_unverified",
@@ -848,28 +848,35 @@
         }
       },
       "error_codes": [
-        "UNSUPPORTED_OPERATION"
+        "AUTH_REQUIRED",
+        "CAPABILITY_NEGOTIATION_FAILED",
+        "RESOLVE_NOT_RUNNING",
+        "VALIDATION_ERROR",
+        "API_CALL_FAILED",
+        "CONFIRMATION_REQUIRED",
+        "STALE_REVISION",
+        "VERIFICATION_FAILED"
       ],
-      "high_level_equivalent": "sdk.executeOperationBatch(client.workflows, sdk.defineSelectedClipBatch(selection, start, batchOptions), workflowOptions)",
+      "high_level_equivalent": null,
       "id": "cutagent.action.bulk.disable",
-      "idempotency_category": "unknown",
+      "idempotency_category": "requires_idempotency_key",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.bulk.disable.input",
-      "maturity": "unknown",
+      "maturity": "stable",
       "operation_class": "mutation",
       "owner": "sdk_domain_api",
       "precondition_category": "live_state_revision",
-      "protected_state_category": "none",
-      "reason_code": "workflow_belongs_in_a_high_level_domain_api",
-      "recovery_category": "not_available",
+      "protected_state_category": "active_project_and_timeline",
+      "reason_code": "semantic_bulk_clip_state",
+      "recovery_category": "inspect_project_state",
       "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.bulk.disable.result",
-      "verification_category": "required_unknown"
+      "verification_category": "terminal_and_readback"
     },
     {
-      "availability": "unavailable",
-      "cancellation_category": "not_cancellable",
+      "availability": "unknown",
+      "cancellation_category": "local_wait_only",
       "capability_id": null,
-      "contract_status": "planned",
-      "disposition": "high_level_equivalent",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
       "environment_applicability": {
         "architecture": {
           "arm64": "declared_unverified",
@@ -895,21 +902,28 @@
         }
       },
       "error_codes": [
-        "UNSUPPORTED_OPERATION"
+        "AUTH_REQUIRED",
+        "CAPABILITY_NEGOTIATION_FAILED",
+        "RESOLVE_NOT_RUNNING",
+        "VALIDATION_ERROR",
+        "API_CALL_FAILED",
+        "CONFIRMATION_REQUIRED",
+        "STALE_REVISION",
+        "VERIFICATION_FAILED"
       ],
-      "high_level_equivalent": "sdk.executeOperationBatch(client.workflows, sdk.defineSelectedClipBatch(selection, start, batchOptions), workflowOptions)",
+      "high_level_equivalent": null,
       "id": "cutagent.action.bulk.enable",
-      "idempotency_category": "unknown",
+      "idempotency_category": "requires_idempotency_key",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.bulk.enable.input",
-      "maturity": "unknown",
+      "maturity": "stable",
       "operation_class": "mutation",
       "owner": "sdk_domain_api",
       "precondition_category": "live_state_revision",
-      "protected_state_category": "none",
-      "reason_code": "workflow_belongs_in_a_high_level_domain_api",
-      "recovery_category": "not_available",
+      "protected_state_category": "active_project_and_timeline",
+      "reason_code": "semantic_bulk_clip_state",
+      "recovery_category": "inspect_project_state",
       "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.bulk.enable.result",
-      "verification_category": "required_unknown"
+      "verification_category": "terminal_and_readback"
     },
     {
       "availability": "unavailable",
@@ -944,7 +958,7 @@
       "error_codes": [
         "UNSUPPORTED_OPERATION"
       ],
-      "high_level_equivalent": "sdk.executeOperationBatch(client.workflows, sdk.defineSelectedClipBatch(selection, start, batchOptions), workflowOptions)",
+      "high_level_equivalent": "sdk.applyColorLut(applications, lutOptions)",
       "id": "cutagent.action.bulk.lut_set",
       "idempotency_category": "unknown",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.bulk.lut_set.input",
@@ -959,11 +973,11 @@
       "verification_category": "required_unknown"
     },
     {
-      "availability": "unavailable",
-      "cancellation_category": "not_cancellable",
+      "availability": "unknown",
+      "cancellation_category": "local_wait_only",
       "capability_id": null,
-      "contract_status": "planned",
-      "disposition": "high_level_equivalent",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
       "environment_applicability": {
         "architecture": {
           "arm64": "declared_unverified",
@@ -989,21 +1003,28 @@
         }
       },
       "error_codes": [
-        "UNSUPPORTED_OPERATION"
+        "AUTH_REQUIRED",
+        "CAPABILITY_NEGOTIATION_FAILED",
+        "RESOLVE_NOT_RUNNING",
+        "VALIDATION_ERROR",
+        "API_CALL_FAILED",
+        "CONFIRMATION_REQUIRED",
+        "STALE_REVISION",
+        "VERIFICATION_FAILED"
       ],
-      "high_level_equivalent": "sdk.executeOperationBatch(client.workflows, sdk.defineSelectedClipBatch(selection, start, batchOptions), workflowOptions)",
+      "high_level_equivalent": null,
       "id": "cutagent.action.bulk.property_set",
-      "idempotency_category": "unknown",
+      "idempotency_category": "requires_idempotency_key",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.bulk.property_set.input",
-      "maturity": "unknown",
+      "maturity": "stable",
       "operation_class": "mutation",
       "owner": "sdk_domain_api",
       "precondition_category": "live_state_revision",
-      "protected_state_category": "none",
-      "reason_code": "workflow_belongs_in_a_high_level_domain_api",
-      "recovery_category": "not_available",
+      "protected_state_category": "active_project_and_timeline",
+      "reason_code": "semantic_bulk_clip_property",
+      "recovery_category": "inspect_project_state",
       "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.bulk.property_set.result",
-      "verification_category": "required_unknown"
+      "verification_category": "terminal_and_readback"
     },
     {
       "availability": "unavailable",
@@ -2831,7 +2852,6 @@
         "STALE_REVISION",
         "VALIDATION_ERROR",
         "VERIFICATION_FAILED",
-        "EDIT_CONSTRAINT_VIOLATION",
         "OPERATION_FAILED",
         "RECOVERY_FAILED"
       ],
@@ -2889,7 +2909,6 @@
         "STALE_REVISION",
         "VALIDATION_ERROR",
         "VERIFICATION_FAILED",
-        "EDIT_CONSTRAINT_VIOLATION",
         "OPERATION_FAILED",
         "RECOVERY_FAILED"
       ],
@@ -2947,7 +2966,6 @@
         "STALE_REVISION",
         "VALIDATION_ERROR",
         "VERIFICATION_FAILED",
-        "EDIT_CONSTRAINT_VIOLATION",
         "OPERATION_FAILED",
         "RECOVERY_FAILED"
       ],
@@ -3005,7 +3023,6 @@
         "STALE_REVISION",
         "VALIDATION_ERROR",
         "VERIFICATION_FAILED",
-        "EDIT_CONSTRAINT_VIOLATION",
         "OPERATION_FAILED",
         "RECOVERY_FAILED"
       ],
@@ -4585,7 +4602,6 @@
         "STALE_REVISION",
         "VALIDATION_ERROR",
         "VERIFICATION_FAILED",
-        "EDIT_CONSTRAINT_VIOLATION",
         "OPERATION_FAILED",
         "RECOVERY_FAILED"
       ],
@@ -14352,6 +14368,56 @@
     },
     {
       "availability": "unknown",
+      "cancellation_category": "not_cancellable",
+      "capability_id": null,
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
+      "environment_applicability": {
+        "architecture": {
+          "arm64": "declared_unverified",
+          "x86_64": "declared_unverified"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "declared_unverified",
+          "windows": "declared_unverified"
+        },
+        "overall": "partial",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "error_codes": [
+        "AUTH_REQUIRED",
+        "CAPABILITY_NEGOTIATION_FAILED",
+        "RESOLVE_NOT_RUNNING",
+        "VALIDATION_ERROR"
+      ],
+      "high_level_equivalent": null,
+      "id": "cutagent.action.dctl.validate_source",
+      "idempotency_category": "safe_repeat",
+      "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.dctl.validate_source.input",
+      "maturity": "unknown",
+      "operation_class": "read",
+      "owner": "sdk_low_level_bindings",
+      "precondition_category": "connection",
+      "protected_state_category": "none",
+      "reason_code": "video_authoring_operation_requires_typed_low_level_reachability",
+      "recovery_category": "retry_read",
+      "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.dctl.validate_source.result",
+      "verification_category": "structural_readback"
+    },
+    {
+      "availability": "unknown",
       "cancellation_category": "local_wait_only",
       "capability_id": "timeline.subtitle_list_add_export",
       "contract_status": "input_typed_result_typed",
@@ -15323,11 +15389,11 @@
       "verification_category": "structural_readback"
     },
     {
-      "availability": "unavailable",
-      "cancellation_category": "not_cancellable",
+      "availability": "unknown",
+      "cancellation_category": "local_wait_only",
       "capability_id": "edit.transitions_native",
-      "contract_status": "planned",
-      "disposition": "high_level_equivalent",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
       "environment_applicability": {
         "architecture": {
           "arm64": "unknown",
@@ -15353,21 +15419,28 @@
         }
       },
       "error_codes": [
-        "UNSUPPORTED_OPERATION"
+        "API_CALL_FAILED",
+        "AUTH_REQUIRED",
+        "CAPABILITY_NEGOTIATION_FAILED",
+        "CONFIRMATION_REQUIRED",
+        "RESOLVE_NOT_RUNNING",
+        "STALE_REVISION",
+        "VALIDATION_ERROR",
+        "VERIFICATION_FAILED"
       ],
-      "high_level_equivalent": "sdk.executeOperationBatch(client.workflows, sdk.defineOperationBatch({steps: inputs.map(({name, input}) => ({name, start: idempotencyKey => client.actions.invoke('cutagent.action.edit.transition.add', input, {idempotencyKey})})), failurePolicy: 'stop'}), options)",
+      "high_level_equivalent": null,
       "id": "cutagent.action.edit.transition.batch",
-      "idempotency_category": "unknown",
+      "idempotency_category": "requires_idempotency_key",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.edit.transition.batch.input",
       "maturity": "inventory_only",
       "operation_class": "mutation",
-      "owner": "sdk_domain_api",
+      "owner": "sdk_low_level_bindings",
       "precondition_category": "live_state_revision",
-      "protected_state_category": "none",
-      "reason_code": "workflow_belongs_in_a_high_level_domain_api",
-      "recovery_category": "not_available",
+      "protected_state_category": "active_project_and_timeline",
+      "reason_code": "declared_video_capability_requires_typed_low_level_reachability",
+      "recovery_category": "inspect_project_state",
       "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.edit.transition.batch.result",
-      "verification_category": "required_unknown"
+      "verification_category": "structural_readback"
     },
     {
       "availability": "unavailable",
@@ -18535,6 +18608,53 @@
       "recovery_category": "not_available",
       "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.fairlight.external_process.run.result",
       "verification_category": "not_applicable"
+    },
+    {
+      "availability": "unavailable",
+      "cancellation_category": "not_cancellable",
+      "capability_id": "fairlight.fade_out_batch",
+      "contract_status": "planned",
+      "disposition": "high_level_equivalent",
+      "environment_applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "error_codes": [
+        "UNSUPPORTED_OPERATION"
+      ],
+      "high_level_equivalent": "client.projects.current().then(project => project.timelines.current()).then(async timeline => timeline.fairlight.apply(timeline.fairlight.from(await timeline.snapshot()).compose(changes), options))",
+      "id": "cutagent.action.fairlight.fade_curve",
+      "idempotency_category": "unknown",
+      "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.fairlight.fade_curve.input",
+      "maturity": "inventory_only",
+      "operation_class": "mutation",
+      "owner": "sdk_domain_api",
+      "precondition_category": "live_state_revision",
+      "protected_state_category": "none",
+      "reason_code": "raw_cli_transport_requires_reviewed_semantic_domain_action",
+      "recovery_category": "not_available",
+      "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.fairlight.fade_curve.result",
+      "verification_category": "required_unknown"
     },
     {
       "availability": "unavailable",
@@ -22741,11 +22861,11 @@
       "verification_category": "structural_readback"
     },
     {
-      "availability": "unavailable",
+      "availability": "unknown",
       "cancellation_category": "not_cancellable",
       "capability_id": "fusion.mutation",
-      "contract_status": "planned",
-      "disposition": "high_level_equivalent",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
       "environment_applicability": {
         "architecture": {
           "arm64": "unknown",
@@ -22771,21 +22891,28 @@
         }
       },
       "error_codes": [
-        "UNSUPPORTED_OPERATION"
+        "API_CALL_FAILED",
+        "NO_PROJECT_OPEN",
+        "NO_TIMELINE_OPEN",
+        "RESOLVE_NOT_RUNNING",
+        "RESOLVE_SCRIPTING_UNAVAILABLE",
+        "STALE_REVISION",
+        "VALIDATION_ERROR",
+        "VERIFICATION_FAILED"
       ],
-      "high_level_equivalent": "client.projects.current().then(project => project.timelines.current()).then(timeline => timeline.fusion.forTimelineItem(timelineItemId, expectedRevision)).then(compositions => compositions[compositionIndex - 1].applyGraph(graph, options))",
+      "high_level_equivalent": null,
       "id": "cutagent.action.fusion.image.batch",
-      "idempotency_category": "unknown",
+      "idempotency_category": "requires_idempotency_key",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.fusion.image.batch.input",
       "maturity": "inventory_only",
       "operation_class": "mutation",
-      "owner": "sdk_domain_api",
+      "owner": "sdk_low_level_bindings",
       "precondition_category": "live_state_revision",
-      "protected_state_category": "none",
-      "reason_code": "workflow_belongs_in_a_high_level_domain_api",
-      "recovery_category": "not_available",
+      "protected_state_category": "active_project_and_timeline",
+      "reason_code": "declared_video_capability_requires_typed_low_level_reachability",
+      "recovery_category": "inspect_project_state",
       "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.fusion.image.batch.result",
-      "verification_category": "required_unknown"
+      "verification_category": "structural_readback"
     },
     {
       "availability": "unknown",
@@ -22896,11 +23023,11 @@
       "verification_category": "structural_readback"
     },
     {
-      "availability": "unavailable",
+      "availability": "unknown",
       "cancellation_category": "not_cancellable",
       "capability_id": "fusion.mutation",
-      "contract_status": "planned",
-      "disposition": "high_level_equivalent",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
       "environment_applicability": {
         "architecture": {
           "arm64": "unknown",
@@ -22926,21 +23053,28 @@
         }
       },
       "error_codes": [
-        "UNSUPPORTED_OPERATION"
+        "API_CALL_FAILED",
+        "NO_PROJECT_OPEN",
+        "NO_TIMELINE_OPEN",
+        "RESOLVE_NOT_RUNNING",
+        "RESOLVE_SCRIPTING_UNAVAILABLE",
+        "STALE_REVISION",
+        "VALIDATION_ERROR",
+        "VERIFICATION_FAILED"
       ],
-      "high_level_equivalent": "client.projects.current().then(project => project.timelines.current()).then(timeline => timeline.fusion.forTimelineItem(timelineItemId, expectedRevision)).then(compositions => compositions[compositionIndex - 1].applyGraph(graph, options))",
+      "high_level_equivalent": null,
       "id": "cutagent.action.fusion.insert_settings.batch",
-      "idempotency_category": "unknown",
+      "idempotency_category": "requires_idempotency_key",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.fusion.insert_settings.batch.input",
       "maturity": "inventory_only",
       "operation_class": "mutation",
-      "owner": "sdk_domain_api",
+      "owner": "sdk_low_level_bindings",
       "precondition_category": "live_state_revision",
-      "protected_state_category": "none",
-      "reason_code": "workflow_belongs_in_a_high_level_domain_api",
-      "recovery_category": "not_available",
+      "protected_state_category": "active_project_and_timeline",
+      "reason_code": "video_authoring_operation_requires_typed_low_level_reachability",
+      "recovery_category": "inspect_project_state",
       "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.fusion.insert_settings.batch.result",
-      "verification_category": "required_unknown"
+      "verification_category": "structural_readback"
     },
     {
       "availability": "unknown",
@@ -23476,11 +23610,11 @@
       "verification_category": "structural_readback"
     },
     {
-      "availability": "unavailable",
+      "availability": "unknown",
       "cancellation_category": "not_cancellable",
       "capability_id": "fusion.mutation",
-      "contract_status": "planned",
-      "disposition": "high_level_equivalent",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
       "environment_applicability": {
         "architecture": {
           "arm64": "unknown",
@@ -23506,21 +23640,28 @@
         }
       },
       "error_codes": [
-        "UNSUPPORTED_OPERATION"
+        "API_CALL_FAILED",
+        "NO_PROJECT_OPEN",
+        "NO_TIMELINE_OPEN",
+        "RESOLVE_NOT_RUNNING",
+        "RESOLVE_SCRIPTING_UNAVAILABLE",
+        "STALE_REVISION",
+        "VALIDATION_ERROR",
+        "VERIFICATION_FAILED"
       ],
-      "high_level_equivalent": "client.projects.current().then(project => project.timelines.current()).then(timeline => timeline.fusion.forTimelineItem(timelineItemId, expectedRevision)).then(compositions => compositions[compositionIndex - 1].applyGraph(graph, options))",
+      "high_level_equivalent": null,
       "id": "cutagent.action.fusion.nested_text.batch",
-      "idempotency_category": "unknown",
+      "idempotency_category": "requires_idempotency_key",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.fusion.nested_text.batch.input",
       "maturity": "inventory_only",
       "operation_class": "mutation",
-      "owner": "sdk_domain_api",
+      "owner": "sdk_low_level_bindings",
       "precondition_category": "live_state_revision",
-      "protected_state_category": "none",
-      "reason_code": "workflow_belongs_in_a_high_level_domain_api",
-      "recovery_category": "not_available",
+      "protected_state_category": "active_project_and_timeline",
+      "reason_code": "video_authoring_operation_requires_typed_low_level_reachability",
+      "recovery_category": "inspect_project_state",
       "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.fusion.nested_text.batch.result",
-      "verification_category": "required_unknown"
+      "verification_category": "structural_readback"
     },
     {
       "availability": "unknown",
@@ -24759,11 +24900,11 @@
       "verification_category": "structural_readback"
     },
     {
-      "availability": "unavailable",
+      "availability": "unknown",
       "cancellation_category": "not_cancellable",
       "capability_id": "fusion.mutation",
-      "contract_status": "planned",
-      "disposition": "high_level_equivalent",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
       "environment_applicability": {
         "architecture": {
           "arm64": "unknown",
@@ -24789,21 +24930,28 @@
         }
       },
       "error_codes": [
-        "UNSUPPORTED_OPERATION"
+        "API_CALL_FAILED",
+        "NO_PROJECT_OPEN",
+        "NO_TIMELINE_OPEN",
+        "RESOLVE_NOT_RUNNING",
+        "RESOLVE_SCRIPTING_UNAVAILABLE",
+        "STALE_REVISION",
+        "VALIDATION_ERROR",
+        "VERIFICATION_FAILED"
       ],
-      "high_level_equivalent": "client.projects.current().then(project => project.timelines.current()).then(timeline => timeline.fusion.forTimelineItem(timelineItemId, expectedRevision)).then(compositions => compositions[compositionIndex - 1].applyGraph(graph, options))",
+      "high_level_equivalent": null,
       "id": "cutagent.action.fusion.text.batch",
-      "idempotency_category": "unknown",
+      "idempotency_category": "requires_idempotency_key",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.fusion.text.batch.input",
       "maturity": "inventory_only",
       "operation_class": "mutation",
-      "owner": "sdk_domain_api",
+      "owner": "sdk_low_level_bindings",
       "precondition_category": "live_state_revision",
-      "protected_state_category": "none",
-      "reason_code": "workflow_belongs_in_a_high_level_domain_api",
-      "recovery_category": "not_available",
+      "protected_state_category": "active_project_and_timeline",
+      "reason_code": "video_authoring_operation_requires_typed_low_level_reachability",
+      "recovery_category": "inspect_project_state",
       "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.fusion.text.batch.result",
-      "verification_category": "required_unknown"
+      "verification_category": "structural_readback"
     },
     {
       "availability": "unknown",
@@ -25492,6 +25640,60 @@
       "recovery_category": "not_available",
       "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.fusion.tool.paste.result",
       "verification_category": "not_applicable"
+    },
+    {
+      "availability": "unknown",
+      "cancellation_category": "not_cancellable",
+      "capability_id": "fusion.tool_list_get_set",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
+      "environment_applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "error_codes": [
+        "API_CALL_FAILED",
+        "NO_PROJECT_OPEN",
+        "NO_TIMELINE_OPEN",
+        "RESOLVE_NOT_RUNNING",
+        "RESOLVE_SCRIPTING_UNAVAILABLE",
+        "STALE_REVISION",
+        "VALIDATION_ERROR",
+        "VERIFICATION_FAILED"
+      ],
+      "high_level_equivalent": null,
+      "id": "cutagent.action.fusion.tool.registry",
+      "idempotency_category": "safe_repeat",
+      "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.fusion.tool.registry.input",
+      "maturity": "inventory_only",
+      "operation_class": "read",
+      "owner": "sdk_low_level_bindings",
+      "precondition_category": "connection",
+      "protected_state_category": "none",
+      "reason_code": "declared_video_capability_requires_typed_low_level_reachability",
+      "recovery_category": "none",
+      "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.fusion.tool.registry.result",
+      "verification_category": "structural_readback"
     },
     {
       "availability": "unknown",
@@ -28864,6 +29066,53 @@
       "verification_category": "structural_readback"
     },
     {
+      "availability": "unavailable",
+      "cancellation_category": "not_cancellable",
+      "capability_id": null,
+      "contract_status": "planned",
+      "disposition": "high_level_equivalent",
+      "environment_applicability": {
+        "architecture": {
+          "arm64": "declared_unverified",
+          "x86_64": "declared_unverified"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "declared_unverified",
+          "windows": "declared_unverified"
+        },
+        "overall": "partial",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "error_codes": [
+        "UNSUPPORTED_OPERATION"
+      ],
+      "high_level_equivalent": "client.projects.current().then(project => project.mediaPool.asset(assetSnapshot).transcription(options))",
+      "id": "cutagent.action.media.transcription",
+      "idempotency_category": "safe_repeat",
+      "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.transcription.input",
+      "maturity": "unknown",
+      "operation_class": "read",
+      "owner": "sdk_domain_api",
+      "precondition_category": "connection",
+      "protected_state_category": "none",
+      "reason_code": "workflow_belongs_in_a_high_level_domain_api",
+      "recovery_category": "not_available",
+      "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.media.transcription.result",
+      "verification_category": "structural_readback"
+    },
+    {
       "availability": "unknown",
       "cancellation_category": "local_wait_only",
       "capability_id": "media.unlink_relink",
@@ -29795,57 +30044,51 @@
       "verification_category": "terminal_and_readback"
     },
     {
-      "availability": "unknown",
-      "cancellation_category": "local_wait_only",
+      "availability": "unavailable",
+      "cancellation_category": "not_cancellable",
       "capability_id": "multicam.source.grade_cdl",
-      "contract_status": "input_typed_result_typed",
-      "disposition": "typed_semantic_action",
+      "contract_status": "unavailable",
+      "disposition": "unsupported_missing_implementation",
       "environment_applicability": {
         "architecture": {
           "arm64": "unknown",
           "x86_64": "unknown"
         },
         "davinci_resolve_version": {
-          "evidence": "declared_unverified",
+          "evidence": "unavailable",
           "maximum_declared": null,
           "minimum_declared": "20.0"
         },
         "edition": {
-          "free": "declared_unverified",
-          "studio": "declared_unverified"
+          "free": "unavailable",
+          "studio": "unavailable"
         },
         "operating_system": {
           "macos": "unknown",
           "windows": "unknown"
         },
-        "overall": "unknown",
+        "overall": "unavailable",
         "transport": {
-          "embedded_free": "declared_unverified",
-          "studio_external": "declared_unverified"
+          "embedded_free": "unavailable",
+          "studio_external": "unavailable"
         }
       },
       "error_codes": [
-        "EDIT_CONSTRAINT_VIOLATION",
-        "OPERATION_FAILED",
-        "RECOVERY_FAILED",
-        "RESOLVE_NOT_RUNNING",
-        "STALE_REVISION",
-        "VALIDATION_ERROR",
-        "VERIFICATION_FAILED"
+        "UNSUPPORTED_OPERATION"
       ],
       "high_level_equivalent": null,
       "id": "cutagent.action.multicam.source.grade_cdl",
-      "idempotency_category": "requires_idempotency_key",
+      "idempotency_category": "not_applicable",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.multicam.source.grade_cdl.input",
-      "maturity": "inventory_only",
+      "maturity": "unavailable",
       "operation_class": "mutation",
-      "owner": "sdk_low_level_bindings",
-      "precondition_category": "live_state_revision",
-      "protected_state_category": "active_project_and_timeline",
-      "reason_code": "declared_video_capability_requires_typed_low_level_reachability",
-      "recovery_category": "inspect_state_before_retry",
+      "owner": "cutagent_cli",
+      "precondition_category": "not_applicable",
+      "protected_state_category": "none",
+      "reason_code": "cutagent_cli_capability_is_explicitly_unsupported",
+      "recovery_category": "not_available",
       "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.multicam.source.grade_cdl.result",
-      "verification_category": "terminal_and_readback"
+      "verification_category": "not_applicable"
     },
     {
       "availability": "unknown",
@@ -31696,6 +31939,60 @@
     {
       "availability": "unknown",
       "cancellation_category": "not_cancellable",
+      "capability_id": "project.preset_import_export",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
+      "environment_applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "21.1"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "error_codes": [
+        "API_CALL_FAILED",
+        "AUTH_REQUIRED",
+        "CAPABILITY_NEGOTIATION_FAILED",
+        "CONFIRMATION_REQUIRED",
+        "RESOLVE_NOT_RUNNING",
+        "STALE_REVISION",
+        "VALIDATION_ERROR",
+        "VERIFICATION_FAILED"
+      ],
+      "high_level_equivalent": null,
+      "id": "cutagent.action.project.preset.export",
+      "idempotency_category": "requires_idempotency_key",
+      "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.project.preset.export.input",
+      "maturity": "inventory_only",
+      "operation_class": "mutation",
+      "owner": "sdk_low_level_bindings",
+      "precondition_category": "live_state_revision",
+      "protected_state_category": "active_context_and_filesystem_destination",
+      "reason_code": "declared_video_capability_requires_typed_low_level_reachability",
+      "recovery_category": "inspect_artifact_destination",
+      "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.project.preset.export.result",
+      "verification_category": "structural_readback"
+    },
+    {
+      "availability": "unknown",
+      "cancellation_category": "not_cancellable",
       "capability_id": "project.preset_list",
       "contract_status": "input_typed_result_typed",
       "disposition": "typed_semantic_action",
@@ -33163,11 +33460,11 @@
       "verification_category": "not_applicable"
     },
     {
-      "availability": "unavailable",
+      "availability": "unknown",
       "cancellation_category": "not_cancellable",
       "capability_id": "render.preset_save",
-      "contract_status": "unavailable",
-      "disposition": "unsupported_missing_implementation",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
       "environment_applicability": {
         "architecture": {
           "arm64": "unknown",
@@ -33193,21 +33490,72 @@
         }
       },
       "error_codes": [
-        "UNSUPPORTED_OPERATION"
+        "API_CALL_FAILED",
+        "NO_PROJECT",
+        "VALIDATION_ERROR"
       ],
       "high_level_equivalent": null,
       "id": "cutagent.action.render.preset_save",
-      "idempotency_category": "not_applicable",
+      "idempotency_category": "requires_idempotency_key",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.render.preset_save.input",
-      "maturity": "unavailable",
+      "maturity": "inventory_only",
       "operation_class": "mutation",
-      "owner": "cutagent_cli",
-      "precondition_category": "not_applicable",
-      "protected_state_category": "none",
-      "reason_code": "reviewed_private_packet_marks_action_unavailable",
-      "recovery_category": "not_available",
+      "owner": "sdk_low_level_bindings",
+      "precondition_category": "live_state_revision",
+      "protected_state_category": "active_project_and_timeline",
+      "reason_code": "declared_video_capability_requires_typed_low_level_reachability",
+      "recovery_category": "inspect_project_state",
       "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.render.preset_save.result",
-      "verification_category": "not_applicable"
+      "verification_category": "structural_readback"
+    },
+    {
+      "availability": "unknown",
+      "cancellation_category": "not_cancellable",
+      "capability_id": "render.preset_save",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
+      "environment_applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "error_codes": [
+        "API_CALL_FAILED",
+        "NO_PROJECT",
+        "VALIDATION_ERROR"
+      ],
+      "high_level_equivalent": null,
+      "id": "cutagent.action.render.preset_update",
+      "idempotency_category": "requires_idempotency_key",
+      "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.render.preset_update.input",
+      "maturity": "inventory_only",
+      "operation_class": "mutation",
+      "owner": "sdk_low_level_bindings",
+      "precondition_category": "live_state_revision",
+      "protected_state_category": "active_project_and_timeline",
+      "reason_code": "declared_video_capability_requires_typed_low_level_reachability",
+      "recovery_category": "inspect_project_state",
+      "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.render.preset_update.result",
+      "verification_category": "structural_readback"
     },
     {
       "availability": "unknown",
@@ -33622,7 +33970,7 @@
       "error_codes": [
         "UNSUPPORTED_OPERATION"
       ],
-      "high_level_equivalent": "client.projects.current().then(project => project.render.export(request, options))",
+      "high_level_equivalent": "client.projects.current().then(project => project.render.queue.start(jobs, options))",
       "id": "cutagent.action.render.start",
       "idempotency_category": "requires_idempotency_key",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.render.start.input",
@@ -34267,6 +34615,100 @@
     {
       "availability": "unknown",
       "cancellation_category": "not_cancellable",
+      "capability_id": "system.keyboard_preset_read",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
+      "environment_applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "21.1"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "error_codes": [
+        "API_CALL_FAILED"
+      ],
+      "high_level_equivalent": null,
+      "id": "cutagent.action.system.keyboard_preset.current",
+      "idempotency_category": "safe_repeat",
+      "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.system.keyboard_preset.current.input",
+      "maturity": "inventory_only",
+      "operation_class": "read",
+      "owner": "sdk_low_level_bindings",
+      "precondition_category": "connection",
+      "protected_state_category": "none",
+      "reason_code": "declared_video_capability_requires_typed_low_level_reachability",
+      "recovery_category": "none",
+      "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.system.keyboard_preset.current.result",
+      "verification_category": "structural_readback"
+    },
+    {
+      "availability": "unknown",
+      "cancellation_category": "not_cancellable",
+      "capability_id": "system.keyboard_preset_read",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
+      "environment_applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "21.1"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "error_codes": [
+        "API_CALL_FAILED"
+      ],
+      "high_level_equivalent": null,
+      "id": "cutagent.action.system.keyboard_preset.list",
+      "idempotency_category": "safe_repeat",
+      "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.system.keyboard_preset.list.input",
+      "maturity": "inventory_only",
+      "operation_class": "read",
+      "owner": "sdk_low_level_bindings",
+      "precondition_category": "connection",
+      "protected_state_category": "none",
+      "reason_code": "declared_video_capability_requires_typed_low_level_reachability",
+      "recovery_category": "none",
+      "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.system.keyboard_preset.list.result",
+      "verification_category": "structural_readback"
+    },
+    {
+      "availability": "unknown",
+      "cancellation_category": "not_cancellable",
       "capability_id": "system.keyframe_mode",
       "contract_status": "input_typed_result_typed",
       "disposition": "typed_semantic_action",
@@ -34804,11 +35246,11 @@
       "verification_category": "structural_readback"
     },
     {
-      "availability": "unavailable",
+      "availability": "unknown",
       "cancellation_category": "not_cancellable",
       "capability_id": "timeline.clip_color_batch",
-      "contract_status": "planned",
-      "disposition": "high_level_equivalent",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
       "environment_applicability": {
         "architecture": {
           "arm64": "unknown",
@@ -34834,21 +35276,28 @@
         }
       },
       "error_codes": [
-        "UNSUPPORTED_OPERATION"
+        "AUTH_REQUIRED",
+        "CAPABILITY_NEGOTIATION_FAILED",
+        "RESOLVE_NOT_RUNNING",
+        "VALIDATION_ERROR",
+        "API_CALL_FAILED",
+        "CONFIRMATION_REQUIRED",
+        "STALE_REVISION",
+        "VERIFICATION_FAILED"
       ],
-      "high_level_equivalent": "sdk.executeOperationBatch(client.workflows, sdk.defineOperationBatch({steps: inputs.map(({name, input}) => ({name, start: idempotencyKey => client.actions.invoke('cutagent.action.clip.color', input, {idempotencyKey})})), failurePolicy: 'stop'}), options)",
+      "high_level_equivalent": null,
       "id": "cutagent.action.timeline.clip_color.batch",
-      "idempotency_category": "unknown",
+      "idempotency_category": "requires_idempotency_key",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.timeline.clip_color.batch.input",
-      "maturity": "inventory_only",
+      "maturity": "stable",
       "operation_class": "mutation",
       "owner": "sdk_domain_api",
       "precondition_category": "live_state_revision",
-      "protected_state_category": "none",
-      "reason_code": "workflow_belongs_in_a_high_level_domain_api",
-      "recovery_category": "not_available",
+      "protected_state_category": "active_project_and_timeline",
+      "reason_code": "semantic_plural_timeline_clip_color",
+      "recovery_category": "inspect_project_state",
       "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.timeline.clip_color.batch.result",
-      "verification_category": "required_unknown"
+      "verification_category": "structural_readback"
     },
     {
       "availability": "unknown",
@@ -35465,7 +35914,7 @@
       "error_codes": [
         "UNSUPPORTED_OPERATION"
       ],
-      "high_level_equivalent": "sdk.executeOperationBatch(client.workflows, sdk.defineOperationBatch({steps: inputs.map(({name, input}) => ({name, start: idempotencyKey => client.actions.invoke('cutagent.action.timeline.frame_export', input, {idempotencyKey})})), failurePolicy: 'stop'}), options)",
+      "high_level_equivalent": "client.actions.invoke('cutagent.action.timeline.frame_export', inputs, options)",
       "id": "cutagent.action.timeline.frame_export.batch",
       "idempotency_category": "unknown",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.timeline.frame_export.batch.input",
@@ -36262,7 +36711,7 @@
       "error_codes": [
         "UNSUPPORTED_OPERATION"
       ],
-      "high_level_equivalent": "sdk.executeOperationBatch(client.workflows, sdk.defineOperationBatch({steps: moves.map(({name, timeline, item, destination}) => ({name, start: idempotencyKey => timeline.items.previewMove(item, destination).then(preview => timeline.items.move(preview, {idempotencyKey}))})), failurePolicy: 'stop'}), options)",
+      "high_level_equivalent": "client.projects.current().then(project => project.timelines.current()).then(timeline => timeline.items.previewMove(moves).then(previews => timeline.items.move(previews, options)))",
       "id": "cutagent.action.timeline.layout.free_stack",
       "idempotency_category": "unknown",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.timeline.layout.free_stack.input",
@@ -36571,7 +37020,7 @@
       "error_codes": [
         "UNSUPPORTED_OPERATION"
       ],
-      "high_level_equivalent": "sdk.executeOperationBatch(client.workflows, sdk.defineOperationBatch({steps: markers.map(({name, timeline, values}) => ({name, start: idempotencyKey => timeline.markers.previewCreate(values).then(preview => timeline.markers.create(preview, {idempotencyKey}))})), failurePolicy: 'stop'}), options)",
+      "high_level_equivalent": "client.projects.current().then(project => project.timelines.current()).then(timeline => timeline.markers.previewCreate(values).then(previews => timeline.markers.create(previews, options)))",
       "id": "cutagent.action.timeline.marker.batch",
       "idempotency_category": "unknown",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.timeline.marker.batch.input",
@@ -36844,6 +37293,110 @@
       "verification_category": "structural_readback"
     },
     {
+      "availability": "unknown",
+      "cancellation_category": "not_cancellable",
+      "capability_id": "timeline.output_blanking",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
+      "environment_applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "error_codes": [
+        "AUTH_REQUIRED",
+        "CAPABILITY_NEGOTIATION_FAILED",
+        "RESOLVE_NOT_RUNNING",
+        "VALIDATION_ERROR"
+      ],
+      "high_level_equivalent": null,
+      "id": "cutagent.action.timeline.output_blanking.get",
+      "idempotency_category": "safe_repeat",
+      "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.timeline.output_blanking.get.input",
+      "maturity": "inventory_only",
+      "operation_class": "read",
+      "owner": "sdk_low_level_bindings",
+      "precondition_category": "connection",
+      "protected_state_category": "none",
+      "reason_code": "declared_video_capability_requires_typed_low_level_reachability",
+      "recovery_category": "retry_read",
+      "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.timeline.output_blanking.get.result",
+      "verification_category": "structural_readback"
+    },
+    {
+      "availability": "unknown",
+      "cancellation_category": "not_cancellable",
+      "capability_id": "timeline.output_blanking",
+      "contract_status": "input_typed_result_typed",
+      "disposition": "typed_semantic_action",
+      "environment_applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "error_codes": [
+        "AUTH_REQUIRED",
+        "CAPABILITY_NEGOTIATION_FAILED",
+        "RESOLVE_NOT_RUNNING",
+        "VALIDATION_ERROR",
+        "API_CALL_FAILED",
+        "CONFIRMATION_REQUIRED",
+        "STALE_REVISION",
+        "VERIFICATION_FAILED"
+      ],
+      "high_level_equivalent": null,
+      "id": "cutagent.action.timeline.output_blanking.set",
+      "idempotency_category": "requires_idempotency_key",
+      "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.timeline.output_blanking.set.input",
+      "maturity": "stable",
+      "operation_class": "mutation",
+      "owner": "sdk_domain_api",
+      "precondition_category": "live_state_revision",
+      "protected_state_category": "active_project_and_timeline",
+      "reason_code": "semantic_timeline_item_move",
+      "recovery_category": "inspect_project_state",
+      "result_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.timeline.output_blanking.set.result",
+      "verification_category": "structural_readback"
+    },
+    {
       "availability": "unavailable",
       "cancellation_category": "not_cancellable",
       "capability_id": "timeline.overlay_stack",
@@ -36876,7 +37429,7 @@
       "error_codes": [
         "UNSUPPORTED_OPERATION"
       ],
-      "high_level_equivalent": "sdk.executeOperationBatch(client.workflows, sdk.defineOperationBatch({steps: layers.map(({name, timeline, snapshot, asset, placement}) => ({name, start: idempotencyKey => timeline.edit.previewInsert(snapshot, asset, placement).then(impact => timeline.edit.insert(impact, {idempotencyKey}))})), failurePolicy: 'stop'}), options)",
+      "high_level_equivalent": "client.projects.current().then(project => project.timelines.current()).then(timeline => timeline.edit.previewInsert(snapshot, placements).then(impacts => timeline.edit.insert(impacts, options)))",
       "id": "cutagent.action.timeline.overlay_stack.insert",
       "idempotency_category": "unknown",
       "input_schema": "urn:cutagent:schema:action-contracts:v1#/$defs/cutagent.action.timeline.overlay_stack.insert.input",
@@ -43381,6 +43934,39 @@
         "davinci_resolve_version": {
           "evidence": "declared_unverified",
           "maximum_declared": null,
+          "minimum_declared": "21.1"
+        },
+        "edition": {
+          "free": "unavailable",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "unavailable",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "available": false,
+      "cli_status": "supported",
+      "id": "dctl.encrypt",
+      "maturity": "not_applicable",
+      "owner": "cutagent_product_runtime",
+      "reason_code": "capability_is_not_a_direct_video_sdk_action",
+      "sdk_parity": "non_video_product_utility"
+    },
+    {
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
           "minimum_declared": "20.0"
         },
         "edition": {
@@ -48329,31 +48915,31 @@
           "x86_64": "unknown"
         },
         "davinci_resolve_version": {
-          "evidence": "declared_unverified",
+          "evidence": "unavailable",
           "maximum_declared": null,
           "minimum_declared": "20.0"
         },
         "edition": {
-          "free": "declared_unverified",
-          "studio": "declared_unverified"
+          "free": "unavailable",
+          "studio": "unavailable"
         },
         "operating_system": {
           "macos": "unknown",
           "windows": "unknown"
         },
-        "overall": "unknown",
+        "overall": "unavailable",
         "transport": {
-          "embedded_free": "declared_unverified",
-          "studio_external": "declared_unverified"
+          "embedded_free": "unavailable",
+          "studio_external": "unavailable"
         }
       },
       "available": false,
-      "cli_status": "supported",
+      "cli_status": "unsupported",
       "id": "multicam.source.grade_cdl",
-      "maturity": "inventory_only",
-      "owner": "sdk_low_level_bindings",
-      "reason_code": "supported_capability_has_a_typed_action_candidate",
-      "sdk_parity": "typed_semantic_action"
+      "maturity": "unavailable",
+      "owner": "cutagent_cli",
+      "reason_code": "cutagent_cli_capability_is_explicitly_unsupported",
+      "sdk_parity": "unsupported_missing_implementation"
     },
     {
       "applicability": {
@@ -49288,6 +49874,72 @@
         "davinci_resolve_version": {
           "evidence": "declared_unverified",
           "maximum_declared": null,
+          "minimum_declared": "21.1"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "available": false,
+      "cli_status": "supported",
+      "id": "project.preset_delete",
+      "maturity": "not_applicable",
+      "owner": "cutagent_product_runtime",
+      "reason_code": "capability_is_not_a_direct_video_sdk_action",
+      "sdk_parity": "non_video_product_utility"
+    },
+    {
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "21.1"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "available": false,
+      "cli_status": "supported",
+      "id": "project.preset_import_export",
+      "maturity": "inventory_only",
+      "owner": "sdk_low_level_bindings",
+      "reason_code": "supported_capability_has_a_typed_action_candidate",
+      "sdk_parity": "typed_semantic_action"
+    },
+    {
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
           "minimum_declared": "20.0"
         },
         "edition": {
@@ -49835,10 +50487,10 @@
       "available": false,
       "cli_status": "supported",
       "id": "render.preset_save",
-      "maturity": "unknown",
-      "owner": "cutagent_cli",
-      "reason_code": "capability_has_no_active_command_action_link",
-      "sdk_parity": "capability_without_action"
+      "maturity": "inventory_only",
+      "owner": "sdk_low_level_bindings",
+      "reason_code": "supported_capability_has_a_typed_action_candidate",
+      "sdk_parity": "typed_semantic_action"
     },
     {
       "applicability": {
@@ -50235,6 +50887,72 @@
       "owner": "cutagent_cli",
       "reason_code": "capability_has_no_active_command_action_link",
       "sdk_parity": "capability_without_action"
+    },
+    {
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "21.1"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "available": false,
+      "cli_status": "supported",
+      "id": "system.keyboard_preset_management",
+      "maturity": "not_applicable",
+      "owner": "cutagent_product_runtime",
+      "reason_code": "capability_is_not_a_direct_video_sdk_action",
+      "sdk_parity": "non_video_product_utility"
+    },
+    {
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "21.1"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "available": false,
+      "cli_status": "supported",
+      "id": "system.keyboard_preset_read",
+      "maturity": "inventory_only",
+      "owner": "sdk_low_level_bindings",
+      "reason_code": "supported_capability_has_a_typed_action_candidate",
+      "sdk_parity": "typed_semantic_action"
     },
     {
       "applicability": {
@@ -50726,10 +51444,10 @@
       "available": false,
       "cli_status": "supported",
       "id": "timeline.clip_color_batch",
-      "maturity": "inventory_only",
+      "maturity": "stable",
       "owner": "sdk_domain_api",
-      "reason_code": "supported_capability_is_reserved_for_a_high_level_domain_api",
-      "sdk_parity": "high_level_equivalent"
+      "reason_code": "semantic_plural_timeline_clip_color",
+      "sdk_parity": "typed_semantic_action"
     },
     {
       "applicability": {
@@ -51451,6 +52169,39 @@
       },
       "available": false,
       "cli_status": "supported",
+      "id": "timeline.output_blanking",
+      "maturity": "inventory_only",
+      "owner": "sdk_low_level_bindings",
+      "reason_code": "supported_capability_has_a_typed_action_candidate",
+      "sdk_parity": "typed_semantic_action"
+    },
+    {
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "available": false,
+      "cli_status": "supported",
       "id": "timeline.overlay_stack",
       "maturity": "inventory_only",
       "owner": "sdk_domain_api",
@@ -51984,42 +52735,75 @@
       "owner": "sdk_low_level_bindings",
       "reason_code": "supported_capability_has_a_typed_action_candidate",
       "sdk_parity": "typed_semantic_action"
+    },
+    {
+      "applicability": {
+        "architecture": {
+          "arm64": "unknown",
+          "x86_64": "unknown"
+        },
+        "davinci_resolve_version": {
+          "evidence": "declared_unverified",
+          "maximum_declared": null,
+          "minimum_declared": "20.0"
+        },
+        "edition": {
+          "free": "declared_unverified",
+          "studio": "declared_unverified"
+        },
+        "operating_system": {
+          "macos": "unknown",
+          "windows": "unknown"
+        },
+        "overall": "unknown",
+        "transport": {
+          "embedded_free": "declared_unverified",
+          "studio_external": "declared_unverified"
+        }
+      },
+      "available": false,
+      "cli_status": "supported",
+      "id": "video.generation",
+      "maturity": "not_applicable",
+      "owner": "cutagent_product_runtime",
+      "reason_code": "capability_is_not_a_direct_video_sdk_action",
+      "sdk_parity": "non_video_product_utility"
     }
   ],
   "contract_digests": {
-    "action_contracts": "dbf1c0604ef34e716e42b33550dfc1370f7a9503d133b3dbdf1a784ad46c227c",
-    "applicability": "f190bd89b044893f398ba677a479e67acb258a2462b691ebdfd4805245606cbd",
-    "compatibility": "a2e9b0d5c7cd383b0d8b6eadbb5c297b39d98874ef056212012635bda76dce9e",
+    "action_contracts": "5dd4dfef88cf96556db07bc5c7ad515fa3a4b2c1c30bb26b6bd26d983c7f0f86",
+    "applicability": "a1f33b29d7c755746ffb17b710162b6bcfd1eae0788b0a575287c8862018f2ba",
+    "compatibility": "eba840ff0bd89aff2a208e9f269b38c08b0c65d12439cef39cfc23867f12685d",
     "error_registry": "536b3a041afb3e377d5370d5998fe456528c11472b7a5f417114510e00d07dea",
-    "input_schemas": "04f87c54441c842205c86a685fdf77abb94804f3a4ab14b1e1d49a20fb5bf4e3",
-    "result_schemas": "7d58902a6b221021ea742f4a508a02abc92210329c06f24a1c6c39ededb102d9"
+    "input_schemas": "6ada4e930aa49a0872ffc0d2198e6503b22e34d3ca617d988a428f88455fcbd9",
+    "result_schemas": "87321b014836d899759ad9c158bc4e05895b19ae4a6f0cc0d142b289971ca20b"
   },
   "counts": {
-    "active_commands": 811,
-    "capabilities": 400,
+    "active_commands": 829,
+    "capabilities": 407,
     "capability_sdk_parity": {
-      "capability_without_action": 21,
-      "high_level_equivalent": 23,
-      "non_video_product_utility": 7,
+      "capability_without_action": 20,
+      "high_level_equivalent": 22,
+      "non_video_product_utility": 11,
       "partial_missing_implementation": 30,
-      "typed_semantic_action": 301,
-      "unsupported_missing_implementation": 18
+      "typed_semantic_action": 305,
+      "unsupported_missing_implementation": 19
     },
     "capability_statuses": {
       "partial": 30,
-      "supported": 352,
-      "unsupported": 18
+      "supported": 358,
+      "unsupported": 19
     },
-    "classified_commands": 811,
+    "classified_commands": 829,
     "command_dispositions": {
       "alias": 7,
-      "high_level_equivalent": 44,
-      "non_video_product_utility": 77,
-      "typed_semantic_action": 646,
+      "high_level_equivalent": 37,
+      "non_video_product_utility": 85,
+      "typed_semantic_action": 663,
       "unsupported_missing_implementation": 37
     },
     "errors": 86,
-    "public_actions": 727
+    "public_actions": 737
   },
   "errors": [
     {
@@ -53223,5 +54007,5 @@
   ],
   "kind": "cutagent-sdk-inventory",
   "schema_version": 1,
-  "source_digest": "e193232f96dc9ad9aeb1905a1e6c4ac3e4d0261b6966b09fb6765461c9d5874e"
+  "source_digest": "ab1e223d9561e9beb5ebacf02b86e17cc0ac6ca6f746cdc99b400503bb0f01d2"
 }

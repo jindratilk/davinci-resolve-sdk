@@ -1,29 +1,11 @@
 import crypto from "node:crypto";
-import { spawn } from "node:child_process";
-import fs from "node:fs";
-import path from "node:path";
 import {createLocalCapability as createDesktopBridgeCapability} from "../../local/capability.mjs";
 import {
   readBundledCutAgentCliCommandCatalog,
   readBundledText,
 } from "../../local/resources.mjs";
 import { captureAuthenticatedSdkRequest } from "./sdk-authenticated-request.js";
-import {
-  isReviewedSdkEditPreview,
-  lowerCutAgentCliMutationImpact,
-  mutationPolicyDigest,
-  privateCommandImpact,
-  PRIVATE_IMPACT_REGISTRY_DIGEST,
-} from "./mutation-policy/impact-lowering.js";
-import { MutationPolicyError } from "./mutation-policy/mutation-policy-gate.js";
-import { resolveCutAgentCliCommand } from "../../local/cli-runtime.mjs";
-import { sdkMutationImpactSchema } from "../contracts/generated/sdk-mutation-policy.js";
 import { sdkPreparedActionAuthorizationBindingSchema } from "../contracts/generated/sdk-prepared-action.js";
-
-const RELEASE_BRIDGE_BUNDLE = process.env.CUTAGENT_RELEASE_BRIDGE_BUNDLE === "1";
-const MUTATION_IMPACT_ARG = "--cutagent-internal-mutation-impact";
-const MUTATION_IMPACT_PROOF_CONTEXT = "cutagent-mutation-impact-v1";
-const MUTATION_AUTHORITY_SECRET = crypto.randomBytes(32).toString("base64url");
 
 const GLOBAL_VALUE_OPTIONS = new Set([
   "--output-mode",
@@ -42,72 +24,10 @@ const READ_ONLY_CACHEABLE_COMMANDS = new Set([
   "version.list",
   "version.status",
 ]);
-const NON_EDITING_LOCAL_UTILITY_COMMANDS = new Set([
-  "embedded.install",
-  "embedded.start_server",
-]);
-
 const CACHE_EXPIRY_SKEW_MS = 10_000;
 const MAX_READ_ONLY_CACHE_TTL_MS = 60_000;
 const MAX_AUTHORIZATION_CACHE_ENTRIES = 256;
-const MAX_NATIVE_IMPACT_OUTPUT_BYTES = 256 * 1024;
-
 let commandCatalogCache = null;
-
-function requestNativeImpactArtifact(requestBytes, nonce, cutAgentCliCommand = null) {
-  return new Promise((resolve, reject) => {
-    // This authenticated metadata request never executes a public CLI command;
-    // mutation execution still passes through assertCutAgentCliPolicyBeforeSpawn.
-    const authorityCommand = cutAgentCliCommand || resolveCutAgentCliCommand();
-    const child = spawn(authorityCommand, [MUTATION_IMPACT_ARG, nonce], {
-      shell: false,
-      stdio: ["pipe", "pipe", "pipe"],
-      env: {
-        ...process.env,
-        CUTAGENT_MUTATION_AUTHORITY_SECRET: MUTATION_AUTHORITY_SECRET,
-        CUTAGENT_MUTATION_AUTHORITY_BRIDGE_PID: String(process.pid),
-      },
-    });
-    let stdout = Buffer.alloc(0);
-    let stderr = Buffer.alloc(0);
-    let settled = false;
-    let timer = null;
-    const finish = (error, value = null) => {
-      if (settled) return;
-      settled = true;
-      if (timer) clearTimeout(timer);
-      if (error) reject(error); else resolve(value);
-    };
-    const append = (current, chunk) => {
-      const next = Buffer.concat([current, chunk]);
-      if (next.length > MAX_NATIVE_IMPACT_OUTPUT_BYTES) {
-        child.kill("SIGKILL");
-        throw new Error("Native mutation authority output exceeded its bound.");
-      }
-      return next;
-    };
-    child.stdout.on("data", (chunk) => {
-      try { stdout = append(stdout, chunk); } catch (error) { finish(error); }
-    });
-    child.stderr.on("data", (chunk) => {
-      try { stderr = append(stderr, chunk); } catch (error) { finish(error); }
-    });
-    child.once("error", (error) => finish(error));
-    child.once("close", (code) => {
-      if (code !== 0) {
-        finish(new Error(stderr.toString("utf8").trim() || "Native mutation authority failed."));
-      } else {
-        finish(null, stdout.toString("utf8"));
-      }
-    });
-    timer = setTimeout(() => {
-      child.kill("SIGKILL");
-      finish(new Error("Native mutation authority timed out."));
-    }, 2_000);
-    timer.unref?.();
-    child.stdin.end(requestBytes);
-  });
-}
 
 function normalizeCommandToken(value) {
   return typeof value === "string" ? value.replaceAll("-", "_") : "";
@@ -245,43 +165,6 @@ export function hashCutAgentCliArgs(args) {
     .digest("hex");
 }
 
-function commandOption(args, name) {
-  const exactIndex = args.lastIndexOf(name);
-  if (exactIndex >= 0) return args[exactIndex + 1] ?? null;
-  const inline = [...args].reverse().find((item) => item.startsWith(`${name}=`));
-  return inline ? inline.slice(name.length + 1) : null;
-}
-
-export function currentReferencedPayloadDigests(args, cwd) {
-  const inline = commandOption(args, "--batch-json");
-  if (inline) return [mutationPolicyDigest(inline)];
-  const fusionIndex = args.indexOf("fusion");
-  const requested = commandOption(args, "--batch")
-    ?? commandOption(args, "--input")
-    ?? commandOption(args, "--input-file")
-    ?? (args.includes("--sdk-graph-runtime")
-      && fusionIndex >= 0
-      && args[fusionIndex + 1] === "apply"
-      ? args[fusionIndex + 2]
-      : null);
-  if (!requested) return [];
-  if (typeof cwd !== "string" || !cwd) {
-    throw new MutationPolicyError(
-      "decision_binding_mismatch",
-      "The referenced mutation payload has no execution directory at launch.",
-    );
-  }
-  try {
-    const bytes = fs.readFileSync(path.resolve(cwd, requested));
-    return [`sha256:${crypto.createHash("sha256").update(bytes).digest("hex")}`];
-  } catch {
-    throw new MutationPolicyError(
-      "decision_binding_mismatch",
-      "The referenced mutation payload is unavailable at launch.",
-    );
-  }
-}
-
 export function inferCutAgentCliCommandId(args) {
   const tokens = normalizeArgs(args);
   if (tokens.includes("sdk-action-read") || tokens.includes("sdk-evaluator-sound-library-observe")) {
@@ -328,7 +211,10 @@ export function isCutAgentCliAuthorizationRequired(args) {
   if (tokens.length === 0) {
     return false;
   }
-  if (tokens.includes("--help") || tokens.includes("-h") || tokens.includes("--version")) {
+  if (isPublicRootFlagProbe(tokens, new Set(["--help", "-h"]))) {
+    return false;
+  }
+  if (isPublicRootFlagProbe(tokens, new Set(["--version"]))) {
     return false;
   }
   if (isLocalStatusProbe(tokens)) {
@@ -338,108 +224,38 @@ export function isCutAgentCliAuthorizationRequired(args) {
   return true;
 }
 
+function isPublicRootFlagProbe(tokens, requestedFlags) {
+  const allowedFlags = new Set([
+    "--json", "-j", "--agent", "--lean", "--quiet", "-q",
+    "--plain", "-p", "--tsv",
+  ]);
+  let requested = false;
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    if (requestedFlags.has(token)) {
+      if (requested) return false;
+      requested = true;
+      continue;
+    }
+    if (allowedFlags.has(token)) continue;
+    if (token === "--output-mode") {
+      if (index + 1 >= tokens.length) return false;
+      index += 1;
+      continue;
+    }
+    if (token.startsWith("--output-mode=")) continue;
+    return false;
+  }
+  return requested;
+}
+
 /** Final local execution guard. Every CutAgent CLI spawn site must call this. */
 export function assertCutAgentCliPolicyBeforeSpawn(service, args, authorization) {
   if (!isCutAgentCliAuthorizationRequired(args)) return true;
-  const commandId = inferCutAgentCliCommandId(args);
-  if (!RELEASE_BRIDGE_BUNDLE && privateCommandImpact(commandId)?.operationClass === "read") return true;
   if (typeof service?.assertReadyForSpawn !== "function") {
-    throw new MutationPolicyError(
-      "missing_scope",
-      "The mutation execution site has no current policy authority.",
-    );
+    throw createAuthorizationError(args, "AUTH_REQUIRED", "The command execution site has no current authorization authority.");
   }
   return service.assertReadyForSpawn(args, authorization);
-}
-
-function canonicalNativeArtifact(value) {
-  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
-  if (typeof value === "number" && Number.isFinite(value)) return Object.is(value, -0) ? 0 : value;
-  if (Array.isArray(value)) return value.map(canonicalNativeArtifact);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalNativeArtifact(value[key])]));
-  }
-  throw new TypeError("Native mutation impact must be JSON-compatible.");
-}
-
-function parseNativeMutationImpact(stdout, expectedNonce, expectedCommandId, expectedArgs) {
-  let parsed;
-  try {
-    parsed = JSON.parse(typeof stdout === "string" ? stdout.trim() : "");
-  } catch {
-    parsed = null;
-  }
-  const artifact = parsed?.artifact;
-  const signature = typeof parsed?.signature === "string" ? parsed.signature : "";
-  const expectedSignature = crypto.createHmac("sha256", MUTATION_AUTHORITY_SECRET)
-    .update(`${MUTATION_IMPACT_PROOF_CONTEXT}\0${JSON.stringify(canonicalNativeArtifact(artifact))}`, "utf8")
-    .digest("hex");
-  const impact = artifact?.impact === null ? null : sdkMutationImpactSchema.safeParse(artifact?.impact);
-  if (parsed && Object.keys(parsed).sort().join("\0") !== ["artifact", "signature"].sort().join("\0")
-    || artifact?.schemaVersion !== 1
-    || artifact?.nonce !== expectedNonce
-    || artifact?.registryDigest !== PRIVATE_IMPACT_REGISTRY_DIGEST
-    || !["read", "mutation"].includes(artifact?.classification)
-    || !/^[a-f0-9]{64}$/.test(signature)
-    || !crypto.timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expectedSignature, "hex"))
-    || (artifact.classification === "read" ? artifact.impact !== null : !impact?.success)
-    || (impact?.success && impact.data.canonicalRequestDigest !== mutationPolicyDigest({ commandId: expectedCommandId, args: expectedArgs }))) {
-    throw new MutationPolicyError(
-      "unknown_impact",
-      "The private native mutation authority returned an incompatible result.",
-    );
-  }
-  return Object.freeze({
-    commandId: expectedCommandId,
-    operationClass: artifact.classification,
-    registryDigest: artifact.registryDigest,
-    impact: impact?.success ? impact.data : null,
-  });
-}
-
-export async function resolveCutAgentCliCommandImpact({
-  args,
-  commandId,
-  carrier,
-  cwd,
-  policyContext,
-  cutAgentCliCommand = null,
-}) {
-  if (isReviewedSdkEditPreview({ args, commandId, carrier, policyContext })) {
-    return Object.freeze({
-      commandId,
-      operationClass: "read",
-      registryDigest: PRIVATE_IMPACT_REGISTRY_DIGEST,
-      impact: null,
-    });
-  }
-  if (!RELEASE_BRIDGE_BUNDLE) {
-    const impact = privateCommandImpact(commandId);
-    return Object.freeze({
-      commandId,
-      operationClass: impact?.operationClass ?? "mutation",
-      registryDigest: PRIVATE_IMPACT_REGISTRY_DIGEST,
-      impact: impact?.operationClass === "read" ? null : lowerCutAgentCliMutationImpact({
-        args, commandId, carrier, cwd, policyContext,
-      }),
-    });
-  }
-  try {
-    const nonce = crypto.randomBytes(32).toString("base64url");
-    const request = { args: normalizeArgs(args), commandId, carrier, cwd, policyContext, nonce };
-    const stdout = await requestNativeImpactArtifact(
-      Buffer.from(JSON.stringify(request), "utf8"),
-      nonce,
-      cutAgentCliCommand,
-    );
-    return parseNativeMutationImpact(stdout, nonce, commandId, normalizeArgs(args));
-  } catch (error) {
-    if (error instanceof MutationPolicyError) throw error;
-    throw new MutationPolicyError(
-      "unknown_impact",
-      "The private native mutation authority is unavailable.",
-    );
-  }
 }
 
 function isLocalStatusProbe(tokens) {
@@ -564,15 +380,18 @@ export function createCutAgentCliAuthorizationService({
   settingsService,
   authService,
   cutagentCloudService,
-  mutationPolicyGate = null,
 }) {
   const tokenCache = new Map();
   const inFlightAuthorizations = new Map();
-  const trustedReadAuthorizations = new WeakSet();
-  const trustedLocalUtilityAuthorizations = new WeakMap();
+  const trustedCommandAuthorizations = new WeakMap();
 
-  function trustLocalUtilityAuthorization(authorization, args) {
-    trustedLocalUtilityAuthorizations.set(authorization, hashCutAgentCliArgs(args));
+  function trustCommandAuthorization(authorization, args, embeddedExecuteSha256 = null, reusable = false) {
+    trustedCommandAuthorizations.set(authorization, Object.freeze({
+      commandId: inferCutAgentCliCommandId(args),
+      argsSha256: hashCutAgentCliArgs(args),
+      embeddedExecuteSha256: normalizeEmbeddedExecuteSha256(embeddedExecuteSha256),
+      reusable,
+    }));
     return authorization;
   }
 
@@ -580,7 +399,6 @@ export function createCutAgentCliAuthorizationService({
     actionId,
     operationClass,
     authorizationBinding,
-    policyDecisionDigest = null,
     timeoutMs = null,
     signal = null,
   }) {
@@ -592,7 +410,6 @@ export function createCutAgentCliAuthorizationService({
         actionId,
         operationClass,
         authorizationBinding,
-        policyDecisionDigest,
       });
     }
     if (settingsService?.getRuntimeMode?.() !== "cloud_managed") {
@@ -603,8 +420,7 @@ export function createCutAgentCliAuthorizationService({
     }
     const binding = sdkPreparedActionAuthorizationBindingSchema.parse(authorizationBinding);
     if (!/^cutagent\.action\.[a-z0-9_.]+$/.test(String(actionId ?? ""))
-      || !["read", "mutation"].includes(operationClass)
-      || ((operationClass === "mutation") !== (typeof policyDecisionDigest === "string" && /^sha256:[a-f0-9]{64}$/.test(policyDecisionDigest)))) {
+      || !["read", "mutation"].includes(operationClass)) {
       throw createAuthorizationError([], "AUTH_TOKEN_INVALID", "Prepared-action authorization binding is invalid.");
     }
     const authenticated = await captureAuthenticatedSdkRequest(authService, { signal });
@@ -614,7 +430,6 @@ export function createCutAgentCliAuthorizationService({
         actionId,
         operationClass,
         authorizationBinding: binding,
-        ...(policyDecisionDigest ? { policyDecisionDigest } : {}),
         desktopSessionId: null,
         platform: process.platform,
         appVersion: "desktop",
@@ -672,11 +487,6 @@ export function createCutAgentCliAuthorizationService({
     embeddedExecuteSha256 = null,
     timeoutMs = null,
     signal = null,
-    cwd = null,
-    carrier = "cli",
-    policyContext = null,
-    refreshProtectedTargets = null,
-    cutAgentCliCommand = null,
   } = {}) {
     if (!isCutAgentCliAuthorizationRequired(args)) {
       return {};
@@ -696,78 +506,10 @@ export function createCutAgentCliAuthorizationService({
         "Sign in to CutAgent before running DaVinci Resolve edit commands.",
       );
     }
-    const localUtility = NON_EDITING_LOCAL_UTILITY_COMMANDS.has(commandId);
-    const commandImpact = localUtility
-      ? Object.freeze({
-          commandId,
-          operationClass: "mutation",
-          registryDigest: PRIVATE_IMPACT_REGISTRY_DIGEST,
-          impact: null,
-        })
-      : await resolveCutAgentCliCommandImpact({
-          args: normalizeArgs(args), commandId, carrier, cwd, policyContext, cutAgentCliCommand,
-        });
-    let policyDecision = null;
-    let policyDecisionBinding = null;
-    let policyImpact = null;
-    if (commandImpact?.operationClass !== "read" && !localUtility) {
-      if (!mutationPolicyGate) {
-        throw new MutationPolicyError(
-          "missing_scope",
-          "A durable editing-constraint authority is required before this mutation can be authorized.",
-        );
-      }
-      const authenticated = await captureAuthenticatedSdkRequest(authService);
-      const impact = commandImpact.impact;
-      policyImpact = impact;
-      const preflightProtectedTargets = typeof refreshProtectedTargets === "function"
-        ? await refreshProtectedTargets()
-        : policyContext?.currentProtectedTargets ?? null;
-      policyDecision = mutationPolicyGate.preflight({
-        accountFingerprint: authenticated.accountFingerprint,
-        impact,
-        currentProtectedTargets: preflightProtectedTargets,
-      });
-      policyDecisionBinding = {
-        registryDigest: policyDecision.registryDigest,
-        canonicalRequestDigest: policyDecision.canonicalRequestDigest,
-        referencedPayloadDigests: policyDecision.referencedPayloadDigests,
-        resolvedTargetsDigest: policyDecision.resolvedTargetsDigest,
-        projectLibraryId: policyDecision.projectLibraryId,
-        projectId: policyDecision.projectId,
-        timelineId: policyDecision.timelineId,
-        projectRevision: policyDecision.projectRevision,
-        timelineRevision: policyDecision.timelineRevision,
-        requestId: policyDecision.requestId,
-        operationId: policyDecision.operationId,
-        executionId: policyDecision.executionId,
-      };
-      mutationPolicyGate.revalidateBeforeAuthorization(
-        policyDecision.decisionId,
-        policyDecisionBinding,
-        typeof refreshProtectedTargets === "function"
-          ? await refreshProtectedTargets()
-          : policyContext?.currentProtectedTargets ?? null,
-      );
-    }
-
-    const policyAuthorization = policyDecision
-      ? {
-          policyDecision,
-          policyDecisionBinding,
-          policyRevalidation: { cwd, carrier, policyContext: structuredClone(policyContext) },
-          refreshProtectedTargets,
-          policyImpact,
-        }
-      : {
-          policyClassification: commandImpact,
-        };
+    const canReuseAuthorization = isReadOnlyCacheableCommand(commandId);
 
     if (!cloudManaged) {
-      if (commandImpact.operationClass === "read") trustedReadAuthorizations.add(policyAuthorization);
-      return localUtility
-        ? trustLocalUtilityAuthorization(policyAuthorization, args)
-        : policyAuthorization;
+      return trustCommandAuthorization({}, args, embeddedExecuteSha256, canReuseAuthorization);
     }
 
     const normalizedArgs = normalizeArgs(args);
@@ -779,7 +521,6 @@ export function createCutAgentCliAuthorizationService({
       session,
       embeddedExecuteSha256: normalizedEmbeddedExecuteSha256,
     });
-    const canReuseAuthorization = isReadOnlyCacheableCommand(commandId);
     if (canReuseAuthorization) {
       const cachedAuthorization = readCachedAuthorization(cacheKey);
       if (cachedAuthorization) {
@@ -835,6 +576,17 @@ export function createCutAgentCliAuthorizationService({
           "CutAgent cloud did not return a DaVinci Resolve command authorization token.",
         );
       }
+      const expectedArgsSha256 = hashCutAgentCliArgs(normalizedArgs);
+      if ((typeof payload?.command_id === "string" && payload.command_id !== commandId)
+        || (typeof payload?.args_sha256 === "string" && payload.args_sha256 !== expectedArgsSha256)
+        || (normalizedEmbeddedExecuteSha256 && typeof payload?.embedded_execute_sha256 === "string"
+          && payload.embedded_execute_sha256 !== normalizedEmbeddedExecuteSha256)) {
+        throw createAuthorizationError(
+          args,
+          "AUTH_TOKEN_INVALID",
+          "CutAgent cloud returned a command authorization for different arguments.",
+        );
+      }
 
       const authorization = {
         env: {
@@ -846,17 +598,15 @@ export function createCutAgentCliAuthorizationService({
         displayLabel: typeof payload.display_label === "string" && payload.display_label.trim()
           ? payload.display_label.trim()
           : null,
-        argsSha256: payload.args_sha256 ?? hashCutAgentCliArgs(args),
+        argsSha256: expectedArgsSha256,
         accountSubject: typeof payload.account_subject === "string" && payload.account_subject.trim()
           ? payload.account_subject.trim()
           : null,
         expiresAt: payload.expires_at ?? null,
         embeddedExecuteSha256: payload.embedded_execute_sha256 ?? null,
-        ...policyAuthorization,
       };
 
-      if (commandImpact.operationClass === "read") trustedReadAuthorizations.add(authorization);
-      if (localUtility) trustLocalUtilityAuthorization(authorization, args);
+      trustCommandAuthorization(authorization, args, normalizedEmbeddedExecuteSha256, canReuseAuthorization);
 
       if (canReuseAuthorization) {
         writeCachedAuthorization(cacheKey, authorization, payload.expires_at);
@@ -877,71 +627,17 @@ export function createCutAgentCliAuthorizationService({
   function assertReadyForSpawn(args, authorization) {
     const commandId = inferCutAgentCliCommandId(args);
     if (!isCutAgentCliAuthorizationRequired(args)) return true;
-    if (trustedReadAuthorizations.has(authorization)
-      && authorization.policyClassification?.commandId === commandId
-      && authorization.policyClassification?.operationClass === "read") return true;
-    if (NON_EDITING_LOCAL_UTILITY_COMMANDS.has(commandId)
-      && authorization?.policyClassification?.commandId === commandId
-      && authorization.policyClassification.operationClass === "mutation"
-      && trustedLocalUtilityAuthorizations.get(authorization) === hashCutAgentCliArgs(args)) return true;
-    if (!RELEASE_BRIDGE_BUNDLE && privateCommandImpact(commandId)?.operationClass === "read") return true;
-    if (!authorization?.policyDecision || !authorization?.policyDecisionBinding || !mutationPolicyGate) {
-      throw new MutationPolicyError(
-        "missing_scope",
-        "The mutation has no current one-use policy decision.",
-      );
+    const trusted = authorization && typeof authorization === "object"
+      ? trustedCommandAuthorizations.get(authorization)
+      : null;
+    if (!trusted || trusted.commandId !== commandId || trusted.argsSha256 !== hashCutAgentCliArgs(args)) {
+      throw createAuthorizationError(args, "AUTH_REQUIRED", "The command authorization does not match these exact arguments.");
     }
-    const revalidation = authorization.policyRevalidation ?? {};
-    const currentImpact = RELEASE_BRIDGE_BUNDLE
-      ? authorization.policyImpact
-      : lowerCutAgentCliMutationImpact({
-          args: normalizeArgs(args),
-          commandId,
-          cwd: revalidation.cwd ?? null,
-          carrier: revalidation.carrier ?? "cli",
-          policyContext: revalidation.policyContext ?? null,
-        });
-    if (currentImpact?.status !== "mutation") {
-      throw new MutationPolicyError("decision_binding_mismatch", "The mutation impact could not be reproduced at launch.");
+    if (trusted.embeddedExecuteSha256 !== normalizeEmbeddedExecuteSha256(authorization?.embeddedExecuteSha256)) {
+      throw createAuthorizationError(args, "AUTH_REQUIRED", "The embedded command authorization binding changed before execution.");
     }
-    const currentBinding = {
-      ...authorization.policyDecisionBinding,
-      registryDigest: currentImpact.registryDigest,
-      canonicalRequestDigest: RELEASE_BRIDGE_BUNDLE
-        ? mutationPolicyDigest({ commandId, args: normalizeArgs(args) })
-        : currentImpact.canonicalRequestDigest,
-      referencedPayloadDigests: RELEASE_BRIDGE_BUNDLE
-        ? currentReferencedPayloadDigests(normalizeArgs(args), revalidation.cwd ?? null)
-        : currentImpact.referencedPayloadDigests,
-      resolvedTargetsDigest: mutationPolicyDigest(currentImpact.effects.map((effect) => effect.targets)),
-      projectLibraryId: currentImpact.projectLibraryId,
-      projectId: currentImpact.projectId ?? null,
-      timelineId: currentImpact.timelineId ?? null,
-      projectRevision: currentImpact.projectRevision ?? null,
-      timelineRevision: currentImpact.timelineRevision ?? null,
-    };
-    const consume = (currentProtectedTargets) => {
-      const consumed = mutationPolicyGate.consumeBeforeSpawn(
-        authorization.policyDecision.decisionId,
-        currentBinding,
-        currentProtectedTargets,
-      );
-      authorization.env = {
-        ...(authorization.env ?? {}),
-        CUTAGENT_MUTATION_POLICY_ARGS_SHA256: hashCutAgentCliArgs(args),
-        ...(currentBinding.referencedPayloadDigests.length === 1
-          ? { CUTAGENT_MUTATION_POLICY_PAYLOAD_SHA256: currentBinding.referencedPayloadDigests[0] }
-          : {}),
-        ...(currentImpact.commandId === "version.restore"
-          && typeof revalidation.policyContext?.expectedCurrentStateHash === "string"
-          ? { CUTAGENT_WORKFLOW_EXPECTED_STATE_HASH: revalidation.policyContext.expectedCurrentStateHash }
-          : {}),
-      };
-      return consumed;
-    };
-    return typeof authorization.refreshProtectedTargets === "function"
-      ? Promise.resolve(authorization.refreshProtectedTargets()).then(consume)
-      : consume(revalidation.policyContext?.currentProtectedTargets ?? null);
+    if (!trusted.reusable) trustedCommandAuthorizations.delete(authorization);
+    return true;
   }
 
   async function getDisplayLabel(args, { accessToken = null } = {}) {

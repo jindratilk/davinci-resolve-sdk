@@ -2,7 +2,7 @@
  * Agent-first authoring surface for the CutAgent SDK preview.
  *
  * Runtime validators and wire protocol machinery live at the explicit
- * `davinci-resolve-sdk/schemas` and `davinci-resolve-sdk/protocol` entry points.
+ * `cutagent/schemas` and `cutagent/protocol` entry points.
  *
  * @packageDocumentation
  */
@@ -53,6 +53,10 @@ export type {
 } from "./fusion/graph.js";
 export {
   FUSION_GRAPH_APPLY_ACTION_ID,
+  FUSION_IMAGE_REPLACE_ACTION_ID,
+  FUSION_SETTINGS_INSERT_ACTION_ID,
+  FUSION_TEXT_ACTION_ID,
+  FUSION_NESTED_TEXT_ACTION_ID,
 } from "./fusion/runtime.js";
 export type {
   FusionComposition,
@@ -61,6 +65,19 @@ export type {
   FusionGraphApplyOptions,
   FusionGraphApplyResult,
   FusionGraphImpactPreview,
+  FusionImageReplacement,
+  FusionImageReplaceOptions,
+  FusionImageReplaceResult,
+  FusionSettingInsertion,
+  FusionSettingsInsertOptions,
+  FusionSettingsInsertResult,
+  FusionTextOptions,
+  FusionTextResult,
+  FusionTextUpdate,
+  FusionNestedTextItemResult,
+  FusionNestedTextMutationOptions,
+  FusionNestedTextMutationResult,
+  FusionNestedTextUpdate,
 } from "./fusion/runtime.js";
 export type {
   FusionConnectionDefinition,
@@ -71,6 +88,7 @@ export type {
 } from "./fusion/registry.js";
 export { CutAgent } from "./client.js";
 export { LOW_LEVEL_READ_ACTION_IDS } from "./actions.js";
+export type { TimelineFrameExportInput, TimelineFrameExportResult } from "./actions.js";
 export type {
   ConnectionControlOptions,
   ConnectionSnapshot,
@@ -131,9 +149,15 @@ export type {
   MediaPoolFolderSnapshot,
   MediaPoolMetadataEntry,
   MediaPoolMetadataKey,
+  MediaPoolTranscription,
+  MediaPoolTranscriptionOptions,
+  MediaPoolTranscriptionSegment,
+  MediaPoolTranscriptionWord,
   MediaPoolMutationOptions,
   MediaPoolBin,
   MediaPoolCreateBinResult,
+  MediaPoolDeleteItemResult,
+  MediaPoolDeleteResult,
   MediaPoolImportResult,
   MediaPoolRelinkResult,
   MediaPoolSetMetadataResult,
@@ -164,11 +188,13 @@ export type {
 export type {
   MarkerActionId,
   MarkerImpactPreview,
+  MarkerMutationBatchResult,
   MarkerMutationOptions,
   MarkerMutationResult,
   MarkerPreviewValues,
   Markers,
   MarkerSnapshot,
+  MarkerUpdate,
   MarkerValues,
 } from "./domain/markers.js";
 export type {
@@ -185,12 +211,30 @@ export type {
 } from "./domain/voice.js";
 export type {
   LinkedAudioMovePolicy,
+  TimelineItemMoveBatchResult,
+  TimelineItemDurationChange,
+  TimelineItemDurationObservation,
+  TimelineItemDurationOptions,
+  TimelineItemDurationResult,
   TimelineItemMoveBlocker,
   TimelineItemMoveDestination,
   TimelineItemMoveImpactPreview,
   TimelineItemMoveObservation,
   TimelineItemMoveOptions,
   TimelineItemMoveResult,
+  TimelineItemMoveRequest,
+  TimelineItemStateChangeInput,
+  TimelineItemStateChangeObservation,
+  TimelineItemStateChangeOptions,
+  TimelineItemStateChangeResult,
+  TimelineClipColorChange,
+  TimelineClipColorObservation,
+  TimelineClipColorResult,
+  TimelineClipProperties,
+  TimelineClipPropertyChange,
+  TimelineClipPropertyObservation,
+  TimelineClipPropertyOptions,
+  TimelineClipPropertyResult,
   TimelineItems,
 } from "./domain/timeline-items.js";
 export type {
@@ -234,6 +278,12 @@ export {
   grabColorStill,
   matchColorShot,
   trackColorForward,
+} from "./domain/color-workflows.js";
+export type {
+  ColorLutApplication,
+  ColorLutOptions,
+  ColorLutPluralRequest,
+  ColorLutSingleRequest,
 } from "./domain/color-workflows.js";
 export type {
   ColorArtifactReference as ColorWorkflowArtifactReference,
@@ -285,6 +335,8 @@ export type {
   RenderCodec,
   RenderCodecOption,
   RenderDiscovery,
+  AudioRenderCodecOption,
+  AudioRenderFormatOption,
   RenderFormat,
   RenderFormatOption,
   RenderJobSnapshot,
@@ -305,6 +357,8 @@ export type {
   RenderQueue,
   RenderQueueListOptions,
   RenderQueuePage,
+  RenderQueueStartOptions,
+  RenderQueueStartResult,
   RenderResolution,
   RenderSettingsSnapshot,
   RenderSupport,
@@ -315,12 +369,18 @@ export type {
   TimelineEditImpact,
   TimelineEditItemTarget,
   TimelineEditMutationOptions,
+  TimelineEditMutationBatchResult,
   TimelineEditMutationResult,
   TimelineEditTrackTarget,
   TimelineEditor,
+  TimelineAudioPlacementPreview,
   TimelineAudioPlacementPreviewOptions,
+  TimelinePlacementPreview,
   TimelinePlacementPreviewOptions,
+  TimelineRemovePreview,
   TimelineRemovePreviewOptions,
+  TimelineTrimPreview,
+  TimelineTrimEdgeDelta,
   TimelineTrimPreviewOptions,
 } from "./domain/timeline-editing.js";
 export {

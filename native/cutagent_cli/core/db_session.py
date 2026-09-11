@@ -689,6 +689,33 @@ def _recover_project_after_precommit_failure(
         }
 
 
+def _recover_after_keyboard_interrupt(
+    interrupt: KeyboardInterrupt,
+    *,
+    session: DiskDbMutationSession,
+    active_timeline_name: str | None,
+    committed: bool,
+    fresh_conn: Any | None = None,
+) -> None:
+    """Restore the original project state, then let cancellation keep unwinding."""
+
+    if committed:
+        recovery = _restore_project_db_from_backup(
+            fresh_conn,
+            session,
+            active_timeline_name=active_timeline_name,
+        )
+        restored = bool(recovery.get("rollback_performed"))
+    else:
+        recovery = _recover_project_after_precommit_failure(
+            session=session,
+            active_timeline_name=active_timeline_name,
+        )
+        restored = recovery.get("status") == "restored"
+    if not restored:
+        setattr(interrupt, "cutagent_stop_recovery", recovery)
+
+
 def _raise_precommit_failure(
     *,
     context: str,
@@ -1210,17 +1237,34 @@ def _execute_sqlite_disk_db_mutation_unlocked(
         session.steps.append("validate_post_backup_pre_close_state")
     _require_sdk_color_target_pre_close(conn, session)
 
-    close_current_project_with_runtime_health(
-        conn,
-        project_name=project_name,
-        current_database=current_database,
-        project_db_path=project_db_path,
-        description=f"project '{project_name}' to close before DB mutation",
-    )
-    session.steps.append("close_project")
-
+    try:
+        close_current_project_with_runtime_health(
+            conn,
+            project_name=project_name,
+            current_database=current_database,
+            project_db_path=project_db_path,
+            description=f"project '{project_name}' to close before DB mutation",
+        )
+        session.steps.append("close_project")
+    except KeyboardInterrupt as interrupt:
+        _recover_after_keyboard_interrupt(
+            interrupt,
+            session=session,
+            active_timeline_name=active_timeline_name,
+            committed=False,
+        )
+        raise
     try:
         connection = sqlite3.connect(project_db_path, timeout=5.0)
+        connection.row_factory = sqlite3.Row
+    except KeyboardInterrupt as interrupt:
+        _recover_after_keyboard_interrupt(
+            interrupt,
+            session=session,
+            active_timeline_name=active_timeline_name,
+            committed=False,
+        )
+        raise
     except sqlite3.OperationalError as exc:
         if _is_locked_operational_error(exc):
             try:
@@ -1239,9 +1283,9 @@ def _execute_sqlite_disk_db_mutation_unlocked(
             error=exc,
         )
         raise
-    connection.row_factory = sqlite3.Row
     mutation_result: Any = None
     verification: Any = None
+    commit_started = False
     try:
         connection.execute("PRAGMA busy_timeout = 5000")
         cursor = connection.cursor()
@@ -1266,7 +1310,11 @@ def _execute_sqlite_disk_db_mutation_unlocked(
             )
         try:
             mutation_result = writer(connection, cursor, session)
+            # An interrupt during sqlite commit has an ambiguous durable effect,
+            # so recovery must conservatively restore the pre-edit backup.
+            commit_started = True
             connection.commit()
+            session.steps.append("sqlite_commit")
         except sqlite3.OperationalError as exc:
             connection.rollback()
             if _is_locked_operational_error(exc):
@@ -1293,9 +1341,27 @@ def _execute_sqlite_disk_db_mutation_unlocked(
                 active_timeline_name=active_timeline_name,
                 error=exc,
             )
+    except KeyboardInterrupt as interrupt:
+        if not commit_started:
+            try:
+                connection.rollback()
+            except Exception:
+                pass
+        try:
+            connection.close()
+        except Exception:
+            pass
+        connection = None
+        _recover_after_keyboard_interrupt(
+            interrupt,
+            session=session,
+            active_timeline_name=active_timeline_name,
+            committed=commit_started,
+        )
+        raise
     finally:
-        connection.close()
-    session.steps.append("sqlite_commit")
+        if connection is not None:
+            connection.close()
 
     fresh_conn = None
     try:
@@ -1314,6 +1380,16 @@ def _execute_sqlite_disk_db_mutation_unlocked(
             )
         except Exception:
             fresh_conn.refresh()
+        session.steps.append("reopen_project")
+    except KeyboardInterrupt as interrupt:
+        _recover_after_keyboard_interrupt(
+            interrupt,
+            session=session,
+            active_timeline_name=active_timeline_name,
+            committed=True,
+            fresh_conn=fresh_conn,
+        )
+        raise
     except Exception as exc:
         _raise_post_commit_failure(
             context=context,
@@ -1323,8 +1399,6 @@ def _execute_sqlite_disk_db_mutation_unlocked(
             fresh_conn=fresh_conn,
             active_timeline_name=active_timeline_name,
         )
-    session.steps.append("reopen_project")
-
     if active_timeline_name:
         try:
             restored_timeline = _activate_timeline_by_name(fresh_conn, active_timeline_name)
@@ -1333,6 +1407,16 @@ def _execute_sqlite_disk_db_mutation_unlocked(
                     "DaVinci Resolve could not restore the active timeline after DB mutation.",
                     details={"timeline_name": active_timeline_name},
                 )
+            session.steps.append("restore_timeline")
+        except KeyboardInterrupt as interrupt:
+            _recover_after_keyboard_interrupt(
+                interrupt,
+                session=session,
+                active_timeline_name=active_timeline_name,
+                committed=True,
+                fresh_conn=fresh_conn,
+            )
+            raise
         except Exception as exc:
             _raise_post_commit_failure(
                 context=context,
@@ -1342,12 +1426,20 @@ def _execute_sqlite_disk_db_mutation_unlocked(
                 fresh_conn=fresh_conn,
                 active_timeline_name=active_timeline_name,
             )
-        session.steps.append("restore_timeline")
-
     if verifier:
         try:
             # Verifier runs after DaVinci Resolve reload; failures here need backup recovery, not SQLite rollback.
             verification = verifier(fresh_conn, mutation_result, session)
+            session.steps.append("verify")
+        except KeyboardInterrupt as interrupt:
+            _recover_after_keyboard_interrupt(
+                interrupt,
+                session=session,
+                active_timeline_name=active_timeline_name,
+                committed=True,
+                fresh_conn=fresh_conn,
+            )
+            raise
         except Exception as exc:
             _raise_post_commit_failure(
                 context=context,
@@ -1357,17 +1449,25 @@ def _execute_sqlite_disk_db_mutation_unlocked(
                 fresh_conn=fresh_conn,
                 active_timeline_name=active_timeline_name,
             )
-        session.steps.append("verify")
-
     if require_verified and (not isinstance(verification, dict) or verification.get("status") != "verified"):
-        _raise_required_verification_failure(
-            context=context,
-            session=session,
-            mutation_result=mutation_result,
-            verification=verification if isinstance(verification, dict) else {"status": "missing"},
-            fresh_conn=fresh_conn,
-            active_timeline_name=active_timeline_name,
-        )
+        try:
+            _raise_required_verification_failure(
+                context=context,
+                session=session,
+                mutation_result=mutation_result,
+                verification=verification if isinstance(verification, dict) else {"status": "missing"},
+                fresh_conn=fresh_conn,
+                active_timeline_name=active_timeline_name,
+            )
+        except KeyboardInterrupt as interrupt:
+            _recover_after_keyboard_interrupt(
+                interrupt,
+                session=session,
+                active_timeline_name=active_timeline_name,
+                committed=True,
+                fresh_conn=fresh_conn,
+            )
+            raise
 
     set_execution_engine("db_workaround")
     verification_status = "verified"

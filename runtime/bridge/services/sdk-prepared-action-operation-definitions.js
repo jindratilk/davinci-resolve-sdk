@@ -19,6 +19,11 @@ function verification(terminal, capturedAt) {
 }
 
 function failure(terminal) {
+  const publicClass = {
+    VALIDATION_ERROR: {kind: "invalid_request", code: "INVALID_REQUEST"},
+    AUTH_REQUIRED: {kind: "authentication_required", code: "AUTHENTICATION_REQUIRED"},
+    CAPABILITY_NEGOTIATION_FAILED: {kind: "capability_unavailable", code: "CAPABILITY_UNAVAILABLE"},
+  }[terminal.failure?.code];
   const verificationFailure = terminal.failure?.code === "VERIFICATION_FAILED";
   const authenticatedPreMutationStale = terminal.failure?.code === "STALE_REVISION"
     && terminal.possibleMutation === "none"
@@ -30,8 +35,8 @@ function failure(terminal) {
   const unprovenStale = terminal.failure?.code === "STALE_REVISION" && !authenticatedPreMutationStale;
   const possibleMutation = unprovenStale ? "possible" : terminal.possibleMutation;
   return {
-    kind: authenticatedPreMutationStale ? "stale_revision" : terminal.status === "recovery_failed" ? "recovery_failed" : verificationFailure ? "verification_failed" : "operation_failed",
-    code: authenticatedPreMutationStale ? "STALE_REVISION" : terminal.status === "recovery_failed" ? "RECOVERY_FAILED" : verificationFailure ? "VERIFICATION_FAILED" : "OPERATION_FAILED",
+    kind: authenticatedPreMutationStale ? "stale_revision" : terminal.status === "recovery_failed" ? "recovery_failed" : verificationFailure ? "verification_failed" : publicClass?.kind ?? "operation_failed",
+    code: authenticatedPreMutationStale ? "STALE_REVISION" : terminal.status === "recovery_failed" ? "RECOVERY_FAILED" : verificationFailure ? "VERIFICATION_FAILED" : publicClass?.code ?? "OPERATION_FAILED",
     message: terminal.failure?.message ?? "The prepared action did not complete successfully.",
     retrySafe: false,
     possibleMutation,
@@ -44,7 +49,7 @@ function failure(terminal) {
   };
 }
 
-function projectTerminal(terminal, createdAt, builder) {
+export function projectPreparedActionTerminal(terminal, createdAt, builder) {
   const exact = sdkPreparedActionTerminalSchema.parse(terminal);
   const verificationFailure = exact.failure?.code === "VERIFICATION_FAILED";
   const result = exact.result
@@ -122,7 +127,7 @@ export function createSdkPreparedActionOperationDefinitions({builders = {}, coor
           const carrierBinding = {sdkSessionId: context.sdkSessionId, accountFingerprint: context.accountFingerprint};
           if (assertAdvertised && await assertAdvertised(actionId, request, carrierBinding) !== true) throw new Error(`Prepared action is not signed-host advertised: ${actionId}`);
           try {
-            return projectTerminal(await coordinator.execute(request, {
+            return projectPreparedActionTerminal(await coordinator.execute(request, {
               executeDispatched() {
                 if (lifecycle.cancelled) {
                   const error = new Error("Prepared action was cancelled before dispatch.");
@@ -144,7 +149,7 @@ export function createSdkPreparedActionOperationDefinitions({builders = {}, coor
           await builder.releasePrivateRuntimeBinding?.(context.operationId);
         }
       },
-      projectPreparedTerminal(terminal, createdAt) { return projectTerminal(terminal, createdAt, builder); },
+      projectPreparedTerminal(terminal, createdAt) { return projectPreparedActionTerminal(terminal, createdAt, builder); },
       async cancel(context) {
         const lifecycle = lifecycles.get(context.operationId);
         if (!lifecycle) return {confirmed: false, reason: "The prepared action no longer has active runtime custody."};
@@ -171,7 +176,7 @@ export function createSdkPreparedActionOperationDefinitions({builders = {}, coor
               operationId: context.operationId,
               executionId: context.executionId,
             }, {request, sdkSessionId: context.sdkSessionId, accountFingerprint: context.accountFingerprint});
-            if (terminal) return projectTerminal(terminal, context.createdAt, builder);
+            if (terminal) return projectPreparedActionTerminal(terminal, context.createdAt, builder);
           }
           return {status: "recovery_failed", possibleMutation: "unknown", usage: "unknown", failure: {
             kind: "recovery_failed", code: "RECOVERY_FAILED", message: "An interrupted prepared action requires authoritative readback.", retrySafe: false,

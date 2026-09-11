@@ -40,6 +40,7 @@ const RESOLVE_ACTIVATION_ATTEMPTS = process.platform === "darwin"
     ]
   : [];
 const EMBEDDED_AUTH_FILE_NAME = "embedded-bridge-auth.json";
+const SDK_MEDIA_IMPORT_MANIFEST_MAX_BYTES = 8 * 1024 * 1024;
 const EMBEDDED_AUTH_TOKEN_WAIT_MS = embeddedAuthTokenWaitMs();
 const EMBEDDED_DEFAULT_PORT = 18764;
 const EMBEDDED_FALLBACK_PORTS = [18765, 18766, 18767, 18768, 18769];
@@ -260,13 +261,13 @@ async function parseResolveJson(
     cutAgentCliCommand = null,
     cwd = null,
     carrier = "cli",
-    policyContext = null,
     refreshProtectedTargets = null,
     signal = null,
     deadlineAtMs = null,
     onAuthorization = null,
     issueBrokerEnvironment = null,
     onSpawnAttempt = null,
+    recoverableAbort = false,
   } = {},
 ) {
   const effectiveSession = session ?? getSdkOwnerSession();
@@ -295,7 +296,6 @@ async function parseResolveJson(
         cutAgentCliCommand,
         cwd,
         carrier,
-        policyContext,
         refreshProtectedTargets,
         signal,
       });
@@ -308,13 +308,13 @@ async function parseResolveJson(
     effectiveTimeoutMs = remainingTimeoutMs();
     if (typeof onSpawnAttempt === "function") onSpawnAttempt();
     spawnAttempted = true;
-    const result = await execFileAsync(cutAgentCliCommand || resolveCutAgentCliCommand(), jsonArgs, {
+    const childPromise = execFileAsync(cutAgentCliCommand || resolveCutAgentCliCommand(), jsonArgs, {
       encoding: "utf8",
       timeout: effectiveTimeoutMs,
       maxBuffer: 10 * 1024 * 1024,
       shell: false,
       ...(cwd ? { cwd } : {}),
-      ...(signal ? { signal } : {}),
+      ...(signal && !recoverableAbort ? { signal } : {}),
       env: buildCutAgentCliEnv({args: jsonArgs,
         sessionEnv: getSessionRuntimeEnv(effectiveSession),
         extraEnv: {
@@ -324,6 +324,31 @@ async function parseResolveJson(
         },
       }),
     });
+    const child = childPromise.child;
+    let forcedAbortTimer = null;
+    let abortStarted = false;
+    const interruptForRecovery = () => {
+      if (abortStarted || !signal?.aborted) return;
+      abortStarted = true;
+      if (child?.exitCode === null && child?.signalCode === null) {
+        child.kill(process.platform === "win32" ? "SIGTERM" : "SIGINT");
+        forcedAbortTimer = setTimeout(() => {
+          if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
+        }, 5_000);
+        forcedAbortTimer.unref?.();
+      }
+    };
+    if (signal && recoverableAbort) {
+      signal.addEventListener("abort", interruptForRecovery, { once: true });
+      interruptForRecovery();
+    }
+    let result;
+    try {
+      result = await childPromise;
+    } finally {
+      if (signal && recoverableAbort) signal.removeEventListener("abort", interruptForRecovery);
+      if (forcedAbortTimer !== null) clearTimeout(forcedAbortTimer);
+    }
     const output = typeof result.stdout === "string" ? result.stdout : "";
     const parsed = safeJsonParse(output);
     if (parsed) {
@@ -554,9 +579,9 @@ function getEmbeddedAuthPath(env = process.env, platform = process.platform) {
         "AppData",
         "Roaming",
       );
-    return pathApi.join(appData, "DaVinciResolveSDK", scopedFileName);
+    return pathApi.join(appData, "CutAgentSDK", scopedFileName);
   }
-  return path.join(home, "Library", "Application Support", "DaVinciResolveSDK", scopedFileName);
+  return path.join(home, "Library", "Application Support", "CutAgentSDK", scopedFileName);
 }
 
 function sanitizeEmbeddedAuthScope(value) {
@@ -806,6 +831,23 @@ async function reclaimStaleEmbeddedServer(status) {
 }
 
 export function buildSdkTimelineEditArgs(intent, { dryRun, timelineName, projectNativeId, timelineNativeId, sourceNativeId = null, executionRevision = null, frameRate = null, timelineStartFrame = 0 }) {
+  if (Array.isArray(intent)) {
+    if (intent.length === 0 || intent.some((change) => change?.action !== "trim")) {
+      throw new TypeError("Grouped timeline trim lowering requires one or more trim intents.");
+    }
+    const changes = intent.map((change) => ({
+      name: change.clipName,
+      track_index: change.trackIndex,
+      start_frame: `${change.currentRecordRange.start}f`,
+      current_end_frame: `${change.currentRecordRange.endExclusive}f`,
+      head_frames: change.headFrames,
+      tail_frames: change.tailFrames,
+      linked_audio_mode: change.linkedAudio,
+    }));
+    const args = ["edit", "trim", "--changes-json", JSON.stringify(changes), "--timeline", timelineName];
+    if (dryRun) args.push("--dry-run");
+    return args;
+  }
   if (intent.action === "trim") {
     const fps = Number(frameRate?.numerator) / Number(frameRate?.denominator);
     if (!Number.isFinite(fps) || fps <= 0) throw new TypeError("Trim lowering requires the exact timeline frame rate.");
@@ -838,6 +880,96 @@ export function buildSdkTimelineEditArgs(intent, { dryRun, timelineName, project
   if (placement === "video" && intent.audioTrackIndex !== null) args.push("--audio-track", String(intent.audioTrackIndex));
   if (placement === "video") args.push(intent.linkedAudio === "include" ? "--include-linked-audio" : "--video-only");
   if (executionRevision) args.push("--revision", executionRevision);
+  if (dryRun) args.push("--dry-run");
+  return args;
+}
+
+export function buildSdkTimelineAudioInsertRequest(intents, {
+  dryRun,
+  projectNativeId,
+  timelineNativeId,
+  sourceNativeIds,
+  executionRevision = null,
+  timelineStartFrame = 0,
+}) {
+  if (!Array.isArray(intents) || intents.length < 1 || intents.length > 256
+    || !Array.isArray(sourceNativeIds) || sourceNativeIds.length !== intents.length) {
+    throw new TypeError("Plural audio insertion requires matching bounded intent and native-source lists.");
+  }
+  const first = intents[0];
+  if (intents.some((intent) => intent.action !== "insert" || intent.placement !== "audio"
+    || intent.projectId !== first.projectId || intent.timelineId !== first.timelineId
+    || intent.timelineRevision !== first.timelineRevision || intent.at.value.value < timelineStartFrame)) {
+    throw new TypeError("Plural audio insertion requires one timeline revision and audio-only insert intents.");
+  }
+  const placements = intents.map((intent, index) => ({
+    clip_name: intent.source.name,
+    position: `${intent.at.value.value - timelineStartFrame}f`,
+    source_in: `${intent.sourceRange.start}f`,
+    source_out: `${intent.sourceRange.endExclusive}f`,
+    track_index: intent.audioTrackIndex,
+    media_id: sourceNativeIds[index],
+  }));
+  const args = [
+    "edit", "insert", first.source.name,
+    "--at", placements[0].position,
+    "--in", placements[0].source_in,
+    "--out", placements[0].source_out,
+    "--track", String(first.audioTrackIndex),
+    "--audio-only",
+    "--media-id", sourceNativeIds[0],
+    "--project-id", projectNativeId,
+    "--timeline-id", timelineNativeId,
+  ];
+  if (executionRevision) args.push("--revision", executionRevision);
+  if (dryRun) args.push("--dry-run");
+  return { args, placements };
+}
+
+export function buildSdkTimelineEditBatchArgs(intents, contexts, { dryRun }) {
+  if (!Array.isArray(intents) || intents.length === 0 || intents.length !== contexts?.length) {
+    throw new TypeError("Plural timeline edit lowering requires matching non-empty intents and execution contexts.");
+  }
+  const actions = new Set(intents.map((intent) => intent.action));
+  if (actions.size !== 1 || !["insert", "overwrite"].includes(intents[0].action)) {
+    throw new TypeError("Plural timeline edit lowering requires one shared insert or overwrite action.");
+  }
+  const first = contexts[0];
+  if (contexts.some((context) => context.projectNativeId !== first.projectNativeId
+    || context.timelineNativeId !== first.timelineNativeId
+    || context.timelineStartFrame !== first.timelineStartFrame)) {
+    throw new TypeError("Plural timeline edits must share one exact native project and timeline context.");
+  }
+  const revisions = new Set(contexts.map((context) => context.executionRevision).filter(Boolean));
+  if (revisions.size > 1) throw new TypeError("Plural timeline edits must share one exact native timeline revision.");
+  const items = intents.map((intent, index) => {
+    const context = contexts[index];
+    if (intent.at.value.value < context.timelineStartFrame) {
+      throw new TypeError("Timeline edit placement cannot precede the timeline start frame.");
+    }
+    return {
+      clip_name: intent.source.name,
+      position: `${intent.at.value.value - context.timelineStartFrame}f`,
+      source_in: `${intent.sourceRange.start}f`,
+      source_out: `${intent.sourceRange.endExclusive}f`,
+      track_index: intent.videoTrackIndex,
+      media_id: context.sourceNativeId,
+      audio_track_index: intent.audioTrackIndex,
+      include_linked_audio: intent.linkedAudio === "include",
+    };
+  });
+  const args = [
+    "edit", intents[0].action, items[0].clip_name,
+    "--at", items[0].position,
+    "--in", items[0].source_in,
+    "--out", items[0].source_out,
+    "--track", String(items[0].track_index),
+    "--items-json", JSON.stringify(items),
+    "--project-id", first.projectNativeId,
+    "--timeline-id", first.timelineNativeId,
+  ];
+  const [revision] = revisions;
+  if (revision) args.push("--revision", revision);
   if (dryRun) args.push("--dry-run");
   return args;
 }
@@ -1245,13 +1377,13 @@ export function createResolveService({
       cutAgentCliCommand: options.cutAgentCliCommand ?? null,
       cwd: options.cwd ?? null,
       carrier: options.carrier ?? "cli",
-      policyContext: options.policyContext ?? null,
       refreshProtectedTargets: options.refreshProtectedTargets ?? null,
       signal: options.signal ?? null,
       deadlineAtMs: options.deadlineAtMs ?? null,
       onAuthorization: options.onAuthorization ?? null,
       issueBrokerEnvironment: options.issueBrokerEnvironment ?? null,
       onSpawnAttempt: options.onSpawnAttempt ?? null,
+      recoverableAbort: options.recoverableAbort === true,
       extraEnv: {
         DAVINCI_RESOLVE_SDK_EMBEDDED_AUTH_PATH: getEmbeddedAuthPath(),
         ...embeddedRuntimeEnv,
@@ -1524,6 +1656,7 @@ export function createResolveService({
       "timeline.snapshot",
       "fusion.compositions",
       "mediaPool.page",
+      "mediaPool.transcription",
       "color.current",
       "multicam.inspect",
       "managed.protected",
@@ -1541,6 +1674,10 @@ export function createResolveService({
       throw new DOMException("The SDK inspection deadline expired.", "TimeoutError");
     }
     const args = ["timeline", "sdk-live-inspect", operation, "--deadline-at-ms", String(deadlineAtMs)];
+    let privateTargetsDirectory = null;
+    if (operation === "timeline.snapshot" && options.structuralOnly === true) {
+      args.push("--structural-only");
+    }
     if (operation === "color.current") {
       const layerIndex = options.readRequest?.nodeStackLayerIndex;
       if (!Number.isSafeInteger(layerIndex) || layerIndex < 1 || layerIndex > 4096) {
@@ -1550,11 +1687,20 @@ export function createResolveService({
     }
     if (operation === "timeline.retime") {
       const privateTargets = options.privateTargets;
-      if (!Array.isArray(privateTargets) || privateTargets.length < 1 || privateTargets.length > 514
+      if (!Array.isArray(privateTargets) || privateTargets.length < 1 || privateTargets.length > 2000
         || privateTargets.some((target) => !target || typeof target !== "object" || typeof target.id !== "string" || !target.id)) {
         throw new TypeError("SDK retime inspection requires exact private timeline-item targets.");
       }
-      args.push("--retime-targets-json", JSON.stringify(privateTargets));
+      privateTargetsDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "cutagent-sdk-retime-inspection-"));
+      const privateTargetsPath = path.join(privateTargetsDirectory, "targets.json");
+      try {
+        fs.writeFileSync(privateTargetsPath, JSON.stringify(privateTargets), {encoding: "utf8", mode: 0o600, flag: "wx"});
+      } catch (error) {
+        fs.rmSync(privateTargetsDirectory, {recursive: true, force: true});
+        privateTargetsDirectory = null;
+        throw error;
+      }
+      args.push("--retime-targets-file", privateTargetsPath);
     } else if (operation === "mediaPool.page") {
       const request = options.readRequest;
       if (!request || request.operation !== "mediaPool.page") {
@@ -1562,6 +1708,14 @@ export function createResolveService({
       }
       args.push("--offset", String(request.offset), "--page-size", String(request.pageSize));
       if (request.search) args.push("--search-json", JSON.stringify(request.search));
+    } else if (operation === "mediaPool.transcription") {
+      const request = options.readRequest;
+      if (!request || request.operation !== "mediaPool.transcription"
+        || typeof options.privateMediaNativeId !== "string" || !options.privateMediaNativeId) {
+        throw new TypeError("Media Pool transcription inspection requires one exact private asset identity.");
+      }
+      args.push("--media-pool-native-id", options.privateMediaNativeId);
+      if (request.useNestedClipTranscription === true) args.push("--use-nested-clip-transcription");
     } else if (operation === "multicam.inspect") {
       const request = options.readRequest;
       if (!request || request.operation !== "multicam.inspect") {
@@ -1592,31 +1746,52 @@ export function createResolveService({
         || !/^timeline_item_f[A-Za-z0-9_-]{43}$/.test(request.timelineItemId ?? "")) {
         throw new TypeError("Fusion inspection requires exact public timeline and timeline-item identities.");
       }
-      inspectionOptions = { ...options, extraEnv: { ...(options.extraEnv ?? {}),
-        CUTAGENT_SDK_FUSION_INSPECTION_TARGET: JSON.stringify({ timelineId: request.timelineId, timelineItemId: request.timelineItemId }),
-      } };
+      if (options.privateFusionInspectionAll !== true) {
+        inspectionOptions = { ...options, extraEnv: { ...(options.extraEnv ?? {}),
+          CUTAGENT_SDK_FUSION_INSPECTION_TARGET: JSON.stringify({ timelineId: request.timelineId, timelineItemId: request.timelineItemId }),
+        } };
+      }
     }
-    const inspectionPayload = await parseJson(
-      args,
-      getTimeoutMs(),
-      inspectionOptions,
-    );
-    const inspectionError = bridgeCliErrorFromPayload(inspectionPayload, {
-      fallbackMessage: "Failed to inspect the current DaVinci Resolve live state.",
-    });
-    if (inspectionError?.cli_error_code === "SDK_LIVE_INSPECTION_TIMEOUT") {
-      throw new DOMException("The SDK inspection deadline expired.", "TimeoutError");
+    try {
+      const inspectionPayload = await parseJson(
+        args,
+        getTimeoutMs(),
+        inspectionOptions,
+      );
+      const inspectionError = bridgeCliErrorFromPayload(inspectionPayload, {
+        fallbackMessage: "Failed to inspect the current DaVinci Resolve live state.",
+      });
+      if (inspectionError?.cli_error_code === "SDK_LIVE_INSPECTION_TIMEOUT") {
+        throw new DOMException("The SDK inspection deadline expired.", "TimeoutError");
+      }
+      if (inspectionError) throw inspectionError;
+      return inspectionPayload?.data ?? inspectionPayload;
+    } finally {
+      if (privateTargetsDirectory) fs.rmSync(privateTargetsDirectory, {recursive: true, force: true});
     }
-    if (inspectionError) throw inspectionError;
-    return inspectionPayload?.data ?? inspectionPayload;
   }
 
   async function executeSdkMarkerMutation(action, input, options = {}) {
-    const command = action === "create" ? "add" : action;
+    const batchCreate = action === "create" && Array.isArray(input.markers);
+    const batchUpdate = action === "update" && Array.isArray(input.updates);
+    const command = batchCreate ? "batch" : action === "create" ? "add" : action;
     const args = ["timeline", "marker", command];
-    if (action === "create") args.push(`${input.recordFrame}f`);
-    else args.push("--frame", String(input.targetFrame));
-    if (action !== "delete") {
+    if (batchCreate) {
+      args.push("--batch-json", JSON.stringify(input.markers.map((marker) => ({
+        position: `${marker.recordFrame}f`,
+        color: marker.color,
+        title: marker.name,
+        note: marker.note,
+        duration_frames: marker.durationFrames,
+      }))), "--no-shift-occupied");
+    } else if (action === "create") args.push(`${input.recordFrame}f`);
+    else if (batchUpdate) {
+      args.push("--updates-json", JSON.stringify(input.updates));
+    }
+    else if (action === "delete") {
+      for (const frame of input.targetFrames ?? [input.targetFrame]) args.push("--frame", String(frame));
+    } else args.push("--frame", String(input.targetFrame));
+    if (action !== "delete" && !batchCreate && !batchUpdate) {
       if (action === "update" && input.recordFrame !== input.targetFrame) args.push("--position", `${input.recordFrame}f`);
       args.push("--color", input.color, "--name", input.name, "--note", input.note, "--duration", String(input.durationFrames));
     }
@@ -1645,6 +1820,16 @@ export function createResolveService({
     return payload?.data ?? payload;
   }
 
+  async function executeSdkProjectOpen(input, options = {}) {
+    const payload = await parseJson(["project", "open", input.name], getTimeoutMs(), {
+      ...options, carrier: "sdk",
+      extraEnv: { ...(options.extraEnv ?? {}), CUTAGENT_SDK_PROJECT_GUARD: options.mutationGuard },
+    });
+    const error = bridgeCliErrorFromPayload(payload, { fallbackMessage: "The guarded project opening failed." });
+    if (error) throw error;
+    return payload?.data ?? payload;
+  }
+
   async function readSdkProjectSettings(options = {}) {
     const payload = await parseJson(["project", "settings"], getTimeoutMs(), {
       ...options,
@@ -1656,18 +1841,36 @@ export function createResolveService({
   }
 
   async function executeSdkMediaImport(pathValue, options = {}) {
-    const payload = await parseJson(["media", "import", pathValue], getTimeoutMs(), {
-      ...options,
-      carrier: "sdk",
-      extraEnv: {
-        ...(options.extraEnv ?? {}),
-        CUTAGENT_SDK_MEDIA_POOL_GUARD: options.mutationGuard,
-        CUTAGENT_SDK_MEDIA_IMPORT_ROOT: "1",
-      },
-    });
-    const mediaError = bridgeCliErrorFromPayload(payload, { fallbackMessage: "The semantic Media Pool import failed." });
-    if (mediaError) throw mediaError;
-    return payload?.data ?? payload;
+    const paths = Array.isArray(pathValue) ? pathValue : [pathValue];
+    if (paths.length === 0 || paths.some((entry) => typeof entry !== "string" || entry.length === 0)) {
+      throw new TypeError("The semantic Media Pool import requires at least one exact path.");
+    }
+    const importEnv = { ...(options.extraEnv ?? {}) };
+    const manifest = importEnv.CUTAGENT_SDK_MEDIA_IMPORT_FILES;
+    delete importEnv.CUTAGENT_SDK_MEDIA_IMPORT_FILES;
+    if (typeof manifest !== "string" || Buffer.byteLength(manifest, "utf8") > SDK_MEDIA_IMPORT_MANIFEST_MAX_BYTES) {
+      throw new TypeError("The semantic Media Pool import requires a bounded exact-file manifest.");
+    }
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "cutagent-sdk-media-import-"));
+    const manifestPath = path.join(directory, "files.json");
+    try {
+      fs.writeFileSync(manifestPath, manifest, { encoding: "utf8", mode: 0o600, flag: "wx" });
+      const payload = await parseJson(["media", "import", paths[0]], getTimeoutMs(), {
+        ...options,
+        carrier: "sdk",
+        extraEnv: {
+          ...importEnv,
+          CUTAGENT_SDK_MEDIA_POOL_GUARD: options.mutationGuard,
+          CUTAGENT_SDK_MEDIA_IMPORT_ROOT: "1",
+          CUTAGENT_SDK_MEDIA_IMPORT_FILES_FILE: manifestPath,
+        },
+      });
+      const mediaError = bridgeCliErrorFromPayload(payload, { fallbackMessage: "The semantic Media Pool import failed." });
+      if (mediaError) throw mediaError;
+      return payload?.data ?? payload;
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
   }
 
   async function executeSdkColorMutation(kind, input, options = {}) {
@@ -1741,9 +1944,18 @@ export function createResolveService({
     const payload = await parseJson(buildSdkTimelineEditArgs(intent, { ...context, dryRun: true }), getTimeoutMs(), {
       ...options,
       carrier: "sdk",
-      policyContext: { semanticReadOnlyPreview: "timeline.edit.v1" },
     });
     const editError = bridgeCliErrorFromPayload(payload, { fallbackMessage: "The semantic timeline edit preview failed." });
+    if (editError) throw editError;
+    return payload?.data ?? payload;
+  }
+
+  async function previewSdkTimelineEdits(intents, contexts, options = {}) {
+    const payload = await parseJson(buildSdkTimelineEditBatchArgs(intents, contexts, { dryRun: true }), getTimeoutMs(), {
+      ...options,
+      carrier: "sdk",
+    });
+    const editError = bridgeCliErrorFromPayload(payload, { fallbackMessage: "The plural semantic timeline edit preview failed." });
     if (editError) throw editError;
     return payload?.data ?? payload;
   }
@@ -1752,9 +1964,56 @@ export function createResolveService({
     const payload = await parseJson(buildSdkTimelineEditArgs(intent, { ...context, dryRun: false }), getTimeoutMs(), {
       ...options,
       carrier: "sdk",
-      extraEnv: { ...(options.extraEnv ?? {}), CUTAGENT_SDK_MARKER_GUARD: options.mutationGuard },
+      recoverableAbort: true,
+      extraEnv: { ...(options.extraEnv ?? {}), CUTAGENT_SDK_TIMELINE_STRUCTURE_GUARD: options.mutationGuard },
     });
     const editError = bridgeCliErrorFromPayload(payload, { fallbackMessage: "The semantic timeline edit failed." });
+    if (editError) throw editError;
+    return payload?.data ?? payload;
+  }
+
+  async function runSdkTimelineAudioInsert(intents, context, options, dryRun) {
+    const request = buildSdkTimelineAudioInsertRequest(intents, { ...context, dryRun });
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "cutagent-sdk-audio-insert-"));
+    const placementsPath = path.join(directory, "placements.json");
+    try {
+      fs.writeFileSync(placementsPath, JSON.stringify(request.placements), { encoding: "utf8", mode: 0o600, flag: "wx" });
+      const payload = await parseJson(request.args, getTimeoutMs(), {
+        ...options,
+        carrier: "sdk",
+        ...(!dryRun ? { recoverableAbort: true } : {}),
+        extraEnv: {
+          ...(options.extraEnv ?? {}),
+          ...(!dryRun ? { CUTAGENT_SDK_TIMELINE_STRUCTURE_GUARD: options.mutationGuard } : {}),
+          CUTAGENT_SDK_AUDIO_PLACEMENTS_FILE: placementsPath,
+        },
+      });
+      const editError = bridgeCliErrorFromPayload(payload, {
+        fallbackMessage: dryRun ? "The plural audio insertion preview failed." : "The plural audio insertion failed.",
+      });
+      if (editError) throw editError;
+      return payload?.data ?? payload;
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
+  }
+
+  async function previewSdkTimelineAudioInsert(intents, context, options = {}) {
+    return runSdkTimelineAudioInsert(intents, context, options, true);
+  }
+
+  async function executeSdkTimelineAudioInsert(intents, context, options = {}) {
+    return runSdkTimelineAudioInsert(intents, context, options, false);
+  }
+
+  async function executeSdkTimelineEdits(intents, contexts, options = {}) {
+    const payload = await parseJson(buildSdkTimelineEditBatchArgs(intents, contexts, { dryRun: false }), getTimeoutMs(), {
+      ...options,
+      carrier: "sdk",
+      recoverableAbort: true,
+      extraEnv: { ...(options.extraEnv ?? {}), CUTAGENT_SDK_TIMELINE_STRUCTURE_GUARD: options.mutationGuard },
+    });
+    const editError = bridgeCliErrorFromPayload(payload, { fallbackMessage: "The plural semantic timeline edit failed." });
     if (editError) throw editError;
     return payload?.data ?? payload;
   }
@@ -1950,7 +2209,24 @@ export function createResolveService({
   }
 
   async function executeSdkTimelineStructure(input, before, options = {}) {
-    if (input.operation !== "clip_remove") throw new TypeError("This runtime activates only the existing exact managed clip-removal composition.");
+    if (input.operation === "clip_remove_many") {
+      const targets = input.removals.map((removal) => ({
+        track_type: removal.track.type,
+        track_index: removal.track.index,
+        start_frame: removal.range.start,
+        end_frame: removal.range.endExclusive,
+        name: removal.name,
+      }));
+      const payload = await parseJson(
+        ["timeline", "items", "delete", "--targets-json", JSON.stringify(targets)],
+        getTimeoutMs(),
+        { ...options, carrier: "sdk", extraEnv: { ...(options.extraEnv ?? {}), CUTAGENT_SDK_TIMELINE_GUARD: options.mutationGuard } },
+      );
+      const structureError = bridgeCliErrorFromPayload(payload, { fallbackMessage: "The plural semantic timeline structure mutation failed." });
+      if (structureError) throw structureError;
+      return payload?.data ?? payload;
+    }
+    if (input.operation !== "clip_remove") throw new TypeError("This runtime activates only exact managed clip-removal compositions.");
     if (input.affectedTracks.length !== 1 || input.affectedTracks[0].type !== input.track.type
       || input.affectedTracks[0].index !== input.track.index) throw new TypeError("Managed clip removal requires one exact executable track coordinate.");
     const args = ["timeline", "items", "delete", "--track-type", input.track.type, "--track", String(input.track.index)];
@@ -1999,6 +2275,37 @@ export function createResolveService({
   }
 
   async function executeSdkTimelineItemMove(input, options = {}) {
+    if (Array.isArray(input.moves)) {
+      if (!Array.isArray(options.privateMoves) || options.privateMoves.length !== input.moves.length) {
+        throw new TypeError("Plural timeline-item moves require exact private execution targets for every move.");
+      }
+      const executionOptions = { ...options };
+      delete executionOptions.privateMoves;
+      const first = input.moves[0];
+      const payload = await parseJson(
+        [
+          "timeline", "items", "move",
+          "--track", String(first.target.trackIndex),
+          "--start-frame", `${first.target.recordStartFrame}f`,
+          "--current-end-frame", `${first.target.recordEndFrame}f`,
+          "--name", first.target.name,
+          "--moves-json", JSON.stringify(input.moves),
+        ],
+        getTimeoutMs(),
+        {
+          ...executionOptions,
+          carrier: "sdk",
+          extraEnv: {
+            ...(executionOptions.extraEnv ?? {}),
+            CUTAGENT_SDK_TIMELINE_STRUCTURE_GUARD: executionOptions.mutationGuard,
+            CUTAGENT_SDK_EXPECTED_TIMELINE_ITEM_MOVES: JSON.stringify(options.privateMoves),
+          },
+        },
+      );
+      const moveError = bridgeCliErrorFromPayload(payload, { fallbackMessage: "The plural semantic timeline-item move failed." });
+      if (moveError) throw moveError;
+      return payload?.data ?? payload;
+    }
     const privateTarget = options.privateTarget;
     const privateLinkedAudioTargets = options.privateLinkedAudioTargets;
     if (!privateTarget || typeof privateTarget !== "object" || typeof privateTarget.id !== "string" || !privateTarget.id) {
@@ -2027,7 +2334,7 @@ export function createResolveService({
       carrier: "sdk",
       extraEnv: {
         ...(executionOptions.extraEnv ?? {}),
-        CUTAGENT_SDK_MARKER_GUARD: executionOptions.mutationGuard,
+        CUTAGENT_SDK_TIMELINE_STRUCTURE_GUARD: executionOptions.mutationGuard,
         CUTAGENT_SDK_EXPECTED_TIMELINE_ITEM_TARGET: JSON.stringify(privateTarget),
         CUTAGENT_SDK_EXPECTED_LINKED_AUDIO_COUNT: String(input.linkedAudioTargets.length),
         CUTAGENT_SDK_EXPECTED_LINKED_AUDIO_TARGETS: JSON.stringify(privateLinkedAudioTargets),
@@ -2056,12 +2363,42 @@ export function createResolveService({
   }
 
   async function readSdkClipMotion(kind, input, options = {}) {
+    if (kind === "state" && Array.isArray(input.transforms)) {
+      const privateTargets = options.privateTargets;
+      if (!Array.isArray(privateTargets) || privateTargets.length !== input.transforms.length
+        || privateTargets.some((target) => !target || typeof target !== "object" || typeof target.id !== "string" || !target.id)) {
+        throw new TypeError("Plural clip motion state reads require one exact private target for every entry.");
+      }
+      const executionOptions = { ...options };
+      delete executionOptions.privateTargets;
+      const workingDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "cutagent-sdk-clip-motion-state-"));
+      const targetsPath = path.join(workingDirectory, "targets.json");
+      try {
+        fs.writeFileSync(targetsPath, JSON.stringify(privateTargets), { encoding: "utf8", mode: 0o600, flag: "wx" });
+        const payload = await parseJson(["clip", "transform"], getTimeoutMs(), {
+          ...executionOptions,
+          carrier: "sdk",
+          extraEnv: {
+            ...(executionOptions.extraEnv ?? {}),
+            CUTAGENT_SDK_TIMELINE_GUARD: executionOptions.mutationGuard,
+            CUTAGENT_SDK_CLIP_MOTION_STATE: "1",
+            CUTAGENT_SDK_CLIP_MOTION_STATE_TARGETS_FILE: targetsPath,
+          },
+        });
+        const readError = bridgeCliErrorFromPayload(payload, { fallbackMessage: "Exact plural clip motion state readback failed." });
+        if (readError) throw readError;
+        return payload?.data ?? payload;
+      } finally {
+        fs.rmSync(workingDirectory, { recursive: true, force: true });
+      }
+    }
     const { executionOptions, extraEnv } = clipMotionEnvironment(options);
-    const args = kind === "transform"
+    const args = kind === "transform" || kind === "state"
       ? ["clip", "transform", input.target.name]
       : kind === "keyframe_get"
         ? ["clip", "keyframe", "get", input.property, "--clip", input.target.name]
         : ["clip", "keyframe", "get", "--clip", input.target.name];
+    if (kind === "state") extraEnv.CUTAGENT_SDK_CLIP_MOTION_STATE = "1";
     const payload = await parseJson(args, getTimeoutMs(), { ...executionOptions, carrier: "sdk", extraEnv });
     const readError = bridgeCliErrorFromPayload(payload, { fallbackMessage: "Exact clip motion readback failed." });
     if (readError) throw readError;
@@ -2069,6 +2406,43 @@ export function createResolveService({
   }
 
   async function executeSdkClipMotion(kind, input, options = {}) {
+    if (kind === "transform" && Array.isArray(input.transforms)) {
+      const privateTargets = options.privateTargets;
+      if (!Array.isArray(privateTargets) || privateTargets.length !== input.transforms.length
+        || privateTargets.some((target) => !target || typeof target !== "object" || typeof target.id !== "string" || !target.id)) {
+        throw new TypeError("Plural clip transforms require one exact private target for every entry.");
+      }
+      const executionOptions = { ...options };
+      delete executionOptions.privateTargets;
+      const transformKeys = {
+        zoomX: "zoom_x", zoomY: "zoom_y", positionX: "position_x", positionY: "position_y",
+        rotation: "rotation", anchorX: "anchor_x", anchorY: "anchor_y", pitch: "pitch", yaw: "yaw",
+        flipX: "flip_x", flipY: "flip_y", opacity: "opacity", cropLeft: "crop_left", cropRight: "crop_right",
+        cropTop: "crop_top", cropBottom: "crop_bottom", distortion: "distortion", dynamicZoomEase: "dynamic_zoom_ease",
+      };
+      const entries = input.transforms.map((entry, index) => ({
+        clip: privateTargets[index].id,
+        transform: Object.fromEntries(Object.entries(entry.transform).map(([key, value]) => [transformKeys[key], value])),
+      }));
+      const workingDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "cutagent-sdk-clip-transform-"));
+      const requestPath = path.join(workingDirectory, "transforms.json");
+      try {
+        fs.writeFileSync(requestPath, JSON.stringify(entries), { encoding: "utf8", mode: 0o600, flag: "wx" });
+        const payload = await parseJson(["clip", "transform", "--batch-file", requestPath], getTimeoutMs(), {
+          ...executionOptions,
+          carrier: "sdk",
+          extraEnv: {
+            ...(executionOptions.extraEnv ?? {}),
+            CUTAGENT_SDK_TIMELINE_GUARD: executionOptions.mutationGuard,
+          },
+        });
+        const mutationError = bridgeCliErrorFromPayload(payload, { fallbackMessage: "Exact plural clip transform mutation failed." });
+        if (mutationError) throw mutationError;
+        return payload?.data ?? payload;
+      } finally {
+        fs.rmSync(workingDirectory, { recursive: true, force: true });
+      }
+    }
     const { executionOptions, extraEnv } = clipMotionEnvironment(options);
     let args;
     if (kind === "keyframe_add") {
@@ -2453,15 +2827,20 @@ export function createResolveService({
     readSdkLiveInspection,
     executeSdkMarkerMutation,
     executeSdkProjectCreate,
+    executeSdkProjectOpen,
     readSdkProjectSettings,
     executeSdkMediaImport,
     executeSdkColorMutation,
     executeSdkTimelineEdit,
+    previewSdkTimelineAudioInsert,
+    executeSdkTimelineAudioInsert,
+    executeSdkTimelineEdits,
     executeSdkMulticamMutation,
     executeSdkMulticamMatchFrame,
     executeSdkMulticamResidual,
     executeSdkTimelineStructure,
     previewSdkTimelineEdit,
+    previewSdkTimelineEdits,
     readSdkCapability,
     executeSdkVoicePlacement,
     applySdkFusionGraph,

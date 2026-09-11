@@ -90,6 +90,33 @@ def _raw_render_formats(project: Any) -> tuple[str, Dict[Any, Any]]:
     return _bounded_dict(value, MAX_RENDER_FORMATS)
 
 
+def _raw_audio_render_formats(project: Any) -> tuple[str, Dict[Any, Any]]:
+    support, value = _safe_call(project, "GetAudioRenderFormats")
+    if support != "supported":
+        return support, {}
+    return _bounded_dict(value, MAX_RENDER_FORMATS)
+
+
+def _raw_audio_render_codecs(project: Any, format_label: Any, extension: Any) -> tuple[str, Dict[Any, Any]]:
+    candidates = [extension, format_label]
+    saw_supported = False
+    saw_unknown = False
+    for candidate in candidates:
+        if candidate is None:
+            continue
+        support, value = _safe_call(project, "GetAudioRenderCodecs", candidate)
+        if support == "unavailable":
+            return support, {}
+        shape_support, codecs = _bounded_dict(value, MAX_RENDER_CODECS_PER_FORMAT)
+        if shape_support == "unknown_version":
+            saw_unknown = True
+            continue
+        saw_supported = True
+        if codecs:
+            return "supported", codecs
+    return ("supported" if saw_supported else "unknown_version" if saw_unknown else "supported"), {}
+
+
 def _raw_render_codecs(
     project: Any,
     format_label: Any,
@@ -205,7 +232,41 @@ def _render_discovery(conn: Any, deadline_at_ms: int) -> Dict[str, Any]:
                 "codecs": codec_rows,
             }
         )
-    return {"format_support": format_support, "formats": rows}
+    audio_format_support, audio_formats = _raw_audio_render_formats(project)
+    audio_rows: List[Dict[str, Any]] = []
+    normalized_audio_formats: List[tuple[str, str | None]] = []
+    for raw_label, raw_extension in audio_formats.items():
+        format_label = _carrier_label(raw_label)
+        extension = None if raw_extension is None else _carrier_label(raw_extension)
+        if format_label is None or (raw_extension is not None and extension is None):
+            audio_format_support = "unknown_version"
+            normalized_audio_formats = []
+            break
+        normalized_audio_formats.append((format_label, extension))
+    for format_label, extension in sorted(normalized_audio_formats, key=lambda item: item[0].casefold()):
+        validate_deadline(deadline_at_ms)
+        codec_support, codecs = _raw_audio_render_codecs(project, format_label, extension)
+        codec_rows: List[Dict[str, str]] = []
+        for raw_label, raw_value in sorted(codecs.items(), key=lambda item: str(item[0]).casefold()):
+            codec_label = _carrier_label(raw_label)
+            codec_value = _carrier_label(raw_value)
+            if codec_label is None or codec_value is None:
+                codec_support = "unknown_version"
+                codec_rows = []
+                break
+            codec_rows.append({"label": codec_label, "api_value": codec_value})
+        audio_rows.append({
+            "label": format_label,
+            "extension": extension,
+            "codec_support": codec_support,
+            "codecs": codec_rows,
+        })
+    return {
+        "format_support": format_support,
+        "formats": rows,
+        "audio_format_support": audio_format_support,
+        "audio_formats": audio_rows,
+    }
 
 
 def _render_presets(conn: Any) -> Dict[str, Any]:

@@ -22,6 +22,8 @@ import type { OperationHandle, PublicActionId } from "../protocol/operations.js"
 import {
   sdkMediaPoolCreateBinInputSchema,
   sdkMediaPoolCreateBinResultSchema,
+  sdkMediaPoolDeleteInputSchema,
+  sdkMediaPoolDeleteResultSchema,
   sdkMediaPoolImportInputSchema,
   sdkMediaPoolImportResultSchema,
   sdkMediaPoolRelinkInputSchema,
@@ -36,6 +38,7 @@ import { freezeRecursively as freeze, mutationControl } from "./internal-utiliti
 
 type WirePage = Extract<CarrierReadSuccess, { operation: "mediaPool.page" }>["data"];
 type WireSearch = Extract<CarrierReadRequest, { operation: "mediaPool.page" }>["search"];
+type WireTranscription = Extract<CarrierReadSuccess, { operation: "mediaPool.transcription" }>["data"];
 
 /** Public Media Pool asset categories normalized from DaVinci Resolve readback. @beta */
 export type MediaPoolAssetKind = "video" | "audio" | "still" | "timeline" | "multicam" | "compound" | "fusion_composition" | "generator" | "unknown";
@@ -49,6 +52,37 @@ export interface MediaPoolMetadataEntry {
   readonly key: MediaPoolMetadataKey;
   /** Metadata value captured by this snapshot. */
   readonly value: string;
+}
+
+/** One word from persisted DaVinci Resolve Media Pool transcription. @beta */
+export interface MediaPoolTranscriptionWord {
+  readonly start: string | null;
+  readonly end: string | null;
+  readonly text: string;
+}
+
+/** One timed segment from persisted DaVinci Resolve Media Pool transcription. @beta */
+export interface MediaPoolTranscriptionSegment {
+  readonly start: string | null;
+  readonly end: string | null;
+  readonly text: string;
+  readonly speaker: string | null;
+  readonly words: readonly MediaPoolTranscriptionWord[];
+}
+
+/** Immutable existing transcription for one exact Media Pool asset. @beta */
+export interface MediaPoolTranscription {
+  readonly projectId: ProjectId;
+  readonly assetId: MediaPoolItemId;
+  readonly useNestedClipTranscription: boolean;
+  readonly available: boolean;
+  readonly language: string | null;
+  readonly segments: readonly MediaPoolTranscriptionSegment[];
+}
+
+/** Controls existing-transcription readback for one exact Media Pool asset. @beta */
+export interface MediaPoolTranscriptionOptions extends ReadControlOptions {
+  readonly useNestedClipTranscription?: boolean;
 }
 
 /** Immutable Media Pool bin/folder observation bound to one pool revision. @beta */
@@ -69,17 +103,19 @@ export interface MediaPoolFolderSnapshot {
   readonly depth: number;
 }
 
-/** Immutable Media Pool asset observation bound to one pool revision. @beta */
+/** Immutable Media Pool asset observation with page and exact asset-custody revisions. @beta */
 export interface MediaPoolAssetSnapshot {
   /** Exact project identity that owns this observation. */
   readonly projectId: ProjectId;
   /** Durable identity only when DaVinci Resolve exposes an authoritative native media identity. */
   readonly id: MediaPoolItemId | null;
-  /** Identity valid only for this exact Media Pool revision. */
+  /** Identity valid only for this exact Media Pool page revision. */
   readonly snapshotId: SnapshotMediaPoolItemId;
   readonly folderSnapshotId: SnapshotMediaPoolFolderId;
-  /** Revision that owns this immutable asset observation. */
+  /** Global Media Pool revision that owns this immutable page observation. */
   readonly snapshotRevision: Revision;
+  /** Exact revision of this asset's managed-authoring custody. */
+  readonly assetCustodyRevision: Revision;
   /** Display name reported by DaVinci Resolve. */
   readonly name: string;
   /** Normalized asset category. */
@@ -96,6 +132,8 @@ export interface MediaPoolAssetSnapshot {
   readonly frameRate: string | null;
   /** DaVinci Resolve source start timecode when exposed. */
   readonly startTimecode: string | null;
+  /** Whether DaVinci Resolve exposed metadata for this asset. */
+  readonly metadataAvailable: boolean;
   /** Curated metadata only; arbitrary DaVinci Resolve keys are not leaked through the public wire contract. */
   readonly metadata: readonly MediaPoolMetadataEntry[];
 }
@@ -139,8 +177,34 @@ export interface MediaPoolAsset {
   readonly name: string;
   readonly kind: MediaPoolAssetKind;
   readonly observedRevision: Revision;
+  /** Read the transcription already persisted by DaVinci Resolve without starting transcription. */
+  transcription(options?: MediaPoolTranscriptionOptions): Promise<MediaPoolTranscription>;
   relink(input: { readonly path: string }, options: MediaPoolMutationOptions): Promise<OperationHandle<MediaPoolRelinkResult, "cutagent.action.media.relink">>;
   setMetadata(entries: readonly MediaPoolMetadataEntry[], options: MediaPoolMutationOptions): Promise<OperationHandle<MediaPoolSetMetadataResult, "cutagent.action.media.metadata">>;
+}
+
+function transcriptionResult(
+  raw: WireTranscription,
+  projectId: ProjectId,
+  assetId: MediaPoolItemId,
+  useNestedClipTranscription: boolean,
+): MediaPoolTranscription {
+  if (String(raw.projectId) !== String(projectId)
+    || String(raw.assetId) !== String(assetId)
+    || raw.useNestedClipTranscription !== useNestedClipTranscription) {
+    throw invalidResponseFailure("CutAgent runtime returned transcription for a different Media Pool asset or mode.");
+  }
+  return freeze({
+    projectId,
+    assetId,
+    useNestedClipTranscription,
+    available: raw.available,
+    language: raw.language,
+    segments: raw.segments.map((segment) => ({
+      ...segment,
+      words: segment.words.map((word) => ({ ...word })),
+    })),
+  });
 }
 
 /** Verified created-bin identity and resulting Media Pool revision. @beta */
@@ -153,6 +217,10 @@ export interface MediaPoolRelinkResult { readonly projectId: ProjectId; readonly
 export interface MediaPoolSyncAudioResult { readonly projectId: ProjectId; readonly videoAssetId: MediaPoolItemId; readonly audioAssetIds: readonly MediaPoolItemId[]; readonly syncedAsset: Readonly<{ id: MediaPoolItemId | null; snapshotId: SnapshotMediaPoolItemId; name: string }> | null; readonly revision: Revision; }
 /** Verified metadata readback and resulting Media Pool revision. @beta */
 export interface MediaPoolSetMetadataResult { readonly projectId: ProjectId; readonly assetId: MediaPoolItemId; readonly entries: readonly MediaPoolMetadataEntry[]; readonly revision: Revision; }
+/** Per-asset verified outcome from one plural native Media Pool deletion. @beta */
+export interface MediaPoolDeleteItemResult { readonly assetId: MediaPoolItemId; readonly status: "deleted"; }
+/** Ordered deletion outcomes and resulting Media Pool revision. @beta */
+export interface MediaPoolDeleteResult { readonly projectId: ProjectId; readonly items: readonly MediaPoolDeleteItemResult[]; readonly revision: Revision; }
 
 /** One immutable bounded hierarchy/search page. @beta */
 export interface MediaPoolSnapshotPage {
@@ -172,7 +240,7 @@ export interface MediaPoolSnapshotPage {
   readonly assets: readonly MediaPoolAssetSnapshot[];
   /** True when another page exists for this exact revision and query. */
   readonly hasNextPage: boolean;
-  /** Read the next bounded page, or return `null` at the end. Pool drift fails with `STALE_REVISION`. */
+  /** Read the next bounded page from this immutable observation, or return `null` at the end. Later active-project switches do not change an available observation; if it is unavailable, live pool drift fails with `STALE_REVISION`. */
   nextPage(options?: ReadControlOptions): Promise<MediaPoolSnapshotPage | null>;
 }
 
@@ -192,6 +260,8 @@ export interface MediaPool {
   createBin(input: { readonly name: string; readonly parent?: MediaPoolBin }, options: MediaPoolMutationOptions): Promise<OperationHandle<MediaPoolCreateBinResult, "cutagent.action.media.folders.create">>;
   /** Import local media into an exact durable destination, or the root when omitted. */
   importMedia(input: { readonly paths: readonly string[]; readonly destination?: MediaPoolBin }, options: MediaPoolMutationOptions): Promise<OperationHandle<MediaPoolImportResult, "cutagent.action.media.import">>;
+  /** Delete one or more exact durable assets with one native Media Pool operation. */
+  delete(target: MediaPoolAsset | readonly MediaPoolAsset[], options: MediaPoolMutationOptions): Promise<OperationHandle<MediaPoolDeleteResult, "cutagent.action.media.delete">>;
   /** Synchronize exact durable audio assets to one exact durable video asset. */
   syncAudio(video: MediaPoolAsset, audio: readonly MediaPoolAsset[], input: { readonly method: "waveform" | "timecode"; readonly appendTracks?: boolean }, options: MediaPoolMutationOptions): Promise<OperationHandle<MediaPoolSyncAudioResult, "cutagent.action.media.sync_audio">>;
 }
@@ -268,6 +338,11 @@ const createBinResultSchema = adaptSchema(sdkMediaPoolCreateBinResultSchema, (va
 const importResultSchema = adaptSchema(sdkMediaPoolImportResultSchema, (value): MediaPoolImportResult => ({
   projectId: ProjectIdSchema.parse(value.projectId),
   assets: value.assets.map((asset) => ({ id: asset.id === null ? null : MediaPoolItemIdSchema.parse(asset.id), snapshotId: SnapshotMediaPoolItemIdSchema.parse(asset.snapshotId), name: asset.name })),
+  revision: RevisionSchema.parse(value.revision),
+}));
+const deleteResultSchema = adaptSchema(sdkMediaPoolDeleteResultSchema, (value): MediaPoolDeleteResult => ({
+  projectId: ProjectIdSchema.parse(value.projectId),
+  items: value.items.map((item) => ({ assetId: MediaPoolItemIdSchema.parse(item.assetId), status: item.status })),
   revision: RevisionSchema.parse(value.revision),
 }));
 const relinkResultSchema = adaptSchema(sdkMediaPoolRelinkResultSchema, (value): MediaPoolRelinkResult => ({
@@ -384,6 +459,7 @@ function immutablePage(
     snapshotId: SnapshotMediaPoolItemIdSchema.parse(asset.snapshotId),
     folderSnapshotId: SnapshotMediaPoolFolderIdSchema.parse(asset.folderSnapshotId),
     snapshotRevision: RevisionSchema.parse(asset.snapshotRevision),
+    assetCustodyRevision: RevisionSchema.parse(asset.assetCustodyRevision),
     name: asset.name,
     kind: asset.kind,
     selected: asset.selected,
@@ -392,6 +468,7 @@ function immutablePage(
     resolution: asset.resolution,
     frameRate: asset.frameRate,
     startTimecode: asset.startTimecode,
+    metadataAvailable: asset.metadataAvailable,
     metadata: freeze(asset.metadata.map((entry) => freeze({ key: entry.key, value: entry.value }))),
   })));
   const page: MediaPoolSnapshotPage = {
@@ -450,6 +527,23 @@ export function createMediaPool(runtime: MediaPoolRuntime, generation: number, r
       name: snapshot.name,
       kind: snapshot.kind,
       observedRevision,
+      async transcription(options = {}) {
+        const useNestedClipTranscription = options.useNestedClipTranscription ?? false;
+        if (typeof useNestedClipTranscription !== "boolean") {
+          throw new TypeError("useNestedClipTranscription must be a boolean.");
+        }
+        const response = await runtime.readAtGeneration(generation, {
+          operation: "mediaPool.transcription",
+          projectId: wireProjectId,
+          mediaPoolItemId: id,
+          expectedRevision: observedRevision,
+          useNestedClipTranscription,
+        }, options);
+        if (response.operation !== "mediaPool.transcription") {
+          throw invalidResponseFailure("CutAgent runtime did not return the requested Media Pool transcription.", response.requestId);
+        }
+        return transcriptionResult(response.data, projectId, id, useNestedClipTranscription);
+      },
       relink(input, options) {
         assertObservedRevision(observedRevision, options.precondition, "The Media Pool asset");
         const sourceFileName = input.path.split(/[\\/]/).at(-1);
@@ -515,6 +609,21 @@ export function createMediaPool(runtime: MediaPoolRuntime, generation: number, r
         assertObservedRevision(input.destination.observedRevision, options.precondition, "The destination bin");
       }
       return runtime.startAction(generation, "cutagent.action.media.import", sdkMediaPoolImportInputSchema.parse({ projectId, precondition: options.precondition, destination: input.destination ? { kind: "folder", id: input.destination.id } : { kind: "root" }, paths: [...input.paths] }), boundImportResultSchema, mutationControl(options));
+    },
+    delete(target, options) {
+      const targets = Array.isArray(target) ? [...target] : [target as MediaPoolAsset];
+      if (targets.length === 0) throw new TypeError("At least one Media Pool asset is required for deletion.");
+      const ids = targets.map((asset) => {
+        if (asset.projectId !== projectId) throw new TypeError("Every deleted asset must belong to this project.");
+        assertObservedRevision(asset.observedRevision, options.precondition, "A deleted Media Pool asset");
+        return MediaPoolItemIdSchema.parse(asset.id);
+      });
+      if (new Set(ids.map(String)).size !== ids.length) throw new TypeError("Deleted Media Pool assets must be unique.");
+      const resultSchema = bindProjectResult(deleteResultSchema, projectId, (result) => (
+        result.items.length === ids.length
+        && result.items.every((item, index) => item.status === "deleted" && String(item.assetId) === String(ids[index]))
+      ));
+      return runtime.startAction(generation, "cutagent.action.media.delete", sdkMediaPoolDeleteInputSchema.parse({ projectId, precondition: options.precondition, assetIds: ids }), resultSchema, mutationControl(options));
     },
     syncAudio(video, audio, input, options) {
       if (video.kind !== "video") throw new TypeError("The synchronization video target must be a video Media Pool asset.");

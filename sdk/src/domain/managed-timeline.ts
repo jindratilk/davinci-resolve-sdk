@@ -147,7 +147,7 @@ function lowerProgram(program: ManagedTimelineProgram, snapshot: TimelineSnapsho
     const source = lowerSourceRange(element.sourceRange, { frameRate: sourceRate });
     if (source.unit !== "frames") throw new TypeError("Managed clip source ranges must be expressed in source frames.");
     assertSourceRangeIsExactlyRepresentable(source, sourceRate, snapshot.frameRate);
-    return { key: element.key, assetId: String(element.asset.id), assetName: element.asset.name, assetRevision: String(element.asset.snapshotRevision), videoTrack: element.videoTrack, audioTrack: element.audioTrack ?? null,
+    return { key: element.key, assetId: String(element.asset.id), assetName: element.asset.name, assetRevision: String(element.asset.assetCustodyRevision), videoTrack: element.videoTrack, audioTrack: element.audioTrack ?? null,
       atFrame: timelineFrame(element.at, snapshot), sourceStartFrame: source.start, sourceEndExclusiveFrame: source.endExclusive,
       sourceFrameRate: lowerFrameRate(sourceRate),
       linkedAudio: element.linkedAudio, adoptTimelineItemId: element.adopt ? String(element.adopt) : null };
@@ -168,6 +168,9 @@ function hydrateExport(snapshot: TimelineSnapshot, raw: ManagedExportWire): Mana
   const assets = new Map(raw.assets.map((asset) => [asset.id, freeze({...asset, projectId: snapshot.projectId}) as unknown as MediaPoolAssetSnapshot]));
   const content = raw.program.elements.map((element) => {
     const asset = assets.get(element.assetId)!;
+    if (String(asset.assetCustodyRevision) !== element.assetRevision) {
+      throw new Error("CutAgent runtime returned a managed export with stale Media Pool asset custody.");
+    }
     const sourceFrameRate = hydrateFrameRate(element.sourceFrameRate);
     const assetFrameRate = reportedSourceFrameRate(asset.frameRate);
     if (assetFrameRate && !assetFrameRate.equals(sourceFrameRate)) {
@@ -233,7 +236,7 @@ export function renderManagedTimelineDocument(document: ManagedTimelineDocument)
   if (program.content.length) typeImports.push("MediaPoolAssetSnapshot");
   if (program.content.some((clip) => clip.adopt !== undefined)) typeImports.push("TimelineItemId");
   typeImports.push("ManagedTimelineDocument");
-  return `import { ${[...new Set(valueImports)].sort().join(", ")} } from "davinci-resolve-sdk";\nimport type { ${typeImports.sort().join(", ")} } from "davinci-resolve-sdk";\n\n${rateDeclaration}export const timelineProgram = defineManagedTimeline({\n  ownership: managedOwnership(${json(program.ownership.id)}),\n  binding: { projectId: ${json(String(program.binding.projectId))} as ProjectId, timelineId: ${json(String(program.binding.timelineId))} as TimelineId, revision: ${json(String(program.binding.revision))} as Revision },\n  scope: ${scope},\n  content: [\n${clips}\n  ],\n});\n\nexport const timelineDocument = {\n  dialect: "cutagent.managed-timeline",\n  version: 1,\n  program: timelineProgram,\n  coverage: ${JSON.stringify(document.coverage, null, 2).replace(/\n/g, "\n  ")},\n} satisfies ManagedTimelineDocument;\n`;
+  return `import { ${[...new Set(valueImports)].sort().join(", ")} } from "cutagent";\nimport type { ${typeImports.sort().join(", ")} } from "cutagent";\n\n${rateDeclaration}export const timelineProgram = defineManagedTimeline({\n  ownership: managedOwnership(${json(program.ownership.id)}),\n  binding: { projectId: ${json(String(program.binding.projectId))} as ProjectId, timelineId: ${json(String(program.binding.timelineId))} as TimelineId, revision: ${json(String(program.binding.revision))} as Revision },\n  scope: ${scope},\n  content: [\n${clips}\n  ],\n});\n\nexport const timelineDocument = {\n  dialect: "cutagent.managed-timeline",\n  version: 1,\n  program: timelineProgram,\n  coverage: ${JSON.stringify(document.coverage, null, 2).replace(/\n/g, "\n  ")},\n} satisfies ManagedTimelineDocument;\n`;
 }
 
 /** @internal */

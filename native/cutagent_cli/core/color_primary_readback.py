@@ -8,9 +8,9 @@ import sqlite3
 from typing import Any, Iterable
 from urllib.parse import quote
 
-from . import db_session, db_timeline_rows, db_timeline_selection
+from . import db_session, db_timeline_rows, db_timeline_selection, clip_effects_db
 from ._color_page_db import constants
-from ._color_page_db.grade_state import read_color_grade
+from ._color_page_db.grade_state import read_color_grade, read_color_topology_evidence
 from ._color_page_db.params import GradeParam
 
 
@@ -77,6 +77,54 @@ def decode_color_primary_controls(params: Iterable[GradeParam]) -> dict[str, dic
     return by_node
 
 
+def decode_color_node_enabled(proto: bytes) -> dict[str, bool]:
+    """Read native serial-node enable values from their exact control location."""
+    if not proto:
+        return {}
+
+    def fields(data):
+        parsed = clip_effects_db._parse_wire_fields(data)
+        if parsed is None:
+            raise ColorPrimaryReadbackError("malformed Color node enabled state")
+        return parsed
+
+    def one(data, number, wire):
+        values = [x.value for x in fields(data) if x.number == number and x.wire_type == wire]
+        if len(values) > 1:
+            raise ColorPrimaryReadbackError("ambiguous Color node enabled state")
+        return values[0] if values else None
+
+    root = one(proto, 1, 2)
+    if root is None:
+        return {}
+    result = {}
+    seen_indices = set()
+    for container in [x.value for x in fields(root) if x.number == 7 and x.wire_type == 2]:
+        if one(container, 8, 0) != 44:
+            continue  # Other node kinds have not been qualified by the native probe.
+        index = one(container, 2, 0)
+        controls = one(container, 10, 2)
+        if index is None or index < 1 or controls is None:
+            continue
+        key = str(index)
+        if key in seen_indices:
+            raise ColorPrimaryReadbackError("duplicate Color node index")
+        seen_indices.add(key)
+        for param in [x.value for x in fields(controls) if x.number == 1 and x.wire_type == 2]:
+            if one(param, 1, 0) != constants.PARAM_NODE_ENABLE:
+                continue
+            value = one(param, 2, 2)
+            if value is None:
+                continue
+            values = fields(value)
+            if len(values) != 1 or values[0].number != 2 or values[0].wire_type != 0 or values[0].value not in (0, 2):
+                raise ColorPrimaryReadbackError("unsupported Color node enable encoding")
+            if key in result:
+                raise ColorPrimaryReadbackError("duplicate Color node enable parameter")
+            result[key] = values[0].value == 2
+    return result
+
+
 def _read_only_connection(path: str) -> sqlite3.Connection:
     resolved = Path(path).expanduser().resolve(strict=True)
     connection = sqlite3.connect(f"file:{quote(str(resolved))}?mode=ro", uri=True, timeout=5.0)
@@ -125,6 +173,7 @@ def list_color_primary_controls(conn: Any) -> dict[str, Any]:
                     clip_name=item.name,
                 )
                 controls = decode_color_primary_controls(state.params)
+                enabled = decode_color_node_enabled(state.proto_data or b"")
             except Exception as exc:
                 items.append({
                     **base,
@@ -133,11 +182,29 @@ def list_color_primary_controls(conn: Any) -> dict[str, Any]:
                     "detail": str(exc),
                 })
                 continue
+            try:
+                topology = read_color_topology_evidence(state.proto_data or b"")
+                topology_evidence = {
+                    "status": "partial",
+                    "layerIndex": 1,
+                    "connectivityComplete": False,
+                    "matchesVerifiedLayout": topology["exact"],
+                    "containers": topology["containers"],
+                    "encodedEdges": topology["edges"],
+                    "renderGraphEvidence": topology["render"],
+                    "structureSha256": topology["structure_sha256"],
+                    "source": "active persisted first-layer grade",
+                    "limitations": "Encoded edge fields and render hashes are evidence, not complete graph connectivity; additional layers and group graphs are not decoded here.",
+                }
+            except Exception:
+                topology_evidence = {"status": "unavailable", "reason": "persisted_color_topology_unreadable"}
             items.append({
                 **base,
                 "status": "available",
                 "hasGrade": bool(state.has_grade),
                 "primaryControlsByNode": controls,
+                "nodeEnabledByNode": enabled,
+                "topologyEvidence": topology_evidence,
                 "valueDomain": "Project.db persisted Color parameter value",
                 "source": "active ListMgt::LmVersion Body",
             })
@@ -149,7 +216,8 @@ def list_color_primary_controls(conn: Any) -> dict[str, Any]:
         "route": "project_db_read_only",
         "identitySource": "TimelineItem.GetUniqueId equals Sm2TiItem.Sm2TiItem_id",
         "nodeEnabled": {
-            "status": "unavailable",
-            "reason": "no documented getter or retained native fixture proving PARAM_NODE_ENABLE encoding",
+            "status": "partial",
+            "source": "exact serial-node container enable control; native 21.1 true/false/true qualification",
+            "limitations": "only explicit values on node type 44 in the active persisted first-layer grade",
         },
     }

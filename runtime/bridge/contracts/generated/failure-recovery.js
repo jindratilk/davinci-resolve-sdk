@@ -262,7 +262,7 @@ export function classifyCutAgentFailure(input) {
             usageState: usageState ?? "unknown", possibleMutation: mutation,
             readbackRequired: mutation !== "none", manualRecoveryRequired: false });
     }
-    if (has("runtime_incompatible", "sdk_incompatible", "protocol_incompatible", "protocol_digest_mismatch")) {
+    if (has("runtime_incompatible", "sdk_incompatible", "protocol_incompatible", "codex_protocol_incompatible", "protocol_digest_mismatch")) {
         const mutation = input.possibleMutation ?? "none";
         return make(input, { kind: "runtime_incompatible", code, causeCode, recovery: "update_required", retrySafe: false,
             usageState: usageState ?? "not_reserved", possibleMutation: mutation,

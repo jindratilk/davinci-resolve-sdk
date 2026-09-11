@@ -16,6 +16,7 @@ import re
 import sqlite3
 import struct
 import time
+from collections.abc import Mapping
 from typing import Any, Iterable, Optional
 
 import zstandard as zstd
@@ -46,6 +47,18 @@ from .timeline_source_range import trusted_timeline_item_source_range
 _TRACK_TYPES = ("video", "audio", "subtitle")
 _TRANSITION_METHODS = ("GetTransitions", "GetTransitionList", "GetTransitionItems")
 _CHECKPOINT_SESSION_PREFIX = "edit-insert-overwrite"
+_OVERWRITE_REQUEST_FIELDS = frozenset(
+    {
+        "clip_name",
+        "position",
+        "source_in",
+        "source_out",
+        "track_index",
+        "media_id",
+        "audio_track_index",
+        "include_linked_audio",
+    }
+)
 
 
 def _json_value(value: Any) -> Any:
@@ -172,13 +185,19 @@ def _walk_media_pool(folder: Any, path: tuple[str, ...] = ()) -> list[tuple[Any,
     return rows
 
 
-def _resolve_media_pool_item(conn: Any, *, clip_name: str, requested_media_id: str | None) -> dict[str, Any]:
+def _resolve_media_pool_item(
+    conn: Any,
+    *,
+    clip_name: str,
+    requested_media_id: str | None,
+    all_items: list[tuple[Any, tuple[str, ...]]] | None = None,
+) -> dict[str, Any]:
     root = _call(getattr(conn, "media_pool", None), "GetRootFolder")
     if root is None:
         raise ReadinessFailed("DaVinci Resolve Media Pool is unavailable.")
     normalized_name = _required_text(clip_name, label="clip name")
     normalized_media_id = str(requested_media_id or "").strip() or None
-    all_items = _walk_media_pool(root)
+    all_items = all_items if all_items is not None else _walk_media_pool(root)
     if normalized_media_id:
         matches = [(item, path) for item, path in all_items if _media_id(item) == normalized_media_id]
         if len(matches) == 1 and str(_call(matches[0][0], "GetName") or "") != normalized_name:
@@ -1106,14 +1125,20 @@ def _hydrate_edge_db_state(conn: Any, rows: list[dict[str, Any]]) -> None:
         row["_state"]["db_edge_unsupported"] = sorted(set(unsupported))
 
 
-def _segment_for_edge(row: dict[str, Any], *, side: str, boundary: int, timeline_fps: float) -> dict[str, Any]:
+def _segment_for_record_range(
+    row: dict[str, Any],
+    *,
+    record_start: int,
+    record_end: int,
+    timeline_fps: float,
+) -> dict[str, Any]:
     mpi = row.get("_media_item")
     source_start = row.get("source_start_frame")
     source_end = row.get("source_end_frame_exclusive")
     if mpi is None or source_start is None or source_end is None:
         raise TimelineConflict(
             "Overwrite cannot preserve a partially covered timeline item with unknown source identity or range.",
-            details={"reason": "edge_preservation_unsupported", "item": _public_item(row), "side": side},
+            details={"reason": "edge_preservation_unsupported", "item": _public_item(row)},
         )
     state = row.get("_state") or {}
     source_span = int(source_end) - int(source_start)
@@ -1148,26 +1173,34 @@ def _segment_for_edge(row: dict[str, Any], *, side: str, boundary: int, timeline
                 "reason": "edge_state_preservation_unsupported",
                 "item": _public_item(row),
                 "unsupported_state": active_unsupported_state,
-                "side": side,
             },
         )
     media_fps = _source_fps(mpi, timeline_fps)
-    if side == "head":
-        record_start = int(row["record_start_frame"])
-        record_end = boundary
+    item_record_start = int(row["record_start_frame"])
+    item_record_end = int(row["record_end_frame_exclusive"])
+    if record_start == item_record_start:
         source_segment_start = int(source_start)
         source_segment_end = source_segment_start + _convert_frame_count(
             record_end - record_start, from_fps=timeline_fps, to_fps=media_fps
         )
-    else:
-        record_start = boundary
-        record_end = int(row["record_end_frame_exclusive"])
+    elif record_end == item_record_end:
         source_segment_end = int(source_end)
         source_segment_start = source_segment_end - _convert_frame_count(
             record_end - record_start, from_fps=timeline_fps, to_fps=media_fps
         )
+    else:
+        source_segment_start = int(source_start) + _convert_frame_count(
+            record_start - item_record_start,
+            from_fps=timeline_fps,
+            to_fps=media_fps,
+        )
+        source_segment_end = int(source_start) + _convert_frame_count(
+            record_end - item_record_start,
+            from_fps=timeline_fps,
+            to_fps=media_fps,
+        )
     return {
-        "side": side,
+        "side": "head" if record_start == item_record_start else "tail",
         "original_key": row["_key"],
         "linked_item_ids": row.get("linked_item_ids"),
         "media_item": mpi,
@@ -1181,6 +1214,19 @@ def _segment_for_edge(row: dict[str, Any], *, side: str, boundary: int, timeline
         "source_end_frame_exclusive": source_segment_end,
         "state_digest": row.get("state_digest"),
     }
+
+
+def _segment_for_edge(row: dict[str, Any], *, side: str, boundary: int, timeline_fps: float) -> dict[str, Any]:
+    return _segment_for_record_range(
+        row,
+        record_start=(
+            int(row["record_start_frame"]) if side == "head" else boundary
+        ),
+        record_end=(
+            boundary if side == "head" else int(row["record_end_frame_exclusive"])
+        ),
+        timeline_fps=timeline_fps,
+    )
 
 
 def _build_plan(
@@ -1199,6 +1245,9 @@ def _build_plan(
     expected_project_id: str | None,
     expected_timeline_id: str | None,
     expected_revision: str | None,
+    snapshot: dict[str, Any] | None = None,
+    prepare_segments: bool = True,
+    shared_media_items: list[tuple[Any, tuple[str, ...]]] | None = None,
 ) -> dict[str, Any]:
     if mode not in {"insert", "overwrite"}:
         raise ValidationError("Unsupported edit placement mode.", details={"mode": mode})
@@ -1206,7 +1255,12 @@ def _build_plan(
         raise ValidationError("Audio-only placement supports insert only.")
     target_track_index = _positive_track(track_index, label="audio track" if audio_only else "video track")
     video_track_index = None if audio_only else target_track_index
-    media = _resolve_media_pool_item(conn, clip_name=clip_name, requested_media_id=media_id)
+    media = _resolve_media_pool_item(
+        conn,
+        clip_name=clip_name,
+        requested_media_id=media_id,
+        all_items=shared_media_items,
+    )
     has_video, has_audio = _source_streams(media["item"])
     if audio_only and has_audio is not True:
         raise ValidationError("Selected Media Pool item does not expose a readable audio stream.", details={"media_id": media["media_id"]})
@@ -1219,7 +1273,7 @@ def _build_plan(
         )
     include_audio = False if audio_only else bool(include_linked_audio and has_audio)
     resolved_audio_track = target_track_index if audio_only else (_positive_track(audio_track_index or video_track_index, label="audio track") if include_audio else None)
-    snapshot = _snapshot(conn)
+    snapshot = snapshot if snapshot is not None else _snapshot(conn)
     _assert_expected_identity(
         snapshot["identity"],
         expected_project_id=expected_project_id,
@@ -1294,7 +1348,7 @@ def _build_plan(
                     },
                 )
     segments: list[dict[str, Any]] = []
-    if mode == "overwrite":
+    if mode == "overwrite" and prepare_segments:
         partial_rows = [
             row
             for row in overlaps
@@ -1519,7 +1573,13 @@ def _specs_for_plan(plan: dict[str, Any]) -> tuple[list[dict[str, Any]], list[li
                 candidate
                 for candidate in side_indices
                 if candidate == index
-                or specs[candidate]["expected"].get("original_key") in linked
+                or (
+                    specs[candidate]["expected"].get("original_key") in linked
+                    and specs[candidate]["expected"].get("record_start_frame")
+                    == expected.get("record_start_frame")
+                    and specs[candidate]["expected"].get("record_end_frame_exclusive")
+                    == expected.get("record_end_frame_exclusive")
+                )
                 or specs[candidate]["expected"].get("media_id") == expected.get("media_id")
                 and specs[candidate]["expected"].get("record_start_frame") == expected.get("record_start_frame")
                 and specs[candidate]["expected"].get("track_type") != expected.get("track_type")
@@ -1729,13 +1789,41 @@ def _refresh(conn: Any) -> Any:
     return conn
 
 
+def _save_project(conn: Any) -> None:
+    save_target = getattr(conn, "project_manager", None) or getattr(conn, "project", None)
+    saver = getattr(save_target, "SaveProject", None)
+    if not callable(saver) or not bool(saver()):
+        raise APICallFailed("DaVinci Resolve failed to save the verified timeline placement.")
+
+
+def _create_overwrite_checkpoint(conn: Any) -> tuple[str, str]:
+    checkpoint_session_id = f"{_CHECKPOINT_SESSION_PREFIX}-{time.time_ns()}"
+    try:
+        checkpoint = version_ops.create_checkpoint(
+            conn,
+            label="Before verified overwrite",
+            kind="before_prompt",
+            session_id=checkpoint_session_id,
+        )
+        return str(checkpoint["id"]), checkpoint_session_id
+    except Exception as exc:
+        raise EditMutationFailedBeforeChange(
+            "Overwrite checkpoint creation failed before timeline mutation.",
+            details={
+                "outcome": "failed_before_mutation",
+                "mutation_state": "not_started",
+                "error_code": getattr(exc, "code", exc.__class__.__name__),
+            },
+        ) from exc
+
+
 def _restore_after_failure(
     conn: Any,
     *,
     checkpoint_id: str,
     checkpoint_session_id: str,
     plan: dict[str, Any],
-    original_error: Exception,
+    original_error: BaseException,
 ) -> None:
     try:
         restored = version_ops.restore_checkpoint(conn, checkpoint_id, session_id=checkpoint_session_id)
@@ -1766,6 +1854,8 @@ def _restore_after_failure(
         ) from original_error
     set_verification_status("failed")
     set_recoverability("manual")
+    if not isinstance(original_error, Exception):
+        raise original_error
     raise EditMutationRestored(
         "Overwrite failed after mutation and the pre-mutation checkpoint was restored and verified.",
         details={
@@ -1823,24 +1913,7 @@ def place_clip(
     checkpoint_session_id: str | None = None
     mutation_started = False
     if mode == "overwrite":
-        checkpoint_session_id = f"{_CHECKPOINT_SESSION_PREFIX}-{time.time_ns()}"
-        try:
-            checkpoint = version_ops.create_checkpoint(
-                conn,
-                label="Before verified overwrite",
-                kind="before_prompt",
-                session_id=checkpoint_session_id,
-            )
-            checkpoint_id = str(checkpoint["id"])
-        except Exception as exc:
-            raise EditMutationFailedBeforeChange(
-                "Overwrite checkpoint creation failed before timeline mutation.",
-                details={
-                    "outcome": "failed_before_mutation",
-                    "mutation_state": "not_started",
-                    "error_code": getattr(exc, "code", exc.__class__.__name__),
-                },
-            ) from exc
+        checkpoint_id, checkpoint_session_id = _create_overwrite_checkpoint(conn)
 
     try:
         _refresh(conn)
@@ -1873,10 +1946,7 @@ def place_clip(
         mutation_started = mutation_started or bool(specs)
         created = _append_specs(conn, specs, link_groups)
         mutation_started = mutation_started or bool(created)
-        save_target = getattr(conn, "project_manager", None) or getattr(conn, "project", None)
-        saver = getattr(save_target, "SaveProject", None)
-        if not callable(saver) or not bool(saver()):
-            raise APICallFailed("DaVinci Resolve failed to save the verified timeline placement.")
+        _save_project(conn)
         _refresh(conn)
         after = _snapshot(conn)
         verification = _verify(plan, after, specs, link_groups)
@@ -1964,6 +2034,174 @@ def place_clip(
     return result
 
 
+def insert_audio_clips_at(
+    conn: Any,
+    placements: list[dict[str, Any]],
+    *,
+    expected_project_id: str | None = None,
+    expected_timeline_id: str | None = None,
+    expected_revision: str | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Plan and insert several independent audio clips through one native append."""
+
+    if not isinstance(placements, list) or not 1 <= len(placements) <= 256:
+        raise ValidationError("Audio placement list must contain between 1 and 256 items.")
+
+    def build(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
+        plans = [
+            _build_plan(
+                conn,
+                mode="insert",
+                clip_name=str(item.get("clip_name") or ""),
+                position=str(item.get("position") or ""),
+                source_in=item.get("source_in"),
+                source_out=item.get("source_out"),
+                track_index=item.get("track_index"),
+                audio_only=True,
+                media_id=item.get("media_id"),
+                audio_track_index=None,
+                include_linked_audio=False,
+                expected_project_id=expected_project_id,
+                expected_timeline_id=expected_timeline_id,
+                expected_revision=expected_revision,
+                snapshot=snapshot,
+            )
+            for item in placements
+        ]
+        occupied: list[tuple[int, int, int]] = []
+        for plan in plans:
+            coordinate = (
+                int(plan["audio_track_index"]),
+                int(plan["record_start_frame"]),
+                int(plan["record_end_frame_exclusive"]),
+            )
+            if any(
+                track == coordinate[0]
+                and start < coordinate[2]
+                and coordinate[1] < end
+                for track, start, end in occupied
+            ):
+                raise TimelineConflict(
+                    "Audio placement items overlap each other on the same target track.",
+                    details={"reason": "insert_items_overlap"},
+                )
+            occupied.append(coordinate)
+        return plans
+
+    snapshot = _snapshot(conn)
+    _assert_expected_identity(
+        snapshot["identity"],
+        expected_project_id=expected_project_id,
+        expected_timeline_id=expected_timeline_id,
+    )
+    if expected_revision and str(expected_revision).strip() != snapshot["revision"]:
+        raise TimelineConflict(
+            "Timeline revision precondition failed.",
+            details={
+                "reason": "revision_precondition_failed",
+                "expected_revision": str(expected_revision).strip(),
+                "actual_revision": snapshot["revision"],
+            },
+        )
+    plans = build(snapshot)
+    if dry_run:
+        set_verification_status("planned")
+        set_recoverability("not_applicable")
+        return {
+            "action": "edit.insert",
+            "mode": "insert",
+            "semantics": "non_ripple_empty_range_audio_placement",
+            "dry_run": True,
+            "items": [_public_plan(plan, dry_run=True) for plan in plans],
+            "precondition": {"revision": snapshot["revision"], "validated": True},
+        }
+
+    mutation_started = False
+    try:
+        _refresh(conn)
+        current = _snapshot(conn)
+        if current["revision"] != snapshot["revision"]:
+            raise TimelineConflict(
+                "Timeline revision precondition failed.",
+                details={
+                    "reason": "revision_precondition_failed",
+                    "expected_revision": snapshot["revision"],
+                    "actual_revision": current["revision"],
+                },
+            )
+        plans = build(current)
+        all_specs: list[dict[str, Any]] = []
+        for plan in plans:
+            specs, link_groups = _specs_for_plan(plan)
+            if link_groups or len(specs) != 1 or specs[0]["expected"]["track_type"] != "audio":
+                raise ValidationError("Plural audio insertion resolved an unexpected native placement topology.")
+            all_specs.extend(specs)
+        mutation_started = bool(all_specs)
+        created = _append_specs(conn, all_specs, [])
+        mutation_started = mutation_started or bool(created)
+        save_target = getattr(conn, "project_manager", None) or getattr(conn, "project", None)
+        saver = getattr(save_target, "SaveProject", None)
+        if not callable(saver) or not bool(saver()):
+            raise APICallFailed("DaVinci Resolve failed to save the verified audio placements.")
+        _refresh(conn)
+        after = _snapshot(conn)
+        verifications = []
+        for plan in plans:
+            specs, _ = _specs_for_plan(plan)
+            verification = _verify(plan, after, specs, [])
+            if verification["status"] != "passed":
+                raise APICallFailed(
+                    "Fresh DaVinci Resolve readback did not verify every requested audio placement.",
+                    details={"verification": verification},
+                )
+            verifications.append(verification)
+    except Exception as exc:
+        try:
+            _refresh(conn)
+            unchanged = _snapshot(conn)["revision"] == snapshot["revision"]
+        except Exception:
+            unchanged = False
+        if not mutation_started or unchanged:
+            raise EditMutationFailedBeforeChange(
+                "Audio placement failed and readback confirms that no requested mutation persisted.",
+                details={
+                    "outcome": "failed_before_mutation",
+                    "mutation_state": "not_started",
+                    "error_code": getattr(exc, "code", exc.__class__.__name__),
+                },
+            ) from exc
+        raise EditMutationPartiallyApplied(
+            "Audio placement failed after a possible partial native append.",
+            details={
+                "outcome": "partially_applied",
+                "mutation_state": "manual_recovery_required",
+                "error_code": getattr(exc, "code", exc.__class__.__name__),
+            },
+        ) from exc
+
+    set_verification_status("verified")
+    set_recoverability("manual")
+    items = []
+    for plan, verification in zip(plans, verifications):
+        item = _public_plan(plan, dry_run=False, verification=verification)
+        item["inserted"] = [
+            match["matches"][0]
+            for match in verification["resolved_items"]
+            if match["kind"] == "replacement" and len(match["matches"]) == 1
+        ]
+        items.append(item)
+    return {
+        "action": "edit.insert",
+        "mode": "insert",
+        "semantics": "non_ripple_empty_range_audio_placement",
+        "dry_run": False,
+        "items": items,
+        "revision_before": snapshot["revision"],
+        "revision_after": after["revision"],
+    }
+
+
 def insert_clip_at(
     conn: Any,
     clip_name: str,
@@ -1998,6 +2236,491 @@ def insert_clip_at(
         expected_revision=expected_revision,
         dry_run=dry_run,
     )
+
+
+_INSERT_REQUEST_FIELDS = {
+    "clip_name",
+    "position",
+    "source_in",
+    "source_out",
+    "track_index",
+    "media_id",
+    "audio_track_index",
+    "include_linked_audio",
+}
+
+
+def _normalize_insert_requests(
+    requests: Mapping[str, Any] | Iterable[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    candidates = [requests] if isinstance(requests, Mapping) else list(requests)
+    if not candidates:
+        raise ValidationError("Insert requires at least one placement request.")
+    if len(candidates) > 256:
+        raise ValidationError("Insert accepts at most 256 placement requests.")
+    normalized: list[dict[str, Any]] = []
+    for index, request in enumerate(candidates):
+        if not isinstance(request, Mapping):
+            raise ValidationError(
+                "Each insert placement request must be an object.",
+                details={"index": index},
+            )
+        unknown = sorted(set(request) - _INSERT_REQUEST_FIELDS)
+        missing = sorted({"clip_name", "position"} - set(request))
+        if unknown or missing:
+            raise ValidationError(
+                "Insert placement request fields are invalid.",
+                details={"index": index, "unknown_fields": unknown, "missing_fields": missing},
+            )
+        normalized.append(dict(request))
+    return normalized
+
+
+def _normalize_overwrite_requests(
+    requests: Mapping[str, Any] | Iterable[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    candidates = [requests] if isinstance(requests, Mapping) else list(requests)
+    if not candidates:
+        raise ValidationError("Overwrite requires at least one placement request.")
+    normalized: list[dict[str, Any]] = []
+    for index, request in enumerate(candidates):
+        if not isinstance(request, Mapping):
+            raise ValidationError(
+                "Each overwrite placement request must be an object.",
+                details={"index": index},
+            )
+        unknown = sorted(set(request) - _OVERWRITE_REQUEST_FIELDS)
+        missing = sorted({"clip_name", "position"} - set(request))
+        if unknown or missing:
+            raise ValidationError(
+                "Overwrite placement request fields are invalid.",
+                details={"index": index, "unknown_fields": unknown, "missing_fields": missing},
+            )
+        normalized.append(dict(request))
+    return normalized
+
+
+def _aggregate_preserved_segments(
+    conn: Any, plans: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    affected = {
+        row["_key"]: row for plan in plans for row in plan["overlaps"]
+    }
+    remaining: list[tuple[dict[str, Any], int, int]] = []
+    for key, row in affected.items():
+        cuts = sorted(
+            (
+                max(int(row["record_start_frame"]), int(plan["record_start_frame"])),
+                min(
+                    int(row["record_end_frame_exclusive"]),
+                    int(plan["record_end_frame_exclusive"]),
+                ),
+            )
+            for plan in plans
+            if any(candidate["_key"] == key for candidate in plan["overlaps"])
+        )
+        cursor = int(row["record_start_frame"])
+        for cut_start, cut_end in cuts:
+            if cursor < cut_start:
+                remaining.append((row, cursor, cut_start))
+            cursor = max(cursor, cut_end)
+        if cursor < int(row["record_end_frame_exclusive"]):
+            remaining.append((row, cursor, int(row["record_end_frame_exclusive"])))
+    _hydrate_edge_db_state(
+        conn,
+        list({row["_key"]: row for row, _start, _end in remaining}.values()),
+    )
+    timeline_fps = float(plans[0]["snapshot"]["fps"])
+    segments = [
+        _segment_for_record_range(
+            row,
+            record_start=record_start,
+            record_end=record_end,
+            timeline_fps=timeline_fps,
+        )
+        for row, record_start, record_end in remaining
+    ]
+    for segment in segments:
+        segment_source_fps = _source_fps(segment["media_item"], timeline_fps)
+        _native_source_frame_exact(
+            segment["source_start_frame"],
+            source_fps=segment_source_fps,
+            timeline_fps=timeline_fps,
+        )
+        _native_source_frame_exact(
+            segment["source_end_frame_exclusive"],
+            source_fps=segment_source_fps,
+            timeline_fps=timeline_fps,
+        )
+    return segments
+
+
+def overwrite_clips_at(
+    conn: Any,
+    requests: Mapping[str, Any] | Iterable[Mapping[str, Any]],
+    *,
+    expected_project_id: str | None = None,
+    expected_timeline_id: str | None = None,
+    expected_revision: str | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Overwrite one or more disjoint ranges with one checkpoint and one save."""
+
+    normalized = _normalize_overwrite_requests(requests)
+    initial_snapshot = _snapshot(conn)
+    plans = [
+        _build_plan(
+            conn,
+            mode="overwrite",
+            clip_name=request["clip_name"],
+            position=request["position"],
+            source_in=request.get("source_in"),
+            source_out=request.get("source_out"),
+            track_index=request.get("track_index", 1),
+            audio_only=False,
+            media_id=request.get("media_id"),
+            audio_track_index=request.get("audio_track_index"),
+            include_linked_audio=request.get("include_linked_audio", True),
+            expected_project_id=expected_project_id,
+            expected_timeline_id=expected_timeline_id,
+            expected_revision=expected_revision,
+            snapshot=initial_snapshot,
+            prepare_segments=False,
+        )
+        for request in normalized
+    ]
+    for left_index, left in enumerate(plans):
+        for right_index, right in enumerate(plans[left_index + 1 :], start=left_index + 1):
+            overlaps_in_time = (
+                left["record_start_frame"] < right["record_end_frame_exclusive"]
+                and right["record_start_frame"] < left["record_end_frame_exclusive"]
+            )
+            if overlaps_in_time and left["target_tracks"] & right["target_tracks"]:
+                raise TimelineConflict(
+                    "Overwrite group contains overlapping target ranges on the same track.",
+                    details={
+                        "reason": "overlapping_batch_targets",
+                        "request_indices": [left_index, right_index],
+                    },
+                )
+
+    aggregate_segments = _aggregate_preserved_segments(conn, plans)
+    if dry_run:
+        set_verification_status("planned")
+        set_recoverability("not_applicable")
+        return {
+            "action": "edit.overwrite",
+            "dry_run": True,
+            "items": [
+                _public_plan(
+                    {
+                        **plan,
+                        "segments": [
+                            segment
+                            for segment in aggregate_segments
+                            if segment["original_key"]
+                            in {row["_key"] for row in plan["overlaps"]}
+                        ],
+                    },
+                    dry_run=True,
+                )
+                for plan in plans
+            ],
+            "precondition": {
+                "revision": initial_snapshot["revision"],
+                "validated": True,
+            },
+            "batch": {"requested_count": len(plans), "completed_count": 0},
+            "recovery": {
+                "checkpoint_created": False,
+                "state": "not_created_for_dry_run",
+                "manual_recovery_required": False,
+            },
+            "verification": {
+                "status": "planned",
+                "request_count": len(plans),
+                "evidence": ["shared_non_mutating_preflight"],
+            },
+        }
+
+    edge_plan = {
+        **plans[0],
+        "segments": aggregate_segments,
+        "video_track_index": None,
+        "audio_track_index": None,
+    }
+    specs, link_groups = _specs_for_plan(edge_plan)
+    plan_spec_indices: list[list[int]] = []
+    plan_output_segments: list[list[dict[str, Any]]] = []
+    for plan in plans:
+        replacement_plan = {**plan, "segments": []}
+        plan_specs, plan_link_groups = _specs_for_plan(replacement_plan)
+        offset = len(specs)
+        specs.extend(plan_specs)
+        link_groups.extend(
+            [[offset + index for index in group] for group in plan_link_groups]
+        )
+        affected_keys = {row["_key"] for row in plan["overlaps"]}
+        relevant_edge_indices = [
+            index
+            for index, spec in enumerate(specs[:offset])
+            if spec["expected"].get("original_key") in affected_keys
+        ]
+        plan_spec_indices.append(
+            [*relevant_edge_indices, *range(offset, len(specs))]
+        )
+        plan_output_segments.append(
+            [
+                segment
+                for segment in aggregate_segments
+                if segment["original_key"] in affected_keys
+            ]
+        )
+    overlaps_by_key = {
+        row["_key"]: row for plan in plans for row in plan["overlaps"]
+    }
+    overlaps = list(overlaps_by_key.values())
+    aggregate_plan = {"snapshot": initial_snapshot, "overlaps": overlaps}
+
+    checkpoint_id, checkpoint_session_id = _create_overwrite_checkpoint(conn)
+    mutation_started = False
+    try:
+        _refresh(conn)
+        revalidated = _snapshot(conn)
+        if (
+            revalidated["identity"] != initial_snapshot["identity"]
+            or revalidated["revision"] != initial_snapshot["revision"]
+        ):
+            raise EditMutationFailedBeforeChange(
+                "Overwrite group changed during final pre-mutation revalidation.",
+                details={
+                    "outcome": "failed_before_mutation",
+                    "mutation_state": "not_started",
+                    "checkpoint_id": checkpoint_id,
+                },
+            )
+        mutation_started = bool(overlaps)
+        _delete_no_ripple(conn, overlaps)
+        # AppendToTimeline may partially mutate before returning a failure.
+        mutation_started = mutation_started or bool(specs)
+        _append_specs(conn, specs, link_groups)
+        _save_project(conn)
+        _refresh(conn)
+        after = _snapshot(conn)
+        verification = _verify(aggregate_plan, after, specs, link_groups)
+        if verification["status"] != "passed":
+            raise APICallFailed(
+                "Fresh DaVinci Resolve readback did not verify the saved overwrite group.",
+                details={"verification": verification},
+            )
+    except BaseException as exc:
+        if mutation_started:
+            _restore_after_failure(
+                conn,
+                checkpoint_id=checkpoint_id,
+                checkpoint_session_id=checkpoint_session_id,
+                plan={"snapshot": initial_snapshot},
+                original_error=exc,
+            )
+        raise
+
+    completed: list[dict[str, Any]] = []
+    for plan, spec_indices, output_segments in zip(
+        plans, plan_spec_indices, plan_output_segments
+    ):
+        item_verification = {
+            **verification,
+            "resolved_items": [
+                verification["resolved_items"][index] for index in spec_indices
+            ],
+        }
+        item = _public_plan(
+            {**plan, "segments": output_segments},
+            dry_run=False,
+            verification=item_verification,
+        )
+        item["inserted"] = [
+            match["matches"][0]
+            for match in item_verification["resolved_items"]
+            if match["kind"] == "replacement" and len(match["matches"]) == 1
+        ]
+        item["recovery"] = {
+            "checkpoint_created": True,
+            "state": "available",
+            "manual_recovery_required": False,
+            "checkpoint_id": checkpoint_id,
+        }
+        completed.append(item)
+
+    set_verification_status("verified")
+    set_recoverability("manual")
+    return {
+        "action": "edit.overwrite",
+        "dry_run": False,
+        "items": completed,
+        "precondition": {
+            "revision": initial_snapshot["revision"],
+            "validated": True,
+        },
+        "batch": {
+            "requested_count": len(normalized),
+            "completed_count": len(completed),
+        },
+        "recovery": {
+            "checkpoint_created": True,
+            "state": "available",
+            "manual_recovery_required": False,
+            "checkpoint_id": checkpoint_id,
+            "scope": "all_items",
+        },
+        "verification": {
+            "status": "passed",
+            "request_count": len(completed),
+            "revision_before": initial_snapshot["revision"],
+            "revision_after": after["revision"],
+            "evidence": ["shared_structural_readback", "shared_post_save_readback"],
+        },
+    }
+
+
+def insert_clips_at(
+    conn: Any,
+    requests: Mapping[str, Any] | Iterable[Mapping[str, Any]],
+    *,
+    expected_project_id: str | None = None,
+    expected_timeline_id: str | None = None,
+    expected_revision: str | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Insert one or more disjoint placements with one native append and readback."""
+
+    normalized = _normalize_insert_requests(requests)
+    snapshot = _snapshot(conn)
+    root = _call(getattr(conn, "media_pool", None), "GetRootFolder")
+    if root is None:
+        raise ReadinessFailed("DaVinci Resolve Media Pool is unavailable.")
+    media_items = _walk_media_pool(root)
+    plans = [
+        _build_plan(
+            conn,
+            mode="insert",
+            clip_name=request["clip_name"],
+            position=request["position"],
+            source_in=request.get("source_in"),
+            source_out=request.get("source_out"),
+            track_index=request.get("track_index", 1),
+            audio_only=False,
+            media_id=request.get("media_id"),
+            audio_track_index=request.get("audio_track_index"),
+            include_linked_audio=request.get("include_linked_audio", True),
+            expected_project_id=expected_project_id,
+            expected_timeline_id=expected_timeline_id,
+            expected_revision=expected_revision,
+            snapshot=snapshot,
+            shared_media_items=media_items,
+        )
+        for request in normalized
+    ]
+    for left_index, left in enumerate(plans):
+        for right_index, right in enumerate(plans[left_index + 1 :], start=left_index + 1):
+            overlaps_in_time = (
+                left["record_start_frame"] < right["record_end_frame_exclusive"]
+                and right["record_start_frame"] < left["record_end_frame_exclusive"]
+            )
+            if overlaps_in_time and left["target_tracks"] & right["target_tracks"]:
+                raise TimelineConflict(
+                    "Insert group contains overlapping target ranges on the same track.",
+                    details={"reason": "overlapping_batch_targets", "request_indices": [left_index, right_index]},
+                )
+
+    if dry_run:
+        set_verification_status("planned")
+        set_recoverability("not_applicable")
+        return {
+            "action": "edit.insert",
+            "dry_run": True,
+            "items": [_public_plan(plan, dry_run=True) for plan in plans],
+            "precondition": {"revision": snapshot["revision"], "validated": True},
+            "batch": {"requested_count": len(plans), "completed_count": 0},
+            "verification": {"status": "planned", "request_count": len(plans), "evidence": ["shared_non_mutating_preflight"]},
+        }
+
+    _refresh(conn)
+    revalidated = _snapshot(conn)
+    if revalidated["identity"] != snapshot["identity"] or revalidated["revision"] != snapshot["revision"]:
+        raise EditMutationFailedBeforeChange(
+            "Timeline changed after insert group preflight.",
+            details={"outcome": "failed_before_mutation", "mutation_state": "not_started"},
+        )
+    all_specs: list[dict[str, Any]] = []
+    all_link_groups: list[list[int]] = []
+    per_plan_specs: list[tuple[list[dict[str, Any]], list[list[int]]]] = []
+    for plan in plans:
+        specs, link_groups = _specs_for_plan(plan)
+        offset = len(all_specs)
+        all_specs.extend(specs)
+        all_link_groups.extend([[offset + index for index in group] for group in link_groups])
+        per_plan_specs.append((specs, link_groups))
+    mutation_started = bool(all_specs)
+    try:
+        _append_specs(conn, all_specs, all_link_groups)
+        save_target = getattr(conn, "project_manager", None) or getattr(conn, "project", None)
+        saver = getattr(save_target, "SaveProject", None)
+        if not callable(saver) or not bool(saver()):
+            raise APICallFailed("DaVinci Resolve failed to save the verified timeline placements.")
+        _refresh(conn)
+        after = _snapshot(conn)
+        verifications = [
+            _verify(plan, after, specs, link_groups)
+            for plan, (specs, link_groups) in zip(plans, per_plan_specs)
+        ]
+        if any(verification["status"] != "passed" for verification in verifications):
+            raise APICallFailed(
+                "Fresh DaVinci Resolve readback did not verify every requested timeline placement.",
+                details={"verifications": verifications},
+            )
+    except (EditMutationFailedBeforeChange, EditMutationPartiallyApplied):
+        raise
+    except Exception as exc:
+        try:
+            unchanged = _snapshot(conn)["revision"] == snapshot["revision"]
+        except Exception:
+            unchanged = False
+        if not mutation_started or unchanged:
+            raise EditMutationFailedBeforeChange(
+                "Timeline insert group failed and readback confirms no mutation.",
+                details={"outcome": "failed_before_mutation", "mutation_state": "not_started", "error_code": getattr(exc, "code", exc.__class__.__name__)},
+            ) from exc
+        raise EditMutationPartiallyApplied(
+            "Timeline insert group failed after a mutation and requires manual recovery.",
+            details={"outcome": "partially_applied", "mutation_state": "manual_recovery_required", "error_code": getattr(exc, "code", exc.__class__.__name__)},
+        ) from exc
+
+    set_verification_status("verified")
+    set_recoverability("manual")
+    completed = []
+    for plan, verification in zip(plans, verifications):
+        result = _public_plan(plan, dry_run=False, verification=verification)
+        result["inserted"] = [
+            match["matches"][0]
+            for match in verification["resolved_items"]
+            if match["kind"] == "replacement" and len(match["matches"]) == 1
+        ]
+        completed.append(result)
+    return {
+        "action": "edit.insert",
+        "dry_run": False,
+        "items": completed,
+        "precondition": {"revision": snapshot["revision"], "validated": True},
+        "batch": {"requested_count": len(plans), "completed_count": len(completed)},
+        "verification": {
+            "status": "passed",
+            "request_count": len(completed),
+            "revision_before": snapshot["revision"],
+            "revision_after": after["revision"],
+            "evidence": ["one_native_plural_append", "shared_post_save_readback"],
+        },
+    }
 
 
 def overwrite_clip_at(

@@ -367,17 +367,17 @@ def run_loudness_normalize(
             requested_gains: dict[str, float] = {}
             for item_id, current_gain in list(current_gains.items()):
                 requested_gain = _validate_clip_gain(current_gain + delta)
-                mutation = fairlight_ops.apply_audio_gain_batch(
-                    conn,
-                    gain_db=requested_gain,
-                    selectors=[{"item_id": item_id}],
-                    allow_empty=False,
-                    allow_multiple=False,
-                )
-                current_gains[item_id] = requested_gain
                 requested_gains[item_id] = requested_gain
-                attempt_mutations.append(mutation)
-                mutations.append(mutation)
+            mutation = fairlight_ops.apply_audio_gain_entries(
+                conn,
+                entries=[
+                    {"item_id": item_id, "gain_db": gain}
+                    for item_id, gain in requested_gains.items()
+                ],
+            )
+            current_gains.update(requested_gains)
+            attempt_mutations.append(mutation)
+            mutations.append(mutation)
             refresh = active_driver.refresh_loudness_meter(conn, readback=after)
             after = active_driver.read_loudness()
             after_integrated = after["readback"].get("integrated_lufs")
@@ -509,21 +509,38 @@ def _validate_clip_gain(value: float) -> float:
 
 
 def _rollback_item_gains(conn: Any, original_gains: dict[str, float]) -> list[dict[str, Any]]:
-    rollbacks: list[dict[str, Any]] = []
-    for item_id, gain in original_gains.items():
-        try:
-            rollbacks.append(
-                fairlight_ops.apply_audio_gain_batch(
+    try:
+        return [fairlight_ops.apply_audio_gain_entries(
+            conn,
+            entries=[
+                {"item_id": item_id, "gain_db": float(gain)}
+                for item_id, gain in original_gains.items()
+            ],
+        )]
+    except Exception as batch_exc:  # pragma: no cover - live safety details.
+        rollbacks: list[dict[str, Any]] = [{
+            "status": "failed",
+            "item_ids": list(original_gains),
+            "error": str(batch_exc),
+        }]
+        # The plural native/DB primitive restores its own partial work before
+        # raising. Preserve the older best-effort recovery contract by trying
+        # each original value only on this exceptional recovery path.
+        for item_id, gain in original_gains.items():
+            try:
+                rollbacks.append(fairlight_ops.apply_audio_gain_batch(
                     conn,
                     gain_db=float(gain),
                     selectors=[{"item_id": item_id}],
                     allow_empty=False,
                     allow_multiple=False,
-                )
-            )
-        except Exception as exc:  # pragma: no cover - live safety details.
-            rollbacks.append({"status": "failed", "item_id": item_id, "gain_db": gain, "error": str(exc)})
-    return rollbacks
+                ))
+            except Exception as exc:
+                rollbacks.append({
+                    "status": "failed", "item_id": item_id,
+                    "gain_db": gain, "error": str(exc),
+                })
+        return rollbacks
 
 
 def _run_vision_ocr(path: Path) -> dict[str, Any]:

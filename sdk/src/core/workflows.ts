@@ -15,8 +15,8 @@ export interface ManagedWorkflowVerification { readonly outcome: "passed"; reado
 export interface ManagedWorkflowState { readonly ownershipId: string; readonly generation: number; readonly revision: Revision; readonly desiredStateDigest: string; readonly elements: readonly ManagedElementMapping[]; readonly verification: ManagedWorkflowVerification }
 /** Exact project/timeline/revision binding for one checkpoint workflow. @beta */
 export interface WorkflowBinding { readonly sessionId: SdkSessionId; readonly projectId: ProjectId; readonly timelineId: TimelineId; readonly revision: Revision; readonly idempotencyKey: IdempotencyKey }
-/** Binding returned after the runtime captures the exact Mutation Policy revision. @beta */
-export interface AuthoritativeWorkflowBinding extends Omit<WorkflowBinding, "sessionId"> { readonly policyRevision: string }
+/** Exact project and timeline binding returned by the runtime. @beta */
+export type AuthoritativeWorkflowBinding = Omit<WorkflowBinding, "sessionId">;
 /** Runtime-owned durable step correlation. @beta */
 export interface WorkflowStepJournalEntry { readonly name: string; readonly idempotencyKey: IdempotencyKey; readonly operationId?: OperationId; readonly actionId?: PublicActionId; readonly outcome?: WorkflowStepOutcome }
 /** Sanitized projection of proprietary durable workflow authority. @beta */
@@ -101,7 +101,12 @@ export function createWorkflows(runtime: { session(): EstablishedCarrierSession 
         const interrupt = () => runtime.session().workflow({ operation: "workflow.interrupt", workflowId: snapshot.workflowId }, {});
         let cancellationNotice: Promise<typeof snapshot> | undefined;
         if (options.cancellationSignal) {
-          const cancel = () => { cancellationNotice ??= interrupt(); };
+          const cancel = () => {
+            // Observe failure immediately, even while the authoring callback is pending.
+            // Keep the original rejection for the checkpoint caller to receive later.
+            cancellationNotice ??= Promise.resolve().then(interrupt);
+            void cancellationNotice.catch(() => {});
+          };
           options.cancellationSignal.addEventListener("abort", cancel, { once: true });
           detach = () => options.cancellationSignal?.removeEventListener("abort", cancel);
           if (options.cancellationSignal.aborted) snapshot = await interrupt();

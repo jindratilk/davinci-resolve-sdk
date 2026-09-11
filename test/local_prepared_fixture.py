@@ -2,8 +2,8 @@
 No DaVinci Resolve process is accessed; execution is a deterministic test handler.
 """
 from cutagent_cli.local_prepared_authority import LocalPreparedActionAuthority
-from cutagent_cli.sdk_prepared_action import PreparedActionRegistry, prepared_action_digest
-from cutagent_cli._sdk_prepared_action_contract import PREPARED_ACTION_KERNEL_DIGEST, PREPARED_ACTION_CONTRACT_DIGEST, PREPARED_ACTION_CAPABILITY_DIGEST
+from cutagent_cli.sdk_prepared_action import PreparedActionRegistry
+from cutagent_cli._sdk_prepared_action_contract import PREPARED_ACTION_PROTOCOL_VERSION, PREPARED_ACTION_KERNEL_DIGEST, PREPARED_ACTION_CONTRACT_DIGEST, PREPARED_ACTION_CAPABILITY_DIGEST
 from cutagent_cli.policy import _prepared_action_admission_scope, enforce_mutation_policy
 def _admitted_marker_handler():
     enforce_mutation_policy(
@@ -201,15 +201,11 @@ def authority_env():
     def record_terminal(key, terminal):
         terminals[key] = dict(terminal)
 
-    policy_jwk = {}
     context["session"].update(
         {
             "preparedActionKernelDigest": PREPARED_ACTION_KERNEL_DIGEST,
             "preparedActionContractDigest": PREPARED_ACTION_CONTRACT_DIGEST,
             "preparedActionCapabilityDigest": PREPARED_ACTION_CAPABILITY_DIGEST,
-            "preparedActionPolicyPublicJwkDigest": prepared_action_digest(
-                "policy-decision", policy_jwk
-            ),
         }
     )
     execution_authority = MarkerExecutionAuthority()
@@ -220,15 +216,13 @@ def authority_env():
         claim_idempotency=claim,
         record_idempotency_terminal=record_terminal,
         load_idempotency_terminal=terminals.get,
-        assert_protected_state_evidence=lambda _claims, _impact, _report: True,
-        policy_public_jwk=policy_jwk,
         execution_authorities={
             "cutagent.action.timeline.marker.add": execution_authority
         },
         now_ms=lambda: now[0],
     )
     request = {
-        "protocolVersion": 1,
+        "protocolVersion": PREPARED_ACTION_PROTOCOL_VERSION,
         "actionId": "cutagent.action.timeline.marker.add",
         "actionContractVersion": 1,
         "input": {"frame": 125},
@@ -264,8 +258,6 @@ def authority_env():
             "requestId": value["requestId"],
             "operationId": value["operationId"],
             "executionId": value["executionId"],
-            "scopeId": "constraint_scope_fixture_12345678",
-            "scopeRevision": 1,
             "projectLibraryId": value["identities"]["projectLibraryId"],
             "projectId": value["identities"]["projectId"],
             "timelineId": value["identities"]["timelineId"],
@@ -281,7 +273,6 @@ def authority_env():
         "descriptor": descriptor,
         "context": context,
         "request": request,
-        "policy_jwk": policy_jwk,
         "now": now,
         "custody": custody,
         "terminals": terminals,

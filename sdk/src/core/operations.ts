@@ -28,6 +28,7 @@ import type { ConnectionControlOptions } from "./public-client-types.js";
 const DEFAULT_OPERATION_POLL_INTERVAL_MS = 250;
 const MIN_OPERATION_POLL_INTERVAL_MS = 100;
 const MAX_OPERATION_POLL_INTERVAL_MS = 10_000;
+const MIN_OPERATION_WAIT_TIMEOUT_MS = 100;
 const MAX_OPERATION_WAIT_TIMEOUT_MS = 24 * 60 * 60 * 1_000;
 const MAX_OPERATION_POLL_REQUEST_TIMEOUT_MS = 10_000;
 const TERMINAL_STATUSES = new Set([
@@ -146,8 +147,16 @@ function validateTransition(previous: WireSnapshot, event: WireEvent): "accept" 
     || next.executionId !== previous.executionId) {
     throw invalidResponse("CutAgent runtime returned mismatched operation correlation.");
   }
-  if (next.sequence < previous.sequence) return "ignore";
-  if (next.sequence === previous.sequence) {
+  const recoveredTerminal = next.sequence <= previous.sequence
+    && !TERMINAL_STATUSES.has(previous.status)
+    && TERMINAL_STATUSES.has(next.status);
+  // Intermediate progress is intentionally not durable. After a Bridge
+  // restart, recovery may therefore return a terminal from the last durable
+  // sequence even when this handle observed a higher in-memory progress
+  // sequence before the disconnect. Terminal authority is immutable, so that
+  // correlated completion must pass the ordinary status/progress checks below.
+  if (!recoveredTerminal && next.sequence < previous.sequence) return "ignore";
+  if (!recoveredTerminal && next.sequence === previous.sequence) {
     if (sameSnapshot(previous, next)) return "ignore";
     throw invalidResponse("CutAgent runtime changed an operation without advancing authority sequence.");
   }
@@ -219,6 +228,7 @@ function createHandle<TResult, TAction extends PublicActionId>(
 ): OperationHandle<TResult, TAction> {
   let wire = initialEvent.snapshot;
   let current = project<TResult, TAction>(wire, decode);
+  let sharedDefaultWaitRefresh: Promise<OperationSnapshot<TResult, TAction>> | null = null;
   let pollTimer: ReturnType<typeof setTimeout> | null = null;
   let scheduledPollIntervalMs: number | null = null;
   const subscriptions = new Set<{
@@ -249,6 +259,17 @@ function createHandle<TResult, TAction extends PublicActionId>(
     operation: "operation.get",
     operationId: sdkOperationIdSchema.parse(wire.operationId),
   }, options));
+
+  const refreshForWait = (options: ConnectionControlOptions) => {
+    const shareable = options.signal === undefined
+      && options.timeoutMs === MAX_OPERATION_POLL_REQUEST_TIMEOUT_MS;
+    if (!shareable) return refresh(options);
+    if (sharedDefaultWaitRefresh) return sharedDefaultWaitRefresh;
+    sharedDefaultWaitRefresh = refresh(options).finally(() => {
+      sharedDefaultWaitRefresh = null;
+    });
+    return sharedDefaultWaitRefresh;
+  };
 
   const schedulePoll = () => {
     if (pollTimer) {
@@ -304,25 +325,32 @@ function createHandle<TResult, TAction extends PublicActionId>(
       const interval = pollInterval(options.pollIntervalMs);
       const startedAt = Date.now();
       const timeoutMs = options.timeoutMs;
-      if (timeoutMs !== undefined && (!Number.isInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > MAX_OPERATION_WAIT_TIMEOUT_MS)) {
-        throw new TypeError(`timeoutMs must be an integer from 100 through ${MAX_OPERATION_WAIT_TIMEOUT_MS}.`);
+      if (timeoutMs !== undefined && (!Number.isInteger(timeoutMs) || timeoutMs < MIN_OPERATION_WAIT_TIMEOUT_MS || timeoutMs > MAX_OPERATION_WAIT_TIMEOUT_MS)) {
+        throw new TypeError(`timeoutMs must be an integer from ${MIN_OPERATION_WAIT_TIMEOUT_MS} through ${MAX_OPERATION_WAIT_TIMEOUT_MS}.`);
+      }
+      let pollImmediately = timeoutMs === undefined || timeoutMs > MIN_OPERATION_WAIT_TIMEOUT_MS;
+      if (pollImmediately && !terminal(current)) {
+        // Preserve the chance for a caller to abort immediately after starting
+        // the wait without dispatching an authority read.
+        await Promise.resolve();
       }
       while (!terminal(current)) {
         if (options.signal?.aborted) throw options.signal.reason ?? new DOMException("Aborted", "AbortError");
         const remaining = timeoutMs === undefined ? Number.POSITIVE_INFINITY : timeoutMs - (Date.now() - startedAt);
         if (remaining <= 0) throw new DOMException("Local operation wait timed out.", "TimeoutError");
-        await localWait(Math.min(interval, remaining), options.signal);
+        if (!pollImmediately) await localWait(Math.min(interval, remaining), options.signal);
+        pollImmediately = false;
         const afterWaitRemaining = timeoutMs === undefined ? undefined : timeoutMs - (Date.now() - startedAt);
         if (afterWaitRemaining !== undefined && afterWaitRemaining <= 0) {
           throw new DOMException("Local operation wait timed out.", "TimeoutError");
         }
-        if (afterWaitRemaining !== undefined && afterWaitRemaining < 100) {
+        if (afterWaitRemaining !== undefined && afterWaitRemaining < MIN_OPERATION_WAIT_TIMEOUT_MS) {
           throw new DOMException("Local operation wait timed out.", "TimeoutError");
         }
         const requestRemaining = afterWaitRemaining === undefined
           ? MAX_OPERATION_POLL_REQUEST_TIMEOUT_MS
           : Math.min(MAX_OPERATION_POLL_REQUEST_TIMEOUT_MS, afterWaitRemaining);
-        await refresh({
+        await refreshForWait({
           timeoutMs: requestRemaining,
           ...(options.signal ? { signal: options.signal } : {}),
         });

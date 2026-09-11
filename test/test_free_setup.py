@@ -15,6 +15,16 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'native'))
 from cutagent_cli import embedded_bridge as bridge
 
 class FreeSetupTests(unittest.TestCase):
+    def test_fusion_settings_read_does_not_admit_clipboard_copy(self):
+        server = bridge.EmbeddedBridgeServer(port=0, auth_token='local-test-token', publish_auth=False)
+        self.assertIsNone(server._validate_execute_request({
+            'id': 'fusion-settings-inspect',
+            'params': {'op': 'call', 'target': 'fusion_comp', 'method': 'CopySettings', 'args': [{}]},
+        }))
+        self.assertIn('CopySettings', bridge.READ_ONLY_RESOLVE_METHODS)
+        self.assertNotIn('CopySettings', bridge.MUTATING_RESOLVE_METHODS)
+        self.assertNotIn('Copy', bridge.READ_ONLY_RESOLVE_METHODS)
+
     def test_setup_uses_separate_script_state_and_no_commercial_focus(self):
         with tempfile.TemporaryDirectory() as root:
             home=Path(root)
@@ -23,12 +33,12 @@ class FreeSetupTests(unittest.TestCase):
             with patch.dict(os.environ,{'DAVINCI_RESOLVE_SDK_EMBEDDED_AUTH_PATH':str(home/'state'/'auth.json')}):
                 result=bridge.install_script(home)
             script=Path(result['path'])
-            self.assertEqual(script.name,'DaVinciResolveSDK.lua')
+            self.assertEqual(script.name,'CutAgentSDK.lua')
             self.assertEqual(original.read_text(),'original app file')
             self.assertNotRegex(script.read_text(),r'__[A-Z][A-Z0-9_]+__')
             self.assertNotIn('__CUTAGENT_BRIDGE_RUNNING',script.read_text())
             self.assertIn('local FOCUS_DEEP_LINK = ""',script.read_text())
-            self.assertIn('DaVinciResolveSDK',str(bridge.embedded_auth_path(home)))
+            self.assertIn('CutAgentSDK',str(bridge.embedded_auth_path(home)))
             self.assertFalse(bridge.request_cutagent_focus_from_embedded_script())
             self.assertIsNone(bridge._desktop_focus_config_from_env())
 

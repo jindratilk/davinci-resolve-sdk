@@ -126,7 +126,7 @@ def _resolve_color_render_proof_target(
         target_tc = seconds_to_timecode(target_frame / conn.fps, conn.fps)
         target.update(
             {
-                "clip": item.name,
+                "clip": clip_name or item.name,
                 "position": target_tc,
                 "target_frame": target_frame,
                 "target_timecode": target_tc,
@@ -134,6 +134,7 @@ def _resolve_color_render_proof_target(
                     "target_clip_selector_position" if at is not None else "target_clip_midpoint"
                 ),
                 "target_clip": {
+                    "id": item.item_id,
                     "name": item.name,
                     "track_type": item.track_type,
                     "track_index": item.track_index,
@@ -186,6 +187,7 @@ def _exact_color_render_target_signature(target: dict[str, object]) -> dict[str,
         "at": target.get("at"),
         "target_frame": target.get("target_frame"),
         "name": target_clip.get("name"),
+        "id": target_clip.get("id"),
         "track_type": target_clip.get("track_type"),
         "track_index": target_clip.get("track_index"),
         "start": target_clip.get("start"),

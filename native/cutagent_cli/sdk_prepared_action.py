@@ -24,8 +24,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping, Protocol
 
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-
 from ._sdk_prepared_action_contract import (
     PREPARED_ACTION_MAX_PREPARE_BYTES,
     PREPARED_ACTION_MAX_IMPACT_BYTES,
@@ -63,7 +61,6 @@ _DIGEST_LABELS = {
     "targets",
     "pre-state",
     "impact",
-    "policy-decision",
     "receipt",
     "execution",
     "idempotency",
@@ -477,9 +474,7 @@ class _Record:
     context: dict[str, Any]
     prepared: dict[str, Any]
     state: str = "prepared"
-    policy_decision_digest: str | None = None
     authorization_jti: str | None = None
-    policy_attestation_jti: str | None = None
     custody_key: str | None = None
 
 
@@ -495,10 +490,6 @@ class PreparedActionAuthority:
         claim_idempotency: Callable[[str, Mapping[str, Any]], bool],
         record_idempotency_terminal: Callable[[str, Mapping[str, Any]], None],
         load_idempotency_terminal: Callable[[str], Mapping[str, Any] | None],
-        assert_protected_state_evidence: Callable[
-            [Mapping[str, Any], Mapping[str, Any], Mapping[str, Any]], bool
-        ],
-        policy_public_jwk: Mapping[str, Any],
         execution_authorities: Mapping[str, Any] | None = None,
         private_failure_observer: Callable[[Mapping[str, Any]], None] | None = None,
         now_ms: Callable[[], int] | None = None,
@@ -517,8 +508,6 @@ class PreparedActionAuthority:
         self._claim_idempotency = claim_idempotency
         self._record_idempotency_terminal = record_idempotency_terminal
         self._load_idempotency_terminal = load_idempotency_terminal
-        self._assert_protected_state_evidence = assert_protected_state_evidence
-        self._policy_public_jwk = dict(policy_public_jwk)
         self._execution_authorities = dict(execution_authorities or {})
         if private_failure_observer is not None and not callable(private_failure_observer):
             raise PreparedActionError(
@@ -538,7 +527,6 @@ class PreparedActionAuthority:
         self._now_ms = now_ms or (lambda: int(time.time() * 1000))
         self._key = secrets.token_bytes(32)
         self._records: dict[str, _Record] = {}
-        self._policy_jtis: dict[str, int] = {}
         self._active_executions: dict[
             object, tuple[str, object, Mapping[str, Any]]
         ] = {}
@@ -668,16 +656,12 @@ class PreparedActionAuthority:
         value = descriptor.validate_input(request.get("input"))
         context = dict(self._runtime_context())
         session_binding = context.get("session", {})
-        expected_policy_key_digest = prepared_action_digest(
-            "policy-decision", self._policy_public_jwk
-        )
         if any(
             session_binding.get(key) != expected
             for key, expected in {
                 "preparedActionKernelDigest": PREPARED_ACTION_KERNEL_DIGEST,
                 "preparedActionContractDigest": PREPARED_ACTION_CONTRACT_DIGEST,
                 "preparedActionCapabilityDigest": PREPARED_ACTION_CAPABILITY_DIGEST,
-                "preparedActionPolicyPublicJwkDigest": expected_policy_key_digest,
             }.items()
         ):
             raise PreparedActionError(
@@ -691,7 +675,7 @@ class PreparedActionAuthority:
         mutation_base_required_keys = {
             "contractVersion", "carrier", "minimumBinding", "registryDigest",
             "canonicalRequestDigest", "referencedPayloadDigests", "requestId",
-            "operationId", "executionId", "scopeId", "scopeRevision",
+            "operationId", "executionId",
             "projectLibraryId",
         }
         mutation_base_keys = mutation_base_required_keys | {
@@ -885,69 +869,13 @@ class PreparedActionAuthority:
             "expiresAt": _iso(claims["expiresAt"]),
             "operationClass": descriptor.operation_class,
             "impact": private["impact"],
-            "authorizationBinding": self._authorization_claims(record, None),
+            "authorizationBinding": self._authorization_claims(record),
         }
-
-    def accept_policy(
-        self, receipt: str, policy_attestation: str, policy_decision_digest: str
-    ) -> None:
-        with self._lock:
-            record = self._open(receipt)
-            if (
-                record.descriptor.operation_class != "mutation"
-                or record.state != "prepared"
-            ):
-                raise PreparedActionError(
-                    "PREPARED_ACTION_INVALID_STATE",
-                    "Prepared action policy state is invalid.",
-                )
-            if policy_decision_digest != prepared_action_digest(
-                "policy-decision", policy_attestation
-            ):
-                raise PreparedActionError(
-                    "PREPARED_ACTION_BINDING_MISMATCH",
-                    "Mutation policy decision does not match the prepared action.",
-                )
-            attestation = self._verify_policy_attestation(policy_attestation)
-            expected = {
-                key: record.claims[key]
-                for key in (
-                    "accountDigest",
-                    "impactDigest",
-                    "executionDigest",
-                    "projectDigest",
-                    "timelineDigest",
-                    "targetsDigest",
-                    "preStateDigest",
-                )
-            }
-            expected["receiptDigest"] = prepared_action_digest("receipt", receipt)
-            if any(attestation.get(key) != value for key, value in expected.items()):
-                raise PreparedActionError(
-                    "PREPARED_ACTION_BINDING_MISMATCH",
-                    "Mutation Policy attestation does not match the prepared action.",
-                )
-            jti = str(attestation["jti"])
-            self._policy_jtis = {
-                key: expiry
-                for key, expiry in self._policy_jtis.items()
-                if expiry > self._now_ms()
-            }
-            if jti in self._policy_jtis:
-                raise PreparedActionError(
-                    "PREPARED_ACTION_REPLAYED",
-                    "Mutation Policy attestation was already used.",
-                )
-            self._policy_jtis[jti] = int(attestation["exp"]) * 1000
-            record.policy_decision_digest = policy_decision_digest
-            record.policy_attestation_jti = jti
-            record.state = "policy_accepted"
 
     def admit(
         self,
         receipt: str,
         authorization_token: str,
-        policy_decision_digest: str | None = None,
     ) -> None:
         with self._lock:
             record = self._open(receipt)
@@ -955,25 +883,14 @@ class PreparedActionAuthority:
                 raise PreparedActionError(
                     "PREPARED_ACTION_EXPIRED", "Prepared action receipt expired."
                 )
-            if record.descriptor.operation_class == "mutation" and (
-                record.state != "policy_accepted"
-                or policy_decision_digest != record.policy_decision_digest
-            ):
+            if record.state != "prepared":
                 raise PreparedActionError(
-                    "EDIT_CONSTRAINT_VIOLATION",
-                    "Mutation policy admission is missing or stale.",
-                )
-            if (
-                record.descriptor.operation_class == "read"
-                and policy_decision_digest is not None
-            ):
-                raise PreparedActionError(
-                    "PREPARED_ACTION_BINDING_MISMATCH",
-                    "Read admission cannot carry mutation policy.",
+                    "PREPARED_ACTION_INVALID_STATE",
+                    "Prepared action admission state is invalid.",
                 )
             claims = self._verify_authorization(authorization_token)
             expected = {
-                **self._authorization_claims(record, policy_decision_digest),
+                **self._authorization_claims(record),
                 "actionId": record.context["actionId"],
                 "operationClass": record.descriptor.operation_class,
             }
@@ -1310,7 +1227,7 @@ class PreparedActionAuthority:
 
         with self._lock:
             record = self._open(receipt)
-            if record.state not in {"prepared", "policy_accepted", "authorized"}:
+            if record.state not in {"prepared", "authorized"}:
                 raise PreparedActionError(
                     "PREPARED_ACTION_INVALID_STATE",
                     "Prepared action can no longer be revoked before execution.",
@@ -1472,18 +1389,6 @@ class PreparedActionAuthority:
                 raise PreparedActionError(
                     "VERIFICATION_FAILED",
                     "Mutation verification omitted required protected-state evidence.",
-                )
-            if (
-                self._assert_protected_state_evidence(
-                    MappingProxyType(dict(record.claims)),
-                    MappingProxyType(dict(record.prepared["impact"])),
-                    MappingProxyType(dict(value)),
-                )
-                is not True
-            ):
-                raise PreparedActionError(
-                    "VERIFICATION_FAILED",
-                    "Independent protected-state verification rejected the result.",
                 )
         result = dict(value)
         self._assert_public_projection(result)
@@ -1748,9 +1653,7 @@ class PreparedActionAuthority:
                 result["possibleMutation"] = "none"
         return result
 
-    def _authorization_claims(
-        self, record: _Record, policy_decision_digest: str | None
-    ) -> dict[str, Any]:
+    def _authorization_claims(self, record: _Record) -> dict[str, Any]:
         claims = {
             key: record.claims[key]
             for key in (
@@ -1776,57 +1679,6 @@ class PreparedActionAuthority:
             )
         }
         claims["receiptDigest"] = prepared_action_digest("receipt", record.receipt)
-        if policy_decision_digest is not None:
-            claims["policyDecisionDigest"] = policy_decision_digest
-        return claims
-
-    def _verify_policy_attestation(self, token: str) -> Mapping[str, Any]:
-        try:
-            header_part, payload_part, signature_part = token.split(".")
-            header = json.loads(_unb64(header_part))
-            claims = json.loads(_unb64(payload_part))
-            if header != {
-                "alg": "EdDSA",
-                "kid": self._policy_public_jwk.get("kid"),
-                "typ": "JWT",
-            }:
-                raise ValueError("header")
-            if (
-                self._policy_public_jwk.get("kty") != "OKP"
-                or self._policy_public_jwk.get("crv") != "Ed25519"
-            ):
-                raise ValueError("jwk")
-            Ed25519PublicKey.from_public_bytes(
-                _unb64(str(self._policy_public_jwk["x"]))
-            ).verify(
-                _unb64(signature_part),
-                f"{header_part}.{payload_part}".encode("ascii"),
-            )
-        except Exception as exc:
-            raise PreparedActionError(
-                "AUTH_TOKEN_INVALID", "Mutation Policy attestation is invalid."
-            ) from exc
-        now = int(self._now_ms() / 1000)
-        required_digests = ("scopeDigest", "resolvedTargetsDigest", "decisionIdDigest")
-        if (
-            claims.get("iss") != "cutagent-mutation-policy"
-            or claims.get("aud") != "cutagent-cli"
-            or claims.get("token_type") != "cutagent_sdk_policy_attestation"
-            or claims.get("capability") != "cutagent-sdk.mutation-policy"
-            or not isinstance(claims.get("iat"), int)
-            or not isinstance(claims.get("exp"), int)
-            or claims["iat"] > now + 5
-            or claims["exp"] <= now
-            or not isinstance(claims.get("jti"), str)
-            or any(
-                not isinstance(claims.get(key), str)
-                or not claims[key].startswith("sha256:")
-                for key in required_digests
-            )
-        ):
-            raise PreparedActionError(
-                "AUTH_TOKEN_INVALID", "Mutation Policy attestation claims are invalid."
-            )
         return claims
 
     def _verify_authorization(self, token: str) -> Mapping[str, Any]:

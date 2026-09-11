@@ -21,6 +21,7 @@ const sharedRootClasses = {
 };
 
 await Promise.all([
+  build({ ...common, entryPoints: ["src/cli.ts"], outfile: "dist/cli.js", external: ["./index.js"] }),
   build({ ...common, entryPoints: ["src/index.ts"], outfile: "dist/index.js" }),
   build({ ...common, entryPoints: ["src/actions.ts"], outfile: "dist/actions.js", plugins: [sharedRootClasses] }),
   build({ ...common, entryPoints: ["src/schemas/index.ts"], outfile: "dist/schemas.js" }),

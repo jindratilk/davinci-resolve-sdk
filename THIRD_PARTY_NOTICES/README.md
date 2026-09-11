@@ -5,4 +5,3 @@ Collected from installed locked npm (including development/build dependencies) a
 Packages without an installed standalone license/notice file require review before bundling:
 
 - npm:@esbuild/darwin-arm64@0.28.1
-- npm:@esbuild/darwin-arm64@0.25.12

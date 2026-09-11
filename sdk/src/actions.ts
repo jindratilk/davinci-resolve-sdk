@@ -51,6 +51,15 @@ export type { LowLevelReadActionId } from "./low-level-read-actions.js";
 /** Read action with an exact semantic public result projection. @beta */
 export type SemanticReadActionId = Exclude<ReadActionId, LowLevelReadActionId>;
 
+/** One frame export request accepted by the single and plural invocation forms. @beta */
+export type TimelineFrameExportInput = Extract<
+  ActionInput<"cutagent.action.timeline.frame_export">,
+  { readonly position: unknown }
+>;
+
+/** One or many frame export receipts from the same action invocation. @beta */
+export type TimelineFrameExportResult = ActionResult<"cutagent.action.timeline.frame_export">;
+
 /** Local controls for a typed semantic action request. @beta */
 export interface ActionControlOptions extends ConnectionControlOptions {
   /** Stable replay identity for operation actions that permit or require one. */
@@ -108,6 +117,13 @@ export interface Actions {
     options?: ConnectionControlOptions,
   ): Promise<ActionResult<A>>;
 
+  /** Export one frame or an ordered set through one native setup and playhead restore. */
+  invoke(
+    actionId: "cutagent.action.timeline.frame_export",
+    input: TimelineFrameExportInput | readonly TimelineFrameExportInput[],
+    options: RequiredActionControlOptions,
+  ): Promise<OperationHandle<TimelineFrameExportResult, "cutagent.action.timeline.frame_export">>;
+
   invoke<A extends RequiredIdempotencyActionId>(
     actionId: A,
     input: ActionInput<A>,
@@ -134,6 +150,13 @@ export interface Actions {
     input: ActionInput<A>,
     options: RequiredActionControlOptions,
   ): Promise<OperationHandle<ActionResult<A>, A>>;
+
+  /** Start one frame export operation accepting either one request or an ordered request array. */
+  start(
+    actionId: "cutagent.action.timeline.frame_export",
+    input: TimelineFrameExportInput | readonly TimelineFrameExportInput[],
+    options: RequiredActionControlOptions,
+  ): Promise<OperationHandle<TimelineFrameExportResult, "cutagent.action.timeline.frame_export">>;
 
   /** Start an operation whose semantic contract permits an optional idempotency key. */
   start<A extends OptionalIdempotencyActionId>(

@@ -1,9 +1,16 @@
+import { copyVerifiedArtifact } from "./artifact-copy.js";
 import type { CarrierReadRequest, CarrierReadSuccess, EstablishedCarrierSession } from "../core/carrier-session.js";
 import type { CarrierOperationRequest } from "../core/carrier-contract.js";
 import { createTypedOperationHandle } from "../core/operations.js";
 import type { ConnectionControlOptions } from "../core/public-client-types.js";
 import { sdkIdempotencyKeySchema, sdkProjectIdSchema, sdkRenderQueueCursorSchema } from "../generated/sdk-identities.js";
-import { sdkRenderExportInputSchema, sdkRenderExportResultSchema, type SdkOperationEvent } from "../generated/sdk-operations.js";
+import {
+  sdkRenderExportInputSchema,
+  sdkRenderExportResultSchema,
+  sdkRenderQueueStartInputSchema,
+  sdkRenderQueueStartResultSchema,
+  type SdkOperationEvent,
+} from "../generated/sdk-operations.js";
 import { CutAgentSdkError, PUBLIC_ERROR_KIND_BY_CODE } from "../protocol/errors.js";
 import type { OperationHandle } from "../protocol/operations.js";
 import {
@@ -70,6 +77,19 @@ export interface RenderFormatOption {
   /** Capability-aware codec inventory. */
   readonly codecs: readonly RenderCodecOption[];
 }
+/** One audio codec reported by DaVinci Resolve's dedicated audio-render discovery API. @beta */
+export interface AudioRenderCodecOption {
+  readonly codec: RenderCodec;
+  readonly label: string;
+}
+/** One dedicated audio-only output format and its codecs. @beta */
+export interface AudioRenderFormatOption {
+  readonly format: RenderFormat;
+  readonly label: string;
+  readonly extension: string | null;
+  readonly codecSupport: RenderSupport;
+  readonly codecs: readonly AudioRenderCodecOption[];
+}
 /** Immutable render format/codec/resolution discovery for one exact project. @beta */
 export interface RenderDiscovery {
   /** Exact project owning this discovery snapshot. */
@@ -78,6 +98,10 @@ export interface RenderDiscovery {
   readonly formatSupport: RenderSupport;
   /** Bounded immutable format inventory. */
   readonly formats: readonly RenderFormatOption[];
+  /** Whether dedicated audio-only format discovery is trustworthy in the active environment. */
+  readonly audioFormatSupport: RenderSupport;
+  /** Bounded audio-only format and codec inventory, kept separate from video/container discovery. */
+  readonly audioFormats: readonly AudioRenderFormatOption[];
 }
 /** One named DaVinci Resolve render preset. @beta */
 export interface RenderPreset {
@@ -139,7 +163,7 @@ export type RenderJobStatus =
   | Readonly<{ kind: "unknown_version"; value: string }>;
 /** Immutable job observation bound to one render-queue structure revision. This is not a durable SDK operation. @beta */
 export interface RenderJobSnapshot {
-  /** Snapshot-scoped job identity; never pass it to durable operation APIs. */
+  /** Snapshot-scoped job identity; pass the intact snapshot to `RenderQueue.start`, not this value alone. */
   readonly id: SnapshotRenderJobId;
   /** Exact project owning this queue snapshot. */
   readonly projectId: ProjectId;
@@ -246,10 +270,34 @@ export interface RenderMutationResult {
   readonly job: Readonly<{ id: SnapshotRenderJobId; queueRevision: Revision }>;
   readonly artifact: RenderArtifact;
 }
-/** Read-only render queue for one exact project. Adding, deleting, starting, stopping, and waiting are intentionally excluded. @beta */
+/** Result of starting one or more existing jobs through one native queue dispatch. @beta */
+export interface RenderQueueStartResult {
+  /** Exact project owning every selected job. */
+  readonly projectId: ProjectId;
+  /** Queue structure revision from which every selected job was captured. */
+  readonly queueRevision: Revision;
+  /** Final independently read status for every selected job, in request order. */
+  readonly jobs: readonly RenderJobSnapshot[];
+}
+/** Controls for starting existing render jobs as one durable native queue operation. @beta */
+export interface RenderQueueStartOptions extends ConnectionControlOptions {
+  /** Durable retry identity for this exact selection and queue revision. */
+  readonly idempotencyKey: IdempotencyKey;
+}
+/** Render queue for one exact project. Queue structure remains read-only; existing jobs may be started together. @beta */
 export interface RenderQueue {
   /** Read one bounded immutable page without mutating queue order or contents. */
   list(options?: RenderQueueListOptions): Promise<RenderQueuePage>;
+  /**
+   * Start one job or an array of jobs from the same queue snapshot through one
+   * native dispatch. Cancelling the returned operation stops the selected
+   * native run as a group; refresh an original job snapshot for its latest
+   * individual status.
+   */
+  start(
+    jobs: RenderJobSnapshot | readonly RenderJobSnapshot[],
+    options: RenderQueueStartOptions,
+  ): Promise<OperationHandle<RenderQueueStartResult, "cutagent.action.render.start">>;
 }
 /** Complete read-only render discovery and status surface for one exact project. @beta */
 export interface ProjectRender {
@@ -266,7 +314,7 @@ export interface ProjectRender {
 }
 
 interface RenderRuntime {
-  sessionAtGeneration(generation: number): EstablishedCarrierSession;
+  session(): EstablishedCarrierSession;
   createOperationAtGeneration(
     generation: number,
     request: CarrierOperationRequest,
@@ -333,7 +381,6 @@ function immutableJob(runtime: RenderRuntime, generation: number, raw: WireJob):
 
 function immutableArtifact(
   runtime: RenderRuntime,
-  generation: number,
   raw: ReturnType<typeof sdkRenderExportResultSchema.parse>["artifact"],
 ): RenderArtifact {
   const artifactId = ArtifactIdSchema.parse(raw.artifactId);
@@ -341,7 +388,7 @@ function immutableArtifact(
   const readChunk = async (offset: number, length: number, options: ReadControlOptions): Promise<Uint8Array> => {
     if (!Number.isSafeInteger(offset) || offset < 0) throw new RangeError("Artifact offset must be a non-negative safe integer.");
     if (!Number.isInteger(length) || length < 1 || length > 1024 * 1024) throw new RangeError("Artifact length must be from 1 through 1048576 bytes.");
-    const response = await runtime.readAtGeneration(generation, {
+    const response = await runtime.session().read({
       operation: "artifact.content", artifactId: wireArtifactId, offset, length,
     }, options);
     if (response.operation !== "artifact.content") throw invalidResponse("CutAgent runtime returned the wrong artifact content result.", response.requestId);
@@ -360,53 +407,10 @@ function immutableArtifact(
       return readChunk(offset, length, options);
     },
     async copyTo(destinationPath, options = {}) {
-      if (typeof destinationPath !== "string" || !path.isAbsolute(destinationPath)) {
-        throw new TypeError("Artifact destinationPath must be absolute.");
-      }
-      let handle;
-      let created = false;
-      try {
-        handle = await open(destinationPath, "wx+", 0o600);
-        created = true;
-        let offset = 0;
-        while (offset < raw.sizeBytes) {
-          const bytes = await readChunk(offset, Math.min(1024 * 1024, raw.sizeBytes - offset), options);
-          if (bytes.length < 1 || offset + bytes.length > raw.sizeBytes) {
-            throw invalidResponse("CutAgent runtime returned inconsistent artifact content.");
-          }
-          let written = 0;
-          while (written < bytes.length) {
-            const result = await handle.write(bytes, written, bytes.length - written, offset + written);
-            if (!Number.isInteger(result.bytesWritten) || result.bytesWritten < 1 || result.bytesWritten > bytes.length - written) {
-              throw invalidResponse("Artifact destination stopped before the verified chunk was written.");
-            }
-            written += result.bytesWritten;
-          }
-          offset += bytes.length;
-        }
-        await handle.sync();
-        const stat = await handle.stat();
-        if (stat.size !== raw.sizeBytes) throw invalidResponse("Copied artifact size did not match its verified size.");
-        const hash = createHash("sha256");
-        const readBuffer = Buffer.alloc(Math.min(1024 * 1024, raw.sizeBytes));
-        let verifiedOffset = 0;
-        while (verifiedOffset < raw.sizeBytes) {
-          const requested = Math.min(readBuffer.length, raw.sizeBytes - verifiedOffset);
-          const result = await handle.read(readBuffer, 0, requested, verifiedOffset);
-          if (result.bytesRead !== requested) throw invalidResponse("Copied artifact ended before its verified size.");
-          hash.update(readBuffer.subarray(0, result.bytesRead));
-          verifiedOffset += result.bytesRead;
-        }
-        const digest = `sha256:${hash.digest("hex")}`;
-        if (digest !== raw.sha256) throw invalidResponse("Copied artifact content did not match its verified digest.");
-      } catch (error) {
-        await handle?.close().catch(() => {});
-        handle = undefined;
-        if (created) await unlink(destinationPath).catch(() => {});
-        throw error;
-      } finally {
-        await handle?.close();
-      }
+      await copyVerifiedArtifact({
+        destinationPath, sizeBytes: raw.sizeBytes, sha256: raw.sha256,
+        readChunk: (offset, length) => readChunk(offset, length, options), invalidResponse,
+      });
     },
   };
   Object.setPrototypeOf(artifact, null);
@@ -441,6 +445,61 @@ export function createProjectRender(runtime: RenderRuntime, generation: number, 
         nextCursor: response.data.nextCursor === null ? null : RenderQueueCursorSchema.parse(response.data.nextCursor),
         total: response.data.total,
       });
+    },
+    async start(
+      jobOrJobs: RenderJobSnapshot | readonly RenderJobSnapshot[],
+      options: RenderQueueStartOptions,
+    ) {
+      const jobs = Array.isArray(jobOrJobs) ? [...jobOrJobs] : [jobOrJobs];
+      if (jobs.length < 1 || jobs.length > 100) {
+        throw new RangeError("Render queue start requires from 1 through 100 jobs.");
+      }
+      IdempotencyKeySchema.parse(options?.idempotencyKey);
+      const queueRevision = String(jobs[0]?.queueRevision ?? "");
+      const jobIds = jobs.map((job) => {
+        if (!job || typeof job !== "object") throw new TypeError("Render queue start requires immutable job snapshots.");
+        if (String(job.projectId) !== wireProjectId) throw new TypeError("Render job belongs to a different project.");
+        if (String(job.queueRevision) !== queueRevision) throw new TypeError("Render jobs must belong to the same queue revision.");
+        return String(SnapshotRenderJobIdSchema.parse(job.id));
+      });
+      const input = sdkRenderQueueStartInputSchema.parse({ projectId: wireProjectId, queueRevision, jobIds });
+      const operationRequest: CarrierOperationRequest = {
+        operation: "operation.create",
+        actionId: "cutagent.action.render.start",
+        input,
+        idempotencyKey: sdkIdempotencyKeySchema.parse(options.idempotencyKey),
+      };
+      const event = await runtime.createOperationAtGeneration(generation, operationRequest, options);
+      const originals = new Map(jobs.map((job) => [String(job.id), job]));
+      const resultSchema = {
+        parse(value: unknown): RenderQueueStartResult {
+          const parsed = sdkRenderQueueStartResultSchema.parse(value);
+          if (parsed.projectId !== wireProjectId || parsed.queueRevision !== queueRevision
+            || parsed.jobs.length !== jobIds.length
+            || parsed.jobs.some((job, index) => job.id !== jobIds[index])) {
+            throw invalidResponse("CutAgent runtime returned render statuses for different queue jobs.");
+          }
+          return deepFreeze({
+            projectId: ProjectIdSchema.parse(parsed.projectId),
+            queueRevision: RevisionSchema.parse(parsed.queueRevision),
+            jobs: parsed.jobs.map((status) => {
+              const original = originals.get(status.id);
+              if (!original) throw invalidResponse("CutAgent runtime returned an unrequested render job status.");
+              return immutableJob(runtime, generation, {
+                id: status.id,
+                projectId: parsed.projectId,
+                queueRevision: parsed.queueRevision,
+                index: original.index,
+                name: original.name,
+                statusSupport: status.statusSupport,
+                status: status.status,
+                progressPercent: status.progressPercent,
+              });
+            }),
+          });
+        },
+      };
+      return createTypedOperationHandle(runtime, event, "cutagent.action.render.start", resultSchema);
     },
   });
   const render: ProjectRender = {
@@ -501,12 +560,12 @@ export function createProjectRender(runtime: RenderRuntime, generation: number, 
               id: SnapshotRenderJobIdSchema.parse(parsed.job.id),
               queueRevision: RevisionSchema.parse(parsed.job.queueRevision),
             },
-            artifact: immutableArtifact(runtime, generation, parsed.artifact),
+            artifact: immutableArtifact(runtime, parsed.artifact),
           });
         },
       };
       return createTypedOperationHandle(
-        { session: () => runtime.sessionAtGeneration(generation) },
+        runtime,
         event,
         "cutagent.action.render.export",
         resultSchema,
@@ -516,6 +575,3 @@ export function createProjectRender(runtime: RenderRuntime, generation: number, 
   Object.setPrototypeOf(render, null);
   return Object.freeze(render);
 }
-import { createHash } from "node:crypto";
-import { open, unlink } from "node:fs/promises";
-import path from "node:path";

@@ -541,6 +541,13 @@ def _runtime_channel_map(value: Any) -> dict[str, Any]:
         raise FairlightDescriptorError(
             "VERIFICATION_FAILED", "Fairlight channel-map readback is incomplete"
         )
+    def semantic_sources(record):
+        sources = record.get("channel_idx", ())
+        # The existing SDK mapping contract represents a duplicated stereo
+        # source once. 21.1 native setters/readback spell both output channels.
+        if record.get("type") == "stereo" and sources in ([1, 1], [2, 2]):
+            return sources[:1]
+        return sources
     rows = [
         {
             "sourceChannel": int(source),
@@ -549,7 +556,7 @@ def _runtime_channel_map(value: Any) -> dict[str, Any]:
         }
         for destination, record in sorted(tracks.items(), key=lambda item: str(item[0]))
         if isinstance(record, Mapping)
-        for source in record.get("channel_idx", ())
+        for source in semantic_sources(record)
     ]
     return {"channelCount": len(rows), "channels": rows}
 

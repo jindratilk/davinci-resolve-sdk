@@ -1479,63 +1479,147 @@ export const SDK_COLOR_PREPARED_INPUTS = Object.freeze({
     "type": "object"
   },
   "cutagent.action.color.lut": {
-    "additionalProperties": false,
-    "properties": {
-      "clear": {
-        "type": "boolean"
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "clear": {
+            "type": "boolean"
+          },
+          "colorRevision": {
+            "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
+          },
+          "lutName": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "nodeIndex": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "nodeStackLayerIndex": {
+            "maximum": 4096,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "projectId": {
+            "maxLength": 160,
+            "minLength": 9,
+            "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
+          },
+          "revision": {
+            "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
+          },
+          "timelineId": {
+            "maxLength": 160,
+            "minLength": 10,
+            "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
+          },
+          "timelineItemId": {
+            "maxLength": 160,
+            "minLength": 15,
+            "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId",
+          "timelineId",
+          "timelineItemId",
+          "revision",
+          "nodeIndex",
+          "lutName",
+          "clear",
+          "nodeStackLayerIndex",
+          "colorRevision"
+        ],
+        "type": "object"
       },
-      "colorRevision": {
-        "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-        "type": "string"
-      },
-      "lutName": {
-        "minLength": 1,
-        "type": "string"
-      },
-      "nodeIndex": {
-        "minimum": 1,
-        "type": "integer"
-      },
-      "nodeStackLayerIndex": {
-        "maximum": 4096,
-        "minimum": 1,
-        "type": "integer"
-      },
-      "projectId": {
-        "maxLength": 160,
-        "minLength": 9,
-        "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-        "type": "string"
-      },
-      "revision": {
-        "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-        "type": "string"
-      },
-      "timelineId": {
-        "maxLength": 160,
-        "minLength": 10,
-        "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-        "type": "string"
-      },
-      "timelineItemId": {
-        "maxLength": 160,
-        "minLength": 15,
-        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-        "type": "string"
+      {
+        "additionalProperties": false,
+        "properties": {
+          "failurePolicy": {
+            "enum": [
+              "continue",
+              "stop"
+            ]
+          },
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "clear": {
+                  "const": false
+                },
+                "colorRevision": {
+                  "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                  "type": "string"
+                },
+                "lutName": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "nodeIndex": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "nodeStackLayerIndex": {
+                  "maximum": 4096,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "timelineItemId": {
+                  "maxLength": 160,
+                  "minLength": 15,
+                  "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "timelineItemId",
+                "colorRevision",
+                "nodeStackLayerIndex",
+                "nodeIndex",
+                "lutName",
+                "clear"
+              ],
+              "type": "object"
+            },
+            "maxItems": 128,
+            "minItems": 1,
+            "type": "array"
+          },
+          "projectId": {
+            "maxLength": 160,
+            "minLength": 9,
+            "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
+          },
+          "revision": {
+            "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
+          },
+          "timelineId": {
+            "maxLength": 160,
+            "minLength": 10,
+            "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId",
+          "timelineId",
+          "revision",
+          "items",
+          "failurePolicy"
+        ],
+        "type": "object"
       }
-    },
-    "required": [
-      "projectId",
-      "timelineId",
-      "timelineItemId",
-      "revision",
-      "nodeIndex",
-      "lutName",
-      "clear",
-      "nodeStackLayerIndex",
-      "colorRevision"
-    ],
-    "type": "object"
+    ]
   },
   "cutagent.action.color.lut_refresh": {
     "additionalProperties": false,

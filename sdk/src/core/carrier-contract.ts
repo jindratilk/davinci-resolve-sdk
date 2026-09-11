@@ -5,6 +5,7 @@ import {
   CUTAGENT_SDK_PREVIEW_VERSION,
   CUTAGENT_SDK_PROTOCOL_DIGEST,
   CUTAGENT_SDK_WIRE_PROTOCOL,
+  type SdkTimelineEditIntent,
   type SdkRuntimeReadRequest,
   type SdkRuntimeReadResponse,
 } from "../generated/sdk-runtime.js";
@@ -38,8 +39,10 @@ export type CarrierReadRequest =
   | Pick<Extract<SdkRuntimeReadRequest, { operation: "timeline.managed.export" }>, "operation" | "request">
   | Pick<Extract<SdkRuntimeReadRequest, { operation: "fusion.compositions" }>, "operation" | "projectId" | "timelineId" | "timelineItemId" | "expectedRevision">
   | Pick<Extract<SdkRuntimeReadRequest, { operation: "mediaPool.page" }>, "operation" | "projectId" | "offset" | "pageSize" | "expectedRevision" | "search">
+  | Pick<Extract<SdkRuntimeReadRequest, { operation: "mediaPool.transcription" }>, "operation" | "projectId" | "mediaPoolItemId" | "expectedRevision" | "useNestedClipTranscription">
   | Pick<Extract<SdkRuntimeReadRequest, { operation: "color.current" }>, "operation" | "projectId" | "timelineId" | "nodeStackLayerIndex">
-  | Pick<Extract<SdkRuntimeReadRequest, { operation: "timeline.edit.preview" }>, "operation" | "intent">
+  | { readonly operation: "timeline.edit.preview"; readonly intent: SdkTimelineEditIntent }
+  | { readonly operation: "timeline.edit.preview"; readonly intents: readonly SdkTimelineEditIntent[] }
   | Pick<Extract<SdkRuntimeReadRequest, { operation: "multicam.inspect" }>, "operation" | "projectId" | "mediaPoolItemId" | "multicamName" | "expectedRevision">
   | Pick<Extract<SdkRuntimeReadRequest, { operation: "render.discovery" }>, "operation" | "projectId">
   | Pick<Extract<SdkRuntimeReadRequest, { operation: "render.presets" }>, "operation" | "projectId">

@@ -4,6 +4,9 @@ import {resolve, relative, join} from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 const sdkInventory = JSON.parse(await readFile(join(root, 'EXTRACTION_INVENTORY.json'), 'utf8'));
 const nativeInventory = JSON.parse(await readFile(join(root, 'native/SOURCE_INVENTORY.json'), 'utf8'));
+if ((await readFile(join(root, 'sdk/LICENSE'), 'utf8')) !== (await readFile(join(root, 'LICENSE'), 'utf8'))) {
+  throw new Error('Standalone SDK license must match the candidate-owned AGPL license.');
+}
 const inventory = {files:[...sdkInventory.files,...nativeInventory.files]};
 const allowed = new Set();
 for (const entry of inventory.files) {
@@ -21,9 +24,21 @@ for (const entry of inventory.files) {
 async function walk(directory) {
   for (const entry of await readdir(join(root, directory), {withFileTypes: true})) {
     const path = `${directory}/${entry.name}`;
+    if (entry.name === '__pycache__' || entry.name === '.DS_Store' || path === 'native/SOURCE_INVENTORY.json' || entry.name.endsWith('.pyc')) continue;
     if (entry.isDirectory()) await walk(path);
     else if (!allowed.has(path)) throw new Error(`Unexpected extracted source: ${path}`);
   }
 }
-await walk('sdk/src'); await walk('runtime/bridge');
+await walk('sdk/src'); await walk('runtime/bridge'); await walk('native');
+const referenceRoot = join(root, 'native/cutagent_cli/public_reference');
+const reference = JSON.parse(await readFile(join(referenceRoot, 'manifest.json'), 'utf8'));
+for (const entry of reference.files) {
+  const path = resolve(referenceRoot, entry.path);
+  if (!path.startsWith(referenceRoot + '/') || !allowed.has(relative(root, path))) {
+    throw new Error(`Missing or unsafe public command reference: ${entry.path}`);
+  }
+  if (createHash('sha256').update(await readFile(path)).digest('hex') !== entry.sha256) {
+    throw new Error(`Public command reference drift: ${entry.path}`);
+  }
+}
 console.log(`Verified ${inventory.files.length} extracted source hashes and exact SDK/runtime source inventories.`);

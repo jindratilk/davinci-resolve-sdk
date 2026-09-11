@@ -1,11 +1,6 @@
 import { z } from "zod";
 import { sdkExecutionIdSchema, sdkOperationIdSchema, sdkRequestIdSchema, } from "./sdk-identities.js";
 export const CUTAGENT_MUTATION_POLICY_CONTRACT_VERSION = 1;
-export const sdkConstraintScopeIdSchema = z.string()
-    .regex(/^constraint_scope_[A-Za-z0-9._~-]{16,128}$/);
-export const sdkConstraintScopeRevisionSchema = z.number().int().safe().positive();
-export const sdkConstraintAccountFingerprintSchema = z.string()
-    .regex(/^[A-Za-z0-9_-]{20,128}$/);
 export const sdkStableTargetIdSchema = z.string()
     .regex(/^[A-Za-z0-9][A-Za-z0-9._:~+/-]{2,255}$/);
 export const sdkStateRevisionSchema = z.string()
@@ -15,29 +10,6 @@ export const sdkConstraintBindingLevelSchema = z.enum([
     "account/project-library",
     "project",
     "project+timeline",
-]);
-const projectLibraryBinding = z.object({
-    level: z.literal("account/project-library"),
-    projectLibraryId: sdkStableTargetIdSchema,
-}).strict();
-const projectBinding = z.object({
-    level: z.literal("project"),
-    projectLibraryId: sdkStableTargetIdSchema,
-    projectId: sdkStableTargetIdSchema,
-    projectRevision: sdkStateRevisionSchema,
-}).strict();
-const timelineBinding = z.object({
-    level: z.literal("project+timeline"),
-    projectLibraryId: sdkStableTargetIdSchema,
-    projectId: sdkStableTargetIdSchema,
-    projectRevision: sdkStateRevisionSchema,
-    timelineId: sdkStableTargetIdSchema,
-    timelineRevision: sdkStateRevisionSchema,
-}).strict();
-export const sdkConstraintBindingSchema = z.discriminatedUnion("level", [
-    projectLibraryBinding,
-    projectBinding,
-    timelineBinding,
 ]);
 export const sdkProtectedTargetKindSchema = z.enum([
     "project_library",
@@ -73,27 +45,6 @@ export const sdkStableMutationTargetSchema = z.object({
             path: ["trackType"],
             message: "Track type and index must be supplied together",
         });
-    }
-});
-export const sdkEditConstraintsSchema = z.object({
-    protectedTargets: z.array(sdkStableMutationTargetSchema).max(10_000),
-    protectedMediaRoles: z.array(sdkProtectedMediaRoleSchema).max(6),
-    allowedTrackTypes: z.array(sdkTrackTypeSchema).max(3),
-    allowedOperations: z.array(z.string().regex(/^[a-z0-9_]+(?:\.[a-z0-9_]+)*$/)).max(1_000),
-    markerIntent: z.enum(["placement", "mutation_target"]).nullable(),
-}).strict();
-export const sdkConstraintScopeSchema = z.object({
-    contractVersion: z.literal(CUTAGENT_MUTATION_POLICY_CONTRACT_VERSION),
-    scopeId: sdkConstraintScopeIdSchema,
-    accountFingerprint: sdkConstraintAccountFingerprintSchema,
-    revision: sdkConstraintScopeRevisionSchema,
-    binding: sdkConstraintBindingSchema,
-    constraints: sdkEditConstraintsSchema,
-    createdAt: z.string().datetime({ offset: true }),
-    updatedAt: z.string().datetime({ offset: true }),
-}).strict().superRefine((scope, context) => {
-    if (Date.parse(scope.updatedAt) < Date.parse(scope.createdAt)) {
-        context.addIssue({ code: "custom", path: ["updatedAt"], message: "Scope update cannot precede creation" });
     }
 });
 export const sdkMutationCarrierSchema = z.enum([
@@ -132,8 +83,6 @@ export const sdkMutationImpactSchema = z.object({
     requestId: sdkRequestIdSchema,
     operationId: sdkOperationIdSchema,
     executionId: sdkExecutionIdSchema,
-    scopeId: sdkConstraintScopeIdSchema,
-    scopeRevision: sdkConstraintScopeRevisionSchema,
     projectLibraryId: sdkStableTargetIdSchema,
     projectId: sdkStableTargetIdSchema.optional(),
     timelineId: sdkStableTargetIdSchema.optional(),
@@ -165,28 +114,3 @@ export const sdkMutationImpactSchema = z.object({
         context.addIssue({ code: "custom", path: ["projectId"], message: "Project-bound impact requires project identity and revision" });
     }
 });
-export const sdkMutationPolicyDenialEvidenceSchema = z.object({
-    reason: z.enum([
-        "missing_scope",
-        "cross_account_scope",
-        "stale_scope",
-        "insufficient_binding",
-        "binding_mismatch",
-        "unknown_impact",
-        "incomplete_impact",
-        "ambiguous_impact",
-        "broad_impact",
-        "protected_target",
-        "protected_media_role",
-        "track_type_not_allowed",
-        "operation_not_allowed",
-        "marker_intent_conflict",
-        "stale_target",
-        "decision_revoked",
-        "decision_replayed",
-        "decision_binding_mismatch",
-        "signed_execution_scope_unavailable",
-    ]),
-    summary: z.string().min(1).max(500),
-    protectedTargetDigests: z.array(sdkSha256DigestSchema).max(1_000),
-}).strict();

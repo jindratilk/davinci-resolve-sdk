@@ -279,6 +279,11 @@ export declare const sdkMediaPoolRelinkInputSchema: z.ZodObject<{
     assetId: z.core.$ZodBranded<z.ZodString, "MediaPoolItemId", "out">;
     path: z.ZodString;
 }, z.core.$strict>;
+export declare const sdkMediaPoolDeleteInputSchema: z.ZodObject<{
+    projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+    precondition: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+    assetIds: z.ZodArray<z.core.$ZodBranded<z.ZodString, "MediaPoolItemId", "out">>;
+}, z.core.$strict>;
 export declare const sdkMediaPoolSyncAudioInputSchema: z.ZodObject<{
     projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
     precondition: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
@@ -354,6 +359,14 @@ export declare const sdkMediaPoolRelinkResultSchema: z.ZodObject<{
     sourceFileName: z.ZodString;
     revision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
 }, z.core.$strict>;
+export declare const sdkMediaPoolDeleteResultSchema: z.ZodObject<{
+    projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+    items: z.ZodArray<z.ZodObject<{
+        assetId: z.core.$ZodBranded<z.ZodString, "MediaPoolItemId", "out">;
+        status: z.ZodLiteral<"deleted">;
+    }, z.core.$strict>>;
+    revision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+}, z.core.$strict>;
 export declare const sdkMediaPoolSyncAudioResultSchema: z.ZodObject<{
     projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
     videoAssetId: z.core.$ZodBranded<z.ZodString, "MediaPoolItemId", "out">;
@@ -395,6 +408,7 @@ export type SdkProjectLibraryMutationResult = z.infer<typeof sdkProjectLibraryMu
 export type SdkProjectLibraryBackupResult = z.infer<typeof sdkProjectLibraryBackupResultSchema>;
 export type SdkMediaPoolBinTarget = z.infer<typeof sdkMediaPoolBinTargetSchema>;
 export type SdkMediaPoolCreateBinResult = z.infer<typeof sdkMediaPoolCreateBinResultSchema>;
+export type SdkMediaPoolDeleteResult = z.infer<typeof sdkMediaPoolDeleteResultSchema>;
 export type SdkMediaPoolImportResult = z.infer<typeof sdkMediaPoolImportResultSchema>;
 export type SdkMediaPoolRelinkResult = z.infer<typeof sdkMediaPoolRelinkResultSchema>;
 export type SdkMediaPoolSyncAudioResult = z.infer<typeof sdkMediaPoolSyncAudioResultSchema>;

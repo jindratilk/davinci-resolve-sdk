@@ -23,6 +23,33 @@ export declare const sdkFairlightClipPanInputSchema: z.ZodObject<{
     kind: z.ZodLiteral<"clip_pan">;
     pan: z.ZodNumber;
 }, z.core.$strict>;
+export declare const sdkFairlightFadeCurveStateSchema: z.ZodObject<{
+    controlPoint: z.ZodNullable<z.ZodObject<{
+        x: z.ZodNumber;
+        y: z.ZodNumber;
+    }, z.core.$strict>>;
+}, z.core.$strict>;
+export declare const sdkFairlightClipFadeCurveInputSchema: z.ZodObject<{
+    projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+    timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
+    timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+    target: z.ZodObject<{
+        kind: z.ZodLiteral<"clip">;
+        clipId: z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">;
+        trackIndex: z.ZodNumber;
+    }, z.core.$strict>;
+    kind: z.ZodLiteral<"clip_fade_curve">;
+    direction: z.ZodEnum<{
+        out: "out";
+        in: "in";
+    }>;
+    curve: z.ZodObject<{
+        controlPoint: z.ZodNullable<z.ZodObject<{
+            x: z.ZodNumber;
+            y: z.ZodNumber;
+        }, z.core.$strict>>;
+    }, z.core.$strict>;
+}, z.core.$strict>;
 export declare const sdkFairlightClipFadeInputSchema: z.ZodObject<{
     projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
     timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
@@ -216,6 +243,26 @@ export declare const sdkFairlightPlanInputSchema: z.ZodObject<{
         timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
         timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
         target: z.ZodObject<{
+            kind: z.ZodLiteral<"clip">;
+            clipId: z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">;
+            trackIndex: z.ZodNumber;
+        }, z.core.$strict>;
+        kind: z.ZodLiteral<"clip_fade_curve">;
+        direction: z.ZodEnum<{
+            out: "out";
+            in: "in";
+        }>;
+        curve: z.ZodObject<{
+            controlPoint: z.ZodNullable<z.ZodObject<{
+                x: z.ZodNumber;
+                y: z.ZodNumber;
+            }, z.core.$strict>>;
+        }, z.core.$strict>;
+    }, z.core.$strict>, z.ZodObject<{
+        projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+        timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
+        timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+        target: z.ZodObject<{
             kind: z.ZodLiteral<"track">;
             trackIndex: z.ZodNumber;
         }, z.core.$strict>;
@@ -393,6 +440,24 @@ export declare const sdkFairlightSemanticResultSchema: z.ZodObject<{
             kind: z.ZodLiteral<"clip_pan">;
             before: z.ZodNullable<z.ZodNumber>;
             after: z.ZodNullable<z.ZodNumber>;
+        }, z.core.$strict>, z.ZodObject<{
+            kind: z.ZodLiteral<"clip_fade_curve">;
+            direction: z.ZodEnum<{
+                out: "out";
+                in: "in";
+            }>;
+            before: z.ZodObject<{
+                controlPoint: z.ZodNullable<z.ZodObject<{
+                    x: z.ZodNumber;
+                    y: z.ZodNumber;
+                }, z.core.$strict>>;
+            }, z.core.$strict>;
+            after: z.ZodObject<{
+                controlPoint: z.ZodNullable<z.ZodObject<{
+                    x: z.ZodNumber;
+                    y: z.ZodNumber;
+                }, z.core.$strict>>;
+            }, z.core.$strict>;
         }, z.core.$strict>, z.ZodObject<{
             kind: z.ZodLiteral<"clip_fade">;
             direction: z.ZodEnum<{
@@ -678,6 +743,26 @@ export declare const sdkFairlightBoundTerminalSchema: z.ZodObject<{
             timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
             timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
             target: z.ZodObject<{
+                kind: z.ZodLiteral<"clip">;
+                clipId: z.core.$ZodBranded<z.ZodString, "TimelineItemId", "out">;
+                trackIndex: z.ZodNumber;
+            }, z.core.$strict>;
+            kind: z.ZodLiteral<"clip_fade_curve">;
+            direction: z.ZodEnum<{
+                out: "out";
+                in: "in";
+            }>;
+            curve: z.ZodObject<{
+                controlPoint: z.ZodNullable<z.ZodObject<{
+                    x: z.ZodNumber;
+                    y: z.ZodNumber;
+                }, z.core.$strict>>;
+            }, z.core.$strict>;
+        }, z.core.$strict>, z.ZodObject<{
+            projectId: z.core.$ZodBranded<z.ZodString, "ProjectId", "out">;
+            timelineId: z.core.$ZodBranded<z.ZodString, "TimelineId", "out">;
+            timelineRevision: z.core.$ZodBranded<z.ZodString, "Revision", "out">;
+            target: z.ZodObject<{
                 kind: z.ZodLiteral<"track">;
                 trackIndex: z.ZodNumber;
             }, z.core.$strict>;
@@ -855,6 +940,24 @@ export declare const sdkFairlightBoundTerminalSchema: z.ZodObject<{
                 kind: z.ZodLiteral<"clip_pan">;
                 before: z.ZodNullable<z.ZodNumber>;
                 after: z.ZodNullable<z.ZodNumber>;
+            }, z.core.$strict>, z.ZodObject<{
+                kind: z.ZodLiteral<"clip_fade_curve">;
+                direction: z.ZodEnum<{
+                    out: "out";
+                    in: "in";
+                }>;
+                before: z.ZodObject<{
+                    controlPoint: z.ZodNullable<z.ZodObject<{
+                        x: z.ZodNumber;
+                        y: z.ZodNumber;
+                    }, z.core.$strict>>;
+                }, z.core.$strict>;
+                after: z.ZodObject<{
+                    controlPoint: z.ZodNullable<z.ZodObject<{
+                        x: z.ZodNumber;
+                        y: z.ZodNumber;
+                    }, z.core.$strict>>;
+                }, z.core.$strict>;
             }, z.core.$strict>, z.ZodObject<{
                 kind: z.ZodLiteral<"clip_fade">;
                 direction: z.ZodEnum<{

@@ -875,6 +875,124 @@ export const SDK_FUSION_TIMELINE_PREPARED_INPUTS = Object.freeze({
     ],
     "type": "object"
   },
+  "cutagent.action.fusion.image.batch": {
+    "additionalProperties": false,
+    "properties": {
+      "contractVersion": {
+        "const": 1
+      },
+      "items": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "compositionIndex": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "compositionRevision": {
+              "maxLength": 160,
+              "minLength": 10,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "groupInputName": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            },
+            "groupToolName": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            },
+            "imageArtifactId": {
+              "maxLength": 160,
+              "minLength": 10,
+              "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "importMedia": {
+              "type": "boolean"
+            },
+            "position": {
+              "additionalProperties": false,
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ],
+              "type": "object"
+            },
+            "timelineItemId": {
+              "maxLength": 160,
+              "minLength": 15,
+              "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "zoom": {
+              "additionalProperties": false,
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "timelineItemId",
+            "compositionIndex",
+            "compositionRevision",
+            "imageArtifactId"
+          ],
+          "type": "object"
+        },
+        "maxItems": 512,
+        "minItems": 1,
+        "type": "array"
+      },
+      "projectId": {
+        "maxLength": 160,
+        "minLength": 9,
+        "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "revision": {
+        "maxLength": 160,
+        "minLength": 10,
+        "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "timelineId": {
+        "maxLength": 160,
+        "minLength": 10,
+        "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "timelineId",
+      "revision",
+      "contractVersion",
+      "items"
+    ],
+    "type": "object"
+  },
   "cutagent.action.fusion.image.set": {
     "additionalProperties": false,
     "properties": {
@@ -1144,6 +1262,161 @@ export const SDK_FUSION_TIMELINE_PREPARED_INPUTS = Object.freeze({
       "settingArtifactId",
       "recordPosition",
       "clipDuration"
+    ],
+    "type": "object"
+  },
+  "cutagent.action.fusion.insert_settings.batch": {
+    "additionalProperties": false,
+    "properties": {
+      "items": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "boldStyle": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            },
+            "clipDuration": {
+              "additionalProperties": false,
+              "properties": {
+                "domain": {
+                  "const": "duration"
+                },
+                "value": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "frames"
+                    },
+                    "value": {
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "value"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "domain",
+                "value"
+              ],
+              "type": "object"
+            },
+            "clipName": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            },
+            "imageArtifactId": {
+              "maxLength": 160,
+              "minLength": 10,
+              "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "position": {
+              "additionalProperties": false,
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ],
+              "type": "object"
+            },
+            "recordPosition": {
+              "additionalProperties": false,
+              "properties": {
+                "domain": {
+                  "const": "timeline_record"
+                },
+                "value": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "frames"
+                    },
+                    "value": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "value"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "domain",
+                "value"
+              ],
+              "type": "object"
+            },
+            "settingArtifactId": {
+              "maxLength": 160,
+              "minLength": 10,
+              "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "styleMarkdown": {
+              "type": "boolean"
+            },
+            "text": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            },
+            "videoTrackIndex": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "settingArtifactId",
+            "recordPosition",
+            "clipDuration"
+          ],
+          "type": "object"
+        },
+        "maxItems": 100,
+        "minItems": 1,
+        "type": "array"
+      },
+      "projectId": {
+        "maxLength": 160,
+        "minLength": 9,
+        "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "revision": {
+        "maxLength": 160,
+        "minLength": 10,
+        "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "timelineId": {
+        "maxLength": 160,
+        "minLength": 10,
+        "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "timelineId",
+      "revision",
+      "items"
     ],
     "type": "object"
   },
@@ -2199,6 +2472,93 @@ export const SDK_FUSION_TIMELINE_PREPARED_INPUTS = Object.freeze({
     ],
     "type": "object"
   },
+  "cutagent.action.fusion.nested_text.batch": {
+    "additionalProperties": false,
+    "properties": {
+      "projectId": {
+        "maxLength": 160,
+        "minLength": 9,
+        "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "revision": {
+        "maxLength": 160,
+        "minLength": 10,
+        "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "timelineId": {
+        "maxLength": 160,
+        "minLength": 10,
+        "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "updates": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "body": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            },
+            "bodyClipName": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            },
+            "boldStyle": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            },
+            "compositionIndex": {
+              "maximum": 128,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "header": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            },
+            "headerClipName": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            },
+            "headerDoubleSpaces": {
+              "type": "boolean"
+            },
+            "headerUppercase": {
+              "type": "boolean"
+            },
+            "timelineItemId": {
+              "maxLength": 160,
+              "minLength": 15,
+              "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "timelineItemId",
+            "compositionIndex"
+          ],
+          "type": "object"
+        },
+        "maxItems": 256,
+        "minItems": 1,
+        "type": "array"
+      }
+    },
+    "required": [
+      "projectId",
+      "timelineId",
+      "revision",
+      "updates"
+    ],
+    "type": "object"
+  },
   "cutagent.action.fusion.nested_text.update": {
     "additionalProperties": false,
     "properties": {
@@ -3128,6 +3488,86 @@ export const SDK_FUSION_TIMELINE_PREPARED_INPUTS = Object.freeze({
     },
     "required": [
       "artifactId"
+    ],
+    "type": "object"
+  },
+  "cutagent.action.fusion.text.batch": {
+    "additionalProperties": false,
+    "properties": {
+      "projectId": {
+        "maxLength": 160,
+        "minLength": 9,
+        "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "revision": {
+        "maxLength": 160,
+        "minLength": 10,
+        "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "timelineId": {
+        "maxLength": 160,
+        "minLength": 10,
+        "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "updates": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "compositionIndex": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "compositionRevision": {
+              "maxLength": 160,
+              "minLength": 10,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "inputName": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            },
+            "text": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            },
+            "timelineItemId": {
+              "maxLength": 160,
+              "minLength": 15,
+              "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "toolName": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "timelineItemId",
+            "compositionIndex",
+            "compositionRevision",
+            "toolName",
+            "inputName",
+            "text"
+          ],
+          "type": "object"
+        },
+        "maxItems": 256,
+        "minItems": 1,
+        "type": "array"
+      }
+    },
+    "required": [
+      "projectId",
+      "timelineId",
+      "revision",
+      "updates"
     ],
     "type": "object"
   },
@@ -4191,6 +4631,26 @@ export const SDK_FUSION_TIMELINE_PREPARED_INPUTS = Object.freeze({
     ],
     "type": "object"
   },
+  "cutagent.action.fusion.tool.registry": {
+    "additionalProperties": false,
+    "properties": {
+      "category": {
+        "maxLength": 256,
+        "type": "string"
+      },
+      "limit": {
+        "maximum": 2048,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "query": {
+        "maxLength": 256,
+        "type": "string"
+      }
+    },
+    "required": [],
+    "type": "object"
+  },
   "cutagent.action.fusion.tool.set": {
     "additionalProperties": false,
     "properties": {
@@ -4600,6 +5060,102 @@ export const SDK_FUSION_TIMELINE_PREPARED_INPUTS = Object.freeze({
     "required": [
       "projectId",
       "revision"
+    ],
+    "type": "object"
+  },
+  "cutagent.action.timeline.clip_color.batch": {
+    "additionalProperties": false,
+    "properties": {
+      "projectId": {
+        "maxLength": 160,
+        "minLength": 9,
+        "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "revision": {
+        "maxLength": 160,
+        "minLength": 10,
+        "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "timelineId": {
+        "maxLength": 160,
+        "minLength": 10,
+        "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "updates": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "color": {
+              "oneOf": [
+                {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "name": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            },
+            "recordEndFrame": {
+              "type": "integer"
+            },
+            "recordStartFrame": {
+              "type": "integer"
+            },
+            "snapshotTimelineItemId": {
+              "maxLength": 256,
+              "minLength": 24,
+              "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "timelineItemId": {
+              "maxLength": 160,
+              "minLength": 15,
+              "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "trackIndex": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "trackType": {
+              "enum": [
+                "video",
+                "audio"
+              ]
+            }
+          },
+          "required": [
+            "timelineItemId",
+            "snapshotTimelineItemId",
+            "trackType",
+            "trackIndex",
+            "recordStartFrame",
+            "recordEndFrame",
+            "name",
+            "color"
+          ],
+          "type": "object"
+        },
+        "maxItems": 1000,
+        "minItems": 1,
+        "type": "array"
+      }
+    },
+    "required": [
+      "projectId",
+      "timelineId",
+      "revision",
+      "updates"
     ],
     "type": "object"
   },
@@ -5071,99 +5627,212 @@ export const SDK_FUSION_TIMELINE_PREPARED_INPUTS = Object.freeze({
     "type": "object"
   },
   "cutagent.action.timeline.frame_export": {
-    "additionalProperties": false,
-    "properties": {
-      "destinationArtifactId": {
-        "maxLength": 160,
-        "minLength": 10,
-        "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-        "type": "string"
-      },
-      "format": {
-        "enum": [
-          "png",
-          "jpg",
-          "jpeg"
-        ]
-      },
-      "position": {
+    "oneOf": [
+      {
         "additionalProperties": false,
         "properties": {
-          "domain": {
-            "const": "timeline_record"
+          "destinationArtifactId": {
+            "maxLength": 160,
+            "minLength": 10,
+            "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
           },
-          "value": {
-            "oneOf": [
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "kind": {
-                    "const": "frames"
-                  },
-                  "value": {
-                    "type": "integer"
-                  }
-                },
-                "required": [
-                  "kind",
-                  "value"
-                ],
-                "type": "object"
-              },
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "kind": {
-                    "const": "timecode"
-                  },
-                  "value": {
-                    "pattern": "^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$",
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "kind",
-                  "value"
-                ],
-                "type": "object"
-              }
+          "format": {
+            "enum": [
+              "png",
+              "jpg",
+              "jpeg"
             ]
+          },
+          "position": {
+            "additionalProperties": false,
+            "properties": {
+              "domain": {
+                "const": "timeline_record"
+              },
+              "value": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "frames"
+                      },
+                      "value": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "value"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "timecode"
+                      },
+                      "value": {
+                        "pattern": "^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "value"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "domain",
+              "value"
+            ],
+            "type": "object"
+          },
+          "projectId": {
+            "maxLength": 160,
+            "minLength": 9,
+            "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
+          },
+          "revision": {
+            "maxLength": 160,
+            "minLength": 10,
+            "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
+          },
+          "timelineId": {
+            "maxLength": 160,
+            "minLength": 10,
+            "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
           }
         },
         "required": [
-          "domain",
-          "value"
+          "projectId",
+          "timelineId",
+          "revision",
+          "position",
+          "destinationArtifactId",
+          "format"
         ],
         "type": "object"
       },
-      "projectId": {
-        "maxLength": 160,
-        "minLength": 9,
-        "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-        "type": "string"
-      },
-      "revision": {
-        "maxLength": 160,
-        "minLength": 10,
-        "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-        "type": "string"
-      },
-      "timelineId": {
-        "maxLength": 160,
-        "minLength": 10,
-        "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
-        "type": "string"
+      {
+        "additionalProperties": false,
+        "properties": {
+          "exports": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "destinationArtifactId": {
+                  "maxLength": 160,
+                  "minLength": 10,
+                  "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                  "type": "string"
+                },
+                "format": {
+                  "enum": [
+                    "png",
+                    "jpg",
+                    "jpeg"
+                  ]
+                },
+                "position": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "domain": {
+                      "const": "timeline_record"
+                    },
+                    "value": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "frames"
+                            },
+                            "value": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "value"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "timecode"
+                            },
+                            "value": {
+                              "pattern": "^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "value"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "domain",
+                    "value"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "position",
+                "destinationArtifactId",
+                "format"
+              ],
+              "type": "object"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "type": "array"
+          },
+          "projectId": {
+            "maxLength": 160,
+            "minLength": 9,
+            "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
+          },
+          "revision": {
+            "maxLength": 160,
+            "minLength": 10,
+            "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
+          },
+          "timelineId": {
+            "maxLength": 160,
+            "minLength": 10,
+            "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId",
+          "timelineId",
+          "revision",
+          "exports"
+        ],
+        "type": "object"
       }
-    },
-    "required": [
-      "projectId",
-      "timelineId",
-      "revision",
-      "position",
-      "destinationArtifactId",
-      "format"
-    ],
-    "type": "object"
+    ]
   },
   "cutagent.action.timeline.fusion_clip.create": {
     "additionalProperties": false,
@@ -6004,21 +6673,69 @@ export const SDK_FUSION_TIMELINE_PREPARED_INPUTS = Object.freeze({
   },
   "cutagent.action.timeline.items.set_duration": {
     "additionalProperties": false,
-    "anyOf": [
+    "oneOf": [
       {
-        "properties": {
-          "duration": {}
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "targetEnd"
+              ]
+            },
+            {
+              "required": [
+                "updates"
+              ]
+            }
+          ]
         },
         "required": [
+          "timelineItemId",
           "duration"
         ]
       },
       {
-        "properties": {
-          "targetEnd": {}
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "duration"
+              ]
+            },
+            {
+              "required": [
+                "updates"
+              ]
+            }
+          ]
         },
         "required": [
+          "timelineItemId",
           "targetEnd"
+        ]
+      },
+      {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "timelineItemId"
+              ]
+            },
+            {
+              "required": [
+                "duration"
+              ]
+            },
+            {
+              "required": [
+                "targetEnd"
+              ]
+            }
+          ]
+        },
+        "required": [
+          "updates"
         ]
       }
     ],
@@ -6193,13 +6910,140 @@ export const SDK_FUSION_TIMELINE_PREPARED_INPUTS = Object.freeze({
           "audio",
           "subtitle"
         ]
+      },
+      "updates": {
+        "items": {
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "not": {
+                "required": [
+                  "targetEnd"
+                ]
+              },
+              "required": [
+                "duration"
+              ]
+            },
+            {
+              "not": {
+                "required": [
+                  "duration"
+                ]
+              },
+              "required": [
+                "targetEnd"
+              ]
+            }
+          ],
+          "properties": {
+            "allowOverlap": {
+              "type": "boolean"
+            },
+            "duration": {
+              "additionalProperties": false,
+              "properties": {
+                "domain": {
+                  "const": "duration"
+                },
+                "value": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "frames"
+                    },
+                    "value": {
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "value"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "domain",
+                "value"
+              ],
+              "type": "object"
+            },
+            "enforceSourceBounds": {
+              "type": "boolean"
+            },
+            "targetEnd": {
+              "additionalProperties": false,
+              "properties": {
+                "domain": {
+                  "const": "timeline_record"
+                },
+                "value": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "frames"
+                        },
+                        "value": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "value"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "timecode"
+                        },
+                        "value": {
+                          "pattern": "^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "value"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "domain",
+                "value"
+              ],
+              "type": "object"
+            },
+            "timelineItemId": {
+              "maxLength": 160,
+              "minLength": 15,
+              "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "timelineItemId"
+          ],
+          "type": "object"
+        },
+        "maxItems": 10000,
+        "minItems": 1,
+        "type": "array"
       }
     },
     "required": [
       "projectId",
       "timelineId",
-      "revision",
-      "timelineItemId"
+      "revision"
     ],
     "type": "object"
   },
@@ -6559,6 +7403,141 @@ export const SDK_FUSION_TIMELINE_PREPARED_INPUTS = Object.freeze({
     "required": [
       "projectId",
       "timelineId"
+    ],
+    "type": "object"
+  },
+  "cutagent.action.timeline.output_blanking.get": {
+    "additionalProperties": false,
+    "properties": {
+      "expectedRevision": {
+        "maxLength": 160,
+        "minLength": 10,
+        "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "projectId": {
+        "maxLength": 160,
+        "minLength": 9,
+        "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "timelineId": {
+        "maxLength": 160,
+        "minLength": 10,
+        "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "timelineItemId": {
+        "maxLength": 160,
+        "minLength": 15,
+        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "timelineId"
+    ],
+    "type": "object"
+  },
+  "cutagent.action.timeline.output_blanking.set": {
+    "additionalProperties": false,
+    "properties": {
+      "operation": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "blanking": {
+                "additionalProperties": false,
+                "properties": {
+                  "bottom": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "left": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "right": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "top": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "top",
+                  "bottom",
+                  "left",
+                  "right"
+                ],
+                "type": "object"
+              },
+              "kind": {
+                "const": "edges"
+              }
+            },
+            "required": [
+              "kind",
+              "blanking"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "inheritance"
+              },
+              "useTimeline": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "useTimeline"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "projectId": {
+        "maxLength": 160,
+        "minLength": 9,
+        "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "revision": {
+        "maxLength": 160,
+        "minLength": 10,
+        "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "timelineId": {
+        "maxLength": 160,
+        "minLength": 10,
+        "pattern": "^timeline_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      },
+      "timelineItemId": {
+        "maxLength": 160,
+        "minLength": 15,
+        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "timelineId",
+      "revision",
+      "operation"
     ],
     "type": "object"
   },

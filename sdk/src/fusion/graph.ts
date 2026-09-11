@@ -450,7 +450,7 @@ export function fusionGraph(options: FusionRegistryGateOptions = {}): FusionGrap
   return FusionGraphBuilder.create(FUSION_REGISTRY);
 }
 
-/** Proprietary runtimes implement this seam after mutation policy and authorization. @beta */
+/** Native runtimes implement this seam after authorization and native validation. @beta */
 export interface FusionGraphLoweringTarget<T> {
   /** Exact versioned lowering protocol. */
   readonly protocol: "cutagent.fusion.graph-request/1";

@@ -30,9 +30,23 @@ from ..policy import enforce_mutation_policy
 from ..runtime_health import get_current_database_details, resolve_current_disk_project_db
 from ..utils.timecode import parse_time_input, seconds_to_frames
 from ..core.fusion_setting_inspector import prepare_setting_for_import
+from ..core import native_clip_audio, native_clip_speed, project_ops, resolve_api_version
 from ..core import audio_eq_db, audio_normalize, clip_effects_db, clip_ops, clip_speed_db, db_session, db_timeline_rows, db_timeline_selection, keyframe_ops, mutation_target, retime_db, speed_ramp_db, timeline_ops
 
 app = typer.Typer(help="Clip / timeline item operations.")
+
+
+def _persist_sdk_clip_motion_state(conn) -> None:
+    """Synchronously publish native Inspector writes before SDK verification starts."""
+
+    if os.environ.get("CUTAGENT_SDK_TIMELINE_GUARD") is None:
+        return
+    if not project_ops.save_current_project_if_available(conn):
+        raise APICallFailed(
+            "DaVinci Resolve could not persist the SDK clip transform before verification.",
+            details={"method": "ProjectManager.SaveProject"},
+            recoverability="manual",
+        )
 
 
 def _exact_sdk_retime_targets(conn):
@@ -584,12 +598,40 @@ def clip_transform(
             return
         conn = get_connection(require_timeline=True)
         data = clip_ops.set_clip_transform_batch(conn, entries)
+        _persist_sdk_clip_motion_state(conn)
         set_verification_status("partial")
         set_recoverability("not_applicable")
         output(data, title="Clip Transform Batch")
         return
 
     conn = get_connection(require_timeline=True)
+
+    if not setting_any and os.environ.get("CUTAGENT_SDK_CLIP_MOTION_STATE") == "1":
+        from ..core.keyframe_service import GetKeyframes, execute_keyframe
+        from ..core.sdk_clip_motion import SDK_CLIP_MOTION_TARGET_ENV, expected_state_targets
+
+        state_targets = expected_state_targets()
+        if state_targets is not None:
+            if name:
+                raise ValidationError("SDK plural clip motion state reads do not accept a positional clip selector.")
+            previous_target = os.environ.get(SDK_CLIP_MOTION_TARGET_ENV)
+            states = []
+            try:
+                for target in state_targets:
+                    os.environ[SDK_CLIP_MOTION_TARGET_ENV] = json.dumps(target)
+                    transform_data = clip_ops.get_clip_transform(conn, target["name"])
+                    keyframe_data = execute_keyframe(conn, GetKeyframes(target["name"]))
+                    states.append({
+                        "transform": transform_data,
+                        "keyframes": keyframe_data.get("keyframes", {}),
+                    })
+            finally:
+                if previous_target is None:
+                    os.environ.pop(SDK_CLIP_MOTION_TARGET_ENV, None)
+                else:
+                    os.environ[SDK_CLIP_MOTION_TARGET_ENV] = previous_target
+            output({"states": states}, title="Transform States")
+            return
 
     if reset:
         enforce_mutation_policy("clip.transform", intended_engine="api_native")
@@ -602,9 +644,18 @@ def clip_transform(
             rotation, anchor_x, anchor_y, pitch, yaw, flip_x, flip_y,
             opacity, crop_left, crop_right, crop_top, crop_bottom, distortion, dynamic_zoom_ease,
         )
+        _persist_sdk_clip_motion_state(conn)
         success("Set transform properties.")
     else:
         data = clip_ops.get_clip_transform(conn, name)
+        if os.environ.get("CUTAGENT_SDK_CLIP_MOTION_STATE") == "1":
+            from ..core.keyframe_service import GetKeyframes, execute_keyframe
+
+            keyframe_data = execute_keyframe(conn, GetKeyframes(name))
+            data = {
+                "transform": data,
+                "keyframes": keyframe_data.get("keyframes", {}),
+            }
         output(data, title="Transform")
 
 
@@ -905,6 +956,12 @@ def clip_speed(
         clip_ops.set_clip_speed(conn, name, float(set_speed_value))
         success(f"Set speed: {set_speed_value}x")
     else:
+        if resolve_api_version.at_least(conn, 21, 1):
+            state = native_clip_speed.read(clip_ops.cutagent_clip(conn, name))
+            set_execution_engine("api_native")
+            set_verification_status("verified")
+            output({"speed": state["Percentage"], "multiplier": state["Percentage"] / 100, "native_options": state}, title="Clip Speed")
+            return
         current_database = get_current_database_details(conn)
         if str(current_database.get("DbType") or "").strip() == "Disk":
             enforce_mutation_policy("clip.speed", intended_engine="db_workaround", mutating=False)
@@ -1001,8 +1058,8 @@ def clip_audio_gain(
     db: float = typer.Option(..., "--db", help="Clip gain in dB"),
     at: Optional[str] = typer.Option(None, "--at", help="Record-domain position for deterministic clip selection"),
 ):
-    """Set linked audio gain via archive-backed EffectFiltersBA payload."""
-    enforce_mutation_policy("clip.audio_gain", intended_engine="db_workaround", mutating=not is_dry_run())
+    """Set clip audio gain natively on 21.1; retain the Disk DB route for older runtimes and gain above +30 dB."""
+    enforce_mutation_policy("clip.audio_gain", intended_engine="api_native", mutating=not is_dry_run())
     if is_dry_run():
         set_verification_status("not_requested")
         set_recoverability("not_applicable")
@@ -1020,6 +1077,10 @@ def clip_audio_gain(
 
     conn = get_connection(require_timeline=True)
     selection = db_timeline_selection.resolve_audio_group(conn, clip_name=name, at=at_value)
+    if native_clip_audio.available(conn, gain_db=validated_db):
+        output(native_clip_audio.set_audio(conn, selection["audio"], kind="audio-gain", values={"AudioVolume": validated_db}), title="Clip Audio Gain")
+        return
+    enforce_mutation_policy("clip.audio_gain", intended_engine="db_workaround")
     timeline_name = _timeline_name(conn)
     def _write_gain(_connection, cursor, _session):
         existing_gain_db = clip_effects_db.read_current_audio_gain(

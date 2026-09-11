@@ -12,7 +12,7 @@
     },
     "packageName": {
       "type": "string",
-      "const": "davinci-resolve-sdk"
+      "const": "cutagent"
     },
     "sdkVersion": {
       "type": "string",
@@ -77,5 +77,5 @@
   "additionalProperties": false,
   "$id": "urn:cutagent:sdk:compatibility-manifest:1",
   "title": "CutAgent SDK compatibility manifest",
-  "description": "Exact sanitized davinci-resolve-sdk 0.2.0 release policy for independent compatibility axes."
+  "description": "Exact sanitized cutagent 0.2.0 release policy for independent compatibility axes."
 }

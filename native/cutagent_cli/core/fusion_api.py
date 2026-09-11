@@ -15,7 +15,7 @@ import math
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-from ..errors import APICallFailed
+from ..errors import APICallFailed, ValidationError
 from .fusion_common import iter_api_items, iter_tool_items, tool_name
 
 
@@ -134,6 +134,73 @@ class FusionAPI:
         return info
     
     # === Tool Management ===
+
+    def list_registered_tools(
+        self,
+        *,
+        query: str | None = None,
+        category: str | None = None,
+        limit: int = 1024,
+    ) -> Dict[str, Any]:
+        """List bounded, public-safe creation identifiers from the live Fusion registry."""
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 2048:
+            raise ValidationError("Fusion registry limit must be between 1 and 2048.")
+        normalized_query = str(query or "").strip().casefold()
+        normalized_category = str(category or "").strip().casefold()
+        if len(normalized_query) > 256 or len(normalized_category) > 256:
+            raise ValidationError("Fusion registry filters must not exceed 256 characters.")
+
+        getter = getattr(self.fusion, "GetRegList", None)
+        if not callable(getter):
+            raise APICallFailed(
+                "Fusion tool registry is unavailable.",
+                details={"required_method": "Fusion.GetRegList"},
+            )
+        try:
+            entries = iter_api_items(getter(2) or {})
+        except Exception as exc:
+            raise APICallFailed("Failed to read the Fusion tool registry.") from exc
+        if len(entries) > 2048:
+            raise APICallFailed(
+                "Fusion tool registry exceeded the supported result bound.",
+                details={"maximum_tools": 2048},
+            )
+
+        rows: list[dict[str, str]] = []
+        identifiers: set[str] = set()
+        for key, registration in entries:
+            try:
+                attrs = registration.GetAttrs() or {}
+            except Exception:
+                continue
+            if not isinstance(attrs, dict):
+                continue
+            identifier = str(attrs.get("REGS_ID") or (key if isinstance(key, str) else "")).strip()
+            if not identifier:
+                continue
+            name = str(attrs.get("REGS_UIName") or attrs.get("REGS_Name") or identifier).strip()
+            tool_category = str(attrs.get("REGS_Category") or "").strip()
+            if len(identifier) > 256 or len(name) > 512 or len(tool_category) > 512:
+                raise APICallFailed("Fusion tool registry returned an oversized public label.")
+            if identifier in identifiers:
+                raise APICallFailed("Fusion tool registry returned duplicate creation identifiers.")
+            identifiers.add(identifier)
+            searchable = f"{identifier}\n{name}\n{tool_category}".casefold()
+            if normalized_query and normalized_query not in searchable:
+                continue
+            if normalized_category and normalized_category not in tool_category.casefold():
+                continue
+            rows.append({"id": identifier, "name": name, "category": tool_category})
+
+        rows.sort(key=lambda row: row["id"].encode("utf-8"))
+        total = len(rows)
+        tools = rows[:limit]
+        return {
+            "tools": tools,
+            "total": total,
+            "returned": len(tools),
+            "truncated": len(tools) < total,
+        }
     
     def list_tools(self, selected_only: bool = False) -> List[Dict[str, Any]]:
         """

@@ -218,13 +218,15 @@ def find_ti_item_row(
     names = _db_name_candidates(item)
     placeholders = ", ".join("?" for _ in names) or "?"
     query_names: tuple[str, ...] = names or (item.name,)
+    exact_id_clause = " AND Sm2TiItem_id = ?" if item.item_id else ""
+    exact_id_params: tuple[str, ...] = (str(item.item_id),) if item.item_id else ()
     raw_rows = cursor.execute(
         f"""
         SELECT *
         FROM Sm2TiItem
-        WHERE DbType = ? AND Name IN ({placeholders}) AND Start = ?
+        WHERE DbType = ? AND Name IN ({placeholders}) AND Start = ?{exact_id_clause}
         """,
-        (db_type, *query_names, str(item.start)),
+        (db_type, *query_names, str(item.start), *exact_id_params),
     ).fetchall()
     rows = [_row_to_dict(cursor, row) for row in raw_rows]
     if normalized_timeline_name:
@@ -263,6 +265,7 @@ def find_ti_item_row(
                 "candidate_names": list(query_names),
                 "start": item.start,
                 "duration": item.duration,
+                "item_id": item.item_id,
                 "duration_candidates": duration_candidates,
                 "match_count": len(rows),
             },

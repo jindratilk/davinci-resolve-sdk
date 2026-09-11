@@ -142,6 +142,8 @@ def enforce_mutation_policy(
     resolved_engine = intended_engine
     if capability_meta:
         resolved_engine = str(capability_meta.get("engine", intended_engine))
+        if intended_engine in capability_meta.get("fallback_engines", ()):
+            resolved_engine = intended_engine
         confidence = capability_meta.get("engine_confidence")
         set_execution_engine(
             resolved_engine,

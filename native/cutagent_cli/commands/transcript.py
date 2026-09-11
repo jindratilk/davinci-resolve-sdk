@@ -1,4 +1,4 @@
-"""Hosted transcript commands brokered by the signed-in CutAgent desktop app."""
+"""AI transcription provided by the CutAgent desktop app."""
 
 from __future__ import annotations
 
@@ -28,9 +28,10 @@ from ..output import (
     set_verification_status,
 )
 from ..policy import enforce_mutation_policy
+from ..standalone_hosted import unavailable as hosted_service_unavailable
 
 
-app = typer.Typer(help="Hosted transcript generation through the signed-in CutAgent app.")
+app = typer.Typer(help="AI transcription in the CutAgent desktop app.")
 
 _BROKER_URL_ENV = "CUTAGENT_CLI_BROKER_URL"
 _BROKER_TOKEN_ENV = "CUTAGENT_CLI_BROKER_TOKEN"
@@ -336,17 +337,18 @@ def _write_private_json(destination: Path, payload: dict[str, Any]) -> Path:
 @app.command("create")
 @handle_errors
 def create(
-    output_path: str = typer.Argument(..., help="Output path for the hosted transcript JSON"),
+    output_path: str = typer.Argument(..., help="Output path for the transcript JSON"),
     language_code: Optional[str] = typer.Option(None, "--language-code", help="Optional BCP-47 transcript language code"),
     diarize: bool = typer.Option(True, "--diarize/--no-diarize", help="Identify and label different speakers"),
     num_speakers: Optional[int] = typer.Option(None, "--num-speakers", min=1, max=32, help="Expected number of speakers"),
     keyterm: Optional[list[str]] = typer.Option(None, "--keyterm", help="Important term to bias transcription; repeat as needed"),
     no_verbatim: bool = typer.Option(False, "--no-verbatim", help="Allow provider-side removal of verbal disfluencies"),
-    resume_job: Optional[str] = typer.Option(None, "--resume-job", help="Resume a pending hosted transcript job without rendering or uploading again"),
-    new_job: bool = typer.Option(False, "--new-job", help="Intentionally render and start a separate billed transcript job"),
+    resume_job: Optional[str] = typer.Option(None, "--resume-job", help="Resume a pending transcript job"),
+    new_job: bool = typer.Option(False, "--new-job", help="Start a separate transcript job"),
     force: bool = typer.Option(False, "--force", help="Replace an existing output file"),
 ):
-    """Transcribe the active timeline through the signed-in CutAgent account."""
+    """Create a transcript in the CutAgent desktop app."""
+    hosted_service_unavailable("transcription")
     set_capability_context("transcript.create", "supported")
     set_execution_engine("api_native")
     enforce_mutation_policy("transcript.create", intended_engine="api_native", mutating=not is_dry_run())

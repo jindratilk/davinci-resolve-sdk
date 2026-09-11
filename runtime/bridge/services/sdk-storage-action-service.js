@@ -3,7 +3,6 @@ import fs from "node:fs";
 import path from "node:path";
 import {z} from "zod";
 import {ensureCanonicalPrivateDirectory, writePrivateJsonDurableAtomic} from "./private-storage.js";
-import {resolveSdkDirectMutationScope, sdkMutationScopeCandidates} from "./sdk-direct-mutation-scope.js";
 import {projectSdkMediaPoolFolderIdentity} from "./sdk-live-inspection-service.js";
 
 const artifactId = z.string().regex(/^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$/);
@@ -43,7 +42,7 @@ function evidence(modality, summary, value) {
 }
 function failure(code, message, context, possibleMutation = "none", usage = possibleMutation === "none" ? "released" : "unknown") {
   return {
-    kind: code === "STALE_REVISION" ? "stale_revision" : code === "EDIT_CONSTRAINT_VIOLATION" ? "edit_constraint_violation" : code === "CAPABILITY_UNAVAILABLE" ? "capability_unavailable" : code === "VERIFICATION_FAILED" ? "verification_failed" : "operation_failed",
+    kind: code === "STALE_REVISION" ? "stale_revision" : code === "CAPABILITY_UNAVAILABLE" ? "capability_unavailable" : code === "VERIFICATION_FAILED" ? "verification_failed" : "operation_failed",
     code, message, retrySafe: false, possibleMutation, usage,
     recovery: possibleMutation === "none" ? ["inspect_state"] : ["inspect_state", "manual_recovery"],
     recoveryGuidance: [possibleMutation === "none" ? "Inspect Storage and acquire a fresh managed artifact or project revision." : "Inspect the Media Pool and Storage state before any retry."],
@@ -51,28 +50,8 @@ function failure(code, message, context, possibleMutation = "none", usage = poss
   };
 }
 function preflightFailure(error, context) {
-  const code = ["TARGET_NOT_FOUND", "STALE_REVISION", "EDIT_CONSTRAINT_VIOLATION", "CAPABILITY_UNAVAILABLE"].includes(error?.code) ? error.code : "CAPABILITY_UNAVAILABLE";
+  const code = ["TARGET_NOT_FOUND", "STALE_REVISION", "CAPABILITY_UNAVAILABLE"].includes(error?.code) ? error.code : "CAPABILITY_UNAVAILABLE";
   return {status: "failed", possibleMutation: "none", usage: "released", failure: failure(code, error?.message ?? "Storage preflight failed.", context)};
-}
-function exactProjectScope(gate, accountFingerprint, projectContext, input, actionId, directScope = null) {
-  const scopes = sdkMutationScopeCandidates(gate, accountFingerprint, directScope).filter((scope) => scope.binding.level === "project"
-    && scope.binding.projectLibraryId === projectContext.privateExecutionIdentity?.projectLibraryId
-    && scope.binding.projectId === input.projectId
-    && scope.binding.projectRevision === projectContext.value?.projectRevision?.revision
-    && (scope.constraints.allowedOperations.length === 0 || scope.constraints.allowedOperations.includes(actionId.replace("cutagent.action.", ""))));
-  if (scopes.length !== 1) {
-    const error = new Error("Exactly one current user-owned project constraint scope is required for Storage mutation.");
-    error.code = "EDIT_CONSTRAINT_VIOLATION";
-    throw error;
-  }
-  return scopes[0];
-}
-function exactLibraryScope(gate, accountFingerprint, projectContext, actionId, directScope = null) {
-  const scopes = sdkMutationScopeCandidates(gate, accountFingerprint, directScope).filter((scope) => scope.binding.level === "account/project-library"
-    && scope.binding.projectLibraryId === projectContext.privateExecutionIdentity?.projectLibraryId
-    && (scope.constraints.allowedOperations.length === 0 || scope.constraints.allowedOperations.includes(actionId.replace("cutagent.action.", ""))));
-  if (scopes.length !== 1) throw Object.assign(new Error("Exactly one current project-library scope is required for Storage reveal."), {code: "EDIT_CONSTRAINT_VIOLATION"});
-  return scopes[0];
 }
 async function readAllMedia(liveInspectionService, rawProjectId) {
   const deadlineAtMs = Date.now() + 60_000;
@@ -99,23 +78,14 @@ function containsAll(before, after) {
   for (const [key, count] of multiset(before)) if ((remaining.get(key) ?? 0) < count) return false;
   return true;
 }
-function projectPolicyContext(context, scope, projectContext, input, targets, referencedPayloadDigests) {
-  return {
-    requestId: context.requestId, operationId: context.operationId, executionId: context.executionId,
-    scopeId: scope.scopeId, scopeRevision: scope.revision,
-    projectLibraryId: scope.binding.projectLibraryId, projectId: input.projectId, projectRevision: scope.binding.projectRevision,
-    resolvedTargets: targets, referencedPayloadDigests, closedComposition: true, executableStableTargetPrecondition: true,
-  };
-}
-async function projectPreflight({liveInspectionService, mutationPolicyGate, directMutationPolicyAuthority, context, input, actionId}) {
+async function projectPreflight({liveInspectionService, input}) {
   const projectContext = await liveInspectionService.readWithMutationGuard({operation: "project.context"}, {deadlineAtMs: Date.now() + 60_000});
   if (projectContext.value?.project?.id !== input.projectId) {
     const error = new Error("The exact current project changed before Storage mutation."); error.code = "STALE_REVISION"; throw error;
   }
   const before = await readAllMedia(liveInspectionService, input.projectId);
   if (before.revision !== input.precondition) { const error = new Error("The Media Pool changed after Storage inspection."); error.code = "STALE_REVISION"; throw error; }
-  const directScope = await resolveSdkDirectMutationScope({directMutationPolicyAuthority, context, liveInspectionService, level: "project", projectId: input.projectId, inspectedProjectContext: projectContext});
-  return {projectContext, before, scope: exactProjectScope(mutationPolicyGate, context.accountFingerprint, projectContext, input, actionId, directScope)};
+  return {projectContext, before};
 }
 function captureFile(artifactService, context, id) {
   return artifactService.capturePrivateManagedArtifact({artifactId: id, accountFingerprint: context.accountFingerprint});
@@ -164,9 +134,9 @@ function successfulRead(actionId, data) {
 
 export const STORAGE_ACTION_IDS = Object.freeze(Object.keys(INPUTS));
 
-export function createSdkStorageActions({artifactService, liveInspectionService, resolveService, mutationPolicyGate, storageDir, directMutationPolicyAuthority = null}) {
+export function createSdkStorageActions({artifactService, liveInspectionService, resolveService, storageDir}) {
   if (typeof artifactService?.capturePrivateManagedArtifact !== "function" || typeof artifactService?.capturePrivateManagedDirectory !== "function" || typeof artifactService?.revalidatePrivateManagedDirectory !== "function") throw new TypeError("Storage actions require managed artifact custody.");
-  if (typeof liveInspectionService?.readWithMutationGuard !== "function" || typeof resolveService?.executeSdkStorageAction !== "function" || typeof resolveService?.readSdkLiveInspection !== "function" || typeof mutationPolicyGate?.listScopes !== "function") throw new TypeError("Storage actions require live inspection, CutAgent CLI execution, and Mutation Policy.");
+  if (typeof liveInspectionService?.readWithMutationGuard !== "function" || typeof resolveService?.executeSdkStorageAction !== "function" || typeof resolveService?.readSdkLiveInspection !== "function") throw new TypeError("Storage actions require live inspection and CutAgent CLI execution.");
   const recoveryDir = ensureCanonicalPrivateDirectory(storageDir, {label: "SDK Storage recovery directory"});
   const journalKeyPath = path.join(recoveryDir, "journal-key.json");
   if (!fs.existsSync(journalKeyPath)) writePrivateJsonDurableAtomic(journalKeyPath, {key: crypto.randomBytes(32).toString("base64url")});
@@ -228,14 +198,12 @@ export function createSdkStorageActions({artifactService, liveInspectionService,
     actions[actionId].execute = async (context, raw) => {
       const input = INPUTS[actionId].parse(raw);
       if (actionId === "cutagent.action.storage.reveal") {
-        let authorization = null; let executionStarted = false;
+        let executionStarted = false;
         try {
           let captured;
           try { captured = captureFile(artifactService, context, input.artifactId); }
           catch { captured = artifactService.capturePrivateManagedDirectory({artifactId: input.artifactId, accountFingerprint: context.accountFingerprint}); }
           const inspected = await liveInspectionService.readWithMutationGuard({operation: "project.context"}, {deadlineAtMs: Date.now() + 60_000});
-          const directScope = await resolveSdkDirectMutationScope({directMutationPolicyAuthority, context, liveInspectionService, level: "account/project-library", inspectedProjectContext: inspected});
-          const scope = exactLibraryScope(mutationPolicyGate, context.accountFingerprint, inspected, actionId, directScope);
           const recaptured = captured.treeDigest
             ? artifactService.revalidatePrivateManagedDirectory({artifactId: input.artifactId, accountFingerprint: context.accountFingerprint, treeDigest: captured.treeDigest})
             : captureFile(artifactService, context, input.artifactId);
@@ -245,21 +213,13 @@ export function createSdkStorageActions({artifactService, liveInspectionService,
           const revealProjectId = inspected.value.project?.id;
           if (typeof revealProjectId !== "string") throw Object.assign(new Error("A current project is required for protected reveal verification."), {code: "CAPABILITY_UNAVAILABLE"});
           const before = await readAllMedia(liveInspectionService, revealProjectId);
-          const policyContext = {
-            requestId: context.requestId, operationId: context.operationId, executionId: context.executionId,
-            scopeId: scope.scopeId, scopeRevision: scope.revision, projectLibraryId, projectLibraryRevision,
-            resolvedTargets: [{kind: "project_library", stableId: projectLibraryId, revision: projectLibraryRevision}],
-            referencedPayloadDigests: [captured.sha256 ?? captured.treeDigest], closedComposition: true, executableStableTargetPrecondition: true,
-          };
           const guardRecords = [artifactGuardRecord(recaptured)];
           const receipt = prepareReceipt(context);
-          const recoveryRecord = {actionId, input, policyContext, projectId: revealProjectId, beforeRevision: before.revision, beforeEntries: before.privateEntries, artifacts: guardRecords, privateInput: {path: recaptured.absolutePath}, receiptNonce: receipt.receiptNonce};
+          const recoveryRecord = {actionId, input, projectId: revealProjectId, beforeRevision: before.revision, beforeEntries: before.privateEntries, artifacts: guardRecords, privateInput: {path: recaptured.absolutePath}, receiptNonce: receipt.receiptNonce};
           const artifactGuardPath = persistRecovery(context, recoveryRecord);
-          const result = await resolveService.executeSdkStorageAction("reveal", {path: recaptured.absolutePath}, {carrier: "sdk", policyContext: {
-            ...policyContext,
-          }, artifactGuardPath, artifactDigests: [captured.sha256 ?? captured.treeDigest], artifactGuardDigest: digest(guardRecords), ...receipt, onAuthorization(value) { authorization = value; persistRecovery(context, {...recoveryRecord, decisionId: value?.policyDecision?.decisionId ?? null}); }, onSpawnAttempt() { context.reportExecutionStarted(); executionStarted = true; }});
+          const result = await resolveService.executeSdkStorageAction("reveal", {path: recaptured.absolutePath}, {carrier: "sdk", artifactGuardPath, artifactDigests: [captured.sha256 ?? captured.treeDigest], artifactGuardDigest: digest(guardRecords), ...receipt, onSpawnAttempt() { context.reportExecutionStarted(); executionStarted = true; }});
           const durableReceipt = readReceipt(context, receipt.receiptNonce, "reveal");
-          if (result?.revealed !== true || durableReceipt.revealed !== true || durableReceipt.path !== recaptured.absolutePath || !authorization?.policyDecision) throw new Error("DaVinci Resolve did not confirm the managed artifact reveal.");
+          if (result?.revealed !== true || durableReceipt.revealed !== true || durableReceipt.path !== recaptured.absolutePath) throw new Error("DaVinci Resolve did not confirm the managed artifact reveal.");
           const afterContext = await liveInspectionService.readWithMutationGuard({operation: "project.context"}, {deadlineAtMs: Date.now() + 60_000});
           const after = await readAllMedia(liveInspectionService, revealProjectId);
           const preserved = afterContext.privateExecutionIdentity?.projectLibraryId === projectLibraryId
@@ -267,7 +227,6 @@ export function createSdkStorageActions({artifactService, liveInspectionService,
             && exactSameRows(before.privateEntries, after.privateEntries);
           const report = {outcome: preserved ? "passed" : "failed", summary: preserved ? "DaVinci Resolve acknowledged the exact guarded reveal; independent readback proved the project and Media Pool were preserved." : "Protected state changed during Storage reveal.", evidence: [evidence("readback", "Re-read the project and complete Media Pool after the reveal acknowledgement.", {revision: after.revision, preserved}), evidence("structural", "Recorded the native RevealInStorage acknowledgement without claiming an independent selection-state observation.", {artifactId: input.artifactId, acknowledged: result?.revealed === true})], protectedStatePreserved: preserved};
           if (!preserved) return {status: "verification_failed", possibleMutation: "possible", usage: "consumed", failure: failure("VERIFICATION_FAILED", "Storage reveal protected-state verification failed.", context, "possible", "consumed"), verification: report};
-          mutationPolicyGate.assertProtectedStateEvidence(authorization.policyDecision.decisionId, report);
           const data = {artifactId: input.artifactId, revealed: true};
           return {status: "succeeded", possibleMutation: "confirmed", usage: "consumed", result: {actionId, data}, verification: report};
         } catch (error) {
@@ -279,7 +238,7 @@ export function createSdkStorageActions({artifactService, liveInspectionService,
       let preflight;
       let artifacts;
       try {
-        preflight = await projectPreflight({liveInspectionService, mutationPolicyGate, directMutationPolicyAuthority, context, input, actionId});
+        preflight = await projectPreflight({liveInspectionService, input});
         artifacts = actionId === "cutagent.action.storage.import_sequence"
           ? [artifactService.capturePrivateManagedDirectory({artifactId: input.sourceDirectoryArtifactId, accountFingerprint: context.accountFingerprint})]
           : actionId === "cutagent.action.storage.matte.add" || actionId === "cutagent.action.storage.matte.timeline_add"
@@ -296,9 +255,7 @@ export function createSdkStorageActions({artifactService, liveInspectionService,
         if (actionId === "cutagent.action.storage.matte.timeline_add") target = {nativeId: matteBefore.current_folder_native_id, stableId: projectSdkMediaPoolFolderIdentity(input.projectId, matteBefore.current_folder_native_id), revision: preflight.before.revision};
       } catch (error) { return preflightFailure(error, context); }
       const artifactDigests = artifacts.map((entry) => entry.sha256 ?? entry.treeDigest);
-      const targets = [{kind: "project", stableId: input.projectId, revision: preflight.projectContext.value.projectRevision.revision}, ...(target ? [{kind: "media", stableId: target.stableId ?? input.mediaId, revision: target.revision}] : [])];
-      const policyContext = projectPolicyContext(context, preflight.scope, preflight.projectContext, input, targets, artifactDigests);
-      let authorization = null; let executionStarted = false; let executionError = null; let rawResult = null; let executionReceipt = null; let privateInput = null;
+      let executionStarted = false; let executionError = null; let rawResult = null; let executionReceipt = null; let privateInput = null;
       try {
         artifacts = actionId === "cutagent.action.storage.import_sequence"
           ? [artifactService.revalidatePrivateManagedDirectory({artifactId: input.sourceDirectoryArtifactId, accountFingerprint: context.accountFingerprint, treeDigest: artifacts[0].treeDigest})]
@@ -317,13 +274,14 @@ export function createSdkStorageActions({artifactService, liveInspectionService,
         const guardRecords = artifacts.map(artifactGuardRecord);
         const receipt = prepareReceipt(context);
         const recoveryRecord = {
-          actionId, input, policyContext, privateInput, beforeRevision: preflight.before.revision,
+          actionId, input, privateInput, beforeRevision: preflight.before.revision,
           beforeEntries: preflight.before.privateEntries,
           artifacts: guardRecords, target: target ? {name: target.name, nativeId: target.nativeId, stableId: target.stableId} : null,
           matteBefore,
           receiptNonce: receipt.receiptNonce,
         };
         const artifactGuardPath = persistRecovery(context, recoveryRecord);
+        liveInspectionService.invalidateMediaPoolSnapshots?.(input.projectId);
         rawResult = await resolveService.executeSdkStorageAction(actionId.replace("cutagent.action.storage.", ""), privateInput, {
           carrier: "sdk",
           artifactGuardPath,
@@ -331,8 +289,6 @@ export function createSdkStorageActions({artifactService, liveInspectionService,
           artifactGuardDigest: digest(guardRecords),
           ...receipt,
           mutationGuard: preflight.before.mutationGuard,
-          policyContext,
-          onAuthorization(value) { authorization = value; persistRecovery(context, {...recoveryRecord, decisionId: value?.policyDecision?.decisionId ?? null}); },
           onSpawnAttempt() { context.reportExecutionStarted(); executionStarted = true; },
         });
         executionReceipt = readReceipt(context, receipt.receiptNonce, actionId.replace("cutagent.action.storage.", ""));
@@ -346,7 +302,7 @@ export function createSdkStorageActions({artifactService, liveInspectionService,
       const newIds = new Set(newPrivate.map((entry) => entry.id));
       const imported = after.assets.filter((asset) => newIds.has(asset.id)).map((asset) => ({mediaId: asset.id, name: asset.name}));
       const protectedRows = after.privateEntries.filter((entry) => !newIds.has(entry.id));
-      let matched = executionError === null && authorization?.policyDecision && containsAll(preflight.before.privateEntries, protectedRows);
+      let matched = executionError === null && containsAll(preflight.before.privateEntries, protectedRows);
       const receiptNativeIds = new Set(Array.isArray(executionReceipt?.native_ids) ? executionReceipt.native_ids : []);
       const correlatedNativeIds = newPrivate.length > 0 && newPrivate.every((entry) => typeof entry.nativeId === "string" && receiptNativeIds.has(entry.nativeId)) && receiptNativeIds.size === newPrivate.length;
       if (actionId === "cutagent.action.storage.import") matched &&= imported.length >= 1 && correlatedNativeIds && executionReceipt?.path === artifacts[0].absolutePath && newPrivate.some((entry) => entry.sourcePath === artifacts[0].absolutePath);
@@ -364,7 +320,6 @@ export function createSdkStorageActions({artifactService, liveInspectionService,
       }
       const report = {outcome: matched ? "passed" : "failed", summary: matched ? "The exact managed Storage mutation matched independent Media Pool readback." : "Storage mutation did not match durable terminal readback.", evidence: [evidence("readback", "Read the complete bounded Media Pool after Storage execution.", {revision: after.revision, imported}), evidence("structural", "Verified pre-existing Media Pool entries remained present.", {preserved: containsAll(preflight.before.privateEntries, protectedRows)})], protectedStatePreserved: matched};
       if (!matched) return {status: executionStarted ? "verification_failed" : "failed", possibleMutation: executionStarted ? "possible" : "none", usage: executionStarted ? "consumed" : "released", failure: failure(executionStarted ? "VERIFICATION_FAILED" : "OPERATION_FAILED", "Storage mutation did not reach independently verified terminal state.", context, executionStarted ? "possible" : "none", executionStarted ? "consumed" : "released"), verification: report};
-      mutationPolicyGate.assertProtectedStateEvidence(authorization.policyDecision.decisionId, report);
       if (actionId === "cutagent.action.storage.matte.add" && input.eye !== undefined) {
         const eyeReport = {
           ...report,
@@ -431,34 +386,28 @@ export function createSdkStorageActions({artifactService, liveInspectionService,
         const originalDigest = journal.artifacts[0]?.treeDigest ?? journal.artifacts[0]?.sha256;
         if ((recaptured.treeDigest ?? recaptured.sha256) !== originalDigest) throw new Error("Managed reveal artifact changed before recovery.");
         const currentContext = await liveInspectionService.readWithMutationGuard({operation: "project.context"}, {deadlineAtMs: Date.now() + 60_000});
-        const directScope = await resolveSdkDirectMutationScope({directMutationPolicyAuthority, context, liveInspectionService, level: "account/project-library", inspectedProjectContext: currentContext});
-        const scope = exactLibraryScope(mutationPolicyGate, context.accountFingerprint, currentContext, actionId, directScope);
         const projectLibraryId = currentContext.privateExecutionIdentity.projectLibraryId;
         const projectLibraryRevision = currentContext.value.projectRevision.revision;
-        const policyContext = {requestId: context.requestId, operationId: context.operationId, executionId: context.executionId, scopeId: scope.scopeId, scopeRevision: scope.revision, projectLibraryId, projectLibraryRevision, resolvedTargets: [{kind: "project_library", stableId: projectLibraryId, revision: projectLibraryRevision}], referencedPayloadDigests: [originalDigest], closedComposition: true, executableStableTargetPrecondition: true};
         const guardRecords = [artifactGuardRecord(recaptured)];
         const privateInput = {path: recaptured.absolutePath};
-        persistRecovery(context, {...journal, policyContext, artifacts: guardRecords, privateInput});
-        let authorization = null;
-        const result = await resolveService.executeSdkStorageAction("reveal", privateInput, {carrier: "sdk", policyContext, artifactGuardPath: recoveryPath(context.operationId), artifactDigests: [originalDigest], artifactGuardDigest: digest(guardRecords), receiptPath: receiptPath(context.operationId), receiptNonce: journal.receiptNonce, onAuthorization(value) { authorization = value; }});
+        persistRecovery(context, {...journal, artifacts: guardRecords, privateInput});
+        const result = await resolveService.executeSdkStorageAction("reveal", privateInput, {carrier: "sdk", artifactGuardPath: recoveryPath(context.operationId), artifactDigests: [originalDigest], artifactGuardDigest: digest(guardRecords), receiptPath: receiptPath(context.operationId), receiptNonce: journal.receiptNonce});
         const durableReceipt = readReceipt(context, journal.receiptNonce, "reveal");
         const afterContext = await liveInspectionService.readWithMutationGuard({operation: "project.context"}, {deadlineAtMs: Date.now() + 60_000});
         const afterReplay = await readAllMedia(liveInspectionService, journal.projectId ?? rawInput.projectId);
-        const preserved = result?.revealed === true && durableReceipt.revealed === true && durableReceipt.path === recaptured.absolutePath && authorization?.policyDecision
+        const preserved = result?.revealed === true && durableReceipt.revealed === true && durableReceipt.path === recaptured.absolutePath
           && afterContext.privateExecutionIdentity?.projectLibraryId === projectLibraryId
           && afterContext.value?.projectRevision?.revision === projectLibraryRevision
           && afterReplay.revision === projectLibraryRevision
           && Array.isArray(journal.beforeEntries) && exactSameRows(journal.beforeEntries, afterReplay.privateEntries);
         if (preserved) {
           const report = {outcome: "passed", summary: "Replayed the guarded reveal acknowledgement and independently verified preserved project and Media Pool state.", evidence: [evidence("readback", "Re-read project and complete Media Pool state after reveal recovery replay.", {revision: afterReplay.revision}), evidence("structural", "Recorded the replayed RevealInStorage acknowledgement without claiming an independent selection-state observation.", {artifactId: rawInput.artifactId, acknowledged: true})], protectedStatePreserved: true};
-          mutationPolicyGate.assertProtectedStateEvidence(authorization.policyDecision.decisionId, report);
           return {status: "succeeded", possibleMutation: "confirmed", usage: "consumed", result: {actionId, data: {artifactId: rawInput.artifactId, revealed: true}}, verification: report};
         }
         return {status: "verification_failed", possibleMutation: "possible", usage: "consumed", failure: failure("VERIFICATION_FAILED", "Reveal recovery replay did not preserve the exact authorized project and Media Pool state.", context, "possible", "consumed")};
       }
-      if (data && protectedPreserved && journal.decisionId) {
+      if (data && protectedPreserved) {
         const report = {outcome: "passed", summary: "Recovered exact Storage terminal state from the durable pre-spawn journal and independent readback.", evidence: [evidence("readback", "Matched post-crash state against the durable pre-spawn Storage journal.", {revision: after.revision})], protectedStatePreserved: true};
-        mutationPolicyGate.assertProtectedStateEvidence(journal.decisionId, report);
         return {status: "succeeded", possibleMutation: "confirmed", usage: "consumed", result: {actionId, data}, verification: report};
       }
       if ((actionId === "cutagent.action.storage.matte.add" || actionId === "cutagent.action.storage.matte.timeline_add") && matteObservedChange) {

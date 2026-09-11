@@ -1025,8 +1025,8 @@ def source_grade_cdl(
     power: str | None = typer.Option(None, "--power", help="CDL power as R G B"),
     saturation: float | None = typer.Option(None, "--sat", help="CDL saturation"),
 ):
-    """Apply a remote/source CDL to one exact video source nested in a multicam angle."""
-    enforce_mutation_policy("multicam.source.grade_cdl", intended_engine="api_native", mutating=not is_dry_run())
+    """Validate a nested multicam source CDL target; mutation is currently unavailable."""
+    enforce_mutation_policy("multicam.source.grade_cdl", intended_engine="not_available", mutating=not is_dry_run())
     conn = get_connection(require_project=True)
     current_db = resolve_current_disk_project_db(conn)
     target = {
@@ -1037,38 +1037,6 @@ def source_grade_cdl(
         "record_frame": record_frame,
         "media_type": "video",
     }
-    if is_dry_run():
-        from ..core import color_ops
-
-        node_index, cdl = color_ops.validate_cdl_payload(
-            node,
-            slope=slope,
-            offset=offset,
-            power=power,
-            saturation=saturation,
-        )
-        if len(cdl) == 1:
-            raise ValidationError("Multicam source-grade requires at least one CDL value.")
-        resolved = multicam_source.resolve_angle_source(
-            conn,
-            project_db_path=str(current_db["project_db_path"]),
-            **target,
-        )
-        resolved.pop("clip", None)
-        output(
-            mutation_payload(
-                action="multicam.source.grade_cdl",
-                changed=False,
-                target={"kind": "multicam_source", "name": resolved["media_pool"].get("name")},
-                version_name=version_name,
-                node=node_index,
-                cdl=cdl,
-                resolved=resolved,
-                runtime_validation="performed",
-                message="Would apply a remote/source CDL to the matched multicam angle source.",
-            )
-        )
-        return
     data = multicam_source.apply_angle_source_cdl(
         conn,
         project_db_path=str(current_db["project_db_path"]),

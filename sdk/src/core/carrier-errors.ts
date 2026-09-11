@@ -19,7 +19,7 @@ export type RetryBasis = "pre_execution" | "read_only";
 export type RequestSemantics = RetryBasis | "uncertain_control";
 type CarrierPublicErrorCode = Exclude<
   PublicErrorCode,
-  "EDIT_CONSTRAINT_VIOLATION" | "OPERATION_EXPIRED" | "IDEMPOTENCY_CONFLICT"
+  "OPERATION_EXPIRED" | "IDEMPOTENCY_CONFLICT"
 >;
 
 type TransportFailure = z.infer<typeof sdkRuntimeFailureSchema>;
@@ -73,7 +73,7 @@ export function projectControlFailureAfterDispatch(
   failure: PublicFailure,
   requestId: RequestId,
 ): CutAgentSdkError {
-  if (["EDIT_CONSTRAINT_VIOLATION", "IDEMPOTENCY_CONFLICT"].includes(failure.code)
+  if (failure.code === "IDEMPOTENCY_CONFLICT"
     && failure.possibleMutation === "none" && failure.usage === "not_reserved") {
     return new CutAgentSdkError({ ...failure, requestId });
   }

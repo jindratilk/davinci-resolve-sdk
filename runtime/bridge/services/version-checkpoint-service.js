@@ -59,7 +59,6 @@ export function createVersionCheckpointService({
     accessToken = null,
     cutAgentCliCommand = null,
     skipAuthorization = false,
-    policyContext = null,
   } = {}) {
     const jsonArgs = ensureJsonArgs(args, true);
     const authorization = skipAuthorization
@@ -68,7 +67,6 @@ export function createVersionCheckpointService({
         session,
         accessToken,
         cutAgentCliCommand,
-        policyContext,
       });
     let stdout = "";
     try {
@@ -156,7 +154,6 @@ export function createVersionCheckpointService({
     parentCheckpointId = null,
     accessToken = null,
     cutAgentCliCommand = null,
-    policyContext = null,
   }) {
     const args = [
       "version",
@@ -177,7 +174,7 @@ export function createVersionCheckpointService({
     }
 
     const checkpoint = normalizeCheckpoint(await runCutAgentCli(args, {
-      session, accessToken, cutAgentCliCommand, policyContext,
+      session, accessToken, cutAgentCliCommand,
     }));
     if (!checkpoint?.id) {
       throw createError("CutAgent CLI returned an invalid checkpoint payload.", { checkpoint });
@@ -209,7 +206,6 @@ export function createVersionCheckpointService({
       promptEventId,
       accessToken = null,
       cutAgentCliCommand = null,
-      policyContext = null,
     }) {
       return createCheckpoint({
         session,
@@ -218,7 +214,6 @@ export function createVersionCheckpointService({
         promptEventId,
         accessToken,
         cutAgentCliCommand,
-        policyContext,
       });
     },
     createAfterPromptCheckpoint({
@@ -228,7 +223,6 @@ export function createVersionCheckpointService({
       parentCheckpointId,
       accessToken = null,
       cutAgentCliCommand = null,
-      policyContext = null,
     }) {
       return createCheckpoint({
         session,
@@ -238,16 +232,19 @@ export function createVersionCheckpointService({
         parentCheckpointId,
         accessToken,
         cutAgentCliCommand,
-        policyContext,
       });
     },
-    async restoreCheckpoint({ session, checkpointId, accessToken = null, policyContext = null }) {
+    async restoreCheckpoint({ session, checkpointId, accessToken = null, expectedCurrentStateHash }) {
       const id = typeof checkpointId === "string" ? checkpointId.trim() : "";
       if (!id) {
         throw new Error("Checkpoint id is required.");
       }
       if (!session?.id) {
         throw new Error("Session id is required to restore a checkpoint.");
+      }
+      if (expectedCurrentStateHash !== undefined
+        && (typeof expectedCurrentStateHash !== "string" || !/^sha256:[a-f0-9]{64}$/.test(expectedCurrentStateHash))) {
+        throw new Error("Expected current state hash must be one exact SHA-256 digest.");
       }
       const checkpoint = await inspectCheckpoint({ session, checkpointId: id, accessToken });
       if (checkpoint.session_id !== session.id) {
@@ -258,8 +255,10 @@ export function createVersionCheckpointService({
           checkpoint_session_id: checkpoint.session_id ?? null,
         });
       }
-      return runCutAgentCli(["version", "restore", id, "--session-id", session.id], {
-        session, accessToken, policyContext,
+      const args = ["version", "restore", id, "--session-id", session.id];
+      if (expectedCurrentStateHash !== undefined) args.push("--expected-current-state-hash", expectedCurrentStateHash);
+      return runCutAgentCli(args, {
+        session, accessToken,
       });
     },
     inspectCheckpoint,

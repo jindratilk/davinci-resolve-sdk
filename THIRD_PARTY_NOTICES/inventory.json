@@ -8,138 +8,6 @@
   },
   {
     "ecosystem": "npm",
-    "name": "@microsoft/api-extractor",
-    "version": "7.59.0",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/@microsoft__api-extractor-7.59.0/LICENSE",
-        "sha256": "5515f89b040fb8890f6d93af1d101aab674c9163ee8d94b2dfb4a74e9deac7fe"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "@microsoft/api-extractor-model",
-    "version": "7.33.11",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/@microsoft__api-extractor-model-7.33.11/LICENSE",
-        "sha256": "68456bb41127857b9ee5385273894cbb0260830e70c445199325fb9f1084d69c"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "@microsoft/tsdoc",
-    "version": "0.16.0",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/@microsoft__tsdoc-0.16.0/LICENSE",
-        "sha256": "c5ff7150f61127f50e4825271901fe978b7decaf85116b0a0ce4cf3b2ab40574"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "@microsoft/tsdoc-config",
-    "version": "0.18.1",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/@microsoft__tsdoc-config-0.18.1/LICENSE",
-        "sha256": "c5ff7150f61127f50e4825271901fe978b7decaf85116b0a0ce4cf3b2ab40574"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "ajv",
-    "version": "8.18.0",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/ajv-8.18.0/LICENSE",
-        "sha256": "a05350a88e318e4f5f2c2a1ff1e2e88daa4dd38e6e78b71cccae422bdc762cc3"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "@rushstack/node-core-library",
-    "version": "5.24.0",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/@rushstack__node-core-library-5.24.0/LICENSE",
-        "sha256": "ce1c368a1ce0827eede2a3b8b14638e28d74e8b0a1438df31b39c7a19e8b6a6d"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "@rushstack/problem-matcher",
-    "version": "0.2.1",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/@rushstack__problem-matcher-0.2.1/LICENSE",
-        "sha256": "9ad5296a3777922b923f108856455de46988f29fd5f283e35da5b4d2ce2fc4f2"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "@rushstack/rig-package",
-    "version": "0.7.3",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/@rushstack__rig-package-0.7.3/LICENSE",
-        "sha256": "7c322fd0a0417f0c11b01266d0b276e196abc39a446e58def12ed0dd9ce8cc7d"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "@rushstack/terminal",
-    "version": "0.24.3",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/@rushstack__terminal-0.24.3/LICENSE",
-        "sha256": "01b7a8a851d7080dc5a47f6e1bf3fdfaa497997c69ae2bfad8000c990ac0713a"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "@rushstack/ts-command-line",
-    "version": "5.3.13",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/@rushstack__ts-command-line-5.3.13/LICENSE",
-        "sha256": "12c0be55654d17aad92e4a2b6074f6eb0bf141b441e21bdbc16f72a17613188d"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "@types/argparse",
-    "version": "1.0.38",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/@types__argparse-1.0.38/LICENSE",
-        "sha256": "dea9265341829002e2c23a7372393eb2ed6e26085fb623f38a4ba0af833f30a6"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
     "name": "@types/node",
     "version": "24.13.3",
     "declaredLicense": "MIT",
@@ -165,60 +33,12 @@
   {
     "ecosystem": "npm",
     "name": "ajv",
-    "version": "8.20.0",
+    "version": "8.18.0",
     "declaredLicense": "MIT",
     "notices": [
       {
-        "path": "THIRD_PARTY_NOTICES/npm/ajv-8.20.0/LICENSE",
+        "path": "THIRD_PARTY_NOTICES/npm/ajv-8.18.0/LICENSE",
         "sha256": "a05350a88e318e4f5f2c2a1ff1e2e88daa4dd38e6e78b71cccae422bdc762cc3"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "ajv-draft-04",
-    "version": "1.0.0",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/ajv-draft-04-1.0.0/LICENSE",
-        "sha256": "6e737548e1fc84ae35ef356774ab1f764674f9e0f35b80e77dc2e158d5104fa3"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "ajv-formats",
-    "version": "3.0.1",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/ajv-formats-3.0.1/LICENSE",
-        "sha256": "9df3bb69929a3b650ed73b3bfa1756725aaff0ac296461605753547004eafeaf"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "argparse",
-    "version": "1.0.10",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/argparse-1.0.10/LICENSE",
-        "sha256": "c8442419dc614089ea022b3da6bfc089b41a58fb7b9030d1e651f2f36189dce2"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "balanced-match",
-    "version": "4.0.4",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/balanced-match-4.0.4/LICENSE.md",
-        "sha256": "d408f38ffa3355c5faec517153295338892eb0f1ea43f57874bb23c6075979b5"
       }
     ]
   },
@@ -243,18 +63,6 @@
       {
         "path": "THIRD_PARTY_NOTICES/npm/content-type-2.1.0/LICENSE",
         "sha256": "257aed98914108e91a337912727b6a802eef218248507f74b76faffaff517a38"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "brace-expansion",
-    "version": "5.0.9",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/brace-expansion-5.0.9/LICENSE",
-        "sha256": "9c63a23124d68cd30cd316a94a1a0bca34f032786df6df69fc4b5f136bac8d2e"
       }
     ]
   },
@@ -363,18 +171,6 @@
       {
         "path": "THIRD_PARTY_NOTICES/npm/depd-2.0.0/LICENSE",
         "sha256": "bd134b41da59e452fb5a1d366b660886f741c87c2bf9428e93764c419fbc40f5"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "diff",
-    "version": "8.0.4",
-    "declaredLicense": "BSD-3-Clause",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/diff-8.0.4/LICENSE",
-        "sha256": "eda81a415869e67809f6a9f3fd6056062cb83a462118e07eec5e92b2e0c40ce9"
       }
     ]
   },
@@ -560,18 +356,6 @@
   },
   {
     "ecosystem": "npm",
-    "name": "fs-extra",
-    "version": "11.3.6",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/fs-extra-11.3.6/LICENSE",
-        "sha256": "c6a7de1428955aa5a692f4d3a3d3ede658d959616944713337cda296736442e1"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
     "name": "function-bind",
     "version": "1.1.2",
     "declaredLicense": "MIT",
@@ -615,30 +399,6 @@
       {
         "path": "THIRD_PARTY_NOTICES/npm/gopd-1.2.0/LICENSE",
         "sha256": "d90bf0a089da4cf43d644ed240a0b3825dcdb705e64e38371d56995a4cc9e4c5"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "graceful-fs",
-    "version": "4.2.11",
-    "declaredLicense": "ISC",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/graceful-fs-4.2.11/LICENSE",
-        "sha256": "f65c5d9f22a317b2a10803bd1868461ce6499c2ed7217bc80c0cc772a748789c"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "has-flag",
-    "version": "4.0.0",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/has-flag-4.0.0/license",
-        "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
       }
     ]
   },
@@ -692,18 +452,6 @@
   },
   {
     "ecosystem": "npm",
-    "name": "import-lazy",
-    "version": "4.0.0",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/import-lazy-4.0.0/license",
-        "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
     "name": "inherits",
     "version": "2.0.4",
     "declaredLicense": "ISC",
@@ -728,18 +476,6 @@
   },
   {
     "ecosystem": "npm",
-    "name": "is-core-module",
-    "version": "2.16.2",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/is-core-module-2.16.2/LICENSE",
-        "sha256": "5c496ce5ae47eb8e5ddcaa5e29c27c446a3855b19e3a66991b52f361bed22b28"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
     "name": "is-promise",
     "version": "4.0.0",
     "declaredLicense": "MIT",
@@ -752,18 +488,6 @@
   },
   {
     "ecosystem": "npm",
-    "name": "jju",
-    "version": "1.4.0",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/jju-1.4.0/LICENSE",
-        "sha256": "68181abfb468c8ebb73edc162119faaeaf184b1996fc0d90b043f5d20ad8e1ef"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
     "name": "json-schema-traverse",
     "version": "1.0.0",
     "declaredLicense": "MIT",
@@ -771,18 +495,6 @@
       {
         "path": "THIRD_PARTY_NOTICES/npm/json-schema-traverse-1.0.0/LICENSE",
         "sha256": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "jsonfile",
-    "version": "6.2.1",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/jsonfile-6.2.1/LICENSE",
-        "sha256": "a9801fb52ba22ef808682a094da8a7a480584b7ed0dfd0d888ab543616335031"
       }
     ]
   },
@@ -843,18 +555,6 @@
       {
         "path": "THIRD_PARTY_NOTICES/npm/mime-types-3.0.2/LICENSE",
         "sha256": "71f83c4c0621102a56d9853812777b85751bce7e9726f686f5b056c1f8a4b0e6"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "minimatch",
-    "version": "10.2.3",
-    "declaredLicense": "BlueOak-1.0.0",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/minimatch-10.2.3/LICENSE.md",
-        "sha256": "2c7c5d22ed5a8ee968c64757710979afcd77438c48b4a265b94e615babd8a901"
       }
     ]
   },
@@ -944,18 +644,6 @@
   },
   {
     "ecosystem": "npm",
-    "name": "path-parse",
-    "version": "1.0.7",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/path-parse-1.0.7/LICENSE",
-        "sha256": "3f4609137f65070541b9214300ea0d640af8192857de0eeb2b03403003d9228a"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
     "name": "path-to-regexp",
     "version": "8.4.2",
     "declaredLicense": "MIT",
@@ -1028,18 +716,6 @@
   },
   {
     "ecosystem": "npm",
-    "name": "resolve",
-    "version": "1.22.12",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/resolve-1.22.12/LICENSE",
-        "sha256": "60acd7711e6c138e6041836e32d922705254cc1568a30fdf16aa8f59bb87aeaa"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
     "name": "router",
     "version": "2.2.0",
     "declaredLicense": "MIT",
@@ -1059,18 +735,6 @@
       {
         "path": "THIRD_PARTY_NOTICES/npm/safer-buffer-2.1.2/LICENSE",
         "sha256": "4bc935e71be198c67ddf3c2b5fddb195f6edc182bfc155a96a6db61b44b494b9"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "semver",
-    "version": "7.7.4",
-    "declaredLicense": "ISC",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/semver-7.7.4/LICENSE",
-        "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
       }
     ]
   },
@@ -1160,30 +824,6 @@
   },
   {
     "ecosystem": "npm",
-    "name": "source-map",
-    "version": "0.6.1",
-    "declaredLicense": "BSD-3-Clause",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/source-map-0.6.1/LICENSE",
-        "sha256": "6cb0631f71c7749763fd3dd1d5bee52dd1070ec17f2edc1710079ad070bd2fbd"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "sprintf-js",
-    "version": "1.0.3",
-    "declaredLicense": "BSD-3-Clause",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/sprintf-js-1.0.3/LICENSE",
-        "sha256": "a4cdda44b5adea4731d53dcae78fb5124f8fd853e994f01e25d8c33a7daf818b"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
     "name": "statuses",
     "version": "2.0.2",
     "declaredLicense": "MIT",
@@ -1191,42 +831,6 @@
       {
         "path": "THIRD_PARTY_NOTICES/npm/statuses-2.0.2/LICENSE",
         "sha256": "512cfa4d5e7a7569c7ae4dd95241cb6ae2aaf648ef9ebd080c01bd24868d26e9"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "string-argv",
-    "version": "0.3.2",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/string-argv-0.3.2/LICENSE",
-        "sha256": "2aca619a9845c352d678fb94a7f1dc2a7f9824db7cced3a320d215107847dc72"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "supports-color",
-    "version": "8.1.1",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/supports-color-8.1.1/license",
-        "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "supports-preserve-symlinks-flag",
-    "version": "1.0.0",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/supports-preserve-symlinks-flag-1.0.0/LICENSE",
-        "sha256": "0f0ca96f50793990031ebc488a38f7292ff70bce8ab6a8e5eeda674abc32ccdf"
       }
     ]
   },
@@ -1292,18 +896,6 @@
   },
   {
     "ecosystem": "npm",
-    "name": "universalify",
-    "version": "2.0.1",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/universalify-2.0.1/LICENSE",
-        "sha256": "3fda5977c0904e226190b4e21d64340c1731e2142d6fe5f3dee0090a216b8b63"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
     "name": "unpipe",
     "version": "1.0.0",
     "declaredLicense": "MIT",
@@ -1347,49 +939,6 @@
       {
         "path": "THIRD_PARTY_NOTICES/npm/zod-4.4.3/LICENSE",
         "sha256": "3f1189b28e3866e0d979968d466b78f813f76827cfdca1fbb124cc0a5c8841f8"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "@esbuild/darwin-arm64",
-    "version": "0.25.12",
-    "declaredLicense": "MIT",
-    "notices": []
-  },
-  {
-    "ecosystem": "npm",
-    "name": "@types/node",
-    "version": "22.20.1",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/@types__node-22.20.1/LICENSE",
-        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "esbuild",
-    "version": "0.25.12",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/esbuild-0.25.12/LICENSE.md",
-        "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
-      }
-    ]
-  },
-  {
-    "ecosystem": "npm",
-    "name": "undici-types",
-    "version": "6.21.0",
-    "declaredLicense": "MIT",
-    "notices": [
-      {
-        "path": "THIRD_PARTY_NOTICES/npm/undici-types-6.21.0/LICENSE",
-        "sha256": "a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27"
       }
     ]
   },

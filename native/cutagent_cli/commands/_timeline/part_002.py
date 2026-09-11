@@ -164,7 +164,11 @@ def _sdk_live_inspect_command(
     managed_affected_json: Optional[str] = typer.Option(None, "--managed-affected-json", hidden=True),
     managed_retained_database_json: Optional[str] = typer.Option(None, "--managed-retained-database-json", hidden=True),
     retime_targets_json: Optional[str] = typer.Option(None, "--retime-targets-json", hidden=True),
+    retime_targets_file: Optional[Path] = typer.Option(None, "--retime-targets-file", hidden=True),
     node_stack_layer_index: int = typer.Option(1, "--node-stack-layer", min=1, max=4096, hidden=True),
+    media_pool_native_id: Optional[str] = typer.Option(None, "--media-pool-native-id", hidden=True),
+    use_nested_clip_transcription: bool = typer.Option(False, "--use-nested-clip-transcription", hidden=True),
+    structural_only: bool = typer.Option(False, "--structural-only", hidden=True),
 ):
     """Return the private typed, bracketed SDK live-inspection contract."""
     set_execution_engine("api_native")
@@ -215,15 +219,23 @@ def _sdk_live_inspect_command(
                 or len(set(managed_retained_database_native_ids)) != len(managed_retained_database_native_ids)):
             raise ValidationError("Managed protected-state retained database identities are invalid.")
     retime_expected_targets = None
-    if retime_targets_json is not None:
+    if retime_targets_json is not None and retime_targets_file is not None:
+        raise ValidationError("SDK retime target identities require exactly one private carrier.")
+    if retime_targets_json is not None or retime_targets_file is not None:
         try:
-            retime_expected_targets = json.loads(retime_targets_json)
-        except json.JSONDecodeError as exc:
+            if retime_targets_file is not None:
+                if retime_targets_file.stat().st_size > 16 * 1024 * 1024:
+                    raise ValidationError("SDK retime target identities are invalid.")
+                retime_targets_payload = retime_targets_file.read_text(encoding="utf-8")
+            else:
+                retime_targets_payload = retime_targets_json
+            retime_expected_targets = json.loads(retime_targets_payload)
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
             raise ValidationError("SDK retime target identities are malformed.") from exc
         if (operation != "timeline.retime"
                 or not isinstance(retime_expected_targets, list)
                 or not retime_expected_targets
-                or len(retime_expected_targets) > 514):
+                or len(retime_expected_targets) > 2000):
             raise ValidationError("SDK retime target identities are invalid.")
     elif operation == "timeline.retime":
         raise ValidationError("SDK retime inspection requires exact native targets.")
@@ -238,7 +250,7 @@ def _sdk_live_inspect_command(
     output(
         timeline_ops.inspect_sdk_live_state(
             conn,
-            operation,
+            "timeline.structure" if operation == "timeline.snapshot" and structural_only else operation,
             deadline_at_ms=deadline_at_ms,
             offset=offset,
             page_size=page_size,
@@ -253,6 +265,8 @@ def _sdk_live_inspect_command(
                 expected_targets=targets,
             ),
             node_stack_layer_index=node_stack_layer_index,
+            media_pool_native_id=media_pool_native_id,
+            use_nested_clip_transcription=use_nested_clip_transcription,
         ),
         title="SDK Live Inspection",
     )
@@ -467,40 +481,67 @@ def marker_add(
 @marker_app.command("update")
 @handle_errors
 def marker_update(
-    frame: int = typer.Option(..., help="Exact timeline or record frame of the marker to update"),
+    frame: Optional[int] = typer.Option(None, help="Exact timeline or record frame of one marker to update"),
     position: Optional[str] = typer.Option(None, help="Optional new position (timecode, seconds, frames)"),
     color: Optional[str] = typer.Option(None, help="Optional new marker color"),
     name: Optional[str] = typer.Option(None, help="Optional new marker name"),
     note: Optional[str] = typer.Option(None, help="Optional new marker note"),
     duration: Optional[int] = typer.Option(None, help="Optional new duration in frames"),
+    updates_json: Optional[str] = typer.Option(None, "--updates-json", help="Inline JSON array of exact marker updates"),
 ):
-    """Update one exact marker with rollback on replacement failure."""
+    """Update one marker or a JSON list in one connected execution."""
     enforce_mutation_policy("timeline.marker_crud", intended_engine="api_native")
     conn = get_connection(require_timeline=True)
     timeline_ops.require_sdk_marker_mutation_guard(conn)
-    result = timeline_ops.update_marker(
-        conn, frame, position=position, color=color, name=name, note=note, duration=duration
-    )
+    if (frame is None) == (updates_json is None):
+        raise ValidationError(
+            "Marker update requires exactly one of --frame or --updates-json.",
+            recoverability="not_applicable",
+        )
+    if updates_json is not None:
+        if any(value is not None for value in (position, color, name, note, duration)):
+            raise ValidationError(
+                "Per-marker options cannot be combined with --updates-json.",
+                recoverability="not_applicable",
+            )
+        try:
+            updates = json.loads(updates_json)
+        except json.JSONDecodeError as exc:
+            raise ValidationError(
+                "Marker update JSON is invalid.",
+                details={"line": exc.lineno, "column": exc.colno},
+                recoverability="not_applicable",
+            ) from exc
+        result = timeline_ops.update_markers(conn, updates)
+    else:
+        result = timeline_ops.update_marker(
+            conn, int(frame), position=position, color=color, name=name, note=note, duration=duration
+        )
     if is_machine_mode():
         payload = dict(result)
         changed = bool(payload.pop("changed", True))
+        target = (
+            {"kind": "timeline_markers", "count": result.get("requested_count")}
+            if updates_json is not None
+            else {"kind": "timeline_marker", "timeline_frame": result.get("timeline_frame")}
+        )
         output(
             mutation_payload(
                 action="timeline.marker.update",
                 changed=changed,
-                target={"kind": "timeline_marker", "timeline_frame": result.get("timeline_frame")},
+                target=target,
                 **payload,
             ),
             title="Timeline Marker Updated",
         )
         return
-    success("Updated marker")
+    success(f"Updated {result.get('updated_count', 1)} marker(s)")
 
 
 @marker_app.command("delete")
 @handle_errors
 def marker_delete(
-    frame: Optional[int] = typer.Option(None, help="Delete marker at specific frame"),
+    frame: Optional[List[int]] = typer.Option(None, "--frame", help="Delete marker at an exact frame; repeat for multiple markers"),
     color: Optional[str] = typer.Option(None, help="Delete all markers of a color"),
     all: bool = typer.Option(False, "--all", help="Delete all markers"),
 ):
@@ -521,6 +562,11 @@ def marker_delete(
                     "record_frame": result.get("record_frame"),
                 }
             )
+        elif result.get("mode") == "frames":
+            target["markers"] = [
+                {"requested_frame": item["requested_frame"], "timeline_frame": item["timeline_frame"], "record_frame": item["record_frame"]}
+                for item in result.get("markers", [])
+            ]
         elif result.get("mode") == "color":
             target["color"] = result.get("color")
         output(
@@ -534,7 +580,7 @@ def marker_delete(
                     if all
                     else f"Deleted all {color} markers."
                     if color
-                    else f"Deleted marker at frame {frame}."
+                    else f"Deleted {result.get('deleted_count', 1)} exact marker(s)."
                 ),
             ),
             title="Timeline Marker Deleted",
@@ -545,7 +591,7 @@ def marker_delete(
     elif color:
         success(f"Deleted all {color} markers.")
     else:
-        success(f"Deleted marker at frame {frame}.")
+        success(f"Deleted {result.get('deleted_count', 1)} exact marker(s).")
 
 
 @marker_app.command("batch")
@@ -572,6 +618,7 @@ def marker_batch(
 
     require_timeline = timeline_name is None
     conn = get_connection(require_project=True, require_timeline=require_timeline)
+    timeline_ops.require_sdk_marker_mutation_guard(conn)
     plan = timeline_markers.plan_timeline_marker_batch(
         conn,
         entries=entries,
@@ -961,6 +1008,7 @@ def items_delete(
     match: str = typer.Option("overlap", "--match", help="overlap, contained, or covering"),
     allow_empty: bool = typer.Option(False, "--allow-empty", help="Return ok when no items match"),
     force: bool = typer.Option(False, "--force", help="Required for wide deletes without a frame range"),
+    targets_json: str | None = typer.Option(None, "--targets-json", hidden=True),
 ):
     """Delete timeline items without deleting tracks or rippling the timeline."""
     enforce_mutation_policy("timeline.items_delete", intended_engine="api_native", mutating=not is_dry_run())
@@ -982,6 +1030,13 @@ def items_delete(
         )
         return
 
+    targets_json_value = None if isinstance(targets_json, typer.models.OptionInfo) else targets_json
+    exact_targets = None
+    if targets_json_value is not None:
+        try:
+            exact_targets = json.loads(targets_json_value)
+        except (TypeError, ValueError) as error:
+            raise ValidationError("Exact timeline item deletion targets must be valid JSON.") from error
     conn = get_connection(require_project=True, require_timeline=timeline_name is None)
     data = timeline_ops.delete_timeline_items(
         conn,
@@ -993,6 +1048,7 @@ def items_delete(
         match=match,
         allow_empty=allow_empty,
         force=force,
+        **({"exact_targets": exact_targets} if exact_targets is not None else {}),
     )
     output(
         mutation_payload(
@@ -1185,10 +1241,35 @@ def items_move(
     allow_overlap: bool = typer.Option(False, "--allow-overlap", help="Allow overlap with an existing item on the destination video track"),
     include_linked_audio: bool = typer.Option(False, "--include-linked-audio", help="Move every authoritatively linked audio item by the same record-frame delta"),
     allow_linked_video_only: bool = typer.Option(False, "--allow-linked-video-only", help="Explicitly allow a record move to leave linked audio at its current position"),
+    moves_json: str | None = typer.Option(None, "--moves-json", hidden=True),
 ):
     """Move one exact video item with record-time and video-track changes supported independently."""
     set_execution_engine("db_workaround")
     enforce_mutation_policy("timeline.item_move", intended_engine="db_workaround", mutating=not is_dry_run())
+    if moves_json is not None:
+        try:
+            moves = json.loads(moves_json)
+        except json.JSONDecodeError as exc:
+            raise ValidationError("--moves-json must be valid JSON.") from exc
+        if not isinstance(moves, list) or not moves or len(moves) > 100 or any(not isinstance(move, dict) for move in moves):
+            raise ValidationError("--moves-json must contain between 1 and 100 move objects.")
+        if is_dry_run():
+            set_verification_status("not_requested")
+            set_recoverability("not_applicable")
+            output(mutation_payload(action="timeline.items.move", changed=False, target={"kind": "timeline", "name": timeline_name}, requested={"moves": moves}, message="DRY-RUN: Would jointly move exact video items in one transaction."), title="Timeline Items Move Plan")
+            return
+        conn = get_connection(require_project=True, require_timeline=timeline_name is None)
+        timeline_ops.require_sdk_marker_mutation_guard(conn)
+        expected_raw = os.environ.get("CUTAGENT_SDK_EXPECTED_TIMELINE_ITEM_MOVES")
+        try:
+            expected_moves = json.loads(expected_raw) if expected_raw is not None else None
+        except json.JSONDecodeError as exc:
+            raise ValidationError("The SDK plural move private precondition is invalid JSON.") from exc
+        if not isinstance(expected_moves, list):
+            raise ValidationError("Plural timeline item moves require private SDK target preconditions.")
+        data = timeline_item_move_db.move_timeline_items(conn, moves=moves, expected_moves=expected_moves)
+        output(mutation_payload(action="timeline.items.move", changed=bool(data.get("updated_items")), target={"kind": "timeline", "name": data.get("timeline_name")}, requested={"move_count": len(moves)}, updated_items=data.get("updated_items"), readback=data.get("verification"), route=data.get("route"), message="Moved timeline video items."), title="Timeline Items Move")
+        return
     if target_start_frame is None and target_track_index is None:
         raise ValidationError(
             "Provide --to-track or --to-start-frame/--to for the timeline item move.",

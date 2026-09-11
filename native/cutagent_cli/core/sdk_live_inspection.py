@@ -28,16 +28,20 @@ SDK_LIVE_INSPECTION_OPERATIONS = {
     "timeline.list",
     "timeline.retime",
     "timeline.snapshot",
+    "timeline.structure",
     "fusion.compositions",
     "mediaPool.page",
+    "mediaPool.transcription",
     "multicam.inspect",
     "managed.protected",
     "storage.mattes",
 }
 SDK_LIVE_INSPECTION_MAX_DEADLINE_WINDOW_MS = 180_000
 SDK_MEDIA_POOL_MAX_INVENTORY = 1_000_000
+SDK_MEDIA_POOL_SNAPSHOT_MAX_BYTES = 6 * 1024 * 1024
 SDK_MARKER_GUARD_ENV = "CUTAGENT_SDK_MARKER_GUARD"
 SDK_TIMELINE_GUARD_ENV = "CUTAGENT_SDK_TIMELINE_GUARD"
+SDK_TIMELINE_STRUCTURE_GUARD_ENV = "CUTAGENT_SDK_TIMELINE_STRUCTURE_GUARD"
 SDK_COLOR_GUARD_ENV = "CUTAGENT_SDK_COLOR_GUARD"
 SDK_COLOR_NODE_STACK_LAYER_INDEX_ENV = "CUTAGENT_SDK_COLOR_NODE_STACK_LAYER_INDEX"
 SDK_MUTATION_GUARD_ENV = "CUTAGENT_SDK_MUTATION_GUARD"
@@ -53,6 +57,57 @@ class SdkLiveInspectionTimeout(APICallFailed):
 
     code = "SDK_LIVE_INSPECTION_TIMEOUT"
     recoverability = "retryable"
+
+
+def _inspect_media_pool_transcription(
+    conn: Any,
+    native_id: str,
+    use_nested_clip_transcription: bool,
+    deadline_at_ms: int,
+) -> dict[str, Any]:
+    """Read transcription from one exact native Media Pool item identity."""
+    if not native_id:
+        raise ValidationError("SDK transcription inspection requires an exact native Media Pool identity.")
+    media_pool = getattr(conn, "media_pool", None)
+    root_getter = getattr(media_pool, "GetRootFolder", None)
+    if not callable(root_getter):
+        raise APICallFailed("DaVinci Resolve Media Pool is unavailable for transcription readback.")
+    root = root_getter()
+    if root is None:
+        raise APICallFailed("DaVinci Resolve Media Pool root is unavailable for transcription readback.")
+
+    stack: list[Any] = [root]
+    visited: set[int] = set()
+    matched: list[Any] = []
+    rows = 0
+    while stack:
+        validate_deadline(deadline_at_ms)
+        folder = stack.pop()
+        if id(folder) in visited:
+            raise APICallFailed("DaVinci Resolve returned a cyclic Media Pool folder graph.")
+        visited.add(id(folder))
+        rows += 1
+        if rows > SDK_MEDIA_POOL_MAX_INVENTORY:
+            raise ValidationError("Media Pool inventory exceeds the bounded SDK contract.")
+        for clip in _required_list_call(folder, "GetClipList", deadline_at_ms):
+            rows += 1
+            if rows > SDK_MEDIA_POOL_MAX_INVENTORY:
+                raise ValidationError("Media Pool inventory exceeds the bounded SDK contract.")
+            if media_pool_native_id(clip) == native_id:
+                matched.append(clip)
+        stack.extend(reversed(_required_list_call(folder, "GetSubFolderList", deadline_at_ms)))
+    if not matched:
+        raise SdkMutationStaleRevision(
+            "The exact Media Pool item is no longer present after SDK target resolution."
+        )
+    if len(matched) != 1:
+        raise APICallFailed("DaVinci Resolve returned an ambiguous native Media Pool identity.")
+    getter = getattr(matched[0], "GetTranscription", None)
+    if not callable(getter):
+        raise APICallFailed("DaVinci Resolve transcription readback is unavailable.")
+    from .media_pool import normalize_transcription
+
+    return normalize_transcription(getter(bool(use_nested_clip_transcription)))
 
 
 def _inspect_storage_mattes(conn: Any, native_ids: list[str], deadline_at_ms: int) -> dict[str, Any]:
@@ -159,8 +214,8 @@ def fusion_graph_digest(graph: Any) -> str:
     return f"sha256:{hashlib.sha256(_canonical_bytes(graph)).hexdigest()}"
 
 
-def marker_mutation_guard(identity: Dict[str, Any], summary: Dict[str, Any] | None) -> str:
-    """Bind timeline content and identity, excluding viewer navigation state."""
+def _timeline_structural_summary(summary: Dict[str, Any] | None) -> Dict[str, Any] | None:
+    """Exclude viewer navigation while retaining every timeline content field."""
 
     # Render mode changes can move the playhead without editing the timeline.
     # Keep navigation in inspection responses, but not in a content precondition.
@@ -177,6 +232,13 @@ def marker_mutation_guard(identity: Dict[str, Any], summary: Dict[str, Any] | No
                 if isinstance(track, dict) else track
                 for track in summary["tracks"]
             ]
+    return structural_summary
+
+
+def marker_mutation_guard(identity: Dict[str, Any], summary: Dict[str, Any] | None) -> str:
+    """Bind timeline content and identity, excluding viewer navigation state."""
+
+    structural_summary = _timeline_structural_summary(summary)
     payload = {"identity": identity, "summary": structural_summary}
     return f"sha256:{hashlib.sha256(_canonical_bytes(payload)).hexdigest()}"
 
@@ -293,6 +355,29 @@ def _required_mapping_call(native_object: Any, method: str) -> dict[str, Any]:
     return value
 
 
+def _media_metadata_call(clip: Any, properties: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
+    """Read metadata while preserving native unavailability for generated Fusion assets."""
+
+    getter = getattr(clip, "GetMetadata", None)
+    if not callable(getter):
+        raise APICallFailed("DaVinci Resolve does not expose GetMetadata for SDK Media Pool inspection.")
+    try:
+        value = getter()
+    except Exception as exc:
+        raise APICallFailed("DaVinci Resolve GetMetadata failed during SDK Media Pool inspection.") from exc
+    if isinstance(value, dict):
+        return True, value
+    native_type = properties.get("Type")
+    if (
+        value is None
+        and isinstance(native_type, str)
+        and native_type in {"Fusion Title", "Fusion Composition"}
+        and all(properties.get(key) is None or properties.get(key) == "" for key in ("File Path", "FilePath"))
+    ):
+        return False, {}
+    raise APICallFailed("DaVinci Resolve GetMetadata returned an invalid SDK Media Pool result.")
+
+
 def _required_list_call(
     native_object: Any,
     method: str,
@@ -395,9 +480,11 @@ def _selected_media_identities(media_pool: Any, deadline_at_ms: int | None) -> t
         selected_value = getter()
     except Exception as exc:
         raise APICallFailed("DaVinci Resolve GetSelectedClips failed during SDK Media Pool inspection.") from exc
-    # DaVinci Resolve returns None when the Media Pool selection is empty.
-    # That is an authoritative empty selection, not a failed collection read.
-    if selected_value is None:
+    # Native Python returns None when the Media Pool selection is empty, while
+    # the embedded Lua transport serializes the same native false/nil result as
+    # False. Both are authoritative empty selections, not failed collection
+    # reads. Keep True and every other scalar fail-closed.
+    if selected_value is None or selected_value is False:
         selected: list[Any] = []
     elif isinstance(selected_value, list):
         selected = selected_value
@@ -472,7 +559,7 @@ def _media_pool_rows(conn: Any, deadline_at_ms: int | None) -> Iterator[dict[str
             if row_count >= SDK_MEDIA_POOL_MAX_INVENTORY:
                 raise ValidationError("Media Pool inventory exceeds the bounded SDK contract.")
             properties = _required_mapping_call(clip, "GetClipProperty")
-            metadata = _required_mapping_call(clip, "GetMetadata")
+            metadata_available, metadata = _media_metadata_call(clip, properties)
             native_id = media_pool_native_id(clip)
             unique_id = documented_unique_id(clip)
             source_path = _bounded_native_text(
@@ -509,6 +596,7 @@ def _media_pool_rows(conn: Any, deadline_at_ms: int | None) -> Iterator[dict[str
                 "resolution": _bounded_native_text(properties.get("Resolution"), field="Media Pool resolution", maximum_code_units=4096, strip=True),
                 "frame_rate": _bounded_native_text(properties.get("FPS") or properties.get("Frame Rate"), field="Media Pool frame rate", maximum_code_units=256, strip=True),
                 "start_timecode": _bounded_native_text(properties.get("Start TC") or properties.get("Start Timecode"), field="Media Pool start timecode", maximum_code_units=256, strip=True),
+                "metadata_available": metadata_available,
                 "metadata": _selected_media_metadata(metadata),
             }
         children = _required_list_call(folder, "GetSubFolderList", deadline_at_ms)
@@ -535,6 +623,10 @@ def _matches_media_search(row: dict[str, Any], search: dict[str, Any] | None) ->
         elif field == "sourceFileName":
             candidates.append(str(row.get("source_file_name") or ""))
         elif field == "metadata":
+            if row["metadata_available"] is False:
+                raise APICallFailed(
+                    "DaVinci Resolve did not expose metadata for every asset required by the SDK Media Pool search."
+                )
             candidates.extend(str(item["value"]) for item in row["metadata"])
     folded_query = query.lower()
     return any(
@@ -551,6 +643,7 @@ def inspect_media_pool_page(
     page_size: int,
     search: dict[str, Any] | None,
     include_private_paths: bool = False,
+    include_snapshot: bool = False,
 ) -> dict[str, Any]:
     if offset < 0 or offset > 1_000_000:
         raise ValidationError("Media Pool offset is outside the bounded range.", details={"offset": offset})
@@ -564,6 +657,8 @@ def inspect_media_pool_page(
     ambiguous_native_ids = False
     matching_count = 0
     page: list[dict[str, Any]] = []
+    snapshot: list[dict[str, Any]] | None = [] if include_snapshot else None
+    snapshot_bytes = 2
     for row in _media_pool_rows(conn, deadline_at_ms):
         validate_deadline(deadline_at_ms)
         # Media Pool selection is transient UI state. DaVinci Resolve can
@@ -595,6 +690,18 @@ def inspect_media_pool_page(
         if _matches_media_search(row, search):
             if matching_count >= offset and len(page) < page_size:
                 page.append(row)
+            if snapshot is not None:
+                snapshot_row_bytes = len(json.dumps(
+                    row,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=True,
+                ).encode("utf-8")) + (1 if snapshot else 0)
+                if snapshot_bytes + snapshot_row_bytes > SDK_MEDIA_POOL_SNAPSHOT_MAX_BYTES:
+                    snapshot = None
+                else:
+                    snapshot.append(row)
+                    snapshot_bytes += snapshot_row_bytes
             matching_count += 1
         validate_deadline(deadline_at_ms)
     if offset > matching_count:
@@ -606,7 +713,9 @@ def inspect_media_pool_page(
     next_offset = offset + len(page) if offset + len(page) < matching_count else None
     if not include_private_paths:
         page = [{key: value for key, value in row.items() if key != "source_path"} for row in page]
-    return {
+        if snapshot is not None:
+            snapshot = [{key: value for key, value in row.items() if key != "source_path"} for row in snapshot]
+    result = {
         "pool_digest": digest.hexdigest(),
         "ambiguous_native_ids": ambiguous_native_ids,
         "current_folder_native_id": current_folder_native_id,
@@ -617,6 +726,11 @@ def inspect_media_pool_page(
         "next_offset": next_offset,
         "entries": page,
     }
+    if include_snapshot:
+        result["snapshot_complete"] = snapshot is not None
+        if snapshot is not None:
+            result["snapshot_entries"] = snapshot
+    return result
 def _identity_state(
     conn: Any,
     *,
@@ -994,6 +1108,8 @@ def inspect_live_state(
     retime_expected_targets: list[dict[str, Any]] | None = None,
     inspect_retime: Callable[[Any, list[dict[str, Any]]], Dict[str, Any]] | None = None,
     node_stack_layer_index: int = 1,
+    media_pool_native_id: str | None = None,
+    use_nested_clip_transcription: bool = False,
 ) -> Dict[str, Any]:
     """Return one bracketed SDK inspection from a single CutAgent CLI process."""
 
@@ -1011,6 +1127,7 @@ def inspect_live_state(
         "timeline.list",
         "timeline.retime",
         "timeline.snapshot",
+        "timeline.structure",
         "color.current",
         "fusion.compositions",
         "managed.protected",
@@ -1032,21 +1149,27 @@ def inspect_live_state(
     summary_before = None
     summary_after = None
     color_before = None
-    if operation in {"timeline.snapshot", "timeline.retime", "color.current", "fusion.compositions", "managed.protected"} and getattr(conn, "timeline", None) is not None and list_markers is None:
+    connection_refreshed = False
+    if operation in {"timeline.snapshot", "timeline.structure", "timeline.retime", "color.current", "fusion.compositions", "managed.protected"} and getattr(conn, "timeline", None) is not None and list_markers is None:
         raise ValidationError("SDK timeline inspection requires marker readback.")
-    if operation in {"timeline.snapshot", "timeline.retime", "color.current", "managed.protected"} and getattr(conn, "timeline", None) is not None:
+    if operation in {"timeline.snapshot", "timeline.structure", "timeline.retime", "color.current", "managed.protected"} and getattr(conn, "timeline", None) is not None:
         inspected_summary = summarize_timeline(
             conn,
             window="all",
             max_runs=1,
             include_items=True,
             authoritative_track_state=True,
+            include_revision_state=operation != "timeline.structure",
         )
-        if operation in {"timeline.snapshot", "timeline.retime", "managed.protected"}:
+        if operation in {"timeline.snapshot", "timeline.structure", "timeline.retime", "managed.protected"}:
             summary = {
                 **inspected_summary,
                 "markers": list_markers(conn),
-                "fairlight": inspect_fairlight(conn) if inspect_fairlight is not None else None,
+                "fairlight": (
+                    inspect_fairlight(conn)
+                    if operation != "timeline.structure" and inspect_fairlight is not None
+                    else None
+                ),
             }
             if operation == "timeline.retime":
                 if inspect_retime is None or not retime_expected_targets:
@@ -1075,6 +1198,13 @@ def inspect_live_state(
             "fusion": inspect_fusion_compositions(conn, deadline_at_ms=deadline_at_ms, target=_fusion_inspection_target()),
         }
     elif operation == "mediaPool.page":
+        # Refresh before acquiring Media Pool objects so one authoritative
+        # traversal can provide both the page and its collection digest.  A
+        # second complete traversal used to repeat every native hierarchy and
+        # metadata call solely to compare the same digest after refresh.
+        conn.refresh()
+        connection_refreshed = True
+        validate_deadline(deadline_at_ms)
         summary = inspect_media_pool_page(
             conn,
             deadline_at_ms=deadline_at_ms,
@@ -1082,6 +1212,14 @@ def inspect_live_state(
             page_size=page_size,
             search=search,
             include_private_paths=os.environ.get(SDK_MEDIA_POOL_PRIVATE_PATHS_ENV) == "1",
+            include_snapshot=offset == 0 and os.environ.get(SDK_MEDIA_POOL_PRIVATE_PATHS_ENV) == "1",
+        )
+    elif operation == "mediaPool.transcription":
+        summary = _inspect_media_pool_transcription(
+            conn,
+            str(media_pool_native_id or ""),
+            bool(use_nested_clip_transcription),
+            deadline_at_ms,
         )
     elif operation == "storage.mattes":
         summary = _inspect_storage_mattes(conn, list(managed_affected_native_ids or []), deadline_at_ms)
@@ -1092,8 +1230,9 @@ def inspect_live_state(
             raise ValidationError("SDK multicam inspection requires an exact multicam name.")
         summary = inspect_multicam(conn, multicam_name)
     validate_deadline(deadline_at_ms)
-    conn.refresh()
-    validate_deadline(deadline_at_ms)
+    if not connection_refreshed:
+        conn.refresh()
+        validate_deadline(deadline_at_ms)
     if operation == "color.current":
         color_after = _inspect_current_color_target(conn, node_stack_layer_index)
         if getattr(conn, "timeline", None) is not None:
@@ -1125,18 +1264,22 @@ def inspect_live_state(
 
     after = _identity_state(conn, include_timelines=include_timelines, list_timelines=list_timelines, include_project_folder=include_project_folder, include_project_libraries=include_project_libraries, include_current_timeline_media_pool_item=include_current_timeline_media_pool_item)
     if operation == "mediaPool.page":
-        summary_after = inspect_media_pool_page(
-            conn,
-            deadline_at_ms=deadline_at_ms,
-            offset=offset,
-            page_size=page_size,
-            search=search,
-            include_private_paths=os.environ.get(SDK_MEDIA_POOL_PRIVATE_PATHS_ENV) == "1",
-        )
-        validate_deadline(deadline_at_ms)
-        if before != after or summary.get("pool_digest") != summary_after.get("pool_digest"):
+        if before != after:
             raise SdkMutationStaleRevision(
                 "DaVinci Resolve Media Pool changed during SDK inspection.",
+                details={"operation": operation},
+            )
+    elif operation == "mediaPool.transcription":
+        summary_after = _inspect_media_pool_transcription(
+            conn,
+            str(media_pool_native_id or ""),
+            bool(use_nested_clip_transcription),
+            deadline_at_ms,
+        )
+        validate_deadline(deadline_at_ms)
+        if before != after or summary != summary_after:
+            raise SdkMutationStaleRevision(
+                "DaVinci Resolve Media Pool transcription changed during SDK inspection.",
                 details={"operation": operation},
             )
         summary = summary_after
@@ -1149,25 +1292,43 @@ def inspect_live_state(
                 details={"operation": operation},
             )
         summary = summary_after
-    if operation in {"timeline.snapshot", "timeline.retime", "managed.protected"} and getattr(conn, "timeline", None) is not None:
+    if operation in {"timeline.snapshot", "timeline.structure"} and getattr(conn, "timeline", None) is not None:
+        # A read-only snapshot already collected the complete authoritative
+        # timeline state above. Rebuilding it here doubled every native read,
+        # including render-context preset custody for output blanking. Keep the
+        # cheap post-refresh identity and marker checks without paying for a
+        # second complete snapshot.
+        markers_after = list_markers(conn)
+        validate_deadline(deadline_at_ms)
+        if before != after or summary.get("markers") != markers_after:
+            raise SdkMutationStaleRevision(
+                "DaVinci Resolve live state changed during the SDK timeline inspection.",
+                details={"operation": operation},
+            )
+    elif operation in {"timeline.retime", "managed.protected"} and getattr(conn, "timeline", None) is not None:
         summary_after = summarize_timeline(
             conn,
             window="all",
             max_runs=1,
             include_items=True,
             authoritative_track_state=True,
+            include_revision_state=operation != "timeline.structure",
         )
         summary_after = {
             **summary_after,
             "markers": list_markers(conn),
-            "fairlight": inspect_fairlight(conn) if inspect_fairlight is not None else None,
+            "fairlight": (
+                inspect_fairlight(conn)
+                if operation != "timeline.structure" and inspect_fairlight is not None
+                else None
+            ),
         }
         if operation == "timeline.retime":
             if inspect_retime is None or not retime_expected_targets:
                 raise ValidationError("SDK retime inspection requires exact native targets.")
             summary_after["retime"] = inspect_retime(conn, retime_expected_targets)
         validate_deadline(deadline_at_ms)
-        if before != after or summary != summary_after:
+        if before != after or _timeline_structural_summary(summary) != _timeline_structural_summary(summary_after):
             raise SdkMutationStaleRevision(
                 "DaVinci Resolve live state changed during the SDK timeline inspection.",
                 details={"operation": operation},
@@ -1214,7 +1375,7 @@ def inspect_live_state(
                 details={"operation": operation},
             )
         summary = summary_after
-    guard = marker_mutation_guard(after, summary) if operation == "timeline.snapshot" else project_mutation_guard(after) if operation in {"project.context", "project.folder_context", "project.library_context"} else media_pool_mutation_guard(after, summary["pool_digest"]) if operation == "mediaPool.page" else None
+    guard = marker_mutation_guard(after, summary) if operation in {"timeline.snapshot", "timeline.structure"} else project_mutation_guard(after) if operation in {"project.context", "project.folder_context", "project.library_context"} else media_pool_mutation_guard(after, summary["pool_digest"]) if operation == "mediaPool.page" else None
     return {"before": before, "after": after, "summary": summary, "mutation_guard": guard}
 
 
@@ -1261,7 +1422,8 @@ def require_marker_mutation_guard(
 ) -> None:
     """Fail before mutation if the bridge-inspected state has changed."""
 
-    expected = (
+    structure_expected = os.environ.get(SDK_TIMELINE_STRUCTURE_GUARD_ENV)
+    expected = structure_expected or (
         os.environ.get(SDK_MUTATION_GUARD_ENV)
         or os.environ.get(SDK_TIMELINE_GUARD_ENV)
         or os.environ.get(SDK_MARKER_GUARD_ENV)
@@ -1270,7 +1432,7 @@ def require_marker_mutation_guard(
         return
     inspected = inspect_live_state(
         conn,
-        "timeline.snapshot",
+        "timeline.structure" if structure_expected is not None else "timeline.snapshot",
         deadline_at_ms=int(time.time() * 1000) + SDK_LIVE_INSPECTION_MAX_DEADLINE_WINDOW_MS,
         list_timelines=list_timelines,
         summarize_timeline=summarize_timeline,

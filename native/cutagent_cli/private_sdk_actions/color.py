@@ -431,6 +431,9 @@ def _validate_typed_value(value: Any, schema: Mapping[str, Any], path: str) -> N
 
 def _target_fields(schema: Mapping[str, Any]) -> tuple[str, ...]:
     required = set(_required_fields(schema))
+    for branch in schema.get("oneOf", ()):
+        if isinstance(branch, Mapping):
+            required.update(_required_fields(branch))
     ordered = (
         "projectId",
         "timelineId",
@@ -582,6 +585,20 @@ def _private_bindings(
     schema: Mapping[str, Any],
     command: CommandDef,
 ) -> tuple[tuple[str, str], ...]:
+    if action_id == "cutagent.action.color.lut" and "oneOf" in schema:
+        return (
+            ("projectId", "resolved_target"),
+            ("timelineId", "resolved_target"),
+            ("timelineItemId", "resolved_target"),
+            ("revision", "prepared_guard"),
+            ("colorRevision", "prepared_guard"),
+            ("nodeStackLayerIndex", "node_stack_layer_index"),
+            ("nodeIndex", "node"),
+            ("lutName", "path"),
+            ("clear", "clear"),
+            ("items", "prepared_items"),
+            ("failurePolicy", "failure_policy"),
+        )
     parameters = {parameter.python_name for parameter in command.parameters}
     bindings: list[tuple[str, str]] = []
     for field in schema.get("properties", {}):

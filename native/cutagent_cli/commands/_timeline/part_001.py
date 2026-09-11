@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import time
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import typer
 from typer.core import TyperGroup
@@ -635,43 +635,44 @@ def _export_single_timeline_frame(
     }
 
 
-def _export_frame_sequence(
+def _export_frame_targets(
     conn,
     *,
-    frame_refs: list[str],
-    out_dir: Path,
-    prefix: str,
-    extension: str,
+    targets: list[tuple[str, Path]],
 ) -> dict[str, object]:
+    """Export explicit frame/path pairs with one preflight, page setup, and restore."""
+    frame_refs = [frame_ref for frame_ref, _path in targets]
+    if not targets:
+        raise ValidationError("Frame export requires at least one target.")
     with exclusive_resolve_state_operation(operation="timeline.frame_export.sequence"):
         _preflight_timeline_frame_refs(conn, frame_refs)
-        out_dir.mkdir(parents=True, exist_ok=True)
+        for parent in {path.parent for _frame_ref, path in targets}:
+            parent.mkdir(parents=True, exist_ok=True)
         original_playhead = timeline_ops.get_playhead(conn)
         restored = False
         restore_error: str | None = None
         frames: list[dict[str, object]] = []
         try:
-            for index, frame_ref in enumerate(frame_refs):
-                resolved_path = _frame_output_path(out_dir, prefix=prefix, index=index, frame_ref=frame_ref, extension=extension)
-                target = _set_frame_export_playhead(conn, frame_ref)
-                metadata = _export_current_frame_as_still(
-                    conn,
-                    resolved_path=resolved_path,
-                    requested_output_path=str(resolved_path),
-                    error_message="Failed to export frame from requested timeline position.",
-                )
-                frames.append(
-                    {
-                        "index": index,
-                        "requested_at": frame_ref,
-                        "output_path": str(resolved_path),
-                        "visual_check_path": _workspace_relative_path(resolved_path),
-                        "target": target,
-                        "exported": True,
-                        "verified": True,
-                        **metadata,
-                    }
-                )
+            with color_ops._with_required_page(conn, "color"):
+                for index, (frame_ref, resolved_path) in enumerate(targets):
+                    target = _set_frame_export_playhead(conn, frame_ref)
+                    metadata = _export_current_frame_as_still(
+                        conn,
+                        resolved_path=resolved_path,
+                        requested_output_path=str(resolved_path),
+                        error_message="Failed to export frame from requested timeline position.",
+                    )
+                    frames.append(
+                        {
+                            "index": index,
+                            "requested_at": frame_ref,
+                            "output_path": str(resolved_path),
+                            "target": target,
+                            "exported": True,
+                            "verified": True,
+                            **metadata,
+                        }
+                    )
         finally:
             original_tc = original_playhead.get("timecode")
             if original_tc:
@@ -695,6 +696,26 @@ def _export_frame_sequence(
         "restored_playhead": restored,
         "restore_warning": restore_error,
     }
+
+
+def _export_frame_sequence(
+    conn,
+    *,
+    frame_refs: list[str],
+    out_dir: Path,
+    prefix: str,
+    extension: str,
+) -> dict[str, object]:
+    targets = [
+        (frame_ref, _frame_output_path(out_dir, prefix=prefix, index=index, frame_ref=frame_ref, extension=extension))
+        for index, frame_ref in enumerate(frame_refs)
+    ]
+    result = _export_frame_targets(conn, targets=targets)
+    result["frames"] = [
+        {**frame, "visual_check_path": _workspace_relative_path(Path(str(frame["output_path"])))}
+        for frame in result["frames"]
+    ]
+    return result
 
 
 def _write_contact_sheet(frame_paths: list[Path], output_path: Path, *, columns: int = 3, tile_width: int = 480) -> dict[str, object]:

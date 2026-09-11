@@ -4,9 +4,12 @@ import {readFileSync} from 'node:fs';
 import {resolve, join} from 'node:path';
 import {SdkLiveInspectionError} from '../bridge/services/sdk-live-inspection-service.js';
 const nativeRoot = resolve(import.meta.dirname, '../../native');
+const localPython = join(nativeRoot, '../.venv/bin/python');
 const maximumBytes = 16 * 1024 * 1024;
 
-export function createNativeInspectionOwner({python = 'python3', transport} = {}) {
+export function resolveNativeInspectionPython() { return localPython; }
+
+export function createNativeInspectionOwner({python = localPython, transport} = {}) {
   if (!['studio_external', 'embedded_free'].includes(transport)) throw new TypeError('Select the exact native transport.');
   function identity() {
     const inventory = JSON.parse(readFileSync(join(nativeRoot, 'SOURCE_INVENTORY.json'), 'utf8'));

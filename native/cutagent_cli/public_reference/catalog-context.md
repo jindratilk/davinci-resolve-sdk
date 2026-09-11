@@ -1,0 +1,919 @@
+# CutAgent CLI Command Catalog
+
+All 829 public CutAgent CLI commands, grouped by domain.
+Every command listed here exists and runs as `cutagent <command> ...`.
+
+## asset
+- asset artifact-index: List recent exports.
+- asset resolve: Locate an asset file.
+
+## audio
+- audio beat-detect: Detect musical beats and phrase candidates.
+- audio duck: Apply dialogue ducking.
+- audio info: Read audio processing settings.
+- audio probe-subframe: Probe whether the connected DaVinci Resolve honors fractional (sub-frame) audio placement.
+- audio reverb: Prepare reverb audio processing.
+- audio voice-generate: Generate and download an ElevenLabs voiceover through CutAgent usage.
+- audio voice-list: List saved and default voices and search the public ElevenLabs Voice Library.
+- audio voice-place: Import one generated voice asset and place that exact media pool item.
+- audio waveform-offset: Measure the precise audio offset (sub-frame + drift) of target relative to reference.
+
+## auto-edit
+- auto-edit multicam: Create a multicam edit.
+- auto-edit podcast-edit: Create a podcast multicam edit from a transcript.
+- auto-edit podcast-multicam: Create a podcast multicam edit.
+- auto-edit run: Create an automatic edit.
+- auto-edit silence-cut: Create a new timeline with silent segments removed.
+
+## batch
+- batch run: Apply an edit plan.
+- batch validate: Check an edit plan.
+
+## bulk
+- bulk clip-color-set: Set clip colors in bulk.
+- bulk disable: Disable clips in bulk.
+- bulk enable: Enable clips in bulk.
+- bulk lut-set: Apply a LUT to clips in bulk.
+- bulk property-set: Change clip properties in bulk.
+- bulk select: Preview clips matched by a bulk selector.
+
+## burnin
+- burnin load: Load a burn-in preset.
+- burnin preset export: Export a burn-in preset.
+- burnin preset import: Import a burn-in preset.
+
+## capabilities
+- capabilities: Check available DaVinci Resolve features.
+
+## clip
+- clip audio-eq: Apply audio EQ to a linked clip.
+- clip audio-gain: Set linked audio gain.
+- clip audio-normalize: Normalize linked audio level.
+- clip audio-pan: Set linked audio pan.
+- clip audio-pitch: Set linked audio pitch.
+- clip burnin load: Load a burn-in preset on a timeline item.
+- clip cache: Check clip cache state.
+- clip cache-set: Update clip cache state.
+- clip cache-state: Check clip cache state.
+- clip color: Check clip color.
+- clip composite: Check clip composite settings.
+- clip current: Check the clip under the playhead.
+- clip disable: Disable a clip.
+- clip dynamic-zoom: Apply dynamic zoom through Fusion keyframes.
+- clip enable: Enable a clip.
+- clip fade-in: Apply fade-ins to linked clips.
+- clip flag: Manage clip flags.
+- clip freeze: Freeze linked clips.
+- clip fusion add: Add a new Fusion composition to a clip.
+- clip fusion by-name: Find a Fusion composition.
+- clip fusion delete: Delete a Fusion composition.
+- clip fusion export: Export a Fusion composition as template file.
+- clip fusion import: Import a Fusion composition template file onto a clip.
+- clip fusion list: List Fusion compositions on a clip.
+- clip fusion load: Switch to a Fusion composition by name.
+- clip fusion tool-get: Read a Fusion node value.
+- clip fusion tool-set: Set a Fusion node value.
+- clip fusion tools: List Fusion nodes.
+- clip info: Check detailed clip info.
+- clip keyframe add: Add a keyframe on a timeline item property.
+- clip keyframe delete: Delete a keyframe.
+- clip keyframe get: Read keyframes.
+- clip keyframe set-interpolation: Set interpolation type for a keyframe.
+- clip link: Link timeline clips.
+- clip linked list: List items linked to a timeline item.
+- clip list: List clips on a track.
+- clip magic-mask: Check Magic Mask availability.
+- clip marker add: Add a marker to a clip.
+- clip marker custom-data: Set custom data on a clip marker.
+- clip marker delete: Delete a marker from a clip by frame.
+- clip marker delete-custom: Delete a marker by custom data.
+- clip marker get-custom: Read a marker by custom data.
+- clip marker list: List markers on a clip.
+- clip offset: Check left and right offset of a clip.
+- clip properties: Check clip properties.
+- clip rename: Rename a timeline clip.
+- clip reset-node-colors: Reset all node colors on a timeline item.
+- clip reverse: Reverse linked clips.
+- clip smart-reframe: Run Smart Reframe with phase progress and terminal rendered evidence.
+- clip source-audio-mapping: Check source audio channel mapping for a timeline item.
+- clip source-range: Check source range information for a timeline item.
+- clip speed: Check clip speed.
+- clip speed-ramp: Apply a speed ramp across an adjacent cut.
+- clip stabilize: Run clip stabilization.
+- clip stereo-values: Read stereo 3D values from a timeline item.
+- clip take add: Add a media pool clip as a take on a timeline clip.
+- clip take delete: Delete a take from a timeline clip.
+- clip take finalize: Finalize takes on a clip.
+- clip take list: List takes on a clip.
+- clip take select: Select a take by index.
+- clip track-info: Check the track details for a timeline item.
+- clip transform: Check clip transform properties.
+- clip unlink: Unlink a clip.
+- clip update-sidecar: Update sidecar files for a timeline item.
+- clip voice-isolation: Check clip voice isolation.
+
+## codec
+- codec build: Build a codec add-on project.
+- codec install: Install a codec add-on.
+- codec list-installed: List installed codec add-ons.
+- codec package: Package a codec add-on.
+- codec sample copy: Copy a codec example.
+- codec scaffold: Prepare a codec add-on project.
+- codec uninstall: Remove a codec add-on.
+- codec validate: Check a codec add-on.
+
+## color
+- color arri-cdl-lut: Apply ARRI CDL and LUT color adjustments.
+- color auto-color: Generate auto-color correction.
+- color cdl: Set CDL values through DaVinci Resolve with rendered-frame proof.
+- color comp doctor: Check a Fusion color composition.
+- color comp export: Export a Fusion color composition.
+- color comp flatten: Flatten a Fusion color composition.
+- color comp repair: Repair a Fusion color composition.
+- color curves: Generate LUT from RGB curves.
+- color export-lut: Export current clip grade as LUT from Color page context.
+- color fx apply: Apply a Fusion grading effect.
+- color fx list: List Fusion grading effects.
+- color gallery album create: Create a gallery still album.
+- color gallery album current: Read current gallery album.
+- color gallery album list: List gallery still albums.
+- color gallery album rename: Rename a gallery still album.
+- color gallery album switch: Switch current gallery album.
+- color gallery still apply: Apply still grade to a clip.
+- color gallery still delete: Delete one still from selected album.
+- color gallery still export: Export one still from selected album.
+- color gallery still grab: Grab a still from the current timeline frame.
+- color gallery still import: Import still(s) into selected album.
+- color gallery still label: Check a still label.
+- color gallery still list: List stills in selected album.
+- color grade-apply: Apply a grade from a grade file.
+- color grade-copy: Copy grade from one clip to others.
+- color graph inspect: Inspect clip-attached Fusion grading graph state.
+- color graph normalize: Clean up the grading node graph.
+- color graph validate: Validate the Fusion grading graph checks.
+- color group add: Add a color group.
+- color group assign: Assign a clip to a color group.
+- color group clips: List timeline clips assigned to a color group.
+- color group delete: Delete a color group.
+- color group graph: Inspect a color group's pre and post clip node graph.
+- color group list: List project color groups.
+- color group remove: Remove a clip from its color group.
+- color group rename: Rename a color group.
+- color huesat: Generate LUT from hue and saturation modifications.
+- color inspect: Inspect color state plus clip-attached Fusion grading state.
+- color lut: Check a LUT on a color node.
+- color lut-refresh: Refresh the project LUT list.
+- color mask inspect: Inspect the active mask chain and orphaned mask.
+- color node cache: Check node cache mode.
+- color node disable: Disable a color node.
+- color node enable: Enable a color node.
+- color node graph: Read node-graph summary with labels, LUTs, nodes, and cache modes.
+- color node label-get: Read label for a color node.
+- color node label-set: Runs the public `color node label-set` CutAgent command.
+- color node list: List color nodes for a clip.
+- color node lut-get: Read LUT path from a color node.
+- color node lut-set: Set LUT on a color node.
+- color node reset: Reset all grades on node graph.
+- color node tools: List nodes and effects present inside a color node.
+- color nodes: Check color node graph info.
+- color page alpha-output-connect: Connect a Color node to Alpha Output.
+- color page auto-color-ai: Apply DaVinci Resolve Auto Color.
+- color page bleach-bypass-intensity-set: Runs the public `color page bleach-bypass-intensity-set` CutAgent command.
+- color page bleach-bypass-set: Runs the public `color page bleach-bypass-set` CutAgent command.
+- color page cat-set: Apply Chromatic Adaptation Transform controls through a Fusion CAT node.
+- color page color-slice-set: Set Color Page ColorSlice vector controls through the interface.
+- color page cst-set: Update DaVinci Resolve effects Color Space Transform using project and rendered-frame proof.
+- color page curve-points-set: Set Color Page Custom Curves control points using project and rendered-frame proof.
+- color page curve-set: Set Color Page Custom Curves endpoint values using project and rendered-frame proof.
+- color page curve-spline-set: Runs the public `color page curve-spline-set` CutAgent command.
+- color page dctl-apply: Runs the public `color page dctl-apply` CutAgent command.
+- color page dctl-remove: Runs the public `color page dctl-remove` CutAgent command.
+- color page false-color-read: Analyze Color Page exposure as false-color-style IRE and luma bands.
+- color page hdr-detail-set: Runs the public `color page hdr-detail-set` CutAgent command.
+- color page hdr-global-set: Set Color Page HDR Global exposure and saturation using project and rendered-frame proof.
+- color page hdr-zone-set: Runs the public `color page hdr-zone-set` CutAgent command.
+- color page hsv-node-set: Runs the public `color page hsv-node-set` CutAgent command.
+- color page hue-curve-set: Set Color Page hue curve point(s) using project and rendered-frame proof.
+- color page hue-curve-spline-set: Runs the public `color page hue-curve-spline-set` CutAgent command.
+- color page key-output-set: Set Color Page Key Output Gain using project.
+- color page layer-mixer-set: Runs the public `color page layer-mixer-set` CutAgent command.
+- color page lut-library-import: Import LUTs into DaVinci Resolve LUT library and refresh the LUT list.
+- color page magic-mask: Check Color Page Magic Mask availability.
+- color page magic-mask-draw-stroke: Draw a DaVinci Resolve Color Page Magic Mask stroke.
+- color page magic-mask-refine: Draw a DaVinci Resolve Color Page Magic Mask refinement stroke.
+- color page node-add: Add a Color Page node using project.
+- color page node-add-topology: Runs the public `color page node-add-topology` CutAgent command.
+- color page node-cleanup: Remove empty Color Page nodes.
+- color page node-cleanup-general: Remove empty Color Page nodes.
+- color page ofx-glow-set: Apply a supported Color Page finishing glow through the Fusion SoftGlow.
+- color page param-delete: Runs the public `color page param-delete` CutAgent command.
+- color page power-window-circle: Update a Color Page Circle Power Window using project readback.
+- color page power-window-circle-detail: Runs the public `color page power-window-circle-detail` CutAgent command.
+- color page power-window-curve: Update a Color Page Curve Power Window using project readback.
+- color page power-window-gradient: Update a Color Page Gradient Power Window using project readback.
+- color page power-window-gradient-transform: Runs the public `color page power-window-gradient-transform` CutAgent command.
+- color page power-window-gui-set: Create and select and transform a Color Page Power Window through the custom edit-owned interface.
+- color page power-window-linear: Update a Color Page Linear Power Window using project readback.
+- color page power-window-overlay-transform: Set preset-backed Power Window overlay geometry by explicit values.
+- color page power-window-polygon: Update a Color Page Polygon Power Window using project readback.
+- color page power-window-rectangle: Update DaVinci Resolve rectangular Linear Power Window using project readback.
+- color page power-window-track: Track a DaVinci Resolve Color Page Power Window.
+- color page primary-gui-set: Set selected-node Primaries controls through the custom edit-owned interface.
+- color page primary-set: Set Color Page primary controls using project readback (Disk projects only).
+- color page qualifier-gui-hsl-set: Set Color Page Qualifier HSL controls through a proof-gated interface.
+- color page qualifier-gui-matte-set: Set Color Page Qualifier matte and refinement controls through a proof-gated interface.
+- color page qualifier-matte-refine: Refine a DaVinci Resolve Color Page HSL qualifier matte.
+- color page qualifier-panel-probe: Inspect Color Page Qualifier panel controls through the custom edit-owned interface.
+- color page qualifier-sample: Sample Color Page viewer color values.
+- color page read: Read color grade params from the project (Lift and Gamma and Gain and Saturation).
+- color page resolvefx-add: Runs the public `color page resolvefx-add` CutAgent command.
+- color page resolvefx-list: List installed DaVinci Resolve effects extensions from the live Fusion registry.
+- color page resolvefx-param-discover: Read DaVinci Resolve effect controls.
+- color page resolvefx-param-list: List decoded DaVinci Resolve effects OFX options on a clip Color Page node.
+- color page resolvefx-param-set: Set a DaVinci Resolve effects OFX option on a clip Color Page node.
+- color page resolvefx-remove: Runs the public `color page resolvefx-remove` CutAgent command.
+- color page rgb-mixer-set: Runs the public `color page rgb-mixer-set` CutAgent command.
+- color page sat-curve-set: Set a Color Page saturation curve point using project and rendered-frame proof.
+- color page sat-curve-spline-set: Runs the public `color page sat-curve-spline-set` CutAgent command.
+- color page scope-read: Read waveform and vectorscope-style metrics from the current Color Page frame.
+- color page scope-set: Set Color Page Scopes panel controls through the interface.
+- color page sharpen-set: Apply a supported Color Page finishing sharpen through the Fusion UnsharpMask.
+- color page shot-match-analyze: Analyze reference and target Color Page frames for exposure and RGB shot matching.
+- color page shot-match-apply: Apply a conservative RGB gain shot-match correction from reference and target frame analysis.
+- color page sky-isolation: Recover an overexposed sky through a proof-gated Color Page interface local custom edit.
+- color page snapshot: Capture all color grade data from a project checkpoint for analysis.
+- color page softening-set: Apply a supported Color Page finishing softening pass through the Fusion Blur.
+- color page split-tone-set: Runs the public `color page split-tone-set` CutAgent command.
+- color page still-match: Run Gallery still comparison through the custom edit-owned interface.
+- color page viewer-before-after: Export before and after Color Page frames and return pixel-diff proof metrics.
+- color page warper-set: Runs the public `color page warper-set` CutAgent command.
+- color page wheel-set: Set color wheel values using project readback (Disk projects only).
+- color page white-balance-picker: Balance clip color from a sampled neutral patch.
+- color power-grade album create: Create a PowerGrade album.
+- color power-grade apply: Check PowerGrade library apply availability.
+- color power-grade list: List power grades.
+- color power-grade template-apply: Runs the public `color power-grade template-apply` CutAgent command.
+- color primary get: Read primary Fusion color-corrector state from the clip.
+- color primary set: Update a clip-attached Fusion ColorCorrector primary grade.
+- color qualifier attach: Attach a qualifier into the active mask chain.
+- color qualifier chroma: Add a chroma qualifier using Fusion ChromaKeyer.
+- color qualifier detach: Detach a qualifier from the active mask chain.
+- color qualifier list: List clip-attached qualifier and keyer nodes.
+- color reset-fusion: Remove Fusion grading and restore a clean Fusion flow.
+- color secondary create: Compose a secondary grade from window, qualifier, and optional tracker.
+- color secondary isolate-green-screen: Create a green-screen isolation secondary.
+- color secondary subject-isolation: Create a subject-isolation stack using ellipse window plus tracker.
+- color secondary tracked-window: Create a tracked window secondary.
+- color source-grade apply-cdl: Apply a CDL to one shared remote and source grade and proof multiple same-source timeline instances.
+- color source-grade plan: Plan whether color grading should use remote and source scope and local timeline scope.
+- color source-grade prepare-remote: Create and load one shared remote grade version for all timeline cuts from the same source media.
+- color still grab-all: Grab stills for all clips on the current timeline.
+- color thumbnail: Export thumbnail of current clip under playhead.
+- color tracker add: Add a Fusion tracker to the clip grading comp.
+- color tracker attach-qualifier: Ensure a qualifier feeds the tracked mask chain.
+- color tracker attach-window: Ensure a window feeds the tracked mask chain.
+- color tracker list: List clip-attached Fusion trackers.
+- color tracker set-target: Update a tracker target center.
+- color tracker track-forward: Runs the public `color tracker track-forward` CutAgent command.
+- color tracker track-reverse: Trigger tracker reverse analysis.
+- color version activate: Activate a color version.
+- color version add: Add a new color version.
+- color version delete: Delete a color version.
+- color version duplicate: Duplicate a color version.
+- color version list: List color versions.
+- color version load: Load a color version.
+- color version rollback: Roll back to a color version.
+- color wheels set: Runs the public `color wheels set` CutAgent command.
+- color window attach: Attach a window into the active mask chain.
+- color window detach: Detach a window from the active mask chain.
+- color window ellipse: Add an elliptical grading window using Fusion mask.
+- color window list: List clip-attached Fusion windows and masks.
+- color window polygon: Add a polygon grading window using Fusion mask.
+- color window rectangle: Add a rectangular grading window using Fusion mask.
+- color window reorder: Reorder active windows inside the mask stack.
+
+## connect
+- connect: Test the DaVinci Resolve connection.
+
+## context
+- context: Check the current DaVinci Resolve editing context.
+
+## dctl
+- dctl apply: Apply a DCTL as a node LUT to a timeline clip.
+- dctl encrypt: Create an encrypted DCTL artifact.
+- dctl install: Install a DCTL into a user DaVinci Resolve support folder.
+- dctl list: List DCTL files in user and folders.
+- dctl scaffold: Prepare a DCTL file.
+- dctl validate: Check a DCTL file.
+- dctl validate-source: Read DCTL diagnostics from DaVinci Resolve Studio 21.1+.
+
+## developer
+- developer capability audit: Check feature coverage.
+- developer capability diff: Compare feature coverage.
+- developer docs list: List local DaVinci Resolve documentation.
+- developer docs open: Open local DaVinci Resolve documentation.
+- developer doctor: Check local DaVinci Resolve resources.
+- developer examples copy: Copy a DaVinci Resolve example.
+- developer examples list: List DaVinci Resolve examples.
+- developer sdk doctor: Check local DaVinci Resolve resources.
+- developer sdk-doctor: Check local DaVinci Resolve resources.
+
+## doctor
+- doctor: Check DaVinci Resolve readiness.
+
+## edit
+- edit auto-subtitle: Create subtitles from timeline audio.
+- edit blade: Add blade cuts at the playhead.
+- edit camera-pip: Create a picture-in-picture camera layout.
+- edit delete-through-edit: Delete a through edit by merging adjacent same-source clip segments.
+- edit from-edl: Import and assembled a timeline from an EDL.
+- edit fx add: Add an effect to a clip.
+- edit insert: Place a clip into an empty range without ripple and verify exact readback.
+- edit overwrite: Overwrite clips at the timeline position.
+- edit remove: Remove the clip at a given position.
+- edit remove-range: Remove all clips in a time range.
+- edit ripple-delete: Remove a timeline segment and closed the gap.
+- edit ripple-delete-selected: Remove the selected clip and closed the gap.
+- edit scene-detect: Run DaVinci Resolve scene detection on the current timeline.
+- edit slide-selected: Slide the selected clip in DaVinci Resolve.
+- edit slip-selected: Slip the selected clip in DaVinci Resolve.
+- edit social-crop: Apply a social crop and reframe.
+- edit split: Add blade cuts at the playhead.
+- edit transition add: Add a transition.
+- edit transition batch: Add transitions after checking targets.
+- edit trim: Trim the head and tail of a clip.
+
+## embedded
+- embedded install: Install CutAgent support in DaVinci Resolve.
+- embedded ping: Check the CutAgent connection to DaVinci Resolve.
+- embedded start-server: Start CutAgent support for DaVinci Resolve.
+- embedded status: Check CutAgent support in DaVinci Resolve.
+- embedded uninstall: Remove CutAgent support from DaVinci Resolve.
+
+## fairlight
+- fairlight add: Add an audio track.
+- fairlight adr cue-list: Check Fairlight ADR cue list availability.
+- fairlight adr info: Runs the public `fairlight adr info` CutAgent command.
+- fairlight adr record: Record the selected Fairlight ADR cue.
+- fairlight ai dialogue-leveler: Set AI Dialogue Leveler parameters.
+- fairlight ai music-remixer: Set AI Music Remixer stem levels.
+- fairlight ai read: Read all AI audio feature settings from the current clip.
+- fairlight ai voice-isolation: Set AI Voice Isolation amount (0-100).
+- fairlight api-notes: Check Fairlight feature availability.
+- fairlight audio-gain batch: Adjust gain on multiple audio clips.
+- fairlight audio-pan batch: Apply one audio pan to many audio items.
+- fairlight automation list: Read audio-clip volume envelopes and diagnostic mixer tokens.
+- fairlight automation write: Wrote an audio-clip volume-envelope point.
+- fairlight bounce mix-to-track: Bounce the main Fairlight mix to an audio track.
+- fairlight bounce track: Bounce a Fairlight audio track to another audio track.
+- fairlight bus assign: Verify Fairlight bus assignment through the output.
+- fairlight bus level: Check and update main-output sequence gain.
+- fairlight bus list: Runs the public `fairlight bus list` CutAgent command.
+- fairlight channel-map clip: Read source audio channel mapping for a timeline item.
+- fairlight channel-map media: Read audio channel mapping for a media pool item.
+- fairlight channel-map set: Runs the public `fairlight channel-map set` CutAgent command.
+- fairlight clip delete: Delete Fairlight audio clips without deleting tracks and rippling the timeline.
+- fairlight clip info: Check detailed TimelineItem metadata for a Fairlight timeline clip.
+- fairlight clip link: Link two and more Fairlight timeline clips through the DaVinci Resolve.
+- fairlight clip linked list: List timeline items linked to a Fairlight timeline clip through the DaVinci Resolve.
+- fairlight clip move: Move and nudge a Fairlight audio item.
+- fairlight clip nudge: Adjust Fairlight audio clip timing.
+- fairlight clip slip: Update Fairlight audio source timing.
+- fairlight clip source-range: Check source range information for a Fairlight timeline clip.
+- fairlight clip split: Split Fairlight audio timeline items through the blade.
+- fairlight clip track-info: Check track type and index for a Fairlight timeline clip.
+- fairlight clip trim: Runs the public `fairlight clip trim` CutAgent command.
+- fairlight clip unlink: Unlink a Fairlight timeline clip through the DaVinci Resolve.
+- fairlight crossfade batch: Apply crossfades to adjacent audio edit points.
+- fairlight delete: Delete an audio track.
+- fairlight dynamics disable: Disable Fairlight dynamics.
+- fairlight dynamics enable: Enable Fairlight dynamics.
+- fairlight dynamics read: Read current dynamics parameters.
+- fairlight dynamics set: Set individual dynamics parameters.
+- fairlight effect add: Runs the public `fairlight effect add` CutAgent command.
+- fairlight effect catalog: Runs the public `fairlight effect catalog` CutAgent command.
+- fairlight effect list: List Fairlight clip FX.
+- fairlight effect params: Read Fairlight clip FX parameters.
+- fairlight effect plugin-catalog: List available Fairlight AU and VST3 XML entries and built-in BMD Fairlight FX symbols.
+- fairlight effect remove: Runs the public `fairlight effect remove` CutAgent command.
+- fairlight effect set-param: Set Fairlight clip FX parameter.
+- fairlight effect slot-scan: Check Fairlight effect slot candidates.
+- fairlight elastic enable: Runs the public `fairlight elastic enable` CutAgent command.
+- fairlight elastic info: Read stored speed and retime profile candidates for Fairlight Elastic Wave research.
+- fairlight elastic keyframe: Runs the public `fairlight elastic keyframe` CutAgent command.
+- fairlight ensure-stereo-tracks: Ensure enough stereo audio tracks.
+- fairlight ensure-tracks: Ensure enough audio tracks.
+- fairlight eq read: Read current EQ settings from audio clip.
+- fairlight eq set: Set multi-band EQ from scratch.
+- fairlight export audio: Export the current timeline audio mix through DaVinci Resolve render DaVinci Resolve.
+- fairlight external-process list: List configured Fairlight external audio processes from DaVinci Resolve Fairlight XML config.
+- fairlight external-process run: Check Fairlight external audio process availability.
+- fairlight fade-curve: Read and edit an audio fade curve without changing either fade duration.
+- fairlight fade-in batch: Apply audio fade-in to many audio items.
+- fairlight fade-out batch: Apply audio fade-out to many audio items.
+- fairlight group assign: Check Fairlight track group availability.
+- fairlight group list: Runs the public `fairlight group list` CutAgent command.
+- fairlight index clips: List Fairlight Index audio clips for the current timeline.
+- fairlight index markers: List Fairlight Index timeline markers.
+- fairlight index tracks: List Fairlight Index audio tracks for the current timeline.
+- fairlight info: Check audio track details.
+- fairlight insert: Insert audio at the playhead on the current Fairlight track.
+- fairlight io info: Read stored Fairlight patch I and O setup rows from the DaVinci Resolve project.
+- fairlight io patch: Check Fairlight patch I and O availability.
+- fairlight item-source patch: Update audio source timing.
+- fairlight items: List audio clips on a track.
+- fairlight lock: Lock an audio track.
+- fairlight loudness analyze: Check Fairlight loudness analysis availability.
+- fairlight loudness info: Runs the public `fairlight loudness info` CutAgent command.
+- fairlight loudness normalize: Runs the public `fairlight loudness normalize` CutAgent command.
+- fairlight mixer fader: Set and read a Fairlight audio-track fader and main-output gain context.
+- fairlight mixer meter: Check Fairlight mixer metering availability.
+- fairlight mixer meter-settings: Read stored Fairlight audio-meter setup rows from the DaVinci Resolve project.
+- fairlight mixer pan: Set and read a Fairlight audio-track mixer pan in DaVinci Resolve.
+- fairlight mixer read: Read a Fairlight audio-track and main-output mixer context from the project.
+- fairlight monitor info: Read stored Fairlight monitor and audio setup rows from the DaVinci Resolve project.
+- fairlight monitor level: Check Fairlight monitor level availability.
+- fairlight monitor mute: Check Fairlight monitor mute availability.
+- fairlight mute: Mute an audio track.
+- fairlight preset apply: Apply a Fairlight preset to the current timeline.
+- fairlight preset list: List available Fairlight presets.
+- fairlight record arm: Set Fairlight audio track record arm in DaVinci Resolve.
+- fairlight record info: Check Fairlight record setup.
+- fairlight record start: Check Fairlight audio recording start availability.
+- fairlight record stop: Check Fairlight audio recording stop availability.
+- fairlight rename: Rename an audio track.
+- fairlight send list: Runs the public `fairlight send list` CutAgent command.
+- fairlight send set: Check Fairlight send availability.
+- fairlight solo: Solo an audio track by disabling all other audio tracks.
+- fairlight solo-restore: Restore audio tracks after solo mode.
+- fairlight sound-library audition: Audition a Fairlight Sound Library result.
+- fairlight sound-library delete: Remove a Fairlight Sound Library entry.
+- fairlight sound-library index-file: Add a Fairlight Sound Library file.
+- fairlight sound-library index-folder: Add a Fairlight Sound Library folder.
+- fairlight sound-library insert: Insert one project-indexed Sound Library file on the current Fairlight track.
+- fairlight sound-library list: Runs the public `fairlight sound-library list` CutAgent command.
+- fairlight sound-library preview: Preview a Fairlight Sound Library result.
+- fairlight sound-library search: Runs the public `fairlight sound-library search` CutAgent command.
+- fairlight sound-library source-list: List indexed Fairlight Sound Library source and container paths.
+- fairlight sound-library source-rebuild: Delete and rebuild one Fairlight Sound Library source folder in the selected project index.
+- fairlight sound-library source-remove: Remove all Fairlight Sound Library project index rows for one indexed source path.
+- fairlight track duplicate: Duplicate Fairlight track without processing.
+- fairlight track folder: Create a Fairlight folder track.
+- fairlight track height: Read Fairlight track height state, and report resize availability.
+- fairlight track hide: Hide a Fairlight audio track.
+- fairlight track input-monitor: Check Fairlight input monitoring availability.
+- fairlight track show: Show a Fairlight audio track.
+- fairlight track-color: Set an audio track color.
+- fairlight track-format set: Set an existing Fairlight audio track format in DaVinci Resolve.
+- fairlight track-order move: Move an existing Fairlight audio track in DaVinci Resolve.
+- fairlight tracks: List audio tracks.
+- fairlight transition add: Add a Fairlight audio transition object.
+- fairlight unlock: Unlock an audio track.
+- fairlight unmute: Unmute an audio track.
+- fairlight vca assign: Check Fairlight VCA availability.
+- fairlight vca list: Runs the public `fairlight vca list` CutAgent command.
+- fairlight voice-isolation get: Read voice isolation state for an audio track.
+- fairlight voice-isolation set: Set voice isolation state for an audio track.
+- fairlight waveform info: Read Fairlight audio waveform view state from the timeline project.
+- fairlight waveform repair-click: Check Fairlight waveform and sample repair availability.
+
+## fuse
+- fuse examples install: Install a Fuse example.
+- fuse examples list: List Fuse examples.
+- fuse install: Install a Fuse file into the user DaVinci Resolve support folder.
+- fuse list: List installed Fuse files.
+- fuse scaffold: Prepare a Fuse file.
+- fuse uninstall: Uninstall a Fuse file.
+- fuse validate: Validate a Fuse file.
+
+## fusion
+- fusion apply: Apply a template file to a clip using Fusion import.
+- fusion comp current: Read the current Fusion composition.
+- fusion comp delete: Delete a Fusion composition from the current and named timeline clip.
+- fusion comp play: Play the composition.
+- fusion comp range: Set composition render range.
+- fusion comp rename: Rename a Fusion composition on the current and named timeline clip.
+- fusion comp render: Render the composition.
+- fusion comp stop: Stop playback.
+- fusion effect blur: Add a blur effect inline.
+- fusion effect color-correct: Add a ColorCorrector effect inline.
+- fusion effect glow: Add a soft glow effect inline.
+- fusion effect sharpen: Add a sharpen (unsharp mask) effect inline.
+- fusion effect transform: Add a transform effect inline.
+- fusion generate: Generate a Fusion template.
+- fusion image batch: Update images in Fusion templates.
+- fusion image set: Update a Fusion image source.
+- fusion insert-setting: Insert a Fusion composition from a template.
+- fusion insert-settings batch: Insert multiple Fusion and Text+ clips from templates.
+- fusion keyer chroma: Add a chroma keyer inline.
+- fusion keyframe add: Add a Fusion keyframe.
+- fusion keyframe clear: Clear all keyframes for an input (convert to constant value).
+- fusion keyframe delete: Remove one Fusion spline keyframe while preserving the remaining animation.
+- fusion keyframe list: List keyframes for an input.
+- fusion keyframe set: Set a keyframe.
+- fusion macro apply: Apply a Fusion macro and template to a clip.
+- fusion mask ellipse: Add an ellipse mask.
+- fusion mask polygon: Add a polygon mask.
+- fusion mask rectangle: Add a rectangle mask.
+- fusion nested-text batch: Update nested Fusion text templates.
+- fusion nested-text update: Update nested Fusion text.
+- fusion node add: Add a Fusion node.
+- fusion node connect: Connect Fusion nodes.
+- fusion node delete: Delete a Fusion node.
+- fusion node disconnect: Disconnect a Fusion node input.
+- fusion preview: Preview styled Fusion text.
+- fusion setting center-to-polypath: Convert normalized Center coordinates to PolyPath point coordinates.
+- fusion setting inspect: Inspect a Fusion template graph.
+- fusion setting polypath-to-center: Convert PolyPath point coordinates to normalized Center coordinates.
+- fusion setting summary: Summarize a Fusion template graph.
+- fusion setting validate: Validate a Fusion template.
+- fusion template apply: Apply a Fusion template to a clip.
+- fusion template assets add: Add an asset beside a Fusion template.
+- fusion template assets list: List template-adjacent assets.
+- fusion template dir: Check and set the template directory.
+- fusion template icon set: Set a Fusion template icon.
+- fusion template install: Install a Fusion template into the user DaVinci Resolve templates folder.
+- fusion template list: List Fusion templates.
+- fusion template package-drfx: Package a Fusion template folder.
+- fusion template scaffold: Prepare a Fusion template.
+- fusion template show: Check template contents.
+- fusion template uninstall: Remove an installed Fusion template.
+- fusion template unpack-drfx: Unpack a Fusion template package.
+- fusion template validate: Validate a Fusion template file.
+- fusion text batch: Update text in Fusion templates.
+- fusion text set: Update Fusion text.
+- fusion tool active: Check the active Fusion node.
+- fusion tool add: Add a Fusion node.
+- fusion tool attrs: Read Fusion node attributes.
+- fusion tool connect: Connect Fusion nodes.
+- fusion tool copy: Copy Fusion nodes.
+- fusion tool delete: Delete a Fusion node.
+- fusion tool disconnect: Disconnect a Fusion node control.
+- fusion tool get: Read a Fusion node control.
+- fusion tool inputs: List Fusion node controls.
+- fusion tool list: List Fusion nodes.
+- fusion tool outputs: List Fusion node outputs.
+- fusion tool paste: Paste Fusion nodes.
+- fusion tool registry: List available Fusion node creation IDs from the live registry.
+- fusion tool set: Set a Fusion node control.
+- fusion tracker add: Add a Fusion tracker.
+
+## info
+- info: Read the DaVinci Resolve setup.
+
+## launch
+- launch: Launch DaVinci Resolve.
+
+## layout
+- layout delete: Delete a layout preset.
+- layout export: Export a layout preset to file.
+- layout import: Import a layout preset from file.
+- layout load: Load a layout preset.
+- layout save: Save the current layout as a preset.
+- layout update: Update the current layout preset.
+
+## lut
+- lut convert: Check LUT format support.
+- lut generate identity: Generate an identity.cube LUT.
+- lut inspect: Inspect a LUT file.
+- lut install: Install a LUT into the user DaVinci Resolve LUT folder.
+- lut list: List LUT files.
+- lut remove: Remove a user-installed LUT.
+- lut validate: Validate a LUT file.
+
+## lut-refresh
+- lut-refresh: Refresh the DaVinci Resolve LUT list.
+
+## media
+- media append: Append media to the timeline.
+- media append batch: Append multiple media pool items after checking every item.
+- media audio-mapping: Check source audio mapping for a media pool item.
+- media clear-transcription: Clear transcription for a clip and folder.
+- media color clear: Clear clip color.
+- media color set: Set clip color.
+- media create-timeline: Create a timeline from clips.
+- media delete: Delete a clip from the media pool.
+- media duplicate: Duplicate a media pool clip.
+- media extract-template: Extract text and image metadata from a media pool template clip.
+- media flag add: Add a flag to a clip.
+- media flag clear: Clear flags from a clip.
+- media folder export-drb: Export a media pool folder file.
+- media folder import-drb: Import a media pool folder file.
+- media folders create: Create a folder (including nested).
+- media folders delete: Delete a media pool folder.
+- media folders list: List subfolders in the current folder.
+- media folders move: Move a media pool folder.
+- media folders open: Navigate to a folder.
+- media folders root: Open to root folder.
+- media folders tree: Check the complete folder tree.
+- media growing-file monitor: Enable growing-file monitoring for a clip.
+- media import: Import media into the media pool.
+- media info: Check detailed clip information.
+- media list: List clips in the current media pool folder.
+- media mark clear: Clear mark in and out points for a media pool item.
+- media mark get: Check mark in and out points for a media pool item.
+- media mark set: Set mark in and out points for a media pool item.
+- media marker add: Add a marker to a clip.
+- media marker delete: Delete marker(s) from a clip.
+- media marker list: List markers on a clip.
+- media matte delete: Delete mattes from a media pool clip.
+- media matte list: List mattes attached to a media pool clip.
+- media metadata: Check clip metadata.
+- media metadata export: Export media pool metadata to a file.
+- media move: Move a clip to a different folder.
+- media property-set: Set a clip property.
+- media proxy: Manage media pool proxy media for a clip.
+- media proxy link-fullres: Link full-resolution media for a clip.
+- media relink: Relink clip to a media path.
+- media rename: Rename a media pool item.
+- media replace: Replace a media pool clip's source media.
+- media replace-preserve-subclip: Replace a clip while preserving subclip metadata.
+- media search: Search for clips in the entire media pool.
+- media selected list: List selected media pool clips.
+- media selected set: Select a media pool clip.
+- media stereo-create: Create a stereo clip from left and right media pool items.
+- media sync-audio: Sync selected media pool clips.
+- media third-party-metadata get: Read third-party metadata from a media pool item.
+- media third-party-metadata set: Set one third-party metadata key on a media pool item.
+- media third-party-metadata set-json: Update third-party metadata.
+- media timeline-matte list: List timeline mattes in a media pool folder.
+- media transcode: Transcode media pool clip.
+- media transcribe: Transcribe clip audio.
+- media transcription: Read existing DaVinci Resolve transcription for one media pool clip.
+- media unlink: Unlink clip from source media.
+
+## multicam
+- multicam angle remove: Remove a multicam angle.
+- multicam angle rename: Rename a multicam angle.
+- multicam angle set-enabled: Change whether a multicam angle is enabled.
+- multicam audio-activity calibrate: Recommend audio-activity switching thresholds without mutating DaVinci Resolve.
+- multicam convert: Convert tracks into a multicam clip.
+- multicam create: Create a multicam clip in the media pool.
+- multicam flatten: Flatten multicam clips on the timeline.
+- multicam inspect: Inspect a multicam clip and its the current timeline state.
+- multicam match-frame: Match a multicam frame to its source.
+- multicam recover-timing: Recover multicam timing.
+- multicam reorder-angles: Reorder multicam angles.
+- multicam replace audio: Update audio items inside multicam angles.
+- multicam replace video: Update video items inside multicam angles.
+- multicam seed-timeline: Append a multicam clip to V1 of a target timeline.
+- multicam set-start-timecode: Change the multicam start timecode.
+- multicam settings: Check multicam settings.
+- multicam smart-switch: Create a speaker-aware multicam cut.
+- multicam source grade-cdl: Validate an unavailable multicam source CDL target.
+- multicam source move: Move a source item inside a multicam angle.
+- multicam source property-set: Change a multicam source property.
+- multicam source raw-braw-set: Change Blackmagic RAW settings inside a multicam angle.
+- multicam source remove: Remove a source item from a multicam angle.
+- multicam strip-embedded-audio: Remove CutAgent audio tracks and items from a multicam sequence.
+- multicam switch: Apply a saved multicam switch plan.
+- multicam timeline-create: Create a multicam timeline.
+- multicam verdict-clear: Remove a multicam review note.
+- multicam verdict-list: List multicam review notes for multicam families.
+- multicam verdict-set: Update a multicam review note.
+
+## ofx
+- ofx build: Build an OpenFX effect project.
+- ofx install: Install an OpenFX bundle into the user OFX folder.
+- ofx list-installed: List user-installed OpenFX bundles.
+- ofx package: Package an OpenFX effect.
+- ofx sample copy: Copy an OpenFX example.
+- ofx scaffold: Prepare an OpenFX effect project.
+- ofx uninstall: Uninstall a user OpenFX bundle.
+- ofx validate: Check an OpenFX effect.
+
+## page
+- page current: Check the current DaVinci Resolve page.
+- page switch: Switch the DaVinci Resolve page.
+
+## product
+- product: Check the installed DaVinci Resolve edition.
+
+## project
+- project archive: Archive a project to disk.
+- project cleanup-scratch: Clean up DaVinci Resolve scratch projects.
+- project close: Close the current project without saving.
+- project cloud create: Create a cloud project.
+- project cloud import: Import a cloud project.
+- project cloud open: Open a cloud project.
+- project cloud restore: Restore a cloud project folder.
+- project create: Create a new project.
+- project db backup: Back up the project.
+- project db create: Create a project storage location.
+- project db current: Check the current project storage location.
+- project db list: List project storage locations.
+- project db restore: Restore a project backup.
+- project db switch: Switch project storage locations.
+- project delete: Delete a project.
+- project export: Export a project to file.
+- project folders create: Create a new folder.
+- project folders delete: Delete a project folder in the current folder.
+- project folders list: List folders in current project location.
+- project folders open: Open to a folder.
+- project folders root: Open to the root project folder.
+- project folders up: Open to parent folder.
+- project import: Import a project from file.
+- project info: Read current project information.
+- project list: List all projects in the current project folder.
+- project open: Open an existing project.
+- project preset delete: Delete a project settings preset.
+- project preset export: Export a project settings preset.
+- project preset import: Import a project settings preset.
+- project preset list: List project presets.
+- project preset load: Load project preset by name.
+- project preset save: Save current project settings as a preset.
+- project rename: Rename the current project.
+- project restore: Restore a project from archive.
+- project save: Save the current project.
+- project settings: Check project settings (all and specific key).
+- project settings-get: Check project settings (all and specific key).
+- project settings-set: Set a project setting.
+
+## quit
+- quit: Quit DaVinci Resolve.
+
+## render
+- render add: Add a render job to the queue.
+- render alpha: Configure alpha-channel export settings.
+- render archive-settings: Configure archive render settings.
+- render audio: Render audio only from the timeline.
+- render burnin export: Export a burn-in preset.
+- render burnin import: Import a burn-in preset.
+- render burnin load: Load a burn-in preset for rendering.
+- render cancel: Cancel active rendering.
+- render codecs: List available video and audio codecs for a format.
+- render custom-range: Queue render for a custom range.
+- render delete: Delete render jobs.
+- render encoding: Configure common encoding flags.
+- render export-file: Render one exact timeline output with complete validation.
+- render export-preset: Export a render preset.
+- render formats: List available video and audio render formats.
+- render import-preset: Import a render preset.
+- render job-status: Check status for a single render job.
+- render jobs: List render jobs in the queue.
+- render mode get: Read current render mode.
+- render mode set: Set render mode.
+- render preset-delete: Delete a render preset.
+- render preset-load: Load a render preset.
+- render preset-save: Save current render settings as a preset.
+- render preset-update: Replace an existing preset with current render settings and verify its exported content.
+- render presets: List available render presets.
+- render quick-export: Render using a quick export preset.
+- render quick-export-presets: List available quick export presets.
+- render resolutions: List available render resolutions.
+- render settings: Read current render settings.
+- render settings-get: Read current render settings.
+- render settings-set: Configure render settings.
+- render settings-set-json: Update render settings.
+- render settings-set-key: Update one render setting.
+- render start: Start rendering.
+- render status: Check render status.
+- render stop: Stop rendering.
+- render subtitles: Configure subtitle export settings.
+- render transcript-audio: Render transcript-ready audio from the active timeline.
+- render wait: Wait for rendering to finish.
+
+## script
+- script env print: Check DaVinci Resolve setup diagnostics.
+- script install: Install a DaVinci Resolve custom edit.
+- script list: List DaVinci Resolve custom edits.
+- script run: Apply a DaVinci Resolve custom edit.
+- script uninstall: Uninstall a DaVinci Resolve custom edit.
+
+## status
+- status: Check DaVinci Resolve status.
+
+## storage
+- storage files: List files in a storage location.
+- storage import: Import media from storage into the media pool.
+- storage import-sequence: Import an image sequence using DaVinci Resolve import options.
+- storage import-subclip: Import a source subclip using DaVinci Resolve import options.
+- storage matte add: Add matte files to a media pool clip.
+- storage matte timeline-add: Add timeline matte files to the media pool.
+- storage reveal: Reveal a path in DaVinci Resolve media storage.
+- storage volumes: List mounted storage volumes.
+
+## system
+- system keyboard-preset current: Read the currently active keyboard preset.
+- system keyboard-preset delete: Delete one inactive keyboard preset.
+- system keyboard-preset export: Export one keyboard preset without replacing a file.
+- system keyboard-preset import: Import a keyboard preset from one local file.
+- system keyboard-preset list: List available keyboard presets.
+- system keyboard-preset load: Load an exact keyboard preset.
+- system keyframe-mode get: Read the current keyframe mode.
+- system keyframe-mode set: Set the current keyframe mode.
+
+## text
+- text insert: Insert a styled text overlay.
+- text insert-captions: Create designed captions from the transcript.
+- text insert-preset: Insert a DaVinci Resolve title preset.
+- text insert-template: Insert a Fusion title template.
+- text insert-template-batch: Insert multiple Text+ template clips from one template.
+- text inspect: Inspect a text clip, preset, and template.
+- text list-presets: List known text presets and visible template title templates.
+- text update: Update text in an existing Fusion and Text+ timeline item.
+
+## timeline
+- timeline auto-caption: Create subtitles from timeline audio using DaVinci Resolve auto-caption.
+- timeline captions: Chose a caption approach.
+- timeline clip-color batch: Update timeline clip colors.
+- timeline clip-markers list: List timeline clip markers.
+- timeline compound-create: Create a compound clip from a timeline range.
+- timeline create: Create a new empty timeline.
+- timeline current-item: Inspect the clip under the playhead.
+- timeline delete: Delete a timeline.
+- timeline dolby analyze: Run Dolby Vision analysis.
+- timeline duplicate: Runs the public `timeline duplicate` CutAgent command.
+- timeline duration: Check the current timeline duration.
+- timeline export: Export the current timeline.
+- timeline fairlight-preset apply: Apply a Fairlight preset to the current timeline.
+- timeline frame-export: Export a still image from the timeline.
+- timeline frame-export batch: Export still images from the timeline.
+- timeline fusion-clip create: Create a Fusion clip from timeline items.
+- timeline fusion-composition insert: Insert a Fusion composition into the active timeline.
+- timeline grab-still: Grab still from current frame.
+- timeline import: Import a timeline from file.
+- timeline import-into: Import timeline content into the active timeline.
+- timeline info: Read the current timeline.
+- timeline insert-generator: Insert a generator into the timeline at the playhead.
+- timeline insert-title: Insert a title into the timeline at the playhead.
+- timeline inspect-export: Export an explicit detailed, inspection-only timeline document.
+- timeline item-at: Find timeline item(s) at a position.
+- timeline items delete: Delete timeline items without deleting tracks and rippling the timeline.
+- timeline items move: Move one exact video item with record-time and video-track changes supported independently.
+- timeline items set-duration: Set a timeline item duration.
+- timeline layer ensure-media: Fill a video layer across the selected range.
+- timeline layout free-stack: Plan a layered timeline layout.
+- timeline list: List all timelines in the current project.
+- timeline mark clear: Clear timeline mark in and out points.
+- timeline mark get: Read timeline mark in and out points.
+- timeline mark set: Set timeline mark in and out points.
+- timeline marker add: Add a marker at a position.
+- timeline marker batch: Update timeline markers.
+- timeline marker delete: Delete markers.
+- timeline marker list: List timeline markers.
+- timeline marker update: Update one exact marker with rollback on replacement failure.
+- timeline media-pool-item: Check the source clip for the current timeline item.
+- timeline node-graph inspect: Inspect the current timeline node graph when available.
+- timeline output-blanking get: Read output blanking and clip inheritance without modifying the timeline.
+- timeline output-blanking set: Set all four pixel edges, and explicitly select clip inheritance.
+- timeline overlay-stack insert: Insert a layered overlay.
+- timeline playhead get: Read current playhead position.
+- timeline playhead set: Set playhead position.
+- timeline preview-export: Export a short timeline preview.
+- timeline rename: Rename a timeline.
+- timeline set-start-tc: Set timeline start timecode.
+- timeline settings: Check timeline settings.
+- timeline settings-get: Check timeline settings.
+- timeline settings-set: Set a timeline setting.
+- timeline start-tc: Check timeline start timecode.
+- timeline stereo-convert: Convert the current timeline to stereo 3D.
+- timeline still grab-all: Grab stills for all clips on the current timeline.
+- timeline subtitle export: Export subtitles.
+- timeline subtitle insert: Insert SRT subtitles as DaVinci Resolve subtitle-track items.
+- timeline subtitle list: List subtitle clips.
+- timeline subtitles: Chose a subtitle approach.
+- timeline summarize: Summarize the current timeline as an editor-readable map.
+- timeline switch: Switch to a different timeline.
+- timeline sync-clips: Place synchronized clips on timeline tracks.
+- timeline thumbnail: Export thumbnail of current clip under playhead.
+- timeline track add: Add a new track.
+- timeline track delete: Delete a timeline track.
+- timeline track disable: Mute a track.
+- timeline track enable: Enable a track.
+- timeline track items: List clips on a specific track.
+- timeline track list: List all tracks.
+- timeline track lock: Lock a track.
+- timeline track rename: Rename a track.
+- timeline track subtype: Check a track subtype when available.
+- timeline track unlock: Unlock a track.
+- timeline voice-isolation get: Read timeline voice isolation state.
+- timeline voice-isolation set: Set timeline voice isolation state.
+
+## transcript
+- transcript create: Transcribe the active timeline through the signed-in CutAgent account.
+
+## version
+- version: Check the installed DaVinci Resolve version.
+- version create: Create a project checkpoint.
+- version inspect: Inspect a project checkpoint.
+- version list: List project checkpoints.
+- version prune: Clean up old project checkpoints.
+- version restore: Restore a project checkpoint.
+- version status: Check project checkpoint status.
+
+## video
+- video generate: Generate a video and return its downloaded file and artifact in the active chat.
+
+## workflow
+- workflow callback script create: Prepare a custom edit connection.
+- workflow node check: Check a custom edit.
+- workflow plugin info: Check custom add-on details.
+- workflow plugin install: Install a custom add-on.
+- workflow plugin list: List installed custom add-ons.
+- workflow plugin package: Package a custom add-on.
+- workflow plugin scaffold: Prepare a custom add-on.
+- workflow plugin uninstall: Remove a custom add-on.
+- workflow plugin validate: Check a custom add-on.
+- workflow script install: Install a custom DaVinci Resolve edit.
+- workflow ui scaffold: Create a custom edit panel.

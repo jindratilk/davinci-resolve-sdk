@@ -1,7 +1,7 @@
 // Generated from the private authoritative CutAgent CLI inventory. Do not edit.
-// This file is proprietary runtime input and must never enter the public npm package.
+// Selected runtime source distributed under AGPL-3.0-only; see PROVENANCE.md.
 export const PRIVATE_IMPACT_REGISTRY_VERSION = 3;
-export const PRIVATE_IMPACT_REGISTRY_DIGEST = "sha256:76a01a4e01e4d879a2212b50eff87d4d8a67f14c72cd38793272ef257e777c32";
+export const PRIVATE_IMPACT_REGISTRY_DIGEST = "sha256:ea97a6eda75096a87b52bfc0520cfb734767e97192f114c58a3c0e1f2fd5fcc2";
 export const PRIVATE_COMMAND_IMPACT = Object.freeze(new Map([
   [
     "asset.artifact_index",
@@ -2724,6 +2724,16 @@ export const PRIVATE_COMMAND_IMPACT = Object.freeze(new Map([
     }
   ],
   [
+    "dctl.encrypt",
+    {
+      "commandId": "dctl.encrypt",
+      "actionId": null,
+      "aliasOf": null,
+      "operationClass": "mutation",
+      "verificationCategory": "not_applicable"
+    }
+  ],
+  [
     "dctl.install",
     {
       "commandId": "dctl.install",
@@ -2761,6 +2771,16 @@ export const PRIVATE_COMMAND_IMPACT = Object.freeze(new Map([
       "aliasOf": null,
       "operationClass": "read",
       "verificationCategory": "not_applicable"
+    }
+  ],
+  [
+    "dctl.validate_source",
+    {
+      "commandId": "dctl.validate_source",
+      "actionId": "cutagent.action.dctl.validate_source",
+      "aliasOf": null,
+      "operationClass": "read",
+      "verificationCategory": "structural_readback"
     }
   ],
   [
@@ -3681,6 +3701,16 @@ export const PRIVATE_COMMAND_IMPACT = Object.freeze(new Map([
       "aliasOf": null,
       "operationClass": "mutation",
       "verificationCategory": "not_applicable"
+    }
+  ],
+  [
+    "fairlight.fade_curve",
+    {
+      "commandId": "fairlight.fade_curve",
+      "actionId": "cutagent.action.fairlight.fade_curve",
+      "aliasOf": null,
+      "operationClass": "mutation",
+      "verificationCategory": "required_unknown"
     }
   ],
   [
@@ -5094,6 +5124,16 @@ export const PRIVATE_COMMAND_IMPACT = Object.freeze(new Map([
     }
   ],
   [
+    "fusion.tool.registry",
+    {
+      "commandId": "fusion.tool.registry",
+      "actionId": "cutagent.action.fusion.tool.registry",
+      "aliasOf": null,
+      "operationClass": "read",
+      "verificationCategory": "structural_readback"
+    }
+  ],
+  [
     "fusion.tool.set",
     {
       "commandId": "fusion.tool.set",
@@ -5814,6 +5854,16 @@ export const PRIVATE_COMMAND_IMPACT = Object.freeze(new Map([
     }
   ],
   [
+    "media.transcription",
+    {
+      "commandId": "media.transcription",
+      "actionId": "cutagent.action.media.transcription",
+      "aliasOf": null,
+      "operationClass": "read",
+      "verificationCategory": "structural_readback"
+    }
+  ],
+  [
     "media.unlink",
     {
       "commandId": "media.unlink",
@@ -6000,7 +6050,7 @@ export const PRIVATE_COMMAND_IMPACT = Object.freeze(new Map([
       "actionId": "cutagent.action.multicam.source.grade_cdl",
       "aliasOf": null,
       "operationClass": "mutation",
-      "verificationCategory": "required_unknown"
+      "verificationCategory": "not_applicable"
     }
   ],
   [
@@ -6474,6 +6524,36 @@ export const PRIVATE_COMMAND_IMPACT = Object.freeze(new Map([
     }
   ],
   [
+    "project.preset.delete",
+    {
+      "commandId": "project.preset.delete",
+      "actionId": null,
+      "aliasOf": null,
+      "operationClass": "mutation",
+      "verificationCategory": "not_applicable"
+    }
+  ],
+  [
+    "project.preset.export",
+    {
+      "commandId": "project.preset.export",
+      "actionId": "cutagent.action.project.preset.export",
+      "aliasOf": null,
+      "operationClass": "mutation",
+      "verificationCategory": "required_unknown"
+    }
+  ],
+  [
+    "project.preset.import",
+    {
+      "commandId": "project.preset.import",
+      "actionId": null,
+      "aliasOf": null,
+      "operationClass": "mutation",
+      "verificationCategory": "not_applicable"
+    }
+  ],
+  [
     "project.preset.list",
     {
       "commandId": "project.preset.list",
@@ -6800,7 +6880,17 @@ export const PRIVATE_COMMAND_IMPACT = Object.freeze(new Map([
       "actionId": "cutagent.action.render.preset_save",
       "aliasOf": null,
       "operationClass": "mutation",
-      "verificationCategory": "not_applicable"
+      "verificationCategory": "required_unknown"
+    }
+  ],
+  [
+    "render.preset_update",
+    {
+      "commandId": "render.preset_update",
+      "actionId": "cutagent.action.render.preset_update",
+      "aliasOf": null,
+      "operationClass": "mutation",
+      "verificationCategory": "required_unknown"
     }
   ],
   [
@@ -7101,6 +7191,66 @@ export const PRIVATE_COMMAND_IMPACT = Object.freeze(new Map([
       "aliasOf": null,
       "operationClass": "read",
       "verificationCategory": "structural_readback"
+    }
+  ],
+  [
+    "system.keyboard_preset.current",
+    {
+      "commandId": "system.keyboard_preset.current",
+      "actionId": "cutagent.action.system.keyboard_preset.current",
+      "aliasOf": null,
+      "operationClass": "read",
+      "verificationCategory": "structural_readback"
+    }
+  ],
+  [
+    "system.keyboard_preset.delete",
+    {
+      "commandId": "system.keyboard_preset.delete",
+      "actionId": null,
+      "aliasOf": null,
+      "operationClass": "mutation",
+      "verificationCategory": "not_applicable"
+    }
+  ],
+  [
+    "system.keyboard_preset.export",
+    {
+      "commandId": "system.keyboard_preset.export",
+      "actionId": null,
+      "aliasOf": null,
+      "operationClass": "mutation",
+      "verificationCategory": "not_applicable"
+    }
+  ],
+  [
+    "system.keyboard_preset.import",
+    {
+      "commandId": "system.keyboard_preset.import",
+      "actionId": null,
+      "aliasOf": null,
+      "operationClass": "mutation",
+      "verificationCategory": "not_applicable"
+    }
+  ],
+  [
+    "system.keyboard_preset.list",
+    {
+      "commandId": "system.keyboard_preset.list",
+      "actionId": "cutagent.action.system.keyboard_preset.list",
+      "aliasOf": null,
+      "operationClass": "read",
+      "verificationCategory": "structural_readback"
+    }
+  ],
+  [
+    "system.keyboard_preset.load",
+    {
+      "commandId": "system.keyboard_preset.load",
+      "actionId": null,
+      "aliasOf": null,
+      "operationClass": "mutation",
+      "verificationCategory": "not_applicable"
     }
   ],
   [
@@ -7614,6 +7764,26 @@ export const PRIVATE_COMMAND_IMPACT = Object.freeze(new Map([
     }
   ],
   [
+    "timeline.output_blanking.get",
+    {
+      "commandId": "timeline.output_blanking.get",
+      "actionId": "cutagent.action.timeline.output_blanking.get",
+      "aliasOf": null,
+      "operationClass": "read",
+      "verificationCategory": "structural_readback"
+    }
+  ],
+  [
+    "timeline.output_blanking.set",
+    {
+      "commandId": "timeline.output_blanking.set",
+      "actionId": "cutagent.action.timeline.output_blanking.set",
+      "aliasOf": null,
+      "operationClass": "mutation",
+      "verificationCategory": "structural_readback"
+    }
+  ],
+  [
     "timeline.overlay_stack.insert",
     {
       "commandId": "timeline.overlay_stack.insert",
@@ -8021,6 +8191,16 @@ export const PRIVATE_COMMAND_IMPACT = Object.freeze(new Map([
       "aliasOf": null,
       "operationClass": "read",
       "verificationCategory": "structural_readback"
+    }
+  ],
+  [
+    "video.generate",
+    {
+      "commandId": "video.generate",
+      "actionId": null,
+      "aliasOf": null,
+      "operationClass": "mutation",
+      "verificationCategory": "not_applicable"
     }
   ],
   [

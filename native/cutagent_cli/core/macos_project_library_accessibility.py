@@ -11,6 +11,7 @@ from typing import Any
 
 _UTF8 = 0x08000100
 _AX_POINT = 1
+_CF_NUMBER_DOUBLE = 13
 _ADD_DIALOG_TITLE = "Create New Project Library"
 _NEW_PROJECT_DIALOG_TITLE = "Create New Project"
 
@@ -36,6 +37,11 @@ class _AX:
         self.cf.CFStringGetCString.restype = ctypes.c_bool
         self.cf.CFStringGetCString.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_long, ctypes.c_uint32]
         self.cf.CFStringGetTypeID.restype = ctypes.c_ulong
+        self.cf.CFNumberGetTypeID.restype = ctypes.c_ulong
+        self.cf.CFNumberGetValue.restype = ctypes.c_bool
+        self.cf.CFNumberGetValue.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p]
+        self.cf.CFNumberCreate.restype = ctypes.c_void_p
+        self.cf.CFNumberCreate.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p]
         self.cf.CFGetTypeID.restype = ctypes.c_ulong
         self.cf.CFGetTypeID.argtypes = [ctypes.c_void_p]
         self.cf.CFEqual.restype = ctypes.c_bool
@@ -108,6 +114,25 @@ class _AX:
             return False
         try:
             return bool(self.cf.CFBooleanGetValue(value))
+        finally:
+            self.release(value)
+
+    def scalar_text(self, element: int, attribute: str = "AXValue") -> str:
+        value = self._copy(element, attribute)
+        if not value:
+            return ""
+        try:
+            value_type = self.cf.CFGetTypeID(value)
+            if value_type == self.cf.CFStringGetTypeID():
+                buffer = ctypes.create_string_buffer(8192)
+                if self.cf.CFStringGetCString(value, buffer, len(buffer), _UTF8):
+                    return buffer.value.decode("utf-8")
+                return ""
+            if value_type == self.cf.CFNumberGetTypeID():
+                numeric = ctypes.c_double()
+                if self.cf.CFNumberGetValue(value, _CF_NUMBER_DOUBLE, ctypes.byref(numeric)):
+                    return f"{numeric.value:.15g}"
+            return ""
         finally:
             self.release(value)
 
@@ -316,6 +341,20 @@ class _AX:
                 raise RuntimeError("macOS Accessibility field write failed")
         finally:
             self.release(requested)
+            self.release(attribute)
+
+    def set_number(self, element: int, value: float) -> None:
+        attribute = self._string_ref("AXValue")
+        numeric = ctypes.c_double(float(value))
+        requested = self.cf.CFNumberCreate(None, _CF_NUMBER_DOUBLE, ctypes.byref(numeric))
+        if not requested:
+            self.release(attribute)
+            raise RuntimeError("macOS could not allocate an Accessibility number")
+        try:
+            if self.ax.AXUIElementSetAttributeValue(element, attribute, requested) != 0:
+                raise RuntimeError("macOS Accessibility numeric field write failed")
+        finally:
+            self.release(int(requested))
             self.release(attribute)
 
 

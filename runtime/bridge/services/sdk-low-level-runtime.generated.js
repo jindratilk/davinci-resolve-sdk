@@ -275,6 +275,25 @@ export const SDK_LOW_LEVEL_RUNTIME_BINDINGS = [
     }
   },
   {
+    "actionId": "cutagent.action.dctl.validate_source",
+    "operationClass": "read",
+    "idempotencyCategory": "safe_repeat",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "maxLength": 65536,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "source"
+      ],
+      "type": "object"
+    }
+  },
+  {
     "actionId": "cutagent.action.fairlight.adr.info",
     "operationClass": "read",
     "idempotencyCategory": "safe_repeat",
@@ -1516,6 +1535,28 @@ export const SDK_LOW_LEVEL_RUNTIME_BINDINGS = [
           "type": "string"
         }
       },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "actionId": "cutagent.action.system.keyboard_preset.current",
+    "operationClass": "read",
+    "idempotencyCategory": "safe_repeat",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "actionId": "cutagent.action.system.keyboard_preset.list",
+    "operationClass": "read",
+    "idempotencyCategory": "safe_repeat",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {},
       "required": [],
       "type": "object"
     }

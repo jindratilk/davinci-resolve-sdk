@@ -38,6 +38,7 @@ from ..core import (
     multicam_ops,
     timeline_ops,
     transition_db,
+    native_transition,
 )
 
 app = typer.Typer(help="Edit operations — cuts, inserts, trims, transitions, and FX.")
@@ -76,11 +77,44 @@ def _verify_transition_readback(conn: Any, mutation_result: Any, _session: Any) 
     inserted = list((mutation_result or {}).get("inserted") or []) if isinstance(mutation_result, dict) else []
     skipped_existing = list((mutation_result or {}).get("skipped_existing") or []) if isinstance(mutation_result, dict) else []
     if not inserted and skipped_existing:
+        checks: list[dict[str, Any]] = []
+        items_by_track: dict[tuple[str, int], list[dict[str, Any]]] = {}
+        for row in skipped_existing:
+            existing = row.get("existing") if isinstance(row, dict) else None
+            track_type = str(row.get("track_type") or "video").lower()
+            track_index = int(row.get("track_index") or 1)
+            track_key = (track_type, track_index)
+            try:
+                if track_key not in items_by_track:
+                    items_by_track[track_key] = [
+                        _transition_item_summary(item)
+                        for item in (conn.timeline.GetItemListInTrack(track_type, track_index) or [])
+                    ]
+                expected_id = str(existing.get("Sm2TiItem_id") or "") if isinstance(existing, dict) else ""
+                expected_name = str(existing.get("Name") or "") if isinstance(existing, dict) else ""
+                matches = [
+                    item for item in items_by_track[track_key]
+                    if expected_id
+                    and item.get("item_id") == expected_id
+                    and item.get("name") == expected_name
+                    and item.get("start") == int(row.get("start") or 0)
+                    and item.get("duration") == int(row.get("duration") or 0)
+                ]
+            except Exception:
+                expected_id = ""
+                matches = []
+            checks.append({
+                "ok": len(matches) == 1,
+                "track_type": track_type,
+                "track_index": track_index,
+                "expected_item_id": expected_id or None,
+                "observed_item_id": matches[0].get("item_id") if len(matches) == 1 else None,
+            })
         return {
-            "status": "verified",
+            "status": "verified" if checks and all(check["ok"] for check in checks) else "failed",
             "inserted_count": 0,
             "skipped_existing_count": len(skipped_existing),
-            "checks": [],
+            "checks": checks,
         }
     checks: list[dict[str, Any]] = []
     items_by_track: dict[tuple[str, int], list[dict[str, Any]]] = {}
@@ -151,10 +185,10 @@ def transition_add(
     placement: str = typer.Option("both", "--placement", help="Placement: start|end|both"),
     scope: str = typer.Option("auto", "--scope", help="Transition scope: auto|linked|video|audio"),
 ):
-    """Add an archive-backed transition through the Disk DB route."""
+    """Add native item-edge transitions on 21.1, preserving the Disk DB fallback."""
     enforce_mutation_policy(
         "edit.transitions_native",
-        intended_engine="db_workaround",
+        intended_engine="api_native",
         mutating=not is_dry_run(),
     )
     if is_dry_run():
@@ -196,6 +230,12 @@ def transition_add(
             raise ValidationError("Transition duration must be greater than 0.", details={"duration": duration_ref})
     at_frame = parse_record_frame(str(at), conn.fps, conn.start_frame) if at else None
 
+    if native_transition.available(conn, selected, placement=placement, at_frame=at_frame, transition_name=normalized_transition):
+        output(native_transition.add(conn, selected, transition_name=normalized_transition,
+            duration_frames=duration_frames, placement=placement, scope=scope, at_frame=at_frame,
+            verifier=_verify_transition_readback), title="Transition Add")
+        return
+    enforce_mutation_policy("edit.transitions_native", intended_engine="db_workaround")
     data = db_session.execute_sqlite_disk_db_mutation(
         conn,
         context="DB-backed transition add",
@@ -288,7 +328,27 @@ def transition_batch(
         )[0]
 
     if not select_name_regex:
-        plans, preflight_results = batch_utils.preflight_entries(entries, _planner, allow_partial=allow_partial)
+        if allow_partial:
+            plans, preflight_results = batch_utils.preflight_entries(
+                entries, _planner, allow_partial=True
+            )
+        else:
+            plans = transition_db.plan_transition_batch(
+                conn,
+                entries,
+                transition_name=default_transition,
+                placement=placement,
+                scope=scope,
+            )
+            preflight_results = [
+                {
+                    "index": int(plan.get("index", index)),
+                    "ok": True,
+                    "skipped": bool(plan.get("skipped")),
+                    "preflight": plan.get("preflight", plan),
+                }
+                for index, plan in enumerate(plans)
+            ]
     timeline_name = conn.timeline.GetName() if getattr(conn, "timeline", None) else None
     preflight = {
         "status": "passed" if all(row.get("ok") for row in preflight_results) else "partial",
@@ -315,17 +375,35 @@ def transition_batch(
         )
         return
 
-    data = db_session.execute_sqlite_disk_db_mutation(
+    data = transition_db.read_only_transition_batch_noop(
         conn,
-        context="DB-backed transition batch",
-        writer=lambda _connection, cursor, _session: transition_db.write_transition_batch(
-            cursor,
-            plans=plans,
-            timeline_name=timeline_name,
-        ),
-        verifier=_verify_transition_readback,
-        allow_project_name_inference=True,
+        plans=plans,
+        timeline_name=timeline_name,
     )
+    if data is not None:
+        data["verification"] = _verify_transition_readback(conn, data, None)
+        if data["verification"].get("status") != "verified":
+            data = None
+    if data is None:
+        data = db_session.execute_sqlite_disk_db_mutation(
+            conn,
+            context="DB-backed transition batch",
+            writer=lambda _connection, cursor, _session: transition_db.write_transition_batch(
+                cursor,
+                plans=plans,
+                timeline_name=timeline_name,
+            ),
+            verifier=_verify_transition_readback,
+            pre_close_validator=lambda connection, _session: (
+                db_timeline_selection.require_exact_sdk_transition_batch_selection(
+                    connection, plans=plans
+                )
+            ),
+            allow_project_name_inference=True,
+            require_verified=bool(
+                os.getenv("CUTAGENT_CLI_SDK_TRANSITION_BATCH_TARGETS")
+            ),
+        )
     mutation_results = list(data.get("results") or [])
     if allow_partial:
         mutation_results.extend(row for row in preflight_results if row.get("error"))
@@ -840,6 +918,7 @@ def insert(
     project_id: Optional[str] = typer.Option(None, "--project-id", help="Expected active project identity"),
     timeline_id: Optional[str] = typer.Option(None, "--timeline-id", help="Expected active timeline identity"),
     revision: Optional[str] = typer.Option(None, "--revision", help="Expected timeline revision from a prior dry run"),
+    items_json: Optional[str] = typer.Option(None, "--items-json", hidden=True),
 ):
     """Place a clip into an empty range without ripple and verify exact readback."""
     set_execution_engine("api_native", 1.0)
@@ -848,25 +927,64 @@ def insert(
         intended_engine="api_native",
         mutating=not is_dry_run(),
     )
+    requests = None
+    if items_json is not None:
+        try:
+            requests = json_mod.loads(items_json)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("Plural insert items must be valid JSON.") from exc
     conn = get_connection(require_timeline=True)
     from ..core import edit_ops
 
-    result = edit_ops.insert_clip_at(
-        conn,
-        clip_name,
-        at,
-        source_in,
-        source_out,
-        track,
-        audio_only=audio_only,
-        media_id=media_id,
-        audio_track_index=audio_track,
-        include_linked_audio=include_linked_audio,
-        expected_project_id=project_id,
-        expected_timeline_id=timeline_id,
-        expected_revision=revision,
-        dry_run=is_dry_run(),
-    )
+    if not is_dry_run():
+        timeline_ops.require_sdk_marker_mutation_guard(conn)
+    sdk_audio_placements_path = os.environ.get("CUTAGENT_SDK_AUDIO_PLACEMENTS_FILE")
+    if sdk_audio_placements_path:
+        try:
+            path = Path(sdk_audio_placements_path)
+            if not path.is_absolute() or not path.is_file() or path.stat().st_size > 2 * 1024 * 1024:
+                raise ValueError("invalid placement carrier")
+            placements = json_mod.loads(path.read_text(encoding="utf-8"))
+        except (OSError, TypeError, ValueError) as exc:
+            raise ValidationError("SDK audio placements are not a valid bounded JSON file.") from exc
+        result = edit_ops.insert_audio_clips_at(
+            conn,
+            placements,
+            expected_project_id=project_id,
+            expected_timeline_id=timeline_id,
+            expected_revision=revision,
+            dry_run=is_dry_run(),
+        )
+        output(result, title="Insert")
+        return
+    if requests is not None:
+        if audio_only:
+            raise ValidationError("Plural video insert lowering does not accept --audio-only.")
+        result = edit_ops.insert_clips_at(
+            conn,
+            requests,
+            expected_project_id=project_id,
+            expected_timeline_id=timeline_id,
+            expected_revision=revision,
+            dry_run=is_dry_run(),
+        )
+    else:
+        result = edit_ops.insert_clip_at(
+            conn,
+            clip_name,
+            at,
+            source_in,
+            source_out,
+            track,
+            audio_only=audio_only,
+            media_id=media_id,
+            audio_track_index=audio_track,
+            include_linked_audio=include_linked_audio,
+            expected_project_id=project_id,
+            expected_timeline_id=timeline_id,
+            expected_revision=revision,
+            dry_run=is_dry_run(),
+        )
     output(result, title="Insert")
 
 
@@ -888,6 +1006,7 @@ def overwrite(
     project_id: Optional[str] = typer.Option(None, "--project-id", help="Expected active project identity"),
     timeline_id: Optional[str] = typer.Option(None, "--timeline-id", help="Expected active timeline identity"),
     revision: Optional[str] = typer.Option(None, "--revision", help="Expected timeline revision from a prior dry run"),
+    items_json: Optional[str] = typer.Option(None, "--items-json", hidden=True),
 ):
     """Replace an exact range with checkpoint recovery and fresh verification."""
     set_execution_engine("api_native", 1.0)
@@ -896,24 +1015,42 @@ def overwrite(
         intended_engine="api_native",
         mutating=not is_dry_run(),
     )
+    requests = None
+    if items_json is not None:
+        try:
+            requests = json_mod.loads(items_json)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("Plural overwrite items must be valid JSON.") from exc
     conn = get_connection(require_timeline=True)
     from ..core import edit_ops
 
-    result = edit_ops.overwrite_clip_at(
-        conn,
-        clip_name,
-        at,
-        source_in,
-        source_out,
-        track,
-        media_id=media_id,
-        audio_track_index=audio_track,
-        include_linked_audio=include_linked_audio,
-        expected_project_id=project_id,
-        expected_timeline_id=timeline_id,
-        expected_revision=revision,
-        dry_run=is_dry_run(),
-    )
+    if not is_dry_run():
+        timeline_ops.require_sdk_marker_mutation_guard(conn)
+    if requests is not None:
+        result = edit_ops.overwrite_clips_at(
+            conn,
+            requests,
+            expected_project_id=project_id,
+            expected_timeline_id=timeline_id,
+            expected_revision=revision,
+            dry_run=is_dry_run(),
+        )
+    else:
+        result = edit_ops.overwrite_clip_at(
+            conn,
+            clip_name,
+            at,
+            source_in,
+            source_out,
+            track,
+            media_id=media_id,
+            audio_track_index=audio_track,
+            include_linked_audio=include_linked_audio,
+            expected_project_id=project_id,
+            expected_timeline_id=timeline_id,
+            expected_revision=revision,
+            dry_run=is_dry_run(),
+        )
     output(result, title="Overwrite")
 
 
@@ -1010,8 +1147,8 @@ def remove_range(
 @handle_errors
 def trim(
     clip_name: Optional[str] = typer.Argument(None, help="Video item name selector"),
-    head: float = typer.Option(0.0, "--head", help="Trim from start (seconds)"),
-    tail: float = typer.Option(0.0, "--tail", help="Trim from end (seconds)"),
+    head: float = typer.Option(0.0, "--head", help="Move the start inward in seconds; negative extends it"),
+    tail: float = typer.Option(0.0, "--tail", help="Move the end inward in seconds; negative extends it"),
     timeline_name: str | None = typer.Option(None, "--timeline", help="Target timeline name; defaults to active timeline"),
     track_index: int = typer.Option(1, "--track", "--track-index", min=1, help="Video track index for selector"),
     start_frame: str | None = typer.Option(None, "--start-frame", help="Current video item start in record-domain frames/time"),
@@ -1022,16 +1159,41 @@ def trim(
         "--linked-audio",
         help="Linked-audio safety: preserve supports unlinked clips and fails closed on linked clips until linked preservation passes its release proof gate; exclude performs a video-only trim that may change link topology",
     ),
+    changes_json: Optional[str] = typer.Option(
+        None,
+        "--changes-json",
+        help="Internal grouped trim carrier",
+        hidden=True,
+    ),
 ):
-    """Trim one video item's head/tail without ripple and verify durable readback."""
+    """Trim one or more video items without ripple and verify durable readback."""
     set_execution_engine("db_workaround")
     enforce_mutation_policy(
         "edit.trim_workaround",
         intended_engine="db_workaround",
         mutating=not is_dry_run(),
     )
-    if head < 0 or tail < 0:
-        raise ValidationError("Trim head and tail must be non-negative.", details={"head": head, "tail": tail})
+    if changes_json is not None:
+        if clip_name or name or start_frame is not None or current_end_frame is not None or head != 0.0 or tail != 0.0 or track_index != 1 or linked_audio != "preserve":
+            raise ValidationError(
+                "--changes-json cannot be combined with singular trim selectors or edge options.",
+                details={"reason": "edit_trim_changes_json_conflict"},
+            )
+        try:
+            parsed_changes = json_mod.loads(changes_json)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("--changes-json must contain valid JSON.") from exc
+        changes = parsed_changes if isinstance(parsed_changes, list) else [parsed_changes]
+        conn = get_connection(require_timeline=True)
+        timeline_ops.require_sdk_marker_mutation_guard(conn)
+        result = edit_trim_db.trim_video_items(
+            conn,
+            changes,
+            timeline_name=timeline_name,
+            dry_run=is_dry_run(),
+        )
+        output(result, title="Trim Plan" if is_dry_run() else "Trim")
+        return
     if head == 0.0 and tail == 0.0:
         raise ValidationError("Specify --head and/or --tail.", details={"head": head, "tail": tail})
     if clip_name and name:

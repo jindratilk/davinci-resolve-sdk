@@ -394,6 +394,7 @@ def _select_live_item(
     current_end_ref: str | None,
     name: str | None,
     expected_item_id: str | None = None,
+    live_items: list[Any] | None = None,
 ) -> tuple[TimelineItemDurationTarget, Any]:
     normalized_track_type = timeline_ops.normalize_timeline_track_type(track_type)
     normalized_track_index = timeline_ops.validate_timeline_track_index(track_index)
@@ -406,7 +407,7 @@ def _select_live_item(
     start_candidates = _frame_candidates(conn, start_ref)
     end_candidates = _frame_candidates(conn, current_end_ref)
     matches: list[tuple[TimelineItemDurationTarget, Any]] = []
-    items = conn.timeline.GetItemListInTrack(normalized_track_type, normalized_track_index) or []
+    items = live_items if live_items is not None else (conn.timeline.GetItemListInTrack(normalized_track_type, normalized_track_index) or [])
     for item in items:
         try:
             live_item_id = None

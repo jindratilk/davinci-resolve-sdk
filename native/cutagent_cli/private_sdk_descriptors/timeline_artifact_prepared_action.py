@@ -83,7 +83,11 @@ def _artifact_ids(action_id: str, value: Mapping[str, Any]) -> tuple[str, ...]:
         "cutagent.action.timeline.preview_export",
         "cutagent.action.timeline.thumbnail",
     }:
-        values = [str(value["destinationArtifactId"])]
+        values = (
+            [str(item["destinationArtifactId"]) for item in value["exports"]]
+            if action_id == "cutagent.action.timeline.frame_export" and "exports" in value
+            else [str(value["destinationArtifactId"])]
+        )
         if action_id == "cutagent.action.timeline.preview_export":
             values.extend(str(item) for item in value["frameArtifactIds"])
     elif action_id == "cutagent.action.timeline.grab_still":
@@ -191,6 +195,22 @@ def _protected_snapshot(conn: Any) -> dict[str, Any]:
             "timecode": str(playhead["timecode"]),
         },
     }
+
+
+def _protected_difference_summary(before: Mapping[str, Any], after: Mapping[str, Any]) -> str:
+    differences = []
+    for key in ("projectNativeId", "timelineNativeId", "timelineDigest", "playhead"):
+        if before.get(key) == after.get(key):
+            continue
+        if key == "playhead":
+            for field_name in ("frame", "timecode"):
+                old = (before.get(key) or {}).get(field_name)
+                new = (after.get(key) or {}).get(field_name)
+                if old != new:
+                    differences.append({"field": f"playhead.{field_name}", "before": old, "after": new})
+        else:
+            differences.append({"field": key, "beforeDigest": _digest(before.get(key)), "afterDigest": _digest(after.get(key))})
+    return "Protected DaVinci Resolve state differs: " + json.dumps(differences, sort_keys=True)
 
 
 def _gallery_count(conn: Any) -> int:
@@ -504,27 +524,47 @@ class TimelineArtifactPreparedActionDescriptor:
                 result["unreadableFieldCount"] = int(document["coverage"]["unreadableFieldCount"])
                 _copy_into_reservation(target, anchor)
             elif self.action_id == "cutagent.action.timeline.frame_export":
-                target = staging / f"frame.{anchor['extension']}"
-                with exclusive_resolve_state_operation(operation="sdk.timeline.frame_export"):
-                    native = timeline_commands._export_single_timeline_frame(
-                        conn,
-                        frame_ref=_record_ref(value["position"], conn),
-                        resolved_path=target,
-                        requested_output_path=str(target),
-                    )
-                if not native.get("restored_playhead"):
-                    raise APICallFailed("Frame export did not restore the original playhead.")
+                exports = value.get("exports")
+                if isinstance(exports, list):
+                    targets = [
+                        (
+                            _record_ref(item["position"], conn),
+                            staging / f"frame-{index:04d}.{records[str(item['destinationArtifactId'])]['extension']}",
+                        )
+                        for index, item in enumerate(exports)
+                    ]
+                    native = timeline_commands._export_frame_targets(conn, targets=targets)
+                    if not native.get("restored_playhead") or len(native.get("frames") or []) != len(exports):
+                        raise APICallFailed("Frame exports did not restore the original playhead or exact output set.")
+                    for item, (_frame_ref, source) in zip(exports, targets):
+                        _copy_into_reservation(source, records[str(item["destinationArtifactId"])])
+                    result["positions"] = [item["position"] for item in exports]
+                else:
+                    target = staging / f"frame.{anchor['extension']}"
+                    with exclusive_resolve_state_operation(operation="sdk.timeline.frame_export"):
+                        native = timeline_commands._export_single_timeline_frame(
+                            conn,
+                            frame_ref=_record_ref(value["position"], conn),
+                            resolved_path=target,
+                            requested_output_path=str(target),
+                        )
+                    if not native.get("restored_playhead"):
+                        raise APICallFailed("Frame export did not restore the original playhead.")
+                    _copy_into_reservation(target, anchor)
                 expected_playhead = prepared["preState"]["protected"]["playhead"]
-                settled = timeline_ops.set_playhead(
-                    conn,
-                    expected_playhead["timecode"],
-                    return_details=True,
-                    frame_tolerance=0,
+                settled_frame = (
+                    timeline_ops.get_playhead(conn).get("frame")
+                    if isinstance(exports, list)
+                    else timeline_ops.set_playhead(
+                        conn,
+                        expected_playhead["timecode"],
+                        return_details=True,
+                        frame_tolerance=0,
+                    ).get("final_frame")
                 )
-                if int(settled.get("final_frame")) != int(expected_playhead["frame"]):
+                if int(settled_frame) != int(expected_playhead["frame"]):
                     raise APICallFailed("Frame export playhead restoration did not remain exact through artifact publication.")
                 result["originalPlayheadRestored"] = True
-                _copy_into_reservation(target, anchor)
             elif self.action_id == "cutagent.action.timeline.grab_still":
                 target = staging / f"still.{anchor['extension']}"
                 timeline_ops.grab_still(conn, output_path=str(target))
@@ -599,16 +639,20 @@ class TimelineArtifactPreparedActionDescriptor:
                 "modality": "readback", "digest": _digest(evidence_value),
                 "summary": (
                     "Exact project, Timeline, playhead, and gallery count matched independent readback."
-                    if gallery_only
+                    if protected_match and gallery_only and gallery_match
                     else "Exact project, Timeline, playhead, and artifact targets matched independent readback."
+                    if protected_match and artifact_match and gallery_match
+                    else "Timeline artifact context or output comparison failed."
                 ),
             },
-            {"modality": "structural", "digest": _digest(protected), "summary": "Protected Timeline structure remained unchanged."},
+            {"modality": "structural", "digest": _digest(protected), "summary": ("Protected Timeline structure remained unchanged." if protected_match
+                else _protected_difference_summary(prepared["preState"]["protected"], protected))},
         ]
         if artifact_ids:
             evidence.insert(0, {
                 "modality": "file", "digest": _digest(actual),
-                "summary": "Managed artifact bytes, media types, sizes, and digests matched readback.",
+                "summary": ("Managed artifact bytes, media types, sizes, and digests matched readback."
+                            if artifact_match else "Managed artifact readback differs from the execution receipt."),
             })
         return {
             "outcome": "passed" if passed else "failed",
@@ -662,7 +706,18 @@ class TimelineArtifactPreparedActionDescriptor:
                 "revisionChange": {"before": value["revision"], "after": value["revision"], "changed": False},
             }
         elif self.action_id == "cutagent.action.timeline.frame_export":
-            projected = {"actionId": self.action_id, "artifact": artifacts[0], "position": value["position"], "originalPlayheadRestored": True}
+            projected = (
+                {
+                    "actionId": self.action_id,
+                    "exports": [
+                        {"artifact": artifact, "position": item["position"]}
+                        for artifact, item in zip(artifacts, value["exports"])
+                    ],
+                    "originalPlayheadRestored": True,
+                }
+                if "exports" in value
+                else {"actionId": self.action_id, "artifact": artifacts[0], "position": value["position"], "originalPlayheadRestored": True}
+            )
         elif self.action_id == "cutagent.action.timeline.preview_export":
             projected = {"actionId": self.action_id, "artifact": artifacts[0], "frameArtifacts": artifacts[1:], "originalPlayheadRestored": True}
         elif self.action_id == "cutagent.action.timeline.still.grab_all":

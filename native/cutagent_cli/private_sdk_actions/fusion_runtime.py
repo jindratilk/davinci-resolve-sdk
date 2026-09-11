@@ -16,13 +16,15 @@ import math
 import os
 from pathlib import Path
 import re
+import tempfile
 import threading
+import time
 from typing import Any, Mapping
 
 from typer.models import ArgumentInfo, OptionInfo
 
 from ..connection import get_connection
-from ..core import fusion_api, sdk_live_inspection, sdk_tools, version_ops
+from ..core import fusion_api, fusion_image_ops, sdk_live_inspection, sdk_tools, version_ops
 from ..errors import APICallFailed
 from .errors import FusionDescriptorValidationError as InventoryValidationError
 from .fusion_evidence import fusion_emitted_evidence
@@ -48,7 +50,7 @@ _GRAPH_COMMANDS = frozenset({
 _ITEM_COMMANDS = frozenset({
     "fusion.comp.delete", "fusion.comp.rename", "fusion.image.set",
     "fusion.macro.apply", "fusion.nested_text.update", "fusion.template.apply",
-    "fusion.text.set", "dctl.apply",
+    "fusion.text.batch", "fusion.text.set", "dctl.apply",
 })
 _ARTIFACT_READ_COMMANDS = frozenset({
     "fusion.setting.inspect", "fusion.setting.summary", "fusion.setting.validate",
@@ -69,11 +71,11 @@ _READ_COMMANDS = frozenset({
     "fusion.setting.inspect", "fusion.setting.polypath_to_center", "fusion.setting.summary",
     "fusion.template.assets.list", "fusion.template.show", "fusion.template.validate",
     "fusion.tool.attrs", "fusion.tool.get", "fusion.tool.inputs", "fusion.tool.list",
-    "fusion.tool.outputs", "lut.convert", "lut.inspect", "lut.list", "lut.validate",
+    "fusion.tool.registry", "fusion.tool.outputs", "lut.convert", "lut.inspect", "lut.list", "lut.validate",
 })
 _LIVE_HANDLER_COMMANDS = frozenset({
     "fusion.image.set", "fusion.insert_setting", "fusion.macro.apply",
-    "fusion.nested_text.update", "fusion.template.apply", "fusion.text.set",
+    "fusion.nested_text.batch", "fusion.nested_text.update", "fusion.template.apply", "fusion.text.batch", "fusion.text.set",
 })
 _CREATE_TOOL_TYPES = {
     "fusion.effect.blur": "Blur",
@@ -425,8 +427,10 @@ def _comp_state(comp: Any) -> dict[str, Any]:
                     node["bezierPolyline"] = _canonical_fusion_value(bezier)
             except Exception:
                 pass
+    flow_view_available = False
     try:
         flow_view = comp.CurrentFrame.FlowView
+        flow_view_available = callable(getattr(flow_view, "GetPosTable", None))
         for node in graph.get("nodes", ()):
             tool = by_name.get(node.get("name"))
             position = flow_view.GetPosTable(tool) if tool is not None else None
@@ -459,6 +463,7 @@ def _comp_state(comp: Any) -> dict[str, Any]:
         "activeTool": active_tool_name,
         "rendering": rendering,
         "graph": graph,
+        "flowViewAvailable": flow_view_available,
         "attrsDigest": _digest(digest_attrs),
         "connectionAttrsDigest": _connection_attrs_digest(digest_attrs),
         "protectedDigest": _digest({"attrs": protected_attrs, "graph": graph}),
@@ -823,7 +828,20 @@ class FusionPreparedActionRuntime:
     def prepare_lowering(
         self, context: Mapping[str, Any], command_id: str, value: Mapping[str, Any], locator: Mapping[str, Any]
     ) -> Mapping[str, Any]:
-        if command_id in (_OFFLINE_COMMANDS | {"lut.list", "fusion.tool.inputs", "dctl.apply", "lut_refresh", "fusion.comp.delete", "fusion.comp.rename"}):
+        if command_id == "fusion.insert_settings.batch":
+            common = {key: value[key] for key in ("projectId", "timelineId", "revision")}
+            return {
+                "itemLowerings": [
+                    self.prepare_lowering(
+                        context,
+                        "fusion.insert_setting",
+                        {**common, **dict(item)},
+                        {},
+                    )
+                    for item in value["items"]
+                ]
+            }
+        if command_id in (_OFFLINE_COMMANDS | {"fusion.image.batch", "fusion.tool.registry", "lut.list", "fusion.tool.inputs", "dctl.apply", "lut_refresh", "fusion.comp.delete", "fusion.comp.rename", "fusion.nested_text.batch"}):
             return {}
         module, function_name = self._handler(command_id)
         handler = getattr(module, function_name)
@@ -835,10 +853,96 @@ class FusionPreparedActionRuntime:
             "handlerKwargs": self._handler_kwargs(self._bound(context), command_id, value, prepared, handler),
         }
 
+    @staticmethod
+    def _inspect_nested_text_update(
+        conn: Any, context: Mapping[str, Any], value: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        public_item_id = str(value["timelineItemId"])
+        item, track_index, record_frame = _find_item(conn, context, public_item_id)
+        from ..commands import fusion as fusion_commands
+
+        open_state = fusion_commands._open_nested_timeline(conn, item)
+        try:
+            text_items = fusion_commands._collect_nested_text_items(
+                open_state["nested_timeline"]
+            )
+            header_row, body_row = fusion_commands._select_nested_text_targets(
+                text_items,
+                header_clip_name=value.get("headerClipName"),
+                body_clip_name=value.get("bodyClipName"),
+            )
+
+            def role_state(row: Mapping[str, Any] | None) -> dict[str, Any] | None:
+                if row is None:
+                    return None
+                nested_item = row["item"]
+                comp = _composition(nested_item, 1)
+                return {
+                    "clipName": row.get("name"),
+                    "trackIndex": row.get("track_index"),
+                    "composition": _comp_state(comp),
+                }
+
+            state = {
+                "compoundNativeId": sdk_live_inspection.documented_unique_id(item),
+                "header": role_state(header_row),
+                "body": role_state(body_row),
+            }
+            state["digest"] = _digest(state)
+        finally:
+            fusion_commands._restore_original_timeline(
+                open_state["project"], open_state["original_timeline"]
+            )
+            try:
+                conn.timeline = open_state["original_timeline"]
+            except Exception:
+                pass
+
+        return {
+            "targets": [{
+                "kind": "timeline_item",
+                "stableId": public_item_id,
+                "revision": state["digest"],
+            }],
+            "preState": state,
+            "locator": {
+                "timelineItemId": public_item_id,
+                "trackIndex": track_index,
+                "recordFrame": record_frame,
+                "clipName": str(item.GetName() or ""),
+            },
+        }
+
     def inspect(
         self, context: Mapping[str, Any], command_id: str, value: Mapping[str, Any]
     ) -> dict[str, Any]:
         context = self._bound(context)
+        if command_id == "fusion.nested_text.batch":
+            conn = get_connection(require_project=True, require_timeline=True)
+            observations = [
+                self._inspect_nested_text_update(conn, context, {
+                    "projectId": value["projectId"],
+                    "timelineId": value["timelineId"],
+                    "revision": value["revision"],
+                    **dict(update),
+                })
+                for update in value["updates"]
+            ]
+            return {
+                "targets": [
+                    deepcopy(target)
+                    for observation in observations
+                    for target in observation["targets"]
+                ],
+                "preState": {"items": [
+                    deepcopy(dict(observation["preState"]))
+                    for observation in observations
+                ]},
+                "locator": {"items": [
+                    deepcopy(dict(observation["locator"]))
+                    for observation in observations
+                ]},
+            }
         if command_id in _OFFLINE_COMMANDS:
             state = deepcopy(dict(value))
             digest = _digest(state)
@@ -855,6 +959,13 @@ class FusionPreparedActionRuntime:
                 "preState": state,
                 "locator": {"templatePath": str(path)},
             }
+        if command_id == "fusion.tool.registry":
+            registry = self._read_tool_registry(value)
+            state = {"registry": registry, "digest": _digest(registry)}
+            return {
+                "targets": [{"kind": "project_library", "stableId": "fusion_tool_registry", "revision": state["digest"]}],
+                "preState": state, "locator": {},
+            }
         if command_id == "lut.list":
             rows = self._scan_luts(value)
             state = {"rows": rows, "digest": _digest(rows)}
@@ -870,6 +981,27 @@ class FusionPreparedActionRuntime:
                 "targets": [{"kind": "media", "stableId": artifact_id, "revision": state["digest"]}],
                 "preState": state,
                 "locator": {"artifactId": artifact_id},
+            }
+        if command_id == "fusion.image.batch":
+            conn = get_connection(require_project=True, require_timeline=True)
+            rows = []
+            targets = []
+            locators = []
+            for requested in value["items"]:
+                public_item_id = str(requested["timelineItemId"])
+                index = int(requested["compositionIndex"])
+                item, track_index, record_frame = _find_item(conn, context, public_item_id)
+                comp = _composition(item, index)
+                state = _comp_state(comp)
+                state["name"] = _composition_name(item, index, comp.GetAttrs() or {})
+                rows.append(state)
+                target_id = f"{public_item_id}:fusion:{index}"
+                targets.append({"kind": "fusion_composition", "stableId": target_id, "revision": state["digest"]})
+                locators.append({"timelineItemId": public_item_id, "compositionIndex": index, "trackIndex": track_index, "recordFrame": record_frame, "clipName": str(item.GetName() or "")})
+            return {
+                "targets": targets,
+                "preState": {"items": rows, "timelineProtected": self._timeline_state(conn)},
+                "locator": {"items": locators},
             }
         if command_id in _FILESYSTEM_COMMANDS:
             paths = self._filesystem_targets(context, command_id, value)
@@ -898,6 +1030,8 @@ class FusionPreparedActionRuntime:
             return {"targets": targets, "preState": states, "locator": locator}
 
         conn = get_connection(require_project=True, require_timeline=command_id != "lut_refresh")
+        if command_id == "fusion.nested_text.update":
+            return self._inspect_nested_text_update(conn, context, value)
         if command_id == "lut_refresh":
             project_id = str(value["projectId"])
             revision = str(value["revision"])
@@ -906,13 +1040,40 @@ class FusionPreparedActionRuntime:
                 "preState": {"projectRevision": revision},
                 "locator": {},
             }
-        if command_id == "fusion.insert_setting":
+        if command_id in {"fusion.insert_setting", "fusion.insert_settings.batch"}:
             timeline_id = str(value["timelineId"])
             revision = str(value["revision"])
             return {
                 "targets": [{"kind": "timeline", "stableId": timeline_id, "revision": revision}],
                 "preState": self._timeline_state(conn),
                 "locator": {},
+            }
+
+        if command_id == "fusion.text.batch":
+            rows: list[dict[str, Any]] = []
+            states: dict[str, Any] = {}
+            targets: list[dict[str, str]] = []
+            for update in value["updates"]:
+                public_item_id = str(update["timelineItemId"])
+                item, track_index, record_frame = _find_item(conn, context, public_item_id)
+                index = int(update["compositionIndex"])
+                comp = _composition(item, index)
+                state = _comp_state(comp)
+                target_id = f"{public_item_id}:fusion:{index}"
+                if target_id not in states:
+                    states[target_id] = state
+                    targets.append({"kind": "fusion_composition", "stableId": target_id, "revision": state["digest"]})
+                rows.append({
+                    "timelineItemId": public_item_id,
+                    "compositionIndex": index,
+                    "trackIndex": track_index,
+                    "recordFrame": record_frame,
+                    "clipName": str(item.GetName() or ""),
+                })
+            return {
+                "targets": targets,
+                "preState": {"compositions": states, "timeline": self._timeline_state(conn), "digest": _digest(states)},
+                "locator": {"updates": rows},
             }
 
         public_item_id = str(value["timelineItemId"])
@@ -987,6 +1148,8 @@ class FusionPreparedActionRuntime:
         execution_id = self._execution_id(context)
         before = deepcopy(dict(prepared["preState"]))
         checkpoint_id = None
+        conn = None
+        mutation_conn = None
         backups: dict[str, bytes | None] = {}
         created_directories: tuple[str, ...] = ()
         if command_id in _FILESYSTEM_COMMANDS:
@@ -999,6 +1162,7 @@ class FusionPreparedActionRuntime:
             )
         elif command_id not in _READ_COMMANDS:
             conn = get_connection(require_project=True, require_timeline=command_id != "lut_refresh")
+            mutation_conn = conn
             checkpoint = version_ops.create_checkpoint(
                 conn,
                 label=f"SDK Fusion recovery {execution_id}",
@@ -1017,6 +1181,8 @@ class FusionPreparedActionRuntime:
             path = Path(str(prepared["lowering"]["locator"]["templatePath"]))
             native = self._invoke_handler(context, command_id, value, prepared)
             native = {**dict(native), "name": value["name"], "artifactId": self._custody.adopt(context, str(path))}
+        elif command_id == "fusion.tool.registry":
+            native = self._read_tool_registry(value)
         elif command_id == "lut.list":
             native = {"luts": self._list_luts(context, value)}
         elif command_id == "fusion.tool.inputs":
@@ -1025,12 +1191,57 @@ class FusionPreparedActionRuntime:
             native = self._execute_keyframe_list(context, value)
         elif command_id in {"fusion.keyframe.add", "fusion.keyframe.set", "fusion.tool.set"}:
             native = self._execute_typed_tool_write(context, command_id, value)
+        elif command_id == "fusion.nested_text.batch":
+            native = self._execute_nested_text_batch(value, prepared, mutation_conn)
         elif command_id == "dctl.apply":
             native = self._execute_dctl(context, value)
         elif command_id == "lut_refresh":
             native = self._execute_lut_refresh()
+        elif command_id == "fusion.image.batch":
+            if conn is None:
+                raise InventoryValidationError("Fusion image batch lost its prepared native connection")
+            locators = prepared.get("lowering", {}).get("locator", {}).get("items", [])
+            results = []
+            batch_started = time.perf_counter()
+            for index, requested in enumerate(value["items"]):
+                item_started = time.perf_counter()
+                try:
+                    locator = locators[index]
+                    item, _, _ = _find_item(conn, context, str(requested["timelineItemId"]))
+                    position = requested.get("position") if isinstance(requested.get("position"), Mapping) else {}
+                    zoom = requested.get("zoom") if isinstance(requested.get("zoom"), Mapping) else {}
+                    native_row = fusion_image_ops.set_image_on_item(
+                        conn, item, _managed_path(context, str(requested["imageArtifactId"])),
+                        group_tool_name=requested.get("groupToolName"),
+                        group_input_name=requested.get("groupInputName"),
+                        import_media=bool(requested.get("importMedia", True)),
+                        transform={"zoom_x": zoom.get("x"), "zoom_y": zoom.get("y"), "pan": position.get("x"), "tilt": position.get("y")},
+                        composition_index=int(requested["compositionIndex"]),
+                    )
+                    if native_row.get("updated") is not True:
+                        raise InventoryValidationError("Fusion image replacement produced no verified update")
+                    results.append({"index": index, "ok": True, "durationMs": (time.perf_counter() - item_started) * 1_000, "result": native_row, "locator": deepcopy(dict(locator))})
+                except Exception as exc:
+                    results.append({"index": index, "ok": False, "durationMs": (time.perf_counter() - item_started) * 1_000, "error": {"code": type(exc).__name__, "message": str(exc)}})
+            native = {"results": results, "durationMs": (time.perf_counter() - batch_started) * 1_000}
         elif command_id in {"fusion.comp.delete", "fusion.comp.rename"}:
             native = self._execute_comp_identity(context, command_id, value, prepared)
+        elif command_id == "fusion.insert_settings.batch":
+            lowerings = prepared.get("lowering", {}).get("itemLowerings")
+            if not isinstance(lowerings, list) or len(lowerings) != len(value["items"]):
+                raise InventoryValidationError("prepared Fusion setting insertion list is unavailable")
+            common = {key: value[key] for key in ("projectId", "timelineId", "revision")}
+            native = {
+                "items": [
+                    self._invoke_handler(
+                        context,
+                        "fusion.insert_setting",
+                        {**common, **dict(item)},
+                        {"lowering": {"locator": {}, **dict(lowering)}},
+                    )
+                    for item, lowering in zip(value["items"], lowerings)
+                ]
+            }
         else:
             native = self._invoke_handler(context, command_id, value, prepared)
         after = self.inspect_after(context, command_id, value, prepared)
@@ -1044,7 +1255,22 @@ class FusionPreparedActionRuntime:
         prepared: Mapping[str, Any],
     ) -> dict[str, Any]:
         context = self._bound(context)
-        if command_id in _ARTIFACT_READ_COMMANDS or command_id in {"fusion.template.show", "lut.list"}:
+        if command_id == "fusion.nested_text.batch":
+            conn = get_connection(require_project=True, require_timeline=True)
+            observations = [
+                self._inspect_nested_text_update(conn, context, {
+                    "projectId": value["projectId"],
+                    "timelineId": value["timelineId"],
+                    "revision": value["revision"],
+                    **dict(update),
+                })
+                for update in value["updates"]
+            ]
+            return {"items": [
+                deepcopy(dict(observation["preState"]))
+                for observation in observations
+            ]}
+        if command_id in _ARTIFACT_READ_COMMANDS or command_id in {"fusion.template.show", "fusion.tool.registry", "lut.list"}:
             return self.inspect(context, command_id, value)["preState"]
         if command_id in _OFFLINE_COMMANDS:
             return self.inspect(context, command_id, value)["preState"]
@@ -1064,7 +1290,7 @@ class FusionPreparedActionRuntime:
             else:
                 paths = self._filesystem_targets(context, command_id, value, after=True)
             return self._filesystem_states(command_id, paths)
-        if command_id == "fusion.insert_setting":
+        if command_id in {"fusion.insert_setting", "fusion.insert_settings.batch"}:
             conn = get_connection(require_project=True, require_timeline=True)
             # Precise setting insertion can close and reopen the project through
             # its scratch-DB placement route. Rebind before independent readback
@@ -1106,7 +1332,25 @@ class FusionPreparedActionRuntime:
     ) -> dict[str, Any]:
         before = result["before"]
         after = result["after"]
-        passed = self._verify_exact(command_id, value, before, after, result["nativeResult"])
+        if command_id == "fusion.nested_text.batch":
+            native_rows = result["nativeResult"].get("results", ())
+            before_items = before.get("items", ())
+            after_items = after.get("items", ())
+            updates = value.get("updates", ())
+            passed = (
+                len(native_rows) == len(updates)
+                and len(before_items) == len(native_rows)
+                and len(after_items) == len(native_rows)
+                and all(
+                    self._verify_exact(
+                        "fusion.nested_text.update", updates[index],
+                        before_items[index], after_items[index], row,
+                    ) if row.get("ok") else before_items[index] == after_items[index]
+                    for index, row in enumerate(native_rows)
+                )
+            )
+        else:
+            passed = self._verify_exact(command_id, value, before, after, result["nativeResult"])
         copy_source_fields = {
             "fusion.template.assets.add": "assetArtifactId",
             "fusion.template.icon.set": "pngArtifactId",
@@ -1369,6 +1613,13 @@ class FusionPreparedActionRuntime:
             raise InventoryValidationError("exact Fusion template setting is unavailable")
         return path
 
+    @staticmethod
+    def _read_tool_registry(value: Mapping[str, Any]) -> dict[str, Any]:
+        conn = get_connection(require_timeline=False)
+        return fusion_api.get_fusion_api(conn).list_registered_tools(
+            query=value.get("query"), category=value.get("category"), limit=value.get("limit", 1024)
+        )
+
     def _list_luts(self, context: Mapping[str, Any], value: Mapping[str, Any]) -> list[dict[str, str]]:
         return [
             {"name": row["name"], "artifactId": self._custody.adopt(context, row["path"], stable_namespace=True), "root": row["root"]}
@@ -1415,6 +1666,26 @@ class FusionPreparedActionRuntime:
         if not isinstance(kwargs, Mapping):
             raise InventoryValidationError("prepared handler lowering is unavailable")
         kwargs = deepcopy(dict(kwargs))
+        temporary_batch_path: str | None = None
+        if command_id == "fusion.text.batch":
+            locator_rows = prepared.get("lowering", {}).get("locator", {}).get("updates")
+            if not isinstance(locator_rows, list) or len(locator_rows) != len(value.get("updates", [])):
+                raise InventoryValidationError("prepared Fusion text batch locators are unavailable")
+            entries = []
+            for update, locator in zip(value["updates"], locator_rows):
+                entries.append({
+                    "track": locator["trackIndex"],
+                    "record_frame": locator["recordFrame"],
+                    "composition_index": update["compositionIndex"],
+                    "tool": update["toolName"],
+                    "inputs": [update["inputName"]],
+                    "text": update["text"],
+                    "exact_target": True,
+                })
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".json", encoding="utf-8", delete=False) as stream:
+                json.dump(entries, stream, ensure_ascii=False, separators=(",", ":"))
+                temporary_batch_path = stream.name
+            kwargs["batch"] = temporary_batch_path
         if command_id == "fusion.template.apply":
             locator = prepared.get("lowering", {}).get("locator", {})
             template_path = locator.get("templatePath")
@@ -1467,6 +1738,8 @@ class FusionPreparedActionRuntime:
                     globals_["fusion_api"].get_fusion_api = old_fusion_getter
                 for name, original in old.items():
                     globals_[name] = original
+                if temporary_batch_path is not None:
+                    Path(temporary_batch_path).unlink(missing_ok=True)
         native = captured[-1] if captured else {"completed": True}
         if isinstance(native, Mapping):
             native = deepcopy(dict(native))
@@ -1498,13 +1771,13 @@ class FusionPreparedActionRuntime:
             "fusion.effect.blur": "effect_blur", "fusion.effect.color_correct": "effect_color_correct",
             "fusion.effect.glow": "effect_glow", "fusion.effect.sharpen": "effect_sharpen",
             "fusion.effect.transform": "effect_transform", "fusion.generate": "generate",
-            "fusion.image.set": "image_set", "fusion.insert_setting": "insert_setting",
+            "fusion.image.batch": "image_batch", "fusion.image.set": "image_set", "fusion.insert_setting": "insert_setting",
             "fusion.keyer.chroma": "keyer_chroma", "fusion.keyframe.add": "keyframe_add",
             "fusion.keyframe.clear": "keyframe_clear", "fusion.keyframe.delete": "keyframe_delete",
             "fusion.keyframe.set": "keyframe_set", "fusion.macro.apply": "macro_apply",
             "fusion.keyframe.list": "keyframe_list",
             "fusion.mask.ellipse": "mask_ellipse", "fusion.mask.polygon": "mask_polygon",
-            "fusion.mask.rectangle": "mask_rectangle", "fusion.nested_text.update": "nested_text_update",
+            "fusion.mask.rectangle": "mask_rectangle", "fusion.nested_text.batch": "nested_text_batch", "fusion.nested_text.update": "nested_text_update",
             "fusion.node.add": "node_add", "fusion.node.connect": "node_connect",
             "fusion.node.delete": "node_delete", "fusion.node.disconnect": "node_disconnect",
             "fusion.setting.inspect": "setting_inspect", "fusion.setting.summary": "setting_summary_command",
@@ -1513,7 +1786,8 @@ class FusionPreparedActionRuntime:
             "fusion.template.dir": "template_dir", "fusion.template.icon.set": "template_icon_set",
             "fusion.template.install": "template_install", "fusion.template.package_drfx": "template_package_drfx",
             "fusion.template.scaffold": "template_scaffold", "fusion.template.uninstall": "template_uninstall",
-            "fusion.template.show": "template_show", "fusion.template.validate": "template_validate", "fusion.text.set": "text_set",
+            "fusion.template.show": "template_show", "fusion.template.validate": "template_validate",
+            "fusion.text.batch": "text_batch", "fusion.text.set": "text_set",
             "fusion.tool.active": "tool_active", "fusion.tool.add": "tool_add",
             "fusion.tool.attrs": "tool_attrs", "fusion.tool.connect": "tool_connect", "fusion.tool.delete": "tool_delete",
             "fusion.tool.disconnect": "tool_disconnect", "fusion.tool.paste": "tool_paste",
@@ -1620,6 +1894,7 @@ class FusionPreparedActionRuntime:
             "fusion.template.apply": lambda: {"template": locator["templatePath"], **timeline_selector()},
             "fusion.nested_text.update": lambda: {"header": value.get("header"), "body": value.get("body"), **timeline_selector(), "header_clip": value.get("headerClipName"), "body_clip": value.get("bodyClipName"), "header_uppercase": bool(value.get("headerUppercase")), "header_double_spaces": bool(value.get("headerDoubleSpaces")), "bold_style": value.get("boldStyle", "ExtraBold")},
             "fusion.text.set": lambda: {"text": value["text"], **timeline_selector(), "role": value.get("role"), "tool": value.get("toolName"), "tool_candidate": value.get("toolCandidates"), "input_name": value.get("inputNames"), "uppercase": bool(value.get("uppercase")), "double_spaces": bool(value.get("doubleSpaces")), "styled": bool(value.get("styled")), "bold_style": value.get("boldStyle", "ExtraBold"), "cls_tool": value.get("stylingToolCandidates")},
+            "fusion.text.batch": lambda: {"batch": "prepared-at-execution"},
             "fusion.tool.attrs": lambda: {"tool_name": value["toolName"]},
             "fusion.tool.get": lambda: {"tool_name": value["toolName"], "input_name": value["inputName"], "time": source("sourcePosition")},
             "fusion.tool.inputs": lambda: {"tool_name": value["toolName"]},
@@ -1776,6 +2051,35 @@ class FusionPreparedActionRuntime:
         }
 
     @staticmethod
+    def _execute_nested_text_batch(
+        value: Mapping[str, Any], prepared: Mapping[str, Any], conn: Any
+    ) -> dict[str, Any]:
+        if conn is None:
+            raise InventoryValidationError("Nested Fusion text batch has no live timeline connection")
+        locators = prepared.get("lowering", {}).get("locator", {}).get("items")
+        if not isinstance(locators, list) or len(locators) != len(value["updates"]):
+            raise InventoryValidationError("Nested Fusion text batch locator binding is incomplete")
+        entries = []
+        for update, locator in zip(value["updates"], locators):
+            if not isinstance(locator, Mapping):
+                raise InventoryValidationError("Nested Fusion text batch locator is invalid")
+            entries.append({
+                "clip": None,
+                "track": locator.get("trackIndex"),
+                "record_frame": locator.get("recordFrame"),
+                "header": update.get("header"),
+                "body": update.get("body"),
+                "header_clip": update.get("headerClipName"),
+                "body_clip": update.get("bodyClipName"),
+                "header_uppercase": bool(update.get("headerUppercase")),
+                "header_double_spaces": bool(update.get("headerDoubleSpaces")),
+                "bold_style": update.get("boldStyle", "ExtraBold"),
+            })
+        from ..commands import fusion as fusion_commands
+
+        return fusion_commands._run_nested_text_batch(conn, entries, dry_run=False)
+
+    @staticmethod
     def _execute_lut_refresh() -> dict[str, Any]:
         conn = get_connection(require_project=True)
         refresher = getattr(conn.project, "RefreshLUTList", None)
@@ -1798,6 +2102,20 @@ class FusionPreparedActionRuntime:
     def _verify_exact(
         command_id: str, value: Mapping[str, Any], before: Mapping[str, Any], after: Mapping[str, Any], native: Any
     ) -> bool:
+        if command_id == "fusion.image.batch":
+            before_items = before.get("items") if isinstance(before.get("items"), list) else []
+            after_items = after.get("items") if isinstance(after.get("items"), list) else []
+            native_rows = native.get("results") if isinstance(native, Mapping) and isinstance(native.get("results"), list) else []
+            return (
+                before.get("timelineProtected") == after.get("timelineProtected")
+                and len(before_items) == len(after_items) == len(native_rows) == len(value["items"])
+                and all(isinstance(row, Mapping) for row in native_rows)
+                and all(
+                (row.get("ok") is True and before_items[index] != after_items[index])
+                or (row.get("ok") is False and before_items[index] == after_items[index])
+                for index, row in enumerate(native_rows)
+                )
+            )
         if command_id in _ARTIFACT_READ_COMMANDS:
             return before == after
         if command_id in _OFFLINE_COMMANDS:
@@ -1837,6 +2155,39 @@ class FusionPreparedActionRuntime:
             )
         if command_id == "lut_refresh":
             return after.get("apiAcknowledged") is True
+        if command_id == "fusion.text.batch":
+            native_results = native.get("results") if isinstance(native, Mapping) else None
+            if (
+                not isinstance(native_results, list)
+                or native.get("failure_count") != 0
+                or len(native_results) != len(value["updates"])
+                or before.get("timeline") != after.get("timeline")
+            ):
+                return False
+            before_states = before.get("compositions")
+            after_states = after.get("compositions")
+            if not isinstance(before_states, Mapping) or not isinstance(after_states, Mapping):
+                return False
+            protected_before = deepcopy(dict(before_states))
+            protected_after = deepcopy(dict(after_states))
+            for update, native_row in zip(value["updates"], native_results):
+                if not isinstance(native_row, Mapping) or native_row.get("ok") is not True or native_row.get("verified") is not True:
+                    return False
+                if native_row.get("tool_selected") != update["toolName"] or native_row.get("input_applied") != update["inputName"]:
+                    return False
+                target_id = f"{update['timelineItemId']}:fusion:{int(update['compositionIndex'])}"
+                after_row = _input_row(after_states.get(target_id, {}), update["toolName"], update["inputName"])
+                if not isinstance(after_row, Mapping) or not _native_values_equal(after_row.get("value"), update["text"]):
+                    return False
+                for states in (protected_before, protected_after):
+                    state = states.get(target_id)
+                    row = _input_row(state, update["toolName"], update["inputName"]) if isinstance(state, Mapping) else None
+                    if isinstance(row, dict):
+                        row["value"] = "__cutagent_requested_text__"
+                    if isinstance(state, dict):
+                        for key in ("digest", "protectedDigest", "renameProtectedDigest"):
+                            state.pop(key, None)
+            return protected_before == protected_after
         if command_id == "dctl.apply":
             return (
                 isinstance(after.get("lut"), str)
@@ -1948,24 +2299,37 @@ class FusionPreparedActionRuntime:
             if len(added) != 1:
                 return False
             node = _node_map(after)[next(iter(added))]
-            if node.get("type") != value["toolType"] or not isinstance(node.get("flowPosition"), Mapping):
+            if node.get("type") != value["toolType"] or (value.get("name") is not None and node.get("name") != value["name"]):
                 return False
             requested = value.get("flowPosition")
-            return requested is None or _native_values_equal(node["flowPosition"], requested)
+            return requested is None or _native_values_equal(node.get("flowPosition"), requested)
         if command_id in _CREATE_TOOL_TYPES:
             return _verify_created_tool(command_id, value, before, after)
-        if command_id == "fusion.insert_setting":
+        if command_id in {"fusion.insert_setting", "fusion.insert_settings.batch"}:
             before_ids = {row.get("nativeId") for row in before.get("items", ())}
             added = [row for row in after.get("items", ()) if row.get("nativeId") not in before_ids]
-            if len(added) != 1:
+            requested = [value] if command_id == "fusion.insert_setting" else list(value["items"])
+            if len(added) != len(requested):
                 return False
-            row = added[0]
-            requested_track = value.get("videoTrackIndex")
-            return (
-                row.get("start") == int(value["recordPosition"]["value"]["value"])
-                and row.get("duration") == int(value["clipDuration"]["value"]["value"])
-                and (requested_track is None or row.get("track") == int(requested_track))
-            )
+            preserved = {
+                row.get("nativeId"): row for row in after.get("items", ())
+                if row.get("nativeId") in before_ids
+            }
+            if any(preserved.get(row.get("nativeId")) != row for row in before.get("items", ())):
+                return False
+            remaining = list(added)
+            for item in requested:
+                requested_track = item.get("videoTrackIndex")
+                matches = [row for row in remaining if (
+                    row.get("start") == int(item["recordPosition"]["value"]["value"])
+                    and row.get("duration") == int(item["clipDuration"]["value"]["value"])
+                    and (requested_track is None or row.get("track") == int(requested_track))
+                    and (item.get("clipName") is None or row.get("name") == item.get("clipName"))
+                )]
+                if len(matches) != 1:
+                    return False
+                remaining.remove(matches[0])
+            return not remaining
         if command_id == "fusion.comp.render":
             return isinstance(native, Mapping) and after.get("rendering") is False
         if command_id == "fusion.tool.paste":

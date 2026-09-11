@@ -55,7 +55,6 @@ _OPAQUE_ID = {
     "operationId": re.compile(r"^operation_[A-Za-z0-9][A-Za-z0-9._~-]{0,149}$"),
     "executionId": re.compile(r"^execution_[A-Za-z0-9][A-Za-z0-9._~-]{0,149}$"),
 }
-_SCOPE_ID = re.compile(r"^constraint_scope_[A-Za-z0-9._~-]{16,128}$")
 _STABLE_TARGET_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:~+/-]{2,255}$")
 _STATE_REVISION = re.compile(r"^(?:sha256:)?[A-Za-z0-9_-]{16,128}$")
 _PRIVATE_KEYS = frozenset(
@@ -1082,8 +1081,7 @@ def _build_handler_impact(
     expected_base_keys = {
         "contractVersion", "carrier", "minimumBinding", "registryDigest",
         "canonicalRequestDigest", "referencedPayloadDigests", "requestId",
-        "operationId", "executionId", "scopeId", "scopeRevision",
-        "projectLibraryId",
+        "operationId", "executionId", "projectLibraryId",
     }
     optional_base_keys = {
         "projectId", "timelineId", "projectRevision", "timelineRevision",
@@ -1494,10 +1492,17 @@ def _project_handler_result(
                 "recovery": {
                     "state": "not_needed",
                     "retry": "inspect_state_first",
-                    "guidance": "The exact clip gain was read back after DaVinci Resolve reopened the project.",
+                    "guidance": "The exact clip gain was read back after the mutation.",
                 },
             },
         }
+    if action_id in {"cutagent.action.clip.audio_normalize", "cutagent.action.clip.audio_pan", "cutagent.action.clip.audio_pitch", "cutagent.action.clip.fade_in"}:
+        data = _semantic_data(after)
+        if "native_before" in data or "native_items" in data:
+            from .native_clip_audio_result import project_native_audio
+
+            proof = _handler_evidence(descriptor, prepared, result)
+            return project_native_audio(action_id, prepared, after, data, _public_verification(proof["evidence"]))
     if action_id.startswith("cutagent.action.clip."):
         projected = after.get("preState", {}).get("publicResult")
         if not isinstance(projected, Mapping) or projected.get("actionId") != action_id:
@@ -1747,7 +1752,7 @@ def _validate_impact(
         required = {
             "contractVersion", "carrier", "status", "minimumBinding", "registryDigest",
             "canonicalRequestDigest", "referencedPayloadDigests", "requestId", "operationId",
-            "executionId", "scopeId", "scopeRevision", "projectLibraryId", "effects",
+            "executionId", "projectLibraryId", "effects",
             "closedComposition", "complete", "ambiguous", "broad",
             "executableStableTargetPrecondition", "verificationPolicy",
         }
@@ -1779,24 +1784,21 @@ def _validate_impact(
                 or any(_DIGEST.fullmatch(str(item)) is None for item in impact["referencedPayloadDigests"]) \
                 or any(_OPAQUE_ID[key].fullmatch(str(impact.get(key, ""))) is None
                        for key in ("requestId", "operationId", "executionId")) \
-                or _SCOPE_ID.fullmatch(str(impact.get("scopeId", ""))) is None \
                 or _STABLE_TARGET_ID.fullmatch(str(impact.get("projectLibraryId", ""))) is None \
-                or not isinstance(impact.get("scopeRevision"), int) \
-                or not (1 <= impact["scopeRevision"] <= 9_007_199_254_740_991) \
                 or impact.get("status") != "mutation" or impact.get("ambiguous") is not False \
                 or impact.get("broad") is not False or impact.get("closedComposition") is not True \
                 or impact.get("executableStableTargetPrecondition") is not True \
                 or not isinstance(effects, list) or not effects or len(effects) > 10_000:
-            raise ValidationError("Mutation Policy impact is not exact and closed.")
+            raise ValidationError("Prepared mutation impact is not exact and closed.")
         if any(impact.get(key) != expected_value for key, expected_value in mutation_base.items()):
-            raise ValidationError("Mutation Policy impact changed the carrier-owned mutation base.")
+            raise ValidationError("Prepared mutation impact changed the carrier-owned mutation base.")
         expected_payload_digests = [
             artifact["digest"]
             for artifact in authority["artifactBindings"]
             if artifact["role"].startswith("managed_input")
         ]
         if impact["referencedPayloadDigests"] != expected_payload_digests:
-            raise ValidationError("Mutation Policy payload digests do not close over managed inputs.")
+            raise ValidationError("Prepared mutation payload digests do not close over managed inputs.")
         expected_binding = (
             "account/project-library"
             if descriptor.authority == "managed_artifact_revision"
@@ -2071,7 +2073,7 @@ def residual_av_prepared_action_descriptors(
     *,
     authority: ResidualAvExecutionAuthority,
 ) -> Mapping[str, ResidualAvPreparedActionDescriptor]:
-    """Return the exact 72-action residual contribution for the sole signed carrier."""
+    """Return the exact 73-action residual contribution for the sole signed carrier."""
 
     expected = {
         descriptor.action_id
@@ -2097,8 +2099,8 @@ def residual_av_prepared_action_descriptors(
         for descriptor in RESIDUAL_AV_ACTION_DESCRIPTORS
         if descriptor.action_id not in UNAVAILABLE_RESIDUAL_AV_ACTIONS
     }
-    if len(descriptors) != 72:
-        raise RuntimeError("Residual prepared-action contribution must contain exactly 72 actions.")
+    if len(descriptors) != 73:
+        raise RuntimeError("Residual prepared-action contribution must contain exactly 73 actions.")
     return MappingProxyType(descriptors)
 
 

@@ -52,6 +52,43 @@ export interface ColorShotMatchOptions {
   readonly strength?: number;
 }
 
+/** One exact LUT application in a single or plural Color request. @beta */
+export interface ColorLutApplication {
+  readonly snapshot: ColorTargetSnapshot;
+  readonly nodeIndex: number;
+  readonly lutName: string;
+}
+
+/** Failure handling for a plural LUT application. @beta */
+export interface ColorLutOptions {
+  readonly failurePolicy?: "continue" | "stop";
+}
+
+/** Backward-compatible single-target LUT action request. @beta */
+export interface ColorLutSingleRequest {
+  readonly actionId: "cutagent.action.color.lut";
+  readonly input: Readonly<Extract<ActionInput<"cutagent.action.color.lut">, { timelineItemId: unknown }>>;
+}
+
+/** One prepared plural LUT action request. @beta */
+export interface ColorLutPluralRequest {
+  readonly actionId: "cutagent.action.color.lut";
+  readonly input: Readonly<{
+    projectId: ProjectId;
+    timelineId: string;
+    revision: Revision;
+    items: readonly Readonly<{
+      timelineItemId: TimelineItemId;
+      colorRevision: Revision;
+      nodeStackLayerIndex: number;
+      nodeIndex: number;
+      lutName: string;
+      clear: false;
+    }>[];
+    failurePolicy: "continue" | "stop";
+  }>;
+}
+
 const ID = {
   group: /^group_[A-Za-z0-9][A-Za-z0-9._~-]*$/,
   album: /^album_[A-Za-z0-9][A-Za-z0-9._~-]*$/,
@@ -137,9 +174,51 @@ export function applyColorStill(snapshot: ColorTargetSnapshot, still: ColorStill
 }
 
 /** Apply one installed public LUT name without exposing a local filesystem path. @beta */
-export function applyColorLut(snapshot: ColorTargetSnapshot, nodeIndex: number, lutName: string) {
-  if (!snapshot.nodeGraph.nodes.some((node) => node.index === nodeIndex)) throw new TypeError("Color node reference is stale or outside the inspected graph.");
-  return request("cutagent.action.color.lut", { ...nodeTarget(snapshot), nodeIndex, lutName: installedLutName(lutName), clear: false });
+export function applyColorLut(snapshot: ColorTargetSnapshot, nodeIndex: number, lutName: string): ColorLutSingleRequest;
+/** Apply one or more exact LUT assignments in one prepared operation. @beta */
+export function applyColorLut(applications: ColorLutApplication | readonly ColorLutApplication[], options?: ColorLutOptions): ColorLutPluralRequest;
+export function applyColorLut(
+  snapshotOrApplications: ColorTargetSnapshot | ColorLutApplication | readonly ColorLutApplication[],
+  nodeIndexOrOptions?: number | ColorLutOptions,
+  lutName?: string,
+): ColorLutSingleRequest | ColorLutPluralRequest {
+  if (typeof nodeIndexOrOptions === "number") {
+    const snapshot = snapshotOrApplications as ColorTargetSnapshot;
+    if (!snapshot.nodeGraph.nodes.some((node: { readonly index: number }) => node.index === nodeIndexOrOptions)) throw new TypeError("Color node reference is stale or outside the inspected graph.");
+    return request("cutagent.action.color.lut", { ...nodeTarget(snapshot), nodeIndex: nodeIndexOrOptions, lutName: installedLutName(lutName ?? ""), clear: false }) as ColorLutSingleRequest;
+  }
+
+  const applications = Array.isArray(snapshotOrApplications)
+    ? snapshotOrApplications
+    : [snapshotOrApplications as ColorLutApplication];
+  if (applications.length === 0 || applications.length > 128) throw new TypeError("LUT application requires between 1 and 128 exact targets.");
+  const first = applications[0]!;
+  const common = target(first.snapshot);
+  const seen = new Set<string>();
+  const items = applications.map(({ snapshot, nodeIndex, lutName: name }) => {
+    if (snapshot.projectId !== common.projectId || snapshot.timelineId !== common.timelineId || snapshot.timelineRevision !== common.revision) {
+      throw new TypeError("Plural LUT targets must belong to the same project, timeline, and inspected timeline revision.");
+    }
+    if (seen.has(String(snapshot.clip.id))) throw new TypeError("Plural LUT targets must be unique.");
+    seen.add(String(snapshot.clip.id));
+    if (!snapshot.nodeGraph.nodes.some((node: { readonly index: number }) => node.index === nodeIndex)) throw new TypeError("Color node reference is stale or outside the inspected graph.");
+    return freeze({
+      timelineItemId: snapshot.clip.id,
+      colorRevision: snapshot.revision,
+      nodeStackLayerIndex: snapshot.nodeStackLayerIndex,
+      nodeIndex,
+      lutName: installedLutName(name),
+      clear: false as const,
+    });
+  });
+  const options = nodeIndexOrOptions as ColorLutOptions | undefined;
+  return request("cutagent.action.color.lut", {
+    projectId: common.projectId,
+    timelineId: common.timelineId,
+    revision: common.revision,
+    items,
+    failurePolicy: options?.failurePolicy ?? "continue",
+  }) as ColorLutPluralRequest;
 }
 
 /** Build an exact rectangular grading-window mutation. @beta */

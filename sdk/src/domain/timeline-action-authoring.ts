@@ -19,7 +19,7 @@ export interface TimelineActionBinding {
 }
 
 /** Exact video target accepted by Inspector, keyframe, and reviewed effect actions. @beta */
-export type TimelineVideoActionTarget = ActionInput<"cutagent.action.clip.transform">["target"];
+export type TimelineVideoActionTarget = Extract<ActionInput<"cutagent.action.clip.transform">, { readonly target: unknown }>["target"];
 
 /** Exact video target accepted by native speed-ramp actions. @beta */
 export type TimelineVideoRetimeTarget = ActionInput<"cutagent.action.clip.speed_ramp">["incoming"];

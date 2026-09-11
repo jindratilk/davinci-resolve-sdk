@@ -8,11 +8,68 @@ import typer
 
 from ..connection import get_connection
 from ..errors import ValidationError, handle_errors
-from ..output import dry_run_message, is_dry_run, output
+from ..output import dry_run_message, is_dry_run, mutation_payload, output
 from ..policy import enforce_mutation_policy
 from ..core import color_ops, sdk_tools
 
 app = typer.Typer(help="DCTL validation, installation, and application helpers.")
+
+
+@app.command("validate-source")
+@handle_errors
+def validate_source(
+    source: str = typer.Argument(..., help="DCTL source text, up to 65536 UTF-8 bytes"),
+):
+    """Get native DCTL diagnostics from DaVinci Resolve Studio 21.1+. Does not install or apply the source."""
+    from ..core.native_dctl_validation import validate_source as native_validate_source
+    conn = get_connection(require_project=False, read_project_state=False)
+    output(native_validate_source(conn, source), title="Native DCTL Validation")
+
+
+@app.command("encrypt")
+@handle_errors
+def encrypt(
+    input_path: str = typer.Argument(..., help="Source .dctl file path"),
+    output_path: str = typer.Argument(..., help="Exact output .dctle file path"),
+    expiry: Optional[str] = typer.Option(None, "--expiry", help="Optional ISO 8601 expiry date or datetime"),
+    overwrite: bool = typer.Option(False, "--overwrite", help="Replace an existing output artifact"),
+):
+    """Encrypt a DCTL into an artifact with DaVinci Resolve Studio 21.1+."""
+    from ..core.native_dctl_encryption import encrypt_dctl, prepare_encrypt_dctl_request
+
+    request = prepare_encrypt_dctl_request(
+        input_path,
+        output_path,
+        expiry=expiry,
+        overwrite=overwrite,
+    )
+    enforce_mutation_policy("dctl.encrypt", intended_engine="api_native", mutating=not is_dry_run())
+    if is_dry_run():
+        output(
+            mutation_payload(
+                action="dctl.encrypt",
+                target={"kind": "dctl_encrypted_artifact", "path": str(request.output_path)},
+                changed=False,
+                runtime_write_called=False,
+                input_path=str(request.input_path),
+                expiry=request.expiry,
+                overwrite=request.overwrite,
+                route="api_native_encrypt_dctl",
+            ),
+            title="DCTL Encrypt",
+        )
+        return
+    conn = get_connection(require_project=False, read_project_state=False)
+    result = encrypt_dctl(conn, request)
+    output(
+        mutation_payload(
+            action="dctl.encrypt",
+            target={"kind": "dctl_encrypted_artifact", "path": result["output_path"]},
+            runtime_write_called=True,
+            **result,
+        ),
+        title="DCTL Encrypt",
+    )
 
 
 @app.command("validate")

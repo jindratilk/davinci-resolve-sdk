@@ -11,7 +11,7 @@ import uuid
 from typing import Any
 
 from ..errors import APICallFailed, ValidationError
-from . import color_ops, color_source_grade, media_pool, native_multicam_db
+from . import color_ops, media_pool, native_multicam_db
 from ._podcast_multicam import project_lifecycle
 
 
@@ -180,43 +180,6 @@ def _json_patch_matches(actual: Any, expected: Any) -> bool:
     if isinstance(expected, float) and isinstance(actual, (int, float)):
         return abs(float(actual) - expected) <= 1e-6
     return actual == expected
-
-
-def _parse_cdl_values(value: Any) -> tuple[float, ...] | None:
-    if isinstance(value, (int, float)):
-        return (float(value),)
-    if isinstance(value, str):
-        parts = [part for part in value.replace(",", " ").split() if part]
-    elif isinstance(value, (list, tuple)):
-        parts = list(value)
-    else:
-        return None
-    try:
-        return tuple(float(part) for part in parts)
-    except (TypeError, ValueError):
-        return None
-
-
-def _cdl_readback_matches(requested: dict[str, Any], readback: Any) -> tuple[bool, dict[str, Any]]:
-    """Compare requested CDL values with an independently returned node-1 readback."""
-
-    if not isinstance(readback, dict) or readback.get("available") is False:
-        return False, {}
-    actual = readback.get("cdl") if isinstance(readback.get("cdl"), dict) else readback
-    if not isinstance(actual, dict):
-        return False, {}
-    normalized_actual: dict[str, Any] = {}
-    for key in ("Slope", "Offset", "Power", "Saturation"):
-        if key not in requested:
-            continue
-        expected_values = _parse_cdl_values(requested[key])
-        actual_values = _parse_cdl_values(actual.get(key))
-        normalized_actual[key] = actual.get(key)
-        if expected_values is None or actual_values is None or len(expected_values) != len(actual_values):
-            return False, normalized_actual
-        if any(abs(expected - observed) > 1e-5 for expected, observed in zip(expected_values, actual_values)):
-            return False, normalized_actual
-    return True, normalized_actual
 
 
 def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -482,127 +445,18 @@ def apply_angle_source_cdl(
     if len(cdl_requested) == 1:
         raise ValidationError("Multicam source-grade requires at least one CDL value.")
     resolved = resolve_angle_source(conn, project_db_path=project_db_path, **target)
-    clip = resolved.pop("clip")
-    project = getattr(conn, "project", None)
-    media_pool_api = getattr(conn, "media_pool", None)
-    resolve = getattr(conn, "resolve", None)
-    if project is None or media_pool_api is None:
-        raise APICallFailed("A current project and Media Pool are required for multicam source grading.")
-    original_timeline = getattr(conn, "timeline", None)
-    original_page = None
-    get_page = getattr(resolve, "GetCurrentPage", None)
-    if callable(get_page):
-        try:
-            original_page = get_page()
-        except Exception:
-            original_page = None
-    temporary_name = f"__CutAgent Multicam Source Grade {uuid.uuid4().hex[:12]}"
-    temporary_timeline = None
-    cleanup: dict[str, Any] = {"temporary_timeline_name": temporary_name, "deleted": False, "restored_timeline": False}
-    operation_error: Exception | None = None
-    try:
-        temporary_timeline = media_pool_api.CreateTimelineFromClips(temporary_name, [clip, clip])
-        if not temporary_timeline:
-            raise APICallFailed(
-                "DaVinci Resolve did not create the temporary source-grade proof timeline.",
-                details={"timeline_name": temporary_name},
-            )
-        if not project.SetCurrentTimeline(temporary_timeline):
-            raise APICallFailed("DaVinci Resolve did not activate the temporary source-grade timeline.")
-        conn.refresh()
-        open_page = getattr(resolve, "OpenPage", None)
-        if callable(open_page) and not open_page("color"):
-            raise APICallFailed("DaVinci Resolve did not open the Color page through its scripting API.")
-        clip_name = str(resolved["media_pool"].get("name") or "")
-        prepared = color_source_grade.prepare_remote_source_grade(
-            conn,
-            name=normalized_version_name,
-            clip_name=clip_name,
-            create=True,
-            load=True,
-            include_singletons=True,
-        )
-        prepared_status = (prepared.get("verification") or {}).get("status")
-        if prepared_status != "verified":
-            raise APICallFailed(
-                "The multicam source-grade remote scope could not be verified before mutation.",
-                details={"prepare_remote": prepared, "required_status": "verified"},
-            )
-        applied = color_ops.set_cdl(
-            conn,
-            clip_name,
-            node_index,
-            slope=slope,
-            offset=offset,
-            power=power,
-            saturation=saturation,
-        )
-        save = getattr(conn.project_manager, "SaveProject", None)
-        if callable(save) and save() is False:
-            raise APICallFailed("DaVinci Resolve did not save the multicam source grade.")
-        readback = color_ops.get_cdl(conn, clip_name, node_index=node_index)
-        readback_matches, canonical_readback = _cdl_readback_matches(cdl_requested, readback)
-        if not bool(applied) or not readback_matches:
-            raise APICallFailed(
-                "DaVinci Resolve did not retain the requested multicam source CDL values.",
-                details={
-                    "setter_result": applied,
-                    "requested": cdl_requested,
-                    "readback": readback,
-                    "canonical_readback": canonical_readback,
-                },
-            )
-        return {
-            "action": "multicam.source_grade.apply_cdl",
-            "changed": bool(applied),
+    resolved.pop("clip", None)
+    raise APICallFailed(
+        "DaVinci Resolve cannot address the exact nested multicam source item for CDL mutation through its scripting API.",
+        details={
+            "reason": "multicam_source_grade_target_not_addressable",
+            "required_target": "exact_nested_multicam_timeline_item",
+            "rejected_route": "temporary_timeline_remote_version",
+            "mutation_attempted": False,
             "version_name": normalized_version_name,
             "node": node_index,
             "cdl_requested": cdl_requested,
-            "prepare_remote": prepared,
-            "readback": readback,
-            "route": "multicam.match_frame -> temporary API timeline -> remote source grade -> TimelineItem.SetCDL",
-            "cleanup": cleanup,
-            "verification": {
-                "status": "verified",
-                "remote_scope": prepared_status,
-                "cdl_readback": readback,
-                "requested_values_match_readback": True,
-            },
-            **resolved,
-        }
-    except Exception as exc:
-        operation_error = exc
-        raise
-    finally:
-        cleanup_errors: list[str] = []
-        try:
-            if original_timeline is not None:
-                cleanup["restored_timeline"] = bool(project.SetCurrentTimeline(original_timeline))
-                if not cleanup["restored_timeline"]:
-                    cleanup_errors.append("restore_timeline:DaVinci Resolve returned false")
-            elif temporary_timeline is not None:
-                cleanup["restored_timeline"] = True
-        except Exception as exc:
-            cleanup_errors.append(f"restore_timeline:{exc}")
-        if temporary_timeline is not None:
-            try:
-                cleanup["deleted"] = bool(media_pool_api.DeleteTimelines([temporary_timeline]))
-                if not cleanup["deleted"]:
-                    cleanup_errors.append("delete_temporary_timeline:DaVinci Resolve returned false")
-            except Exception as exc:
-                cleanup_errors.append(f"delete_temporary_timeline:{exc}")
-        if callable(getattr(resolve, "OpenPage", None)) and original_page:
-            try:
-                resolve.OpenPage(original_page)
-            except Exception as exc:
-                cleanup_errors.append(f"restore_page:{exc}")
-        try:
-            conn.refresh()
-        except Exception as exc:
-            cleanup_errors.append(f"refresh:{exc}")
-        cleanup["errors"] = cleanup_errors
-        if cleanup_errors and operation_error is None:
-            raise APICallFailed(
-                "Multicam source grade was applied but temporary workflow cleanup failed.",
-                details=cleanup,
-            )
+            "resolved": resolved,
+        },
+        recoverability="manual",
+    )

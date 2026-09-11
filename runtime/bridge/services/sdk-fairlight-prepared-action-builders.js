@@ -6,7 +6,6 @@ import {
 } from "../contracts/generated/sdk-fairlight-prepared-actions.js";
 import {sdkFairlightPlanInputSchema} from "../contracts/generated/sdk-fairlight.js";
 import {CUTAGENT_PREPARED_ACTION_ACTION_METADATA} from "../contracts/sdk-prepared-action-metadata.generated.js";
-import {resolveSdkPreparedMutationScope} from "./sdk-direct-mutation-scope.js";
 import {createSdkPreparedActionBuilderContribution} from "./sdk-prepared-action-carrier.js";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -96,12 +95,6 @@ const stale = (detail) => {
   throw error;
 };
 const sameDigests = (left, right) => JSON.stringify([...left].sort()) === JSON.stringify([...right].sort());
-const exactScope = (scope, captured) => scope?.binding?.level === "project+timeline"
-  && scope.binding.projectLibraryId === captured.identities.projectLibraryId
-  && scope.binding.projectId === captured.identities.projectId
-  && scope.binding.projectRevision === captured.revisions.project
-  && scope.binding.timelineId === captured.identities.timelineId
-  && scope.binding.timelineRevision === captured.revisions.timeline;
 
 function locateSnapshotTarget(target, snapshot, inspected) {
   const clipRows = snapshot.tracks.flatMap((track) => track.clips.map((clip) => ({track, clip})));
@@ -444,8 +437,6 @@ async function capturePlanBinding(liveInspectionService, input) {
 /** Build only explicitly enabled Fairlight packets for the signed production carrier. */
 export function createFairlightPreparedActionBuilderContributions({
   liveInspectionService,
-  mutationPolicyGate,
-  directMutationPolicyAuthority,
   artifactCustody = null,
   secretDir = null,
   authoritativeActionInputSchemas = {},
@@ -553,14 +544,6 @@ export function createFairlightPreparedActionBuilderContributions({
             normalized.carrierBinding,
             actionId,
           );
-        if (metadata.operationClass === "mutation") {
-          const matches = typeof directMutationPolicyAuthority?.resolveScope === "function"
-            ? [await resolveSdkPreparedMutationScope({directMutationPolicyAuthority, context, minimumBinding: "project+timeline",
-              binding: {projectLibraryId: captured.identities.projectLibraryId, projectId: captured.identities.projectId,
-                projectRevision: captured.revisions.project, timelineId: captured.identities.timelineId, timelineRevision: captured.revisions.timeline}})].filter((scope) => exactScope(scope, captured))
-            : mutationPolicyGate.listScopes({accountFingerprint: context.accountFingerprint}).filter((scope) => exactScope(scope, captured));
-          if (matches.length !== 1) throw new Error("Prepared Fairlight mutation requires one exact live Mutation Policy scope.");
-        }
         if (metadata.operationClass !== "mutation") return captured;
         if (!FAIRLIGHT_BOUNCE_ACTION_IDS.has(actionId)) return captured;
         const files = cancellationFiles(secretDir, context.operationId);
@@ -581,14 +564,6 @@ export function createFairlightPreparedActionBuilderContributions({
     mutationBinding: Object.freeze({minimumBinding: "project+timeline", referencedPayloadDigests: Object.freeze([])}),
     async captureRequestBinding({context, input}) {
       const captured = await capturePlanBinding(liveInspectionService, input);
-      const matches = typeof directMutationPolicyAuthority?.resolveScope === "function"
-        ? [await resolveSdkPreparedMutationScope({directMutationPolicyAuthority, context, minimumBinding: "project+timeline",
-          binding: {projectLibraryId: captured.identities.projectLibraryId, projectId: captured.identities.projectId,
-            projectRevision: captured.revisions.project, timelineId: captured.identities.timelineId, timelineRevision: captured.revisions.timeline}})].filter((scope) => exactScope(scope, captured))
-        : mutationPolicyGate.listScopes({accountFingerprint: context.accountFingerprint}).filter((scope) => exactScope(scope, captured));
-      if (matches.length !== 1) {
-        throw new Error("Prepared Fairlight plan requires one exact live Mutation Policy scope.");
-      }
       return input.changes.some((change) => change.kind === "loudness")
         ? withLoudnessAnalysisArtifact(captured, reserveLoudnessAnalysisArtifact(artifactCustody, context, FAIRLIGHT_PLAN_ACTION_ID))
         : captured;

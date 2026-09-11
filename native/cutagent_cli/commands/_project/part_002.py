@@ -6,7 +6,7 @@ def preset_save(
     name: str = typer.Argument(..., help="Preset name"),
 ):
     """Save current project settings as preset when runtime supports it."""
-    candidate_methods = ["SavePreset", "SaveAsPreset", "CreatePreset"]
+    candidate_methods = list(SAVE_METHODS)
     enforce_mutation_policy("project.preset_save", intended_engine="api_native", mutating=not is_dry_run())
     if is_dry_run():
         output(
@@ -22,36 +22,60 @@ def preset_save(
         return
 
     conn = get_connection(require_project=True)
-    unavailable_methods: list[str] = []
-    method_name = ""
-    result = None
-    for candidate_method in candidate_methods:
-        saver = getattr(conn.project, candidate_method, None)
-        if not callable(saver):
-            unavailable_methods.append(candidate_method)
-            continue
-        try:
-            result = saver(name)
-        except APICallFailed as exc:
-            if _api_method_not_available(exc):
-                unavailable_methods.append(candidate_method)
-                continue
-            raise
-        method_name = candidate_method
-        break
-    else:
-        raise CapabilityNegotiationFailed(
-            "Required runtime API method not available.",
-            details={
-                "capability_id": "project.preset_save",
-                "required_method": candidate_methods,
-                "runtime_object": "project",
-                "unavailable_methods": unavailable_methods,
-            },
-        )
-    if result is False:
-        raise APICallFailed("Failed to save project preset.", details={"name": name, "method": method_name})
-    success(f"Saved project preset: {name}")
+    output(project_preset_api.save_project_preset(conn.project, name), title="Project Preset Save")
+
+
+@preset_app.command("export")
+@handle_errors
+def preset_export(
+    name: str = typer.Argument(..., help="Exact preset name"),
+    path: str = typer.Argument(..., help="New export file path"),
+):
+    """Export one project-settings preset without replacing a file."""
+    project_preset_api.requested_project_preset_name(name)
+    enforce_mutation_policy("project.preset_export", intended_engine="api_native", mutating=not is_dry_run())
+    if is_dry_run():
+        output(mutation_payload(action="project.preset.export", target={"kind": "project_preset", "name": name}, changed=False, path=path))
+        return
+    conn = get_connection(require_project=True)
+    output(project_preset_api.export_project_preset(conn.project, name, path), title="Project Preset Export")
+
+
+@preset_app.command("import")
+@handle_errors
+def preset_import(
+    path: str = typer.Argument(..., help="Project preset file path"),
+    name: str = typer.Option(..., "--name", help="Exact new preset name"),
+):
+    """Import one project-settings preset under an explicit new name."""
+    project_preset_api.requested_project_preset_name(name)
+    enforce_mutation_policy("project.preset_import", intended_engine="api_native", mutating=not is_dry_run())
+    if is_dry_run():
+        output(mutation_payload(action="project.preset.import", target={"kind": "project_preset", "name": name}, changed=False, path=path))
+        return
+    conn = get_connection(require_project=True)
+    output(project_preset_api.import_project_preset(conn.project, path, name), title="Project Preset Import")
+
+
+@preset_app.command("delete")
+@handle_errors
+def preset_delete(
+    name: str = typer.Argument(..., help="Exact preset name"),
+    force: bool = typer.Option(False, "--force", "-f", help="Confirm deletion"),
+):
+    """Delete one exact project-settings preset with a private recovery backup."""
+    project_preset_api.requested_project_preset_name(name)
+    enforce_mutation_policy("project.preset_delete", intended_engine="api_native", mutating=not is_dry_run())
+    if is_dry_run():
+        output(mutation_payload(action="project.preset.delete", target={"kind": "project_preset", "name": name}, changed=False))
+        return
+    if not force:
+        if is_machine_mode():
+            raise ConfirmationRequired("Machine-mode deletion requires --force.", details={"preset_name": name})
+        if not typer.confirm(f"Delete project preset {name!r}?"):
+            raise typer.Abort()
+    conn = get_connection(require_project=True)
+    output(project_preset_api.delete_project_preset(conn.project, name), title="Project Preset Delete")
 
 
 @app.command("import")

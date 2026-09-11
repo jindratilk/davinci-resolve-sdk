@@ -161,6 +161,7 @@ _PRIVATE_HANDLER_FUNCTIONS = MappingProxyType(
         "edit.social_crop": "social_crop",
         "edit.split": "split",
         "edit.transition.add": "transition_add",
+        "edit.transition.batch": "transition_batch",
         "text.insert": "insert",
         "text.insert_preset": "insert_preset",
         "text.insert_template": "insert_template",
@@ -300,6 +301,39 @@ def _edit_handler_input(command_id: str, value: Mapping[str, Any]) -> dict[str, 
             "clip_name": primary["name"],
             "placement": placement,
             "scope": value["scope"],
+        }
+    if command_id == "edit.transition.batch":
+        requested = value["transitions"]
+        transitions = requested if isinstance(requested, list) else [requested]
+        entries = []
+        for index, transition in enumerate(transitions):
+            placement = transition["placement"]
+            primary = (
+                transition["outgoing"]
+                if placement == "end"
+                else transition["incoming"]
+            )
+            entries.append(
+                {
+                    "index": index,
+                    "track_type": "video",
+                    "track_index": primary["trackIndex"],
+                    "name": primary["name"],
+                    "start_frame": primary["recordStartFrame"],
+                    "end_frame": primary["recordEndFrame"],
+                    "at_frame": transition["editFrame"],
+                    "transition_type": transition["transitionType"],
+                    "duration_frames": transition["durationFrames"],
+                    "placement": placement,
+                    "scope": "video",
+                }
+            )
+        return {
+            "batch_json": json.dumps(
+                {"entries": entries}, separators=(",", ":"), sort_keys=True
+            ),
+            "allow_partial": False,
+            "scope": "video",
         }
     raise ValidationError("Prepared Edit action lacks private lowering.")
 

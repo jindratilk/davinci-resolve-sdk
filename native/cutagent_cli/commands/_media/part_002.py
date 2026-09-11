@@ -810,6 +810,26 @@ def clear_transcription_cmd(
     output(result)
 
 
+@app.command("transcription")
+@handle_errors
+def get_transcription_cmd(
+    clip: str = typer.Option(..., "--clip", "-c", help="Clip name whose persisted transcription should be read."),
+    use_nested_clip_transcription: bool = typer.Option(
+        False,
+        "--use-nested-clip-transcription",
+        help="Use nested-clip transcription when DaVinci Resolve exposes it.",
+    ),
+):
+    """Read existing DaVinci Resolve transcription for one Media Pool clip."""
+    conn = get_connection(require_project=True)
+    result = media_pool.get_transcription(
+        conn,
+        clip_name=clip,
+        use_nested_clip_transcription=use_nested_clip_transcription,
+    )
+    output(result, title="Media Pool Transcription")
+
+
 @app.command("audio-mapping")
 @handle_errors
 def audio_mapping(

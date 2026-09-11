@@ -11,14 +11,27 @@ import {composeLocalNativeActions} from './local/native-actions.mjs';
 import {createLocalPrincipalAuthority} from './local/principal.mjs';
 import {createSdkOperationRepo} from './bridge/repos/sdk-operation-repo.js';
 import {createSdkOperationAuthority} from './bridge/services/sdk-operation-authority.js';
+import {createSdkOperationRetentionLifecycle} from './bridge/services/sdk-operation-retention-lifecycle.js';
 import {createLocalCapability} from './local/capability.mjs';
+
+function retentionDiagnostic(error) {
+  const token = value => typeof value === 'string' && /^[A-Za-z0-9_.:-]{1,160}$/.test(value) ? value : null;
+  return Object.freeze({
+    phase: 'retention.cleanup',
+    errorClass: token(error?.name) ?? 'Error',
+    errorCode: token(error?.code),
+    message: 'Durable SDK operation retention cleanup failed.',
+  });
+}
 
 /** Compose the existing complete SDK route table against local native owners.
  * No production native owner is fabricated when one has not been configured.
  */
 export async function startLocalRuntime({stateDirectory, nativeIdentityProbe, nativeIdentityCurrent,
   resolveService, liveInspectionService, sdkOperationAuthority, sdkOperationReady,
-  sdkArtifactService, sdkWorkflowAuthority, identityNamespace, sdkActions = {}, nativeTransport = null} = {}) {
+  sdkArtifactService, sdkWorkflowAuthority, identityNamespace, sdkActions = {}, nativeTransport = null,
+  onExecutorError = null, operationRetentionLifecycleOptions = {}} = {}) {
+  if (onExecutorError !== null && typeof onExecutorError !== 'function') throw new TypeError('Executor diagnostics must be a callback.');
   if (!isAbsolute(stateDirectory ?? '')) throw new TypeError('An absolute private state directory is required.');
   const state = await lstat(stateDirectory);
   if (process.platform === 'win32') throw new Error('Windows private-directory ACL validation is not integrated yet.');
@@ -44,15 +57,34 @@ export async function startLocalRuntime({stateDirectory, nativeIdentityProbe, na
     try {
       identityNamespace ??= operationRepo.installationAuthority;
       nativeComposition = composeLocalNativeActions({stateDirectory, transport: nativeTransport,
-        authService: authority, sdkRuntimeService: runtime, identityNamespace});
+        authService: authority, identityNamespace});
       ({actions: sdkActions, resolveService, liveInspectionService, sdkArtifactService} = nativeComposition);
     } catch (error) {operationRepo.releaseOwnership(); authority.close(); capability.revoke(); await runtime.stop(); throw error;}
   }
-  sdkOperationAuthority ??= createSdkOperationAuthority({repo: operationRepo, actions: sdkActions});
+  sdkOperationAuthority ??= createSdkOperationAuthority({repo: operationRepo, actions: sdkActions, onExecutorError});
   if (nativeComposition) {
     sdkWorkflowAuthority = nativeComposition.composeWorkflowAuthority(sdkOperationAuthority);
     sdkOperationReady = sdkWorkflowAuthority.reconcileStartup();
   }
+  const sdkOperationReconciliation = (async () => {
+    await sdkOperationReady;
+    if (operationRepo) await sdkOperationAuthority.reconcileOrphans();
+  })();
+  const sdkOperationRetentionLifecycle = createSdkOperationRetentionLifecycle({
+    ...operationRetentionLifecycleOptions,
+    operationAuthority: sdkOperationAuthority,
+    onCleanupError(error) {
+      const diagnostic = retentionDiagnostic(error);
+      if (onExecutorError) {
+        try { onExecutorError(diagnostic); } catch {}
+        return;
+      }
+      try {
+        console.error(`[cutagent-sdk-runtime] ${diagnostic.message} (${diagnostic.errorCode ?? diagnostic.errorClass})`);
+      } catch {}
+    },
+  });
+  sdkOperationReady = sdkOperationRetentionLifecycle.startAfter(sdkOperationReconciliation);
   const app = express();
   app.locals.localCapability = capability.token;
   app.use((req, res, next) => {
@@ -72,7 +104,7 @@ export async function startLocalRuntime({stateDirectory, nativeIdentityProbe, na
   let stopped = false;
   async function close() {
     if (stopped) return;
-    stopped = true; clearInterval(refresh); authority.close(); capability.revoke();
+    stopped = true; clearInterval(refresh); sdkOperationRetentionLifecycle.stop(); authority.close(); capability.revoke();
     await runtime.stop();
     server.closeAllConnections();
     if (server.listening) await new Promise(resolve => server.close(resolve));
@@ -89,7 +121,6 @@ export async function startLocalRuntime({stateDirectory, nativeIdentityProbe, na
   }
   try {
     await sdkOperationReady;
-    if (operationRepo) await sdkOperationAuthority.reconcileOrphans();
     await runtime.waitForReadiness();
     if (!runtime.descriptor) throw new Error('The native host has no compatible runtime identity.');
     await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
@@ -115,8 +146,8 @@ export async function startLocalRuntime({stateDirectory, nativeIdentityProbe, na
 }
 
 /** Start the complete local native registry using its actual extracted source identity. */
-export async function startNativeLocalRuntime({stateDirectory, transport}) {
+export async function startNativeLocalRuntime({stateDirectory, transport, onExecutorError = null}) {
   const {createNativeInspectionOwner} = await import('./local/native-inspection.mjs');
   const {nativeIdentityProbe, nativeIdentityCurrent} = createNativeInspectionOwner({transport});
-  return startLocalRuntime({stateDirectory, nativeTransport: transport, nativeIdentityProbe, nativeIdentityCurrent});
+  return startLocalRuntime({stateDirectory, nativeTransport: transport, nativeIdentityProbe, nativeIdentityCurrent, onExecutorError});
 }

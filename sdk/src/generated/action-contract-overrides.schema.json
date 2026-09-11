@@ -5657,6 +5657,325 @@
       ],
       "type": "object"
     },
+    "cutagent.action.clip.transform.input": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/cutagent.action.clip.transform.input"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "projectId": {
+              "maxLength": 160,
+              "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "timelineId": {
+              "maxLength": 160,
+              "pattern": "^timeline_(?!item_)[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "timelineRevision": {
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "transforms": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 100,
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "maxLength": 160,
+                        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "linkedItemIds": {
+                        "items": {
+                          "maxLength": 160,
+                          "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        "maxItems": 64,
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "mediaPoolItemId": {
+                        "oneOf": [
+                          {
+                            "maxLength": 160,
+                            "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "name": {
+                        "maxLength": 4096,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "recordEndFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "recordStartFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "snapshotId": {
+                        "maxLength": 160,
+                        "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "trackIndex": {
+                        "maximum": 4096,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "trackType": {
+                        "const": "video"
+                      }
+                    },
+                    "required": [
+                      "snapshotId",
+                      "id",
+                      "trackType",
+                      "trackIndex",
+                      "recordStartFrame",
+                      "recordEndFrame",
+                      "name",
+                      "mediaPoolItemId",
+                      "linkedItemIds"
+                    ],
+                    "type": "object"
+                  },
+                  "transform": {
+                    "additionalProperties": false,
+                    "anyOf": [
+                      {
+                        "required": [
+                          "zoomX"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "zoomY"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "positionX"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "positionY"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "rotation"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "anchorX"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "anchorY"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "pitch"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "yaw"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "flipX"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "flipY"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "opacity"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "cropLeft"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "cropRight"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "cropTop"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "cropBottom"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "distortion"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "dynamicZoomEase"
+                        ]
+                      }
+                    ],
+                    "properties": {
+                      "anchorX": {
+                        "type": "number"
+                      },
+                      "anchorY": {
+                        "type": "number"
+                      },
+                      "cropBottom": {
+                        "type": "number"
+                      },
+                      "cropLeft": {
+                        "type": "number"
+                      },
+                      "cropRight": {
+                        "type": "number"
+                      },
+                      "cropTop": {
+                        "type": "number"
+                      },
+                      "distortion": {
+                        "type": "number"
+                      },
+                      "dynamicZoomEase": {
+                        "enum": [
+                          "linear",
+                          "in",
+                          "out",
+                          "inout"
+                        ]
+                      },
+                      "flipX": {
+                        "type": "boolean"
+                      },
+                      "flipY": {
+                        "type": "boolean"
+                      },
+                      "opacity": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "pitch": {
+                        "type": "number"
+                      },
+                      "positionX": {
+                        "type": "number"
+                      },
+                      "positionY": {
+                        "type": "number"
+                      },
+                      "rotation": {
+                        "type": "number"
+                      },
+                      "yaw": {
+                        "type": "number"
+                      },
+                      "zoomX": {
+                        "type": "number"
+                      },
+                      "zoomY": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "target",
+                  "transform"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": [
+            "projectId",
+            "timelineId",
+            "timelineRevision",
+            "transforms"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "cutagent.action.clip.transform.result": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/cutagent.action.clip.transform.result"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "actionId": {
+              "const": "cutagent.action.clip.transform"
+            },
+            "timelineRevision": {
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+              "type": "string"
+            },
+            "protectedStatePreserved": {
+              "const": true
+            },
+            "results": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 100,
+              "items": {
+                "$ref": "#/$defs/cutagent.action.clip.transform.result"
+              }
+            }
+          },
+          "required": [
+            "actionId",
+            "timelineRevision",
+            "protectedStatePreserved",
+            "results"
+          ],
+          "type": "object"
+        }
+      ]
+    },
     "cutagent.action.color.grade_apply.input": {
       "type": "object",
       "properties": {
@@ -8978,341 +9297,731 @@
       "additionalProperties": false
     },
     "cutagent.action.timeline.marker.delete.input": {
-      "type": "object",
-      "properties": {
-        "projectId": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-        },
-        "timelineId": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^timeline_(?!(?:item_))[A-Za-z0-9][A-Za-z0-9._~-]*$"
-        },
-        "timelineRevision": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-        },
-        "markerId": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-        }
-      },
-      "required": [
-        "projectId",
-        "timelineId",
-        "timelineRevision",
-        "markerId"
-      ],
-      "additionalProperties": false
-    },
-    "cutagent.action.timeline.marker.delete.result": {
-      "type": "object",
-      "properties": {
-        "action": {
-          "const": "delete"
-        },
-        "marker": {
-          "anyOf": [
-            {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "maxLength": 160,
-                  "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-                },
-                "recordFrame": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 9007199254740991
-                },
-                "color": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 64
-                },
-                "name": {
-                  "type": "string",
-                  "maxLength": 4096
-                },
-                "note": {
-                  "type": "string",
-                  "maxLength": 65536
-                },
-                "durationFrames": {
-                  "type": "integer",
-                  "exclusiveMinimum": 0,
-                  "maximum": 2147483647
-                }
-              },
-              "required": [
-                "id",
-                "recordFrame",
-                "color",
-                "name",
-                "note",
-                "durationFrames"
-              ],
-              "additionalProperties": false
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "previousMarker": {
-          "anyOf": [
-            {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "maxLength": 160,
-                  "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-                },
-                "recordFrame": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 9007199254740991
-                },
-                "color": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 64
-                },
-                "name": {
-                  "type": "string",
-                  "maxLength": 4096
-                },
-                "note": {
-                  "type": "string",
-                  "maxLength": 65536
-                },
-                "durationFrames": {
-                  "type": "integer",
-                  "exclusiveMinimum": 0,
-                  "maximum": 2147483647
-                }
-              },
-              "required": [
-                "id",
-                "recordFrame",
-                "color",
-                "name",
-                "note",
-                "durationFrames"
-              ],
-              "additionalProperties": false
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "timelineRevision": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-        }
-      },
-      "required": [
-        "action",
-        "marker",
-        "previousMarker",
-        "timelineRevision"
-      ],
-      "additionalProperties": false
-    },
-    "cutagent.action.timeline.marker.update.input": {
-      "type": "object",
-      "properties": {
-        "projectId": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-        },
-        "timelineId": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^timeline_(?!(?:item_))[A-Za-z0-9][A-Za-z0-9._~-]*$"
-        },
-        "timelineRevision": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-        },
-        "markerId": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-        },
-        "marker": {
+      "anyOf": [
+        {
           "type": "object",
           "properties": {
-            "recordFrame": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 9007199254740991
-            },
-            "color": {
+            "projectId": {
               "type": "string",
-              "minLength": 1,
-              "maxLength": 64
+              "maxLength": 160,
+              "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$"
             },
-            "name": {
+            "timelineId": {
               "type": "string",
-              "maxLength": 4096
+              "maxLength": 160,
+              "pattern": "^timeline_(?!(?:item_))[A-Za-z0-9][A-Za-z0-9._~-]*$"
             },
-            "note": {
+            "timelineRevision": {
               "type": "string",
-              "maxLength": 65536
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
             },
-            "durationFrames": {
-              "type": "integer",
-              "exclusiveMinimum": 0,
-              "maximum": 2147483647
+            "markerId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
             }
           },
           "required": [
-            "recordFrame",
-            "color",
-            "name",
-            "note",
-            "durationFrames"
+            "projectId",
+            "timelineId",
+            "timelineRevision",
+            "markerId"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "projectId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "timelineId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^timeline_(?!(?:item_))[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "timelineRevision": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "markerIds": {
+              "minItems": 1,
+              "maxItems": 10000,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 160,
+                "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+              }
+            }
+          },
+          "required": [
+            "projectId",
+            "timelineId",
+            "timelineRevision",
+            "markerIds"
           ],
           "additionalProperties": false
         }
-      },
-      "required": [
-        "projectId",
-        "timelineId",
-        "timelineRevision",
-        "markerId",
-        "marker"
+      ]
+    },
+    "cutagent.action.timeline.marker.delete.result": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "create",
+                "update",
+                "delete"
+              ]
+            },
+            "marker": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 160,
+                      "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                    },
+                    "recordFrame": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "color": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 4096
+                    },
+                    "note": {
+                      "type": "string",
+                      "maxLength": 65536
+                    },
+                    "durationFrames": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "recordFrame",
+                    "color",
+                    "name",
+                    "note",
+                    "durationFrames"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "previousMarker": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 160,
+                      "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                    },
+                    "recordFrame": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "color": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 4096
+                    },
+                    "note": {
+                      "type": "string",
+                      "maxLength": 65536
+                    },
+                    "durationFrames": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "recordFrame",
+                    "color",
+                    "name",
+                    "note",
+                    "durationFrames"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "timelineRevision": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            }
+          },
+          "required": [
+            "action",
+            "marker",
+            "previousMarker",
+            "timelineRevision"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "create",
+                "update",
+                "delete"
+              ]
+            },
+            "markers": {
+              "maxItems": 10000,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                  },
+                  "recordFrame": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "color": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 65536
+                  },
+                  "durationFrames": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 2147483647
+                  }
+                },
+                "required": [
+                  "id",
+                  "recordFrame",
+                  "color",
+                  "name",
+                  "note",
+                  "durationFrames"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "previousMarkers": {
+              "maxItems": 10000,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                  },
+                  "recordFrame": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "color": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 65536
+                  },
+                  "durationFrames": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 2147483647
+                  }
+                },
+                "required": [
+                  "id",
+                  "recordFrame",
+                  "color",
+                  "name",
+                  "note",
+                  "durationFrames"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "timelineRevision": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            }
+          },
+          "required": [
+            "action",
+            "markers",
+            "previousMarkers",
+            "timelineRevision"
+          ],
+          "additionalProperties": false
+        }
       ],
-      "additionalProperties": false
+      "properties": {
+        "action": {
+          "const": "delete"
+        }
+      }
+    },
+    "cutagent.action.timeline.marker.update.input": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "projectId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "timelineId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^timeline_(?!(?:item_))[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "timelineRevision": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "markerId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "marker": {
+              "type": "object",
+              "properties": {
+                "recordFrame": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "color": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "name": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "note": {
+                  "type": "string",
+                  "maxLength": 65536
+                },
+                "durationFrames": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "required": [
+                "recordFrame",
+                "color",
+                "name",
+                "note",
+                "durationFrames"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "projectId",
+            "timelineId",
+            "timelineRevision",
+            "markerId",
+            "marker"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "projectId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "timelineId": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^timeline_(?!(?:item_))[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "timelineRevision": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            },
+            "updates": {
+              "minItems": 1,
+              "maxItems": 10000,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "markerId": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                  },
+                  "marker": {
+                    "type": "object",
+                    "properties": {
+                      "recordFrame": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "color": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "note": {
+                        "type": "string",
+                        "maxLength": 65536
+                      },
+                      "durationFrames": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 2147483647
+                      }
+                    },
+                    "required": [
+                      "recordFrame",
+                      "color",
+                      "name",
+                      "note",
+                      "durationFrames"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "markerId",
+                  "marker"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "projectId",
+            "timelineId",
+            "timelineRevision",
+            "updates"
+          ],
+          "additionalProperties": false
+        }
+      ]
     },
     "cutagent.action.timeline.marker.update.result": {
-      "type": "object",
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "create",
+                "update",
+                "delete"
+              ]
+            },
+            "marker": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 160,
+                      "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                    },
+                    "recordFrame": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "color": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 4096
+                    },
+                    "note": {
+                      "type": "string",
+                      "maxLength": 65536
+                    },
+                    "durationFrames": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "recordFrame",
+                    "color",
+                    "name",
+                    "note",
+                    "durationFrames"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "previousMarker": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 160,
+                      "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                    },
+                    "recordFrame": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "color": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 4096
+                    },
+                    "note": {
+                      "type": "string",
+                      "maxLength": 65536
+                    },
+                    "durationFrames": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "recordFrame",
+                    "color",
+                    "name",
+                    "note",
+                    "durationFrames"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "timelineRevision": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            }
+          },
+          "required": [
+            "action",
+            "marker",
+            "previousMarker",
+            "timelineRevision"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "create",
+                "update",
+                "delete"
+              ]
+            },
+            "markers": {
+              "maxItems": 10000,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                  },
+                  "recordFrame": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "color": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 65536
+                  },
+                  "durationFrames": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 2147483647
+                  }
+                },
+                "required": [
+                  "id",
+                  "recordFrame",
+                  "color",
+                  "name",
+                  "note",
+                  "durationFrames"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "previousMarkers": {
+              "maxItems": 10000,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 160,
+                    "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+                  },
+                  "recordFrame": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "color": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 65536
+                  },
+                  "durationFrames": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 2147483647
+                  }
+                },
+                "required": [
+                  "id",
+                  "recordFrame",
+                  "color",
+                  "name",
+                  "note",
+                  "durationFrames"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "timelineRevision": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
+            }
+          },
+          "required": [
+            "action",
+            "markers",
+            "previousMarkers",
+            "timelineRevision"
+          ],
+          "additionalProperties": false
+        }
+      ],
       "properties": {
         "action": {
           "const": "update"
-        },
-        "marker": {
-          "anyOf": [
-            {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "maxLength": 160,
-                  "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-                },
-                "recordFrame": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 9007199254740991
-                },
-                "color": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 64
-                },
-                "name": {
-                  "type": "string",
-                  "maxLength": 4096
-                },
-                "note": {
-                  "type": "string",
-                  "maxLength": 65536
-                },
-                "durationFrames": {
-                  "type": "integer",
-                  "exclusiveMinimum": 0,
-                  "maximum": 2147483647
-                }
-              },
-              "required": [
-                "id",
-                "recordFrame",
-                "color",
-                "name",
-                "note",
-                "durationFrames"
-              ],
-              "additionalProperties": false
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "previousMarker": {
-          "anyOf": [
-            {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "maxLength": 160,
-                  "pattern": "^marker_[A-Za-z0-9][A-Za-z0-9._~-]*$"
-                },
-                "recordFrame": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 9007199254740991
-                },
-                "color": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 64
-                },
-                "name": {
-                  "type": "string",
-                  "maxLength": 4096
-                },
-                "note": {
-                  "type": "string",
-                  "maxLength": 65536
-                },
-                "durationFrames": {
-                  "type": "integer",
-                  "exclusiveMinimum": 0,
-                  "maximum": 2147483647
-                }
-              },
-              "required": [
-                "id",
-                "recordFrame",
-                "color",
-                "name",
-                "note",
-                "durationFrames"
-              ],
-              "additionalProperties": false
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "timelineRevision": {
-          "type": "string",
-          "maxLength": 160,
-          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$"
         }
-      },
-      "required": [
-        "action",
-        "marker",
-        "previousMarker",
-        "timelineRevision"
-      ],
-      "additionalProperties": false
+      }
     },
     "cutagent.action.timeline.subtitle.export.input": {
       "type": "object",

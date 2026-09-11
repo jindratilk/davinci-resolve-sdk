@@ -476,6 +476,61 @@ export function createSdkRuntimeService({
     return Boolean(entry && typeof accountFingerprint === "string" && entry.accountFingerprint === accountFingerprint);
   }
 
+  function captureExecutionProjectContext({ sessionId, accountFingerprint, inspected } = {}) {
+    requireReady();
+    cleanup();
+    const entry = sessions.get(sessionId);
+    const value = inspected?.value;
+    if (!entry || entry.accountFingerprint !== accountFingerprint
+      || typeof inspected?.mutationGuard !== "string"
+      || typeof value?.project?.id !== "string"
+      || typeof value?.projectRevision?.revision !== "string"
+      || typeof inspected?.privateExecutionIdentity?.projectLibraryId !== "string") {
+      return false;
+    }
+    entry.executionProjectContext = structuredClone(inspected);
+    return true;
+  }
+
+  function captureExecutionTimelineState({ sessionId, accountFingerprint, inspected } = {}) {
+    requireReady();
+    cleanup();
+    const entry = sessions.get(sessionId);
+    const value = inspected?.value;
+    if (!entry || entry.accountFingerprint !== accountFingerprint
+      || typeof inspected?.mutationGuard !== "string"
+      || typeof value?.project?.id !== "string"
+      || typeof value?.timeline?.id !== "string"
+      || typeof value?.revision !== "string") {
+      return false;
+    }
+    entry.executionTimelineState = structuredClone(inspected);
+    return true;
+  }
+
+  function readExecutionTimelineState({
+    sessionId,
+    accountFingerprint,
+    projectId,
+    timelineId,
+    timelineRevision,
+  } = {}) {
+    requireReady();
+    cleanup();
+    const entry = sessions.get(sessionId);
+    const projectContext = entry?.executionProjectContext;
+    const timeline = entry?.executionTimelineState;
+    if (!entry || entry.accountFingerprint !== accountFingerprint
+      || projectContext?.value?.project?.id !== projectId
+      || projectContext?.value?.timeline?.id !== timelineId
+      || timeline?.value?.project?.id !== projectId
+      || timeline?.value?.timeline?.id !== timelineId
+      || timeline?.value?.revision !== timelineRevision) {
+      return null;
+    }
+    return structuredClone({ projectContext, timeline });
+  }
+
   function closeSessionsForAccount(accountFingerprint) {
     cleanup();
     let closed = 0;
@@ -563,6 +618,9 @@ export function createSdkRuntimeService({
     validateSession,
     resolveOwnerSessionId,
     ownsActiveSession,
+    captureExecutionProjectContext,
+    captureExecutionTimelineState,
+    readExecutionTimelineState,
     closeSessionsForAccount,
     closeSession,
     setBootstrapConsumedHandler(handler) {

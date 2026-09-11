@@ -61,18 +61,18 @@ _ALL_COMMAND_IDS = frozenset({
     "fusion.comp.rename", "fusion.comp.render", "fusion.comp.stop",
     "fusion.effect.blur", "fusion.effect.color_correct", "fusion.effect.glow",
     "fusion.effect.sharpen", "fusion.effect.transform", "fusion.generate",
-    "fusion.image.set", "fusion.insert_setting", "fusion.keyer.chroma",
+    "fusion.image.batch", "fusion.image.set", "fusion.insert_setting", "fusion.insert_settings.batch", "fusion.keyer.chroma",
     "fusion.keyframe.add", "fusion.keyframe.clear", "fusion.keyframe.delete", "fusion.keyframe.list",
     "fusion.keyframe.set", "fusion.macro.apply", "fusion.mask.ellipse",
-    "fusion.mask.polygon", "fusion.mask.rectangle", "fusion.nested_text.update",
+    "fusion.mask.polygon", "fusion.mask.rectangle", "fusion.nested_text.batch", "fusion.nested_text.update",
     "fusion.node.add", "fusion.node.connect", "fusion.node.delete",
     "fusion.node.disconnect", "fusion.setting.center_to_polypath",
     "fusion.setting.polypath_to_center", "fusion.setting.validate",
     "fusion.template.apply", "fusion.template.assets.add", "fusion.template.dir", "fusion.template.show",
     "fusion.template.icon.set", "fusion.template.install",
     "fusion.template.package_drfx", "fusion.template.scaffold",
-    "fusion.template.uninstall", "fusion.text.set", "fusion.tool.active",
-    "fusion.tool.add", "fusion.tool.attrs", "fusion.tool.connect", "fusion.tool.copy", "fusion.tool.get", "fusion.tool.inputs", "fusion.tool.list", "fusion.tool.outputs",
+    "fusion.template.uninstall", "fusion.text.batch", "fusion.text.set", "fusion.tool.active",
+    "fusion.tool.add", "fusion.tool.attrs", "fusion.tool.connect", "fusion.tool.copy", "fusion.tool.get", "fusion.tool.inputs", "fusion.tool.list", "fusion.tool.registry", "fusion.tool.outputs",
     "fusion.tool.delete", "fusion.tool.disconnect", "fusion.tool.paste",
     "fusion.tool.set", "fusion.tracker.add", "dctl.apply", "lut_refresh",
     "fusion.setting.inspect", "fusion.setting.summary",
@@ -83,7 +83,7 @@ _READ_COMMANDS = frozenset({
     "fusion.comp.current", "fusion.keyframe.list", "fusion.setting.inspect", "fusion.setting.summary",
     "fusion.setting.center_to_polypath", "fusion.setting.polypath_to_center",
     "fusion.template.assets.list", "fusion.template.show", "fusion.template.validate",
-    "fusion.tool.attrs", "fusion.tool.get", "fusion.tool.inputs", "fusion.tool.list", "fusion.tool.outputs",
+    "fusion.tool.attrs", "fusion.tool.get", "fusion.tool.inputs", "fusion.tool.list", "fusion.tool.registry", "fusion.tool.outputs",
     "lut.convert", "lut.inspect", "lut.list", "lut.validate",
 })
 _FILESYSTEM_COMMANDS = frozenset({
@@ -204,22 +204,22 @@ def _schemas(action_id: str, command_id: str) -> tuple[Mapping[str, Any], Mappin
     return input_schema, result_schema
 
 
-def _policy(context: Mapping[str, Any]) -> Mapping[str, Any]:
-    policy = context.get("mutationBase")
-    if not isinstance(policy, Mapping):
-        policy = context.get("mutationPolicy")
-    required = ("registryDigest", "scopeId", "scopeRevision", "projectLibraryId")
-    if not isinstance(policy, Mapping) or any(policy.get(field) is None for field in required):
-        raise InventoryValidationError("Fusion mutation has no complete Mutation Policy binding")
-    return policy
+def _artifact_fields(value: Any):
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            if key in _ARTIFACT_FIELDS and isinstance(child, str):
+                yield key, child
+            else:
+                yield from _artifact_fields(child)
+    elif isinstance(value, (list, tuple)):
+        for child in value:
+            yield from _artifact_fields(child)
 
 
 def _artifact_digests(context: Mapping[str, Any], value: Mapping[str, Any], runtime: Any) -> list[str]:
     records = context.get("privateManagedArtifacts")
     result = []
-    for key, artifact_id in value.items():
-        if key not in _ARTIFACT_FIELDS or not isinstance(artifact_id, str):
-            continue
+    for key, artifact_id in _artifact_fields(value):
         record = records.get(artifact_id) if isinstance(records, Mapping) else None
         if not isinstance(record, Mapping):
             record = runtime.managed_artifact_record(context, artifact_id)
@@ -352,6 +352,48 @@ def _public_projection(command_id: str, value: Mapping[str, Any], result: Mappin
     after = result["after"]
     native_value = result.get("nativeResult")
     native = native_value if isinstance(native_value, Mapping) else {}
+    if command_id == "fusion.image.batch":
+        rows = []
+        before_items = before.get("items") if isinstance(before.get("items"), list) else []
+        after_items = after.get("items") if isinstance(after.get("items"), list) else []
+        native_rows = native.get("results") if isinstance(native.get("results"), list) else []
+        for index, item in enumerate(value["items"]):
+            native_row = native_rows[index] if index < len(native_rows) and isinstance(native_rows[index], Mapping) else {}
+            common = {
+                "index": index,
+                "timelineItemId": item["timelineItemId"],
+                "compositionIndex": int(item["compositionIndex"]),
+                "imageArtifactId": item["imageArtifactId"],
+                "durationMs": float(native_row.get("durationMs") or 0),
+            }
+            if native_row.get("ok") is True:
+                observed = native_row.get("result") if isinstance(native_row.get("result"), Mapping) else {}
+                verification = observed.get("verification") if isinstance(observed.get("verification"), Mapping) else {}
+                group = verification.get("group_input") if isinstance(verification.get("group_input"), Mapping) else {}
+                loaders = verification.get("loaders") if isinstance(verification.get("loaders"), list) else []
+                loader = loaders[0] if loaders and isinstance(loaders[0], Mapping) else {}
+                rows.append({
+                    **common, "ok": True,
+                    "toolName": str(group.get("tool") or loader.get("tool") or item.get("groupToolName") or "Loader1"),
+                    "inputName": str(group.get("input") or item.get("groupInputName") or "Clip"),
+                    "verified": True,
+                    "revisionBefore": _revision(before_items[index]),
+                    "revisionAfter": _revision(after_items[index]),
+                })
+            else:
+                error = native_row.get("error") if isinstance(native_row.get("error"), Mapping) else {}
+                rows.append({**common, "ok": False, "error": {
+                    "code": str(error.get("code") or "fusion_image_replacement_failed"),
+                    "message": str(error.get("message") or "Fusion image replacement failed."),
+                }})
+        return {
+            "actionId": action_id,
+            "results": rows,
+            "successCount": sum(row["ok"] is True for row in rows),
+            "failureCount": sum(row["ok"] is False for row in rows),
+            "durationMs": float(native.get("durationMs") or 0),
+            "protectedStatePreserved": True,
+        }
     overwritten = any(
         isinstance(state, Mapping) and state.get("kind") != "absent"
         for key, state in before.items() if str(key).startswith("affected_")
@@ -387,6 +429,53 @@ def _public_projection(command_id: str, value: Mapping[str, Any], result: Mappin
         "revisionAfter": revision_after,
         "changed": before != after,
     }
+    if command_id == "fusion.nested_text.batch":
+        native_rows = native.get("results")
+        before_items = before.get("items")
+        after_items = after.get("items")
+        updates = value.get("updates")
+        if not all(isinstance(rows, list) for rows in (native_rows, before_items, after_items, updates)):
+            raise InventoryValidationError("Nested Fusion text batch result is incomplete")
+        if not (len(native_rows) == len(before_items) == len(after_items) == len(updates)):
+            raise InventoryValidationError("Nested Fusion text batch result cardinality drifted")
+        rows = []
+        for index, (update, native_row, before_item, after_item) in enumerate(
+            zip(updates, native_rows, before_items, after_items)
+        ):
+            if native_row.get("ok"):
+                rows.append({
+                    "index": index,
+                    "status": "succeeded",
+                    "timelineItemId": update["timelineItemId"],
+                    "headerUpdated": bool(native_row.get("header_updated")),
+                    "bodyUpdated": bool(native_row.get("body_updated")),
+                    "revisionBefore": _revision(before_item),
+                    "revisionAfter": _revision(after_item),
+                })
+            else:
+                error = native_row.get("error") if isinstance(native_row.get("error"), Mapping) else {}
+                rows.append({
+                    "index": index,
+                    "status": "failed",
+                    "timelineItemId": update["timelineItemId"],
+                    "code": str(error.get("code") or "API_CALL_FAILED")[:128],
+                    "message": str(error.get("message") or "Nested Fusion text update failed")[:4096],
+                })
+        return {
+            "actionId": action_id,
+            "projectId": value["projectId"],
+            "timelineId": value["timelineId"],
+            "revisionBefore": value["revision"],
+            "revisionAfter": revision_after,
+            "changed": any(
+                row["status"] == "succeeded" and (row["headerUpdated"] or row["bodyUpdated"])
+                for row in rows
+            ),
+            "successCount": sum(row["status"] == "succeeded" for row in rows),
+            "failureCount": sum(row["status"] == "failed" for row in rows),
+            "results": rows,
+            "protectedStatePreserved": True,
+        }
     tool = _tool_result(before, after) if command_id in {
         "fusion.effect.blur", "fusion.effect.color_correct", "fusion.effect.glow",
         "fusion.effect.sharpen", "fusion.effect.transform", "fusion.keyer.chroma",
@@ -438,9 +527,9 @@ def _public_projection(command_id: str, value: Mapping[str, Any], result: Mappin
         added_name = tool["name"] if isinstance(tool, Mapping) else ""
         added_node = _node_map(after).get(added_name, {})
         position = added_node.get("flowPosition")
-        if not isinstance(position, Mapping):
+        if not isinstance(position, Mapping) and value.get("flowPosition") is not None:
             raise InventoryValidationError("Fusion tool flow position was not independently read back")
-        body, field = {"tool": tool, "flowPosition": deepcopy(dict(position)), "revision": revision}, "node" if command_id == "fusion.node.add" else "tool"
+        body, field = {"tool": tool, "flowPosition": deepcopy(dict(position)) if isinstance(position, Mapping) else None, "revision": revision}, "node" if command_id == "fusion.node.add" else "tool"
     elif command_id in {"fusion.node.connect", "fusion.tool.connect"}:
         body, field = {"source": deepcopy(value["source"]), "destination": deepcopy(value["destination"]), "connected": True, "revision": revision}, "connection"
     elif command_id in {"fusion.node.delete", "fusion.tool.delete"}:
@@ -491,16 +580,55 @@ def _public_projection(command_id: str, value: Mapping[str, Any], result: Mappin
         body, field = {"projectId": value["projectId"], "timelineId": value["timelineId"], "revisionBefore": value["revision"], "revisionAfter": revision_after, "timelineItemId": value["timelineItemId"], "nodeIndex": int(value.get("nodeIndex", 1)), "dctlArtifactId": value["dctlArtifactId"], "readbackName": native["readbackName"], "applied": True}, "application"
     elif command_id == "lut_refresh":
         body, field = {"projectId": value["projectId"], "revisionBefore": value["revision"], "revisionAfter": revision_after, "changed": True, "verificationStatus": "pending_manual", "apiAcknowledged": True}, "refresh"
-    elif command_id == "fusion.insert_setting":
-        added = [row for row in after.get("items", []) if row.get("nativeId") not in {item.get("nativeId") for item in before.get("items", [])}]
-        if len(added) != 1:
-            raise InventoryValidationError("Fusion setting insertion did not create exactly one timeline item")
-        row = added[0]
-        record_position = deepcopy(value["recordPosition"])
-        record_position["value"]["value"] = row["start"]
-        clip_duration = deepcopy(value["clipDuration"])
-        clip_duration["value"]["value"] = row["duration"]
-        body, field = {"timelineItemId": _public_timeline_item_id(str(value["timelineId"]), str(row["nativeId"])), "clipName": row["name"], "recordPosition": record_position, "clipDuration": clip_duration, "videoTrackIndex": row["track"], "revision": revision}, "insertedItem"
+    elif command_id in {"fusion.insert_setting", "fusion.insert_settings.batch"}:
+        requested = [value] if command_id == "fusion.insert_setting" else list(value["items"])
+        remaining = [row for row in after.get("items", []) if row.get("nativeId") not in {item.get("nativeId") for item in before.get("items", [])}]
+        inserted = []
+        for item in requested:
+            requested_track = item.get("videoTrackIndex")
+            matches = [row for row in remaining if (
+                row.get("start") == int(item["recordPosition"]["value"]["value"])
+                and row.get("duration") == int(item["clipDuration"]["value"]["value"])
+                and (requested_track is None or row.get("track") == int(requested_track))
+                and (item.get("clipName") is None or row.get("name") == item.get("clipName"))
+            )]
+            if len(matches) != 1:
+                raise InventoryValidationError("Fusion setting insertion did not create one exact timeline item per request")
+            row = matches[0]
+            remaining.remove(row)
+            record_position = deepcopy(item["recordPosition"])
+            record_position["value"]["value"] = row["start"]
+            clip_duration = deepcopy(item["clipDuration"])
+            clip_duration["value"]["value"] = row["duration"]
+            inserted.append({
+                "timelineItemId": _public_timeline_item_id(str(value["timelineId"]), str(row["nativeId"])),
+                "clipName": row["name"],
+                "recordPosition": record_position,
+                "clipDuration": clip_duration,
+                "videoTrackIndex": row["track"],
+            })
+        if command_id == "fusion.insert_setting":
+            body, field = {**inserted[0], "revision": revision}, "insertedItem"
+        else:
+            body, field = {"items": inserted, "revision": revision}, "insertedItems"
+    elif command_id == "fusion.text.batch":
+        native_rows = native.get("results") if isinstance(native, Mapping) else None
+        if not isinstance(native_rows, list) or len(native_rows) != len(value["updates"]):
+            raise InventoryValidationError("Fusion text batch result lost item correlation")
+        body, field = {
+            "updates": [
+                {
+                    "timelineItemId": update["timelineItemId"],
+                    "compositionIndex": int(update["compositionIndex"]),
+                    "toolName": update["toolName"],
+                    "inputName": update["inputName"],
+                    "text": update["text"],
+                    "verified": bool(native_row.get("verified")),
+                }
+                for update, native_row in zip(value["updates"], native_rows)
+            ],
+            "revision": revision,
+        }, "textUpdates"
     elif command_id in {"fusion.image.set", "fusion.macro.apply", "fusion.nested_text.update", "fusion.template.apply", "fusion.text.set"}:
         if command_id == "fusion.image.set":
             body, field = {"timelineItemId": value["timelineItemId"], "imageArtifactId": value["imageArtifactId"], "toolName": str(native.get("tool") or native.get("tool_name") or value.get("groupToolName") or "Loader1"), "inputName": str(native.get("input") or native.get("input_name") or value.get("groupInputName") or "Clip"), "verified": True, "revision": revision}, "imageUpdate"
@@ -578,6 +706,8 @@ def _public_projection(command_id: str, value: Mapping[str, Any], result: Mappin
         }, "generatedLut"
     elif command_id == "lut.install":
         body, field = {"sourceArtifactId": value["sourceArtifactId"], "installedArtifactId": native["artifactId"], "overwritten": copied_overwrite_truth()}, "installation"
+    elif command_id == "fusion.tool.registry":
+        body, field = deepcopy(dict(native)), "registry"
     elif command_id == "lut.list":
         body, field = deepcopy(list(native.get("luts") or [])), "luts"
     elif command_id == "lut.remove":
@@ -617,6 +747,11 @@ class FusionPreparedActionDescriptor:
             raise InventoryValidationError("Fusion action input must be an object")
         schema, _ = _schemas(self.action_id, self.command_id)
         _validate(value, schema, "input")
+        if self.command_id == "fusion.nested_text.batch" and any(
+            "header" not in update and "body" not in update
+            for update in value.get("updates", ())
+        ):
+            raise InventoryValidationError("Each nested Fusion text update requires header or body text")
         return deepcopy(dict(value))
 
     def prepare(self, context: Mapping[str, Any], value: Mapping[str, Any]) -> dict[str, Any]:
@@ -626,6 +761,8 @@ class FusionPreparedActionDescriptor:
         )
         targets = deepcopy(list(observation["targets"]))
         pre_state = deepcopy(dict(observation["preState"]))
+        if self.command_id in {"fusion.node.add", "fusion.tool.add"} and value.get("flowPosition") is not None and pre_state.get("flowViewAvailable") is False:
+            raise InventoryValidationError("Explicit node placement requires an available Fusion flow view. Omit flowPosition for automatic placement.")
         if self.operation_class == "read":
             impact = {
                 "contractVersion": 1,
@@ -636,7 +773,6 @@ class FusionPreparedActionDescriptor:
             }
             minimum = list(fusion_minimum_evidence(self.command_id, self.operation_class))
         else:
-            policy = _policy(context)
             timeline_bound = isinstance(value.get("timelineId"), str)
             project_bound = isinstance(value.get("projectId"), str)
             minimum_binding = "project+timeline" if timeline_bound else "project" if project_bound else "account/project-library"
@@ -649,38 +785,17 @@ class FusionPreparedActionDescriptor:
                     f"sha256:{template_digest.removeprefix('sha256:')}",
                 })
             carrier_base = context.get("mutationBase")
-            if isinstance(carrier_base, Mapping):
-                if (
-                    carrier_base.get("contractVersion") != 1
-                    or carrier_base.get("carrier") != "sdk"
-                    or carrier_base.get("minimumBinding") != minimum_binding
-                    or sorted(carrier_base.get("referencedPayloadDigests") or [])
-                    != referenced_payload_digests
-                ):
-                    raise InventoryValidationError(
-                        "Fusion mutation carrier binding disagrees with exact domain custody"
-                    )
-                impact = deepcopy(dict(carrier_base))
-            else:
-                # Direct descriptor tests and legacy private callers do not own
-                # the production carrier base. Production always takes the
-                # immutable branch above.
-                impact = {
-                    "contractVersion": 1,
-                    "carrier": "sdk",
-                    "minimumBinding": minimum_binding,
-                    "registryDigest": policy["registryDigest"],
-                    "canonicalRequestDigest": _digest({"actionId": self.action_id, "input": value}),
-                    "referencedPayloadDigests": referenced_payload_digests,
-                    "requestId": context["execution"]["requestId"],
-                    "operationId": context["operationId"],
-                    "executionId": context["executionId"],
-                    "scopeId": policy["scopeId"],
-                    "scopeRevision": policy["scopeRevision"],
-                    "projectLibraryId": policy["projectLibraryId"],
-                    **({"projectId": value["projectId"], "projectRevision": value["revision"]} if project_bound else {}),
-                    **({"timelineId": value["timelineId"], "timelineRevision": value["revision"]} if timeline_bound else {}),
-                }
+            if not isinstance(carrier_base, Mapping) or (
+                carrier_base.get("contractVersion") != 1
+                or carrier_base.get("carrier") != "sdk"
+                or carrier_base.get("minimumBinding") != minimum_binding
+                or sorted(carrier_base.get("referencedPayloadDigests") or [])
+                != referenced_payload_digests
+            ):
+                raise InventoryValidationError(
+                    "Fusion mutation carrier binding disagrees with exact domain custody"
+                )
+            impact = deepcopy(dict(carrier_base))
             impact.update({
                 "status": "mutation",
                 "effects": [{

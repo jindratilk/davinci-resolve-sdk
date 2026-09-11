@@ -27,6 +27,67 @@ def _timeline_items_delete_filters(
     }
 
 
+def _normalize_timeline_item_delete_targets(targets: Optional[List[Dict[str, Any]]]) -> Optional[List[Dict[str, Any]]]:
+    if targets is None:
+        return None
+    if not isinstance(targets, list) or not targets or len(targets) > 4096:
+        raise ValidationError("Exact timeline item deletion requires between 1 and 4096 targets.")
+    normalized: List[Dict[str, Any]] = []
+    keys = set()
+    for offset, target in enumerate(targets):
+        if not isinstance(target, dict):
+            raise ValidationError("Each exact timeline item deletion target must be an object.", details={"target_index": offset})
+        track_type = normalize_timeline_item_track_type(target.get("track_type"))
+        if track_type == "all":
+            raise ValidationError("Exact timeline item deletion targets require video, audio, or subtitle track type.", details={"target_index": offset})
+        track_index = validate_timeline_track_index(target.get("track_index"))
+        start_frame = target.get("start_frame")
+        end_frame = target.get("end_frame")
+        name = target.get("name")
+        if not isinstance(start_frame, int) or isinstance(start_frame, bool) or not isinstance(end_frame, int) or isinstance(end_frame, bool) or end_frame <= start_frame:
+            raise ValidationError("Exact timeline item deletion targets require a valid half-open integer frame range.", details={"target_index": offset})
+        if not isinstance(name, str) or not name or len(name) > 4096:
+            raise ValidationError("Exact timeline item deletion targets require a non-empty item name.", details={"target_index": offset})
+        value = {"track_type": track_type, "track_index": track_index, "start_frame": start_frame, "end_frame": end_frame, "name": name}
+        key = (track_type, track_index, start_frame, end_frame, name)
+        if key in keys:
+            raise ValidationError("Exact timeline item deletion targets must be unique.", details={"target_index": offset})
+        keys.add(key)
+        normalized.append(value)
+    return normalized
+
+
+def _collect_exact_timeline_item_delete_targets(conn, targets: List[Dict[str, Any]]) -> List[tuple[Any, str, int]]:
+    selected: List[tuple[Any, str, int]] = []
+    timeline_start = _timeline_start_frame(conn)
+    for offset, target in enumerate(targets):
+        candidates = _collect_timeline_items_matching_filter(
+            conn,
+            track_type=target["track_type"],
+            track_index=target["track_index"],
+            start_frame=target["start_frame"],
+            end_frame=target["end_frame"],
+            match="contained",
+        )
+        expected_ranges = {(target["start_frame"], target["end_frame"])}
+        if timeline_start:
+            expected_ranges.add((target["start_frame"] - timeline_start, target["end_frame"] - timeline_start))
+        matches = []
+        for item, track_type, track_index in candidates:
+            descriptor = _timeline_item_descriptor(item, track_type, track_index)
+            if descriptor.get("name") == target["name"] and (descriptor.get("start"), descriptor.get("end")) in expected_ranges:
+                matches.append((item, track_type, track_index))
+        if len(matches) != 1:
+            raise ValidationError(
+                "An exact timeline item deletion target changed, disappeared, or became ambiguous.",
+                details={"target_index": offset, "target": target, "match_count": len(matches)},
+            )
+        selected.append(matches[0])
+    if len({id(item) for item, _track_type, _track_index in selected}) != len(selected):
+        raise ValidationError("Exact timeline item deletion targets resolved to the same native item more than once.")
+    return selected
+
+
 def delete_timeline_items(
     conn,
     *,
@@ -38,13 +99,15 @@ def delete_timeline_items(
     match: str = "overlap",
     allow_empty: bool = False,
     force: bool = False,
+    exact_targets: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """Delete timeline items without deleting tracks or rippling the timeline."""
+    normalized_targets = _normalize_timeline_item_delete_targets(exact_targets)
     normalized_track_type = normalize_timeline_item_track_type(track_type)
     normalized_match = normalize_timeline_item_delete_match(match)
     normalized_track_index = validate_timeline_track_index(track_index) if track_index is not None else None
 
-    if start_ref is None and end_ref is None and not force:
+    if normalized_targets is None and start_ref is None and end_ref is None and not force:
         raise ConfirmationRequired(
             "Deleting timeline items without a frame range requires --force.",
             details={
@@ -79,14 +142,12 @@ def delete_timeline_items(
         allow_empty=allow_empty,
         force=force,
     )
+    if normalized_targets is not None:
+        filters = {"timeline": target_timeline, "exact_targets": normalized_targets}
 
-    selected_items = _collect_timeline_items_matching_filter(
-        conn,
-        track_type=normalized_track_type,
-        track_index=normalized_track_index,
-        start_frame=start_frame,
-        end_frame=end_frame,
-        match=normalized_match,
+    selected_items = _collect_exact_timeline_item_delete_targets(conn, normalized_targets) if normalized_targets is not None else _collect_timeline_items_matching_filter(
+        conn, track_type=normalized_track_type, track_index=normalized_track_index,
+        start_frame=start_frame, end_frame=end_frame, match=normalized_match,
     )
     deleted_items = [
         _timeline_item_descriptor(item, current_track_type, current_track_index)
@@ -114,14 +175,37 @@ def delete_timeline_items(
         )
 
     delete_result = _delete_clips_no_ripple(conn.timeline, [item for item, _track_type, _track_index in selected_items])
-    remaining_items = _collect_timeline_items_matching_filter(
-        conn,
-        track_type=normalized_track_type,
-        track_index=normalized_track_index,
-        start_frame=start_frame,
-        end_frame=end_frame,
-        match=normalized_match,
-    )
+    save_project = getattr(getattr(conn, "project_manager", None), "SaveProject", None)
+    if not callable(save_project):
+        raise APICallFailed(
+            "DaVinci Resolve cannot durably save the timeline item deletion.",
+            details={"required_api": "ProjectManager.SaveProject", "mutation_may_have_occurred": True},
+        )
+    try:
+        save_result = save_project()
+    except Exception as exc:
+        raise APICallFailed(
+            "DaVinci Resolve failed to save the timeline item deletion.",
+            details={"required_api": "ProjectManager.SaveProject", "mutation_may_have_occurred": True, "error": str(exc)},
+        ) from exc
+    if save_result is not True:
+        raise APICallFailed(
+            "DaVinci Resolve did not confirm the timeline item deletion save.",
+            details={"required_api": "ProjectManager.SaveProject", "mutation_may_have_occurred": True, "save_result": save_result},
+        )
+    if normalized_targets is not None:
+        remaining_items = []
+        for target in normalized_targets:
+            try:
+                remaining_items.extend(_collect_exact_timeline_item_delete_targets(conn, [target]))
+            except ValidationError as error:
+                if error.details.get("match_count") not in {0, None}:
+                    raise
+    else:
+        remaining_items = _collect_timeline_items_matching_filter(
+            conn, track_type=normalized_track_type, track_index=normalized_track_index,
+            start_frame=start_frame, end_frame=end_frame, match=normalized_match,
+        )
     remaining_descriptors = [
         _timeline_item_descriptor(item, current_track_type, current_track_index)
         for item, current_track_type, current_track_index in remaining_items

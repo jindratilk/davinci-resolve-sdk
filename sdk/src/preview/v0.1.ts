@@ -1,4 +1,4 @@
-/** Complete compatibility surface for imports written against `davinci-resolve-sdk` 0.1. @packageDocumentation */
+/** Complete compatibility surface for imports written against `cutagent` 0.1. @packageDocumentation */
 export * from "../value-types/identities.js";
 export * from "./time-v0.1.js";
 export * from "../protocol/capabilities.js";
@@ -32,6 +32,10 @@ export type {
   MediaPoolFolderSnapshot,
   MediaPoolMetadataEntry,
   MediaPoolMetadataKey,
+  MediaPoolTranscription,
+  MediaPoolTranscriptionOptions,
+  MediaPoolTranscriptionSegment,
+  MediaPoolTranscriptionWord,
   MediaPoolPageOptions,
   MediaPoolSearchInput,
   MediaPoolSnapshotPage,
@@ -53,6 +57,8 @@ export type {
   RenderCodec,
   RenderCodecOption,
   RenderDiscovery,
+  AudioRenderCodecOption,
+  AudioRenderFormatOption,
   RenderFormat,
   RenderFormatOption,
   RenderJobSnapshot,
@@ -73,6 +79,8 @@ export type {
   RenderQueue,
   RenderQueueListOptions,
   RenderQueuePage,
+  RenderQueueStartOptions,
+  RenderQueueStartResult,
   RenderResolution,
   RenderSettingsSnapshot,
   RenderSupport,

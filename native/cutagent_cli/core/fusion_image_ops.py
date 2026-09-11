@@ -265,6 +265,7 @@ def set_image_on_item(
     group_inputs: dict[str, Any] | None = None,
     import_media: bool = True,
     transform: dict[str, Any] | None = None,
+    composition_index: int | None = None,
 ) -> dict[str, Any]:
     normalized_path = validate_image_path(image_path)
     normalized_group_input_name = str(group_input_name or "").strip() or None
@@ -273,7 +274,11 @@ def set_image_on_item(
             "Fusion image group injection requires group_input_name when group_tool_name is provided.",
             details={"group_tool": group_tool_name, "group_input": group_input_name},
         )
-    comp = get_fusion_comp_for_item(item)
+    comp = (
+        item.GetFusionCompByIndex(composition_index)
+        if composition_index is not None and callable(getattr(item, "GetFusionCompByIndex", None))
+        else get_fusion_comp_for_item(item)
+    )
     if comp is None:
         raise APICallFailed(
             "No Fusion composition found for the target clip.",

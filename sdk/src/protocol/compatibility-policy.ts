@@ -10,7 +10,7 @@ import { CutAgentSdkError } from "./errors.js";
 export const compatibilityManifestPolicySchema = z.strictObject({
   $schema: z.literal("./compatibility.schema.json"),
   manifestVersion: z.literal(1),
-  packageName: z.literal("davinci-resolve-sdk"),
+  packageName: z.literal("cutagent"),
   sdkVersion: z.literal("0.2.0"),
   sdkApiVersion: z.literal("0.2"),
   wireProtocol: z.literal(1),

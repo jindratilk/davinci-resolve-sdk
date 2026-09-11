@@ -21,7 +21,7 @@ TargetCardinality = Literal["one_per_kind", "one_or_more"]
 class DescriptorAdmissionError(ValueError):
     """A mutation descriptor could not prove a closed pre-authorization impact."""
 
-    code = "EDIT_CONSTRAINT_VIOLATION"
+    code = "VALIDATION_ERROR"
 
 
 @dataclass(frozen=True)
@@ -233,13 +233,6 @@ _DESCRIPTORS = (
         fixed_track_type="video",
     ),
     _stable(
-        "timeline.items.set_duration",
-        target_kinds=("clip",),
-        ids=("timelineItemId",),
-        track=True,
-        linked=True,
-    ),
-    _stable(
         "timeline.layer.ensure_media",
         effect="create",
         target_kinds=("media", "track"),
@@ -257,6 +250,7 @@ _DESCRIPTORS = (
     _stable("timeline.rename", binding="project", ids=("timelineId",)),
     _stable("timeline.set_start_tc"),
     _stable("timeline.settings_set"),
+    _stable("timeline.output_blanking.set"),
     _stable("timeline.start_tc", operation_variant="get_or_set"),
     _stable("timeline.stereo_convert", linked=True),
     _stable("timeline.still.grab_all", effect="artifact", artifact=True, linked=True),
@@ -285,8 +279,13 @@ _DESCRIPTORS = (
         track=True,
         fixed_track_type="audio",
     ),
-    # Five actions whose impact may span multiple objects. Preparation accepts
+    # Seven actions whose impact may span multiple objects. Preparation accepts
     # them only after private live resolution has closed the full target set.
+    _multi(
+        "timeline.clip_color.batch",
+        target_kinds=("clip",),
+        linked=False,
+    ),
     _multi("timeline.compound_create", target_kinds=("clip",), track=True, linked=True),
     _multi(
         "timeline.dolby.analyze",
@@ -301,6 +300,13 @@ _DESCRIPTORS = (
         linked=True,
     ),
     _multi("timeline.items.delete", target_kinds=("clip",), track=True, linked=True),
+    _multi(
+        "timeline.items.set_duration",
+        target_kinds=("clip",),
+        ids=("timelineItemId",),
+        track=True,
+        linked=True,
+    ),
     _multi(
         "timeline.sync_clips",
         target_kinds=("media", "timeline"),
@@ -326,9 +332,9 @@ if sum(row.family == "stable" for row in _DESCRIPTORS) != 35:
     raise RuntimeError(
         "Timeline/Version descriptor packet must contain 35 stable Timeline actions."
     )
-if sum(row.family == "multi_target" for row in _DESCRIPTORS) != 5:
+if sum(row.family == "multi_target" for row in _DESCRIPTORS) != 7:
     raise RuntimeError(
-        "Timeline/Version descriptor packet must contain five multi-target Timeline actions."
+        "Timeline/Version descriptor packet must contain seven multi-target Timeline actions."
     )
 if sum(row.family == "version" for row in _DESCRIPTORS) != 3:
     raise RuntimeError(
@@ -372,6 +378,16 @@ def _flatten_ids(
     values: list[str] = []
     for field in fields:
         value = input_value.get(field)
+        if (
+            value is None
+            and field == "timelineItemId"
+            and isinstance(input_value.get("updates"), list)
+        ):
+            value = [
+                update.get(field)
+                for update in input_value["updates"]
+                if isinstance(update, Mapping)
+            ]
         if value is None:
             continue
         candidates = value if isinstance(value, list) else [value]
@@ -454,6 +470,7 @@ def _exact_targets(
                         "trackType",
                         "trackIndex",
                         "mediaRole",
+                        "impactRole",
                         *(
                             ("nativeId", "name", "start", "end")
                             if descriptor.command_id == "timeline.dolby.analyze"
@@ -503,12 +520,23 @@ def _exact_targets(
         if resolved_requested != set(requested_ids):
             _fail("Resolved impact contains an undeclared or missing requested target.")
         requested_kind = descriptor.target_kinds[0]
-        if descriptor.family == "multi_target" and {
+        resolved_kind_ids = {
             str(target.get("publicId"))
             for target in targets
             if target.get("kind") == requested_kind
             and target.get("publicId") is not None
-        } != set(requested_ids):
+        }
+        linked_duration_closure = (
+            descriptor.command_id == "timeline.items.set_duration"
+            and set(requested_ids).issubset(resolved_kind_ids)
+            and all(
+                target.get("impactRole")
+                == ("requested" if target.get("publicId") in set(requested_ids) else "linked")
+                for target in targets
+                if target.get("kind") == requested_kind
+            )
+        )
+        if descriptor.family == "multi_target" and resolved_kind_ids != set(requested_ids) and not linked_duration_closure:
             _fail(
                 "Multi-target resolved impact is not the exact requested identity set."
             )
@@ -598,9 +626,27 @@ def _validate_action_specific_targeting(
         if not isinstance(source_ids, list) or not source_ids:
             _fail("Timeline synchronization requires explicit Media Pool identities.")
     elif command_id == "timeline.items.set_duration":
-        if input_value.get("duration") is None and input_value.get("targetEnd") is None:
+        updates = input_value.get("updates")
+        if updates is not None:
+            if (
+                not isinstance(updates, list)
+                or not updates
+                or any(not isinstance(update, Mapping) for update in updates)
+            ):
+                _fail("Duration mutation updates must be a non-empty list of objects.")
+            item_ids = [update.get("timelineItemId") for update in updates]
+            if any(not _non_empty_text(item_id) for item_id in item_ids):
+                _fail("Every duration mutation update requires an exact item identity.")
+            if len(set(item_ids)) != len(item_ids):
+                _fail("Duration mutation update identities must be unique.")
+            if any(
+                (update.get("duration") is None) == (update.get("targetEnd") is None)
+                for update in updates
+            ):
+                _fail("Every duration mutation update requires exactly one duration or target end.")
+        elif input_value.get("duration") is None and input_value.get("targetEnd") is None:
             _fail("Duration mutation requires a duration or exact target end.")
-        if input_value.get("timelineItemId") is None:
+        elif input_value.get("timelineItemId") is None:
             if (
                 input_value.get("trackType") not in {"video", "audio", "subtitle"}
                 or input_value.get("trackIndex") is None
@@ -625,6 +671,7 @@ _ORDINARY_NATIVE_PROJECT_COMMAND_IDS = frozenset(
         "timeline.rename",
         "timeline.set_start_tc",
         "timeline.settings_set",
+        "timeline.output_blanking.set",
         "timeline.start_tc",
         "timeline.switch",
     }
@@ -1202,6 +1249,6 @@ def public_timeline_version_descriptor_summary() -> dict[str, Any]:
     return {
         "schemaVersion": 1,
         "packet": "timeline_version_mutations_v1",
-        "counts": {"total": 43, "stable": 35, "multiTarget": 5, "version": 3},
+        "counts": {"total": 44, "stable": 35, "multiTarget": 6, "version": 3},
         "actions": actions,
     }

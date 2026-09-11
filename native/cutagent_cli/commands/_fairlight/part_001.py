@@ -9,7 +9,7 @@ import shlex
 import shutil
 import sqlite3
 import time
-from typing import Any
+from typing import Any, Mapping
 import uuid
 
 import typer
@@ -500,6 +500,70 @@ def audio_pan_batch(
             timeline_switch=timeline_switch,
         ),
         title="Fairlight Audio Pan Batch",
+    )
+
+
+def _sdk_audio_pan_items(
+    items: Mapping[str, Any] | list[Mapping[str, Any]],
+) -> None:
+    """Apply one signed SDK pan item or a heterogeneous item list in one native pass."""
+    raw_items = [items] if isinstance(items, Mapping) else items
+    if not isinstance(raw_items, list) or not 1 <= len(raw_items) <= 128:
+        raise ValidationError(
+            "SDK audio pan requires one to 128 items.",
+            recoverability="not_applicable",
+        )
+    entries: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for index, item in enumerate(raw_items):
+        if not isinstance(item, Mapping) or set(item) != {"item_id", "value"}:
+            raise ValidationError(
+                "Each SDK audio pan item requires only item_id and value.",
+                details={"index": index},
+                recoverability="not_applicable",
+            )
+        item_id = str(item.get("item_id") or "").strip()
+        if not item_id or item_id in seen:
+            raise ValidationError(
+                "SDK audio pan item identities must be non-empty and unique.",
+                details={"index": index, "item_id": item_id},
+                recoverability="not_applicable",
+            )
+        seen.add(item_id)
+        try:
+            value = clip_effects_db.validate_audio_pan_value(item.get("value"))
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(
+                "SDK audio pan values must be finite numbers.",
+                details={"index": index},
+                recoverability="not_applicable",
+            ) from exc
+        entries.append({"item_id": item_id, "value": value})
+
+    set_execution_engine("db_workaround")
+    enforce_mutation_policy(
+        "fairlight.audio_pan_batch",
+        intended_engine="db_workaround",
+        mutating=not is_dry_run(),
+    )
+    conn = get_connection(require_timeline=True)
+    data = fairlight_ops.apply_audio_pan_batch(
+        conn,
+        pan_value=None,
+        selectors=entries,
+        allow_empty=False,
+        allow_multiple=False,
+    )
+    action = str(data.pop("action", "fairlight.audio_pan.batch"))
+    changed = bool(data.pop("changed", data.get("updated_count", 0)))
+    output(
+        mutation_payload(
+            action=action,
+            target={"kind": "timeline", "name": data.get("timeline_name")},
+            changed=changed,
+            **data,
+        ),
+        title="Fairlight Audio Pan",
     )
 
 
@@ -2814,3 +2878,32 @@ def solo(index: int = typer.Argument(..., help="Audio track index to solo")):
     conn = get_connection(require_timeline=True)
     data = fairlight_ops.solo_audio_track(conn, index)
     output(data, title="Fairlight Solo")
+
+
+@app.command("fade-curve")
+@handle_errors
+def fade_curve(
+    item_id: str = typer.Option(..., "--item-id", help="Exact audio timeline item ID"),
+    direction: str = typer.Option(..., "--direction", help="in or out"),
+    x: float | None = typer.Option(None, "--x", help="Native curve control-point X"),
+    y: float | None = typer.Option(None, "--y", help="Native curve control-point Y"),
+    linear: bool = typer.Option(False, "--linear", help="Reset this fade to a linear envelope"),
+):
+    """Read or edit an audio fade curve without changing either fade duration."""
+    from ..core import audio_fade_curve
+    audio_fade_curve._parameter(direction)
+    if (x is None) != (y is None) or (linear and x is not None):
+        raise ValidationError("Use both --x and --y, or --linear, or neither to read.")
+    conn = get_connection(require_project=True, require_timeline=True)
+    if not linear and x is None:
+        output(audio_fade_curve.read(conn, item_id, direction))
+        return
+    point = None if linear else {"x": x, "y": y}
+    audio_fade_curve.validate_point(point)
+    enforce_mutation_policy("fairlight.fade_in_batch" if direction == "in" else "fairlight.fade_out_batch", intended_engine="db_workaround", mutating=not is_dry_run())
+    if is_dry_run():
+        set_verification_status("not_requested")
+        set_recoverability("not_applicable")
+        output({"item_id": item_id, "direction": direction, "control_point": point, "dry_run": True}, title="Audio Fade Curve Plan")
+        return
+    output(audio_fade_curve.set_curve(conn, item_id, direction, point))

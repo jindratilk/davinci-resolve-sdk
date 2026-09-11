@@ -1450,6 +1450,8 @@ def _rewrite_multicam_segments_db(
     audio_angle_override: str | None = None,
     multicam_media_id: str | None = None,
     timeline_native_id: str | None = None,
+    preserved_item_positions: list[dict[str, Any]] | None = None,
+    final_start_delta: int = 0,
 ) -> dict[str, Any]:
     return _db_switch_patch._rewrite_multicam_segments_db(
         project_db_path,
@@ -1460,6 +1462,8 @@ def _rewrite_multicam_segments_db(
         audio_angle_override=audio_angle_override,
         multicam_media_id=multicam_media_id,
         timeline_native_id=timeline_native_id,
+        preserved_item_positions=preserved_item_positions,
+        final_start_delta=final_start_delta,
         ops_module=_ops_module(),
     )
 

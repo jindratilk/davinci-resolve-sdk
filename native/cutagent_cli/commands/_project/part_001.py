@@ -552,6 +552,7 @@ def open_project(name: str = typer.Argument(..., help="Project name")):
     enforce_mutation_policy("project.open", intended_engine="api_native", mutating=not is_dry_run())
     project_ops.validate_project_name(name)
     conn = get_connection(require_project=False)
+    require_project_mutation_guard(conn, list_timelines=timeline_ops.list_timelines)
     current_project = getattr(conn, "project", None)
     get_current_name = None
     if current_project is not None:
@@ -1347,6 +1348,9 @@ def settings_set(
 
 # --- Project Presets ---
 
+from ..core import project_preset_api
+from ..core.project_preset_api import SAVE_METHODS
+
 preset_app = typer.Typer(help="Project preset operations.")
 app.add_typer(preset_app, name="preset")
 
@@ -1356,52 +1360,13 @@ app.add_typer(preset_app, name="preset")
 def preset_list():
     """List project presets."""
     conn = get_connection(require_project=True)
-    rows = []
-    preset_list_fn = getattr(conn.project, "GetPresetList", None)
-    presets_fn = getattr(conn.project, "GetPresets", None)
-    if callable(preset_list_fn):
-        raw = preset_list_fn() or []
-        if isinstance(raw, list):
-            for i, item in enumerate(raw, 1):
-                if isinstance(item, dict):
-                    rows.append({"index": i, "name": item.get("Name", f"Preset {i}")})
-                else:
-                    rows.append({"index": i, "name": str(item)})
-    if not rows and callable(presets_fn):
-        raw = presets_fn() or {}
-        if isinstance(raw, dict):
-            for key, value in raw.items():
-                if isinstance(value, dict):
-                    rows.append({"index": key, "name": value.get("Name", str(key))})
-                else:
-                    rows.append({"index": key, "name": str(value)})
+    rows = [
+        {"index": index, "name": name}
+        for index, name in enumerate(
+            project_preset_api.project_preset_names_ordered(conn.project), 1
+        )
+    ]
     output(rows, columns=[("index", "#"), ("name", "Name")], title="Project Presets")
-
-
-def _find_project_preset(project, name: str) -> tuple[object | None, list[str], bool]:
-    preset_list_fn = getattr(project, "GetPresetList", None)
-    if not callable(preset_list_fn):
-        return None, [], False
-
-    raw = preset_list_fn() or []
-    if not isinstance(raw, list):
-        return None, [], False
-
-    names: list[str] = []
-    match: object | None = None
-    for item in raw:
-        if isinstance(item, dict):
-            item_name = str(item.get("Name", ""))
-            if item_name:
-                names.append(item_name)
-            if item_name == name:
-                match = item
-        else:
-            item_name = str(item)
-            names.append(item_name)
-            if item_name == name:
-                match = item_name
-    return match, names, True
 
 
 @preset_app.command("load")
@@ -1410,31 +1375,17 @@ def preset_load(
     name: str = typer.Argument(..., help="Preset name"),
 ):
     """Load project preset by name."""
+    project_preset_api.requested_project_preset_name(name)
     enforce_mutation_policy("project.preset_load", intended_engine="api_native", mutating=not is_dry_run())
     conn = get_connection(require_project=True)
-    setter = require_api_method(
-        conn.project,
-        "SetPreset",
-        capability_id="project.preset_load",
-        runtime_object="project",
-    )
-    preset_obj, preset_names, preset_list_available = _find_project_preset(conn.project, name)
-    if preset_list_available and preset_obj is None:
-        raise APICallFailed(
-            f"Failed to load project preset '{name}'.",
-            details={
-                "name": name,
-                "available_presets": preset_names,
-            },
-        )
-
+    preset_names = project_preset_api.project_preset_names_ordered(conn.project)
     if is_dry_run():
         output(
             mutation_payload(
                 action="project.preset.load",
                 target={"kind": "project_preset", "name": name},
                 changed=False,
-                preset_exists=True if preset_obj is not None else None,
+                preset_exists=name in preset_names,
                 available_presets=preset_names,
                 runtime_load_called=False,
                 message=f"DRY-RUN: Would load project preset: {name}",
@@ -1442,20 +1393,4 @@ def preset_load(
         )
         return
 
-    result = False
-    if preset_obj is not None:
-        try:
-            result = bool(setter(preset_obj))
-        except Exception:
-            result = False
-    if not result:
-        result = bool(setter(name))
-    if not result:
-        raise APICallFailed(f"Failed to load project preset '{name}'.")
-    output(
-        mutation_payload(
-            action="project.preset.load",
-            target={"kind": "project_preset", "name": name},
-            message=f"Loaded project preset: {name}",
-        )
-    )
+    output(project_preset_api.load_project_preset(conn.project, name), title="Project Preset Load")

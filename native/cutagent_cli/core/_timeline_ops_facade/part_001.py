@@ -5,7 +5,7 @@ from __future__ import annotations
 import time
 import re
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 
 from ..errors import APICallFailed, CapabilityNegotiationFailed, ConfirmationRequired, MissingArgumentError, ValidationError
 from ..output import set_recoverability, set_verification_status

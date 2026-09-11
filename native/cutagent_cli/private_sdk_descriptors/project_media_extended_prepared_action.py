@@ -13,6 +13,7 @@ import re
 import time
 from typing import Any, Callable, Mapping
 
+from ..core.project_preset_api import preset_method, SAVE_METHODS
 from ..connection import get_connection
 from ..core import media_pool, project_library_ops, project_ops, render_engine, sdk_live_inspection
 from ..errors import APICallFailed, ValidationError
@@ -58,6 +59,7 @@ _CAPABILITY_IDS = {
     "cutagent.action.project.library.switch": "project.library_switch",
     "cutagent.action.project.open": "project.open",
     "cutagent.action.project.preset.load": "project.preset_load",
+    "cutagent.action.project.preset.export": "project.preset_import_export",
     "cutagent.action.project.preset.save": "project.preset_save",
     "cutagent.action.project.restore": "project.archive_restore",
     "cutagent.action.project.save": "project.settings_write",
@@ -1962,7 +1964,7 @@ class ProjectContextDescriptor:
         presets = []
         settings = None
         if conn.project is not None:
-            preset_getter = getattr(conn.project, "GetPresetList", None)
+            preset_getter = preset_method(conn.project, "list")
             if verified_internal and not callable(preset_getter):
                 raise APICallFailed("DaVinci Resolve did not expose an exact project-preset inventory.")
             raw_presets = preset_getter() if callable(preset_getter) else []
@@ -2014,11 +2016,9 @@ class ProjectContextDescriptor:
             raise ValidationError("Project preset save requires a new preset name for authoritative readback.")
         if self.action_id.endswith("preset.save"):
             conn = get_connection(require_project=True)
-            if not callable(getattr(conn.project, "DeletePreset", None)):
-                raise APICallFailed("DaVinci Resolve does not expose compensating project-preset deletion.")
             if not any(
                 callable(getattr(conn.project, method_name, None))
-                for method_name in ("SavePreset", "SaveAsPreset", "CreatePreset")
+                for method_name in SAVE_METHODS
             ):
                 raise APICallFailed("DaVinci Resolve does not expose project-preset save.")
         if self.action_id.endswith("preset.load") and value["name"] not in {item["name"] for item in before["presets"]}:
@@ -2044,7 +2044,7 @@ class ProjectContextDescriptor:
         )
         recovery_strategy = {
             "cutagent.action.project.preset.load": "restore_exact_project_settings",
-            "cutagent.action.project.preset.save": "delete_created_preset_and_verify_inventory",
+            "cutagent.action.project.preset.save": "verify_unchanged_or_require_manual_recovery",
             "cutagent.action.project.save": "preserve_active_project_and_verify_snapshot",
         }.get(self.action_id, "manual_recovery_if_effect_readback_fails")
         return {"targets": targets, "preState": before, "impact": _specific_impact(context, self.action_id, value, targets), "lowering": {"input": lowered}, "verification": {"minimumEvidence": ["structural_readback", "context_readback"]}, "recovery": {"strategy": recovery_strategy}}
@@ -2070,7 +2070,7 @@ class ProjectContextDescriptor:
         if self.action_id == "cutagent.action.project.cloud.restore":
             return project_ops.restore_cloud_project(conn, value["folder"], value.get("name"), value.get("mediaPath"))
         if self.action_id == "cutagent.action.project.preset.load":
-            setter = getattr(conn.project, "SetPreset", None)
+            setter = preset_method(conn.project, "load")
             restorer = getattr(conn.project, "SetSetting", None)
             preset = next((item for item in prepared["preState"]["presets"] if item["name"] == value["name"]), None)
             if preset is None or not callable(setter) or not callable(restorer):
@@ -2082,7 +2082,7 @@ class ProjectContextDescriptor:
                 loaded = setter(preset["record"])
             except Exception:
                 loaded = False
-            if loaded is False and preset["record"] != preset["name"]:
+            if loaded is False and preset["record"] != preset["name"] and not getattr(setter, "native_preset_api", False):
                 loaded = setter(preset["name"])
             if loaded is False:
                 raise APICallFailed("DaVinci Resolve could not load the requested project preset.")
@@ -2095,12 +2095,10 @@ class ProjectContextDescriptor:
                 "expectedSettings": expected_settings,
             }
         if self.action_id == "cutagent.action.project.preset.save":
-            if not callable(getattr(conn.project, "DeletePreset", None)):
-                raise APICallFailed("DaVinci Resolve does not expose compensating project-preset deletion.")
-            for method_name in ("SavePreset", "SaveAsPreset", "CreatePreset"):
+            for method_name in SAVE_METHODS:
                 saver = getattr(conn.project, method_name, None)
                 if callable(saver):
-                    if saver(value["name"]) is False:
+                    if saver(value["name"]) is not True:
                         raise APICallFailed("DaVinci Resolve rejected the project-preset save.")
                     return {"saved": True, "method": method_name}
             raise APICallFailed("DaVinci Resolve does not expose project-preset save.")
@@ -2195,19 +2193,10 @@ class ProjectContextDescriptor:
                     if setter(key, old_value) is False:
                         return {"outcome": "manual_required", "attempted": True, "manualActionRequired": True}
             elif self.action_id == "cutagent.action.project.preset.save":
-                added = [item for item in current["presets"] if item not in before["presets"]]
-                deleter = getattr(conn.project, "DeletePreset", None)
-                if len(added) != 1 or added[0]["name"] != prepared["lowering"]["input"]["name"] or not callable(deleter):
-                    return {"outcome": "manual_required", "attempted": attempted, "manualActionRequired": True}
-                attempted = True
-                try:
-                    deleted = deleter(added[0]["record"])
-                except Exception:
-                    deleted = False
-                if deleted is False and added[0]["record"] != added[0]["name"]:
-                    deleted = deleter(added[0]["name"])
-                if deleted is False:
-                    return {"outcome": "manual_required", "attempted": True, "manualActionRequired": True}
+                # Name/catalog equality cannot prove ownership of a preset
+                # created concurrently or after a rejected native call.
+                # Never delete it as compensation without durable custody.
+                return {"outcome": "manual_required", "attempted": attempted, "manualActionRequired": True}
             else:
                 return {"outcome": "manual_required", "attempted": attempted, "manualActionRequired": True}
             restored = self._snapshot(context) == before
@@ -3536,6 +3525,7 @@ PROJECT_RUNTIME_ACTION_IDS: tuple[str, ...] = (
     "cutagent.action.project.library.restore",
     "cutagent.action.project.library.switch",
     "cutagent.action.project.open",
+    "cutagent.action.project.preset.export",
     "cutagent.action.project.preset.load",
     "cutagent.action.project.preset.save",
     "cutagent.action.project.restore",
@@ -3554,6 +3544,8 @@ EXTENDED_PROJECT_MEDIA_CALLABLE_ACTION_IDS: tuple[str, ...] = (
 
 
 def extended_project_media_prepared_action_descriptors() -> dict[str, Any]:
+    from .project_preset_export_prepared_action import ProjectPresetExportDescriptor
+
     descriptors: dict[str, Any] = {
         **_project_descriptors(),
         ProjectCleanupScratchDescriptor.action_id: ProjectCleanupScratchDescriptor(),
@@ -3567,8 +3559,18 @@ def extended_project_media_prepared_action_descriptors() -> dict[str, Any]:
         **{
             action_id: ProjectContextDescriptor(action_id)
             for action_id in PROJECT_RUNTIME_ACTION_IDS
-            if ".cloud." in action_id or ".preset." in action_id or action_id.endswith("project.save")
+            if ".cloud." in action_id or (
+                ".preset." in action_id
+                and action_id != "cutagent.action.project.preset.export"
+            ) or action_id.endswith("project.save")
         },
+        "cutagent.action.project.preset.export": ProjectPresetExportDescriptor(
+            managed_artifact_path=_managed_artifact_path,
+            signed_artifact_targets=_signed_artifact_targets,
+            specific_impact=_specific_impact,
+            project_result_builder=_project_result,
+            public_result_validator=_validate_action_result,
+        ),
         **{
             action_id: BoundMediaMutationDescriptor(action_id)
             for action_id in EXTENDED_PROJECT_MEDIA_CALLABLE_ACTION_IDS

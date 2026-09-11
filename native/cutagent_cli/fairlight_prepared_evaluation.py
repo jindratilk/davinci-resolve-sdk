@@ -1107,7 +1107,7 @@ def _execute_exact_clip_link(commands: Any, locators: Any) -> Mapping[str, Any]:
         )
     ):
         raise FairlightEvaluationError(
-            "EDIT_CONSTRAINT_VIOLATION",
+            "VALIDATION_ERROR",
             "Fairlight clip link requires at least two exact signed clip locators.",
         )
     commands.enforce_mutation_policy(
@@ -1163,7 +1163,7 @@ def _execute_exact_clip_link(commands: Any, locators: Any) -> Mapping[str, Any]:
         resolved_ids.append(native_id)
     if len(set(resolved_ids)) != len(resolved_ids):
         raise FairlightEvaluationError(
-            "EDIT_CONSTRAINT_VIOLATION",
+            "VALIDATION_ERROR",
             "Fairlight clip link contains duplicate native items.",
         )
     setter = getattr(connection.timeline, "SetClipsLinked", None)
@@ -1240,7 +1240,7 @@ def _execute_handler(
         or admission.get("executionId") != context.get("executionId")
     ):
         raise FairlightEvaluationError(
-            "EDIT_CONSTRAINT_VIOLATION", "Fairlight admitted lowering changed."
+            "AUTH_REQUIRED", "Fairlight admitted lowering changed."
         )
     handler = getattr(commands, handler_name or "", None)
     if not callable(handler):
@@ -1279,7 +1279,7 @@ def _execute_handler(
         )
     ):
         raise FairlightEvaluationError(
-            "EDIT_CONSTRAINT_VIOLATION", "Fairlight cancellation custody is malformed."
+            "VALIDATION_ERROR", "Fairlight cancellation custody is malformed."
         )
     with _HANDLER_LOCK:
         old_output = commands.output
@@ -1296,8 +1296,8 @@ def _execute_handler(
                 or bool(mutating) is not expected_mutating
             ):
                 raise FairlightEvaluationError(
-                    "EDIT_CONSTRAINT_VIOLATION",
-                    "Fairlight handler policy scope changed.",
+                    "CAPABILITY_NEGOTIATION_FAILED",
+                    "Fairlight handler capability changed.",
                 )
             return old_policy(
                 capability_id, intended_engine=intended_engine, mutating=False
@@ -1384,7 +1384,7 @@ def _impact(
     mutation_base = context.get("mutationBase")
     if not isinstance(mutation_base, Mapping):
         raise FairlightEvaluationError(
-            "EDIT_CONSTRAINT_VIOLATION", "Fairlight mutation base is unavailable."
+            "AUTH_REQUIRED", "Fairlight mutation base is unavailable."
         )
     modalities = _required_modalities(
         descriptor.action_id, audition_required=audition_required
@@ -1492,7 +1492,7 @@ class FairlightEvaluationDescriptor:
                 or _DIGEST.fullmatch(closure["digest"]) is None
             ):
                 raise FairlightEvaluationError(
-                    "EDIT_CONSTRAINT_VIOLATION",
+                    "STALE_REVISION",
                     "Fairlight track deletion lacks exhaustive live clip closure.",
                 )
         if self.action_id == "cutagent.action.fairlight.solo_restore":
@@ -1506,8 +1506,8 @@ class FairlightEvaluationDescriptor:
                 private_target_locators
             ):
                 raise FairlightEvaluationError(
-                    "EDIT_CONSTRAINT_VIOLATION",
-                    "Fairlight solo restore must sign every requested audio track in request order.",
+                    "STALE_REVISION",
+                    "Fairlight solo restore must bind every requested audio track in request order.",
                 )
         if self.action_id == "cutagent.action.fairlight.channel_map.set":
             clip_targets = [
@@ -1521,8 +1521,8 @@ class FairlightEvaluationDescriptor:
                 or clip_targets[0].get("clipName") != value.get("clipName")
             ):
                 raise FairlightEvaluationError(
-                    "EDIT_CONSTRAINT_VIOLATION",
-                    "Fairlight channel-map set must sign the exact requested audio clip.",
+                    "STALE_REVISION",
+                    "Fairlight channel-map set must bind the exact requested audio clip.",
                 )
         if self.action_id == "cutagent.action.fairlight.clip.link":
             signed_names = [
@@ -1534,8 +1534,8 @@ class FairlightEvaluationDescriptor:
                 private_target_locators
             ):
                 raise FairlightEvaluationError(
-                    "EDIT_CONSTRAINT_VIOLATION",
-                    "Fairlight clip link must sign every requested audio clip in request order.",
+                    "STALE_REVISION",
+                    "Fairlight clip link must bind every requested audio clip in request order.",
                 )
         protected = response.get("protectedState")
         if not all(isinstance(item, Mapping) for item in (snapshot, protected)):
@@ -1624,7 +1624,7 @@ class FairlightEvaluationDescriptor:
         invoke = getattr(authority, "invoke_admitted_handler", None)
         if not callable(invoke) or authority is not self.authority:
             raise FairlightEvaluationError(
-                "EDIT_CONSTRAINT_VIOLATION",
+                "AUTH_REQUIRED",
                 "Fairlight execution authority is unavailable.",
             )
         return invoke(context, self, prepared)
@@ -1988,7 +1988,7 @@ class FairlightEvaluationExecutionAuthority:
             or descriptor.action_id != self.action_id
         ):
             raise FairlightEvaluationError(
-                "EDIT_CONSTRAINT_VIOLATION",
+                "AUTH_REQUIRED",
                 "Fairlight admitted action binding changed.",
             )
         return _execute_handler(context, descriptor, prepared)

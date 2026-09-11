@@ -1,4 +1,13 @@
-import type { ActionControlOptions, Actions, LowLevelReadActionId, LowLevelReadResult, SemanticReadActionId } from "../actions.js";
+import type {
+  ActionControlOptions,
+  Actions,
+  LowLevelReadActionId,
+  LowLevelReadResult,
+  RequiredActionControlOptions,
+  SemanticReadActionId,
+  TimelineFrameExportInput,
+  TimelineFrameExportResult,
+} from "../actions.js";
 import {
   ACTION_RUNTIME_CONTRACTS,
   ACTION_SCHEMA_DEFINITIONS,
@@ -98,13 +107,42 @@ function lowerInputValue(value: unknown): unknown {
   return value;
 }
 
-function parseInput<A extends ActionId>(actionId: A, input: ActionInput<A>): object {
-  return parseClosedActionSchema<object>(
+function normalizeFrameExportInput(actionId: ActionId, input: unknown): unknown {
+  if (actionId !== "cutagent.action.timeline.frame_export" || !Array.isArray(input)) return input;
+  if (input.length === 0) throw new TypeError("Frame export requires at least one request.");
+  if (input.length > 1_000) throw new TypeError("Frame export accepts at most 1,000 requests.");
+  const first = input[0];
+  if (first === null || typeof first !== "object" || Array.isArray(first)) {
+    throw new TypeError("Frame export requests must be objects.");
+  }
+  const binding = first as Record<string, unknown>;
+  const exports = input.map((entry) => {
+    if (entry === null || typeof entry !== "object" || Array.isArray(entry)) {
+      throw new TypeError("Frame export requests must be objects.");
+    }
+    const request = entry as Record<string, unknown>;
+    if (request.projectId !== binding.projectId || request.timelineId !== binding.timelineId || request.revision !== binding.revision) {
+      throw new TypeError("Frame export requests must share one project, timeline, and revision.");
+    }
+    return { position: request.position, destinationArtifactId: request.destinationArtifactId, format: request.format };
+  });
+  return { projectId: binding.projectId, timelineId: binding.timelineId, revision: binding.revision, exports };
+}
+
+function parseInput<A extends ActionId>(actionId: A, input: unknown): object {
+  const parsed = parseClosedActionSchema<object>(
     contract(actionId).input,
     ACTION_SCHEMA_DEFINITIONS,
-    lowerInputValue(input),
+    lowerInputValue(normalizeFrameExportInput(actionId, input)),
     `${actionId}.input`,
   );
+  if (actionId === "cutagent.action.clip.transform" && "transforms" in parsed) {
+    const transforms = (parsed as { transforms: readonly { target: { id: string } }[] }).transforms;
+    if (new Set(transforms.map((entry) => entry.target.id)).size !== transforms.length) {
+      throw new TypeError("Each clip transform target must be unique.");
+    }
+  }
+  return parsed;
 }
 
 const semanticPayloadActionIds = new Set<ActionId>([
@@ -160,16 +198,21 @@ export function createActions(runtime: ActionRuntime): Actions {
     input: ActionInput<A>,
     options?: ConnectionControlOptions,
   ): Promise<ActionResult<A>>;
+  function invoke(
+    actionId: "cutagent.action.timeline.frame_export",
+    input: TimelineFrameExportInput | readonly TimelineFrameExportInput[],
+    options: RequiredActionControlOptions,
+  ): Promise<OperationHandle<TimelineFrameExportResult, "cutagent.action.timeline.frame_export">>;
   function invoke<A extends OperationActionId>(
     actionId: A,
     input: ActionInput<A>,
     options?: ActionControlOptions,
   ): Promise<OperationHandle<ActionResult<A>, A>>;
-  async function invoke(
-    actionId: ActionId,
-    input: ActionInput<ActionId>,
+  async function invoke<A extends ActionId>(
+    actionId: A,
+    input: unknown,
     options: ActionControlOptions = {},
-  ): Promise<ActionResult<ActionId> | OperationHandle<ActionResult<ActionId>, OperationActionId>> {
+  ): Promise<ActionResult<A> | OperationHandle<ActionResult<A>, A & OperationActionId>> {
     const actionContract = contract(actionId);
     rejectIncompatibleDirectRead(actionId);
     const validatedInput = parseInput(actionId, input);
@@ -182,7 +225,7 @@ export function createActions(runtime: ActionRuntime): Actions {
       validatedInput,
       resultParser(actionId),
       options,
-    ) as Promise<OperationHandle<ActionResult<ActionId>, OperationActionId>>;
+    ) as Promise<OperationHandle<ActionResult<A>, A & OperationActionId>>;
   }
 
   async function read<A extends SemanticReadActionId>(
@@ -197,16 +240,26 @@ export function createActions(runtime: ActionRuntime): Actions {
     return resultParser(actionId).parse(await runtime.read(actionId, validatedInput, options));
   }
 
-  async function start(
-    actionId: OperationActionId,
-    input: ActionInput<OperationActionId>,
+  function start<A extends OperationActionId>(
+    actionId: A,
+    input: ActionInput<A>,
+    options?: ActionControlOptions,
+  ): Promise<OperationHandle<ActionResult<A>, A>>;
+  function start(
+    actionId: "cutagent.action.timeline.frame_export",
+    input: TimelineFrameExportInput | readonly TimelineFrameExportInput[],
+    options: RequiredActionControlOptions,
+  ): Promise<OperationHandle<TimelineFrameExportResult, "cutagent.action.timeline.frame_export">>;
+  async function start<A extends OperationActionId>(
+    actionId: A,
+    input: unknown,
     options: ActionControlOptions = {},
-  ): Promise<OperationHandle<ActionResult<OperationActionId>>> {
+  ): Promise<OperationHandle<ActionResult<A>, A>> {
     const actionContract = contract(actionId);
     if (actionContract.operationClass === "read") throw new TypeError(`${actionId} is not an operation action.`);
     validateIdempotencyKey(actionId, actionContract.idempotencyCategory, options);
     const validatedInput = parseInput(actionId, input);
-    return runtime.start(actionId, validatedInput, resultParser(actionId), options) as Promise<OperationHandle<ActionResult<OperationActionId>>>;
+    return runtime.start(actionId, validatedInput, resultParser(actionId), options) as Promise<OperationHandle<ActionResult<A>, A>>;
   }
 
   const actions: Actions = { invoke, read, start, lowLevel };

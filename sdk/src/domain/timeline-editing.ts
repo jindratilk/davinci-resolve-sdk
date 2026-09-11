@@ -7,7 +7,7 @@ import {
   sdkTimelineEditIntentSchema,
   type SdkTimelineEditIntent,
 } from "../generated/sdk-runtime.js";
-import { sdkTimelineEditMutationResultSchema, sdkTimelineRemoveMutationResultSchema, type SdkOperationEvent } from "../generated/sdk-operations.js";
+import { sdkTimelineEditMutationBatchResultSchema, sdkTimelineEditMutationResultSchema, sdkTimelineRemoveBatchMutationResultSchema, sdkTimelineRemoveMutationResultSchema, type SdkOperationEvent } from "../generated/sdk-operations.js";
 import { sdkIdempotencyKeySchema } from "../generated/sdk-identities.js";
 import type { OperationHandle } from "../protocol/operations.js";
 import {
@@ -29,8 +29,11 @@ import {
 } from "../value-types/identities.js";
 import {
   frameRate as createFrameRate,
+  type BoundFrames,
   type Duration,
   type FrameRate,
+  type Frames,
+  type Seconds,
   type SourceRange,
   type TimeRounding,
   type TimelineRecordPosition,
@@ -113,10 +116,25 @@ export interface TimelineAudioPlacementPreviewOptions {
   readonly rounding?: TimeRounding;
 }
 
+/** One independently configured video placement in a plural preview. @beta */
+export interface TimelinePlacementPreview {
+  readonly source: MediaPoolAssetSnapshot;
+  readonly options: TimelinePlacementPreviewOptions;
+}
+
+/** One independently configured audio-only placement in a plural preview. @beta */
+export interface TimelineAudioPlacementPreview {
+  readonly source: MediaPoolAssetSnapshot;
+  readonly options: TimelineAudioPlacementPreviewOptions;
+}
+
+/** Signed edge movement used by trim previews. Positive values move inward; negative values extend outward. @beta */
+export type TimelineTrimEdgeDelta = Frames | BoundFrames | Seconds;
+
 /** Explicit edge and linked-audio policy used to resolve an immutable trim preview. @beta */
 export interface TimelineTrimPreviewOptions {
-  readonly head?: Duration;
-  readonly tail?: Duration;
+  readonly head?: TimelineTrimEdgeDelta;
+  readonly tail?: TimelineTrimEdgeDelta;
   /**
    * `preserve` trims an authoritatively linked video/audio relationship together.
    * `exclude` trims video alone and requires the linked audio state to remain protected.
@@ -126,10 +144,22 @@ export interface TimelineTrimPreviewOptions {
   readonly rounding?: TimeRounding;
 }
 
+/** One independently configured trim target in a plural preview. @beta */
+export interface TimelineTrimPreview {
+  readonly clip: ClipSnapshot;
+  readonly options: TimelineTrimPreviewOptions;
+}
+
 /** Explicit non-ripple policy for removing one exact timeline item. @beta */
 export interface TimelineRemovePreviewOptions {
   /** Remove only this occurrence; linked survivors are preserved with verified topology updates. */
   readonly linkedItems: "exclude";
+}
+
+/** One independently configured removal target in a plural preview. @beta */
+export interface TimelineRemovePreview {
+  readonly clip: ClipSnapshot;
+  readonly options: TimelineRemovePreviewOptions;
 }
 
 /** Independently verified semantic timeline edit result. @beta */
@@ -149,18 +179,32 @@ export interface TimelineEditMutationResult<TAction extends TimelineEditAction =
   readonly protectedStatePreserved: true;
 }
 
+/** Ordered verified results from one plural timeline edit operation. @beta */
+export interface TimelineEditMutationBatchResult<TAction extends TimelineEditAction = TimelineEditAction> {
+  readonly results: readonly TimelineEditMutationResult<TAction>[];
+}
+
 /** High-level semantic timeline editing. Preview is mandatory and never mutates. @beta */
 export interface TimelineEditor {
   previewInsert(snapshot: TimelineSnapshot, source: MediaPoolAssetSnapshot, options: TimelinePlacementPreviewOptions): Promise<TimelineEditImpact<"insert">>;
+  previewInsert(snapshot: TimelineSnapshot, placements: readonly TimelinePlacementPreview[]): Promise<readonly TimelineEditImpact<"insert">[]>;
   /** Resolve one immutable, non-ripple audio-only insert impact. */
   previewInsertAudio(snapshot: TimelineSnapshot, source: MediaPoolAssetSnapshot, options: TimelineAudioPlacementPreviewOptions): Promise<TimelineEditImpact<"insert">>;
+  previewInsertAudio(snapshot: TimelineSnapshot, placements: readonly TimelineAudioPlacementPreview[]): Promise<readonly TimelineEditImpact<"insert">[]>;
   previewOverwrite(snapshot: TimelineSnapshot, source: MediaPoolAssetSnapshot, options: TimelinePlacementPreviewOptions): Promise<TimelineEditImpact<"overwrite">>;
+  previewOverwrite(snapshot: TimelineSnapshot, placements: readonly TimelinePlacementPreview[]): Promise<readonly TimelineEditImpact<"overwrite">[]>;
   previewTrim(snapshot: TimelineSnapshot, clip: ClipSnapshot, options: TimelineTrimPreviewOptions): Promise<TimelineEditImpact<"trim">>;
+  previewTrim(snapshot: TimelineSnapshot, trims: readonly TimelineTrimPreview[]): Promise<readonly TimelineEditImpact<"trim">[]>;
   previewRemove(snapshot: TimelineSnapshot, clip: ClipSnapshot, options: TimelineRemovePreviewOptions): Promise<TimelineEditImpact<"remove">>;
+  previewRemove(snapshot: TimelineSnapshot, removals: readonly TimelineRemovePreview[]): Promise<readonly TimelineEditImpact<"remove">[]>;
   insert(impact: TimelineEditImpact<"insert">, options: TimelineEditMutationOptions): Promise<OperationHandle<TimelineEditMutationResult<"insert">, "cutagent.action.edit.insert">>;
+  insert(impacts: readonly TimelineEditImpact<"insert">[], options: TimelineEditMutationOptions): Promise<OperationHandle<TimelineEditMutationBatchResult<"insert">, "cutagent.action.edit.insert">>;
   overwrite(impact: TimelineEditImpact<"overwrite">, options: TimelineEditMutationOptions): Promise<OperationHandle<TimelineEditMutationResult<"overwrite">, "cutagent.action.edit.overwrite">>;
+  overwrite(impacts: readonly TimelineEditImpact<"overwrite">[], options: TimelineEditMutationOptions): Promise<OperationHandle<TimelineEditMutationBatchResult<"overwrite">, "cutagent.action.edit.overwrite">>;
   trim(impact: TimelineEditImpact<"trim">, options: TimelineEditMutationOptions): Promise<OperationHandle<TimelineEditMutationResult<"trim">, "cutagent.action.edit.trim">>;
+  trim(impacts: readonly TimelineEditImpact<"trim">[], options: TimelineEditMutationOptions): Promise<OperationHandle<TimelineEditMutationBatchResult<"trim">, "cutagent.action.edit.trim">>;
   remove(impact: TimelineEditImpact<"remove">, options: TimelineEditMutationOptions): Promise<OperationHandle<TimelineEditMutationResult<"remove">, "cutagent.action.timeline.items.delete">>;
+  remove(impacts: readonly TimelineEditImpact<"remove">[], options: TimelineEditMutationOptions): Promise<OperationHandle<TimelineEditMutationBatchResult<"remove">, "cutagent.action.timeline.items.delete">>;
 }
 
 export interface TimelineEditRuntime {
@@ -248,6 +292,15 @@ export function reportedSourceFrameRate(value: string | null): FrameRate | null 
 function durationFrames(value: Duration | undefined, rate: FrameRate, rounding?: TimeRounding): number {
   if (!value) return 0;
   return value.unit === "frames" ? value.value.value : value.toFrames(rate, rounding).value.value;
+}
+
+function trimEdgeDeltaFrames(value: TimelineTrimEdgeDelta | undefined, rate: FrameRate, rounding?: TimeRounding): number {
+  if (!value) return 0;
+  if (value.kind === "seconds") return value.toFrames(rate, rounding).value;
+  if (value.rate !== null && !value.rate.equals(rate)) {
+    throw new TypeError("Trim edge frame rate must match the timeline snapshot frame rate.");
+  }
+  return value.value;
 }
 
 function assertSnapshot(snapshot: TimelineSnapshot, projectId: ProjectId, timelineId: TimelineId): void {
@@ -357,6 +410,21 @@ function hydrateResult<TAction extends TimelineEditAction>(value: unknown, rate:
   });
 }
 
+function hydrateBatchResult<TAction extends TimelineEditAction>(
+  value: unknown,
+  internals: readonly ImpactInternal[],
+  expectedAction: TAction,
+): TimelineEditMutationBatchResult<TAction> {
+  const parsed = sdkTimelineEditMutationBatchResultSchema.parse(value);
+  if (parsed.results.length !== internals.length) throw new TypeError("CutAgent runtime returned the wrong number of timeline edit results.");
+  return freeze({
+    results: parsed.results.map((result, index) => {
+      if (result.impactId !== internals[index]!.wire.impactId) throw new TypeError("CutAgent runtime returned timeline edit results out of order.");
+      return hydrateResult(result, internals[index]!.rate, expectedAction);
+    }),
+  });
+}
+
 /** Construct the timeline editing surface for one exact timeline reference. @internal */
 export function createTimelineEditor(
   runtime: TimelineEditRuntime,
@@ -371,7 +439,17 @@ export function createTimelineEditor(
     if (wire.action !== intent.action) throw new TypeError("CutAgent runtime returned the wrong timeline edit preview action.");
     return hydrateImpact(wire as WireImpact & { action: TAction }, rate, runtime, generation);
   };
-  const placement = <TAction extends "insert" | "overwrite">(action: TAction, snapshot: TimelineSnapshot, source: MediaPoolAssetSnapshot, options: TimelinePlacementPreviewOptions): Promise<TimelineEditImpact<TAction>> => {
+  const previewMany = async <TAction extends TimelineEditAction>(intents: readonly (SdkTimelineEditIntent & { action: TAction })[], rate: FrameRate): Promise<readonly TimelineEditImpact<TAction>[]> => {
+    if (intents.length < 1 || intents.length > 256) throw new TypeError("Timeline edit plural preview requires between 1 and 256 items.");
+    const response = await runtime.readAtGeneration(generation, { operation: "timeline.edit.preview", intents: [...intents] });
+    if (response.operation !== "timeline.edit.preview" || !("impacts" in response.data)) throw new TypeError("CutAgent runtime returned the wrong plural timeline edit preview.");
+    const wires = z.array(sdkTimelineEditImpactSchema).length(intents.length).parse(response.data.impacts);
+    return freeze(wires.map((wire, index) => {
+      if (wire.action !== intents[index]!.action) throw new TypeError("CutAgent runtime returned plural timeline edit previews out of order.");
+      return hydrateImpact(wire as WireImpact & { action: TAction }, rate, runtime, generation);
+    }));
+  };
+  const placementIntent = <TAction extends "insert" | "overwrite">(action: TAction, snapshot: TimelineSnapshot, source: MediaPoolAssetSnapshot, options: TimelinePlacementPreviewOptions): SdkTimelineEditIntent & { action: TAction } => {
     assertSnapshot(snapshot, projectId, timelineId);
     if (!source?.id) throw new TypeError("Timeline placement requires an authoritative Media Pool item identity.");
     if (!options || typeof options !== "object") throw new TypeError("Timeline placement options are required.");
@@ -395,7 +473,15 @@ export function createTimelineEditor(
       audioTrackIndex: options.audioTrack === undefined ? null : TrackIndexSchema.parse(options.audioTrack),
       linkedAudio: options.linkedAudio,
     });
-    return preview(intent as SdkTimelineEditIntent & { action: TAction }, snapshot.frameRate);
+    return intent as SdkTimelineEditIntent & { action: TAction };
+  };
+  const placement = <TAction extends "insert" | "overwrite">(action: TAction, snapshot: TimelineSnapshot, source: MediaPoolAssetSnapshot, options: TimelinePlacementPreviewOptions): Promise<TimelineEditImpact<TAction>> => {
+    return preview(placementIntent(action, snapshot, source, options), snapshot.frameRate);
+  };
+  const placementMany = <TAction extends "insert" | "overwrite">(action: TAction, snapshot: TimelineSnapshot, placements: readonly TimelinePlacementPreview[]): Promise<readonly TimelineEditImpact<TAction>[]> => {
+    assertSnapshot(snapshot, projectId, timelineId);
+    if (!Array.isArray(placements) || placements.length < 1 || placements.length > 256) throw new TypeError("Timeline edit plural preview requires between 1 and 256 items.");
+    return previewMany(placements.map(({ source, options }) => placementIntent(action, snapshot, source, options)), snapshot.frameRate);
   };
   const registeredImpact = <TAction extends TimelineEditAction>(expected: TAction, impact: TimelineEditImpact<TAction>, options: TimelineEditMutationOptions) => {
     const internal = issuedImpacts.get(runtime)?.get(generation)?.get(impact?.impactId);
@@ -415,10 +501,39 @@ export function createTimelineEditor(
     }, options);
     return createTypedOperationHandle({ session: () => runtime.sessionAtGeneration(generation) }, event, actionId, z.object({}).passthrough().transform((value) => hydrateResult(value, internal.rate, expected)));
   };
-  const startRemove = async (impact: TimelineEditImpact<"remove">, options: TimelineEditMutationOptions) => {
+  const startMany = async <TAction extends Exclude<TimelineEditAction, "remove">, TActionId extends Exclude<TimelineEditActionId, "cutagent.action.timeline.items.delete">>(actionId: TActionId, expected: TAction, impacts: readonly TimelineEditImpact<TAction>[], options: TimelineEditMutationOptions) => {
+    if (!Array.isArray(impacts) || impacts.length < 1 || impacts.length > 256) throw new TypeError("Timeline edit plural mutation requires between 1 and 256 impacts.");
+    const internals = impacts.map((impact) => registeredImpact(expected, impact, options));
+    const first = internals[0]!.wire;
+    const seen = new Set<string>();
+    internals.forEach(({ wire }, index) => {
+      if (seen.has(wire.impactId)) throw new TypeError("Timeline edit plural mutation requires unique impacts.");
+      seen.add(wire.impactId);
+      if (wire.action !== first.action || wire.projectId !== first.projectId || wire.timelineId !== first.timelineId || wire.timelineRevision !== first.timelineRevision) {
+        throw new TypeError("Timeline edit plural mutation requires one action, project, timeline, and base revision.");
+      }
+      for (let previousIndex = 0; previousIndex < index; previousIndex += 1) {
+        const previous = internals[previousIndex]!.wire;
+        const sharesTrack = wire.affectedTracks.some((track) => previous.affectedTracks.some(
+          (candidate) => candidate.type === track.type && candidate.index === track.index,
+        ));
+        if (sharesTrack && wire.recordRange.start < previous.recordRange.endExclusive && previous.recordRange.start < wire.recordRange.endExclusive) {
+          throw new TypeError("Timeline edit plural mutation ranges must not overlap on the same track.");
+        }
+      }
+    });
+    const event = await runtime.createOperationAtGeneration(generation, {
+      operation: "operation.create",
+      actionId,
+      input: { impacts: internals.map(({ wire }) => wire) },
+      idempotencyKey: sdkIdempotencyKeySchema.parse(options.idempotencyKey),
+    }, options);
+    return createTypedOperationHandle({ session: () => runtime.sessionAtGeneration(generation) }, event, actionId, z.object({}).passthrough().transform((value) => hydrateBatchResult(value, internals, expected)));
+  };
+  const removeInput = (impact: TimelineEditImpact<"remove">, options: TimelineEditMutationOptions) => {
     const internal = registeredImpact("remove", impact, options);
     if (internal.wire.intent.action !== "remove") throw new TypeError("Remove requires its matching runtime-resolved impact preview.");
-    const input = {
+    return {
       operation: "clip_remove" as const,
       projectId: internal.wire.projectId,
       timelineId: internal.wire.timelineId,
@@ -432,107 +547,163 @@ export function createTimelineEditor(
       range: { start: internal.wire.recordRange.start, endExclusive: internal.wire.recordRange.endExclusive },
       name: internal.wire.intent.clipName,
     };
+  };
+  const hydrateRemoveResult = (value: unknown, input: ReturnType<typeof removeInput>, impactId: string): TimelineEditMutationResult<"remove"> => {
+    const parsed = sdkTimelineRemoveMutationResultSchema.parse(value);
+    const sameIds = (left: readonly string[], right: readonly string[]) => left.length === right.length
+      && [...left].sort().every((id, index) => id === [...right].sort()[index]);
+    if (!sameIds(parsed.affectedItemIds, input.affectedItemIds)
+      || !sameIds(parsed.protectedItemIds, input.protectedItemIds)
+      || JSON.stringify(parsed.affectedTracks) !== JSON.stringify(input.affectedTracks)
+      || parsed.outputItemIds.length !== 0
+      || parsed.timelineRevision === input.timelineRevision) {
+      throw new TypeError("CutAgent runtime returned a remove result that did not match its exact preview impact.");
+    }
+    return freeze({
+      action: "remove", impactId, timelineRevision: RevisionSchema.parse(parsed.timelineRevision),
+      affectedClips: [], protectedItemIds: parsed.protectedItemIds.map((id) => TimelineItemIdSchema.parse(id)), protectedStatePreserved: true,
+    });
+  };
+  const startRemove = async (impact: TimelineEditImpact<"remove">, options: TimelineEditMutationOptions) => {
+    const input = removeInput(impact, options);
     const event = await runtime.createOperationAtGeneration(generation, {
       operation: "operation.create",
       actionId: "cutagent.action.timeline.items.delete",
       input,
       idempotencyKey: sdkIdempotencyKeySchema.parse(options.idempotencyKey),
     }, options);
-    const result = sdkTimelineRemoveMutationResultSchema.transform((value): TimelineEditMutationResult<"remove"> => {
-      const sameIds = (left: readonly string[], right: readonly string[]) => left.length === right.length
-        && [...left].sort().every((id, index) => id === [...right].sort()[index]);
-      const expectedAffectedIds = internal.wire.affectedItems.map((item) => item.id);
-      const expectedProtectedIds = internal.wire.protectedItems.map((item) => item.id);
-      if (!sameIds(value.affectedItemIds, expectedAffectedIds)
-        || !sameIds(value.protectedItemIds, expectedProtectedIds)
-        || JSON.stringify(value.affectedTracks) !== JSON.stringify(input.affectedTracks)
-        || value.outputItemIds.length !== 0
-        || value.timelineRevision === internal.wire.timelineRevision) {
-        throw new TypeError("CutAgent runtime returned a remove result that did not match its exact preview impact.");
-      }
-      return freeze({
-        action: "remove", impactId: impact.impactId, timelineRevision: RevisionSchema.parse(value.timelineRevision),
-        affectedClips: [], protectedItemIds: value.protectedItemIds.map((id) => TimelineItemIdSchema.parse(id)), protectedStatePreserved: true,
-      });
+    const result = z.unknown().transform((value) => hydrateRemoveResult(value, input, impact.impactId));
+    return createTypedOperationHandle({ session: () => runtime.sessionAtGeneration(generation) }, event, "cutagent.action.timeline.items.delete", result);
+  };
+  const startRemoveMany = async (impacts: readonly TimelineEditImpact<"remove">[], options: TimelineEditMutationOptions) => {
+    if (!Array.isArray(impacts) || impacts.length < 1 || impacts.length > 256) throw new TypeError("Timeline edit plural mutation requires between 1 and 256 impacts.");
+    const removals = impacts.map((impact) => removeInput(impact, options));
+    const first = removals[0]!;
+    if (new Set(removals.map((removal) => removal.clipId)).size !== removals.length
+      || removals.some((removal) => removal.projectId !== first.projectId || removal.timelineId !== first.timelineId || removal.timelineRevision !== first.timelineRevision)) {
+      throw new TypeError("Timeline remove plural mutation requires unique clips from one project, timeline, and base revision.");
+    }
+    const event = await runtime.createOperationAtGeneration(generation, {
+      operation: "operation.create",
+      actionId: "cutagent.action.timeline.items.delete",
+      input: { operation: "clip_remove_many", removals },
+      idempotencyKey: sdkIdempotencyKeySchema.parse(options.idempotencyKey),
+    }, options);
+    const result = sdkTimelineRemoveBatchMutationResultSchema.transform((value): TimelineEditMutationBatchResult<"remove"> => {
+      if (value.results.length !== removals.length) throw new TypeError("CutAgent runtime returned the wrong number of timeline remove results.");
+      return freeze({ results: value.results.map((row, index) => hydrateRemoveResult(row, removals[index]!, impacts[index]!.impactId)) });
     });
     return createTypedOperationHandle({ session: () => runtime.sessionAtGeneration(generation) }, event, "cutagent.action.timeline.items.delete", result);
   };
-  const editor: TimelineEditor = {
-    previewInsert(snapshot, source, options) { return placement("insert", snapshot, source, options); },
-    previewInsertAudio(snapshot, source, options) {
-      assertSnapshot(snapshot, projectId, timelineId);
-      if (!source?.id) throw new TypeError("Timeline placement requires an authoritative Media Pool item identity.");
-      if (!options || typeof options !== "object") throw new TypeError("Audio placement options are required.");
-      const sourceRate = reportedSourceFrameRate(source.frameRate) ?? options.sourceRange.rate ?? snapshot.frameRate;
-      const resolvedSourceRange = frameSourceRange(options.sourceRange, sourceRate, options.rounding);
-      if (sourceRate) assertSourceRangeIsExactlyRepresentable(resolvedSourceRange, sourceRate, snapshot.frameRate);
-      return preview(sdkTimelineEditIntentSchema.parse({
-        action: "insert",
-        placement: "audio",
-        projectId: String(projectId),
-        timelineId: String(timelineId),
-        timelineRevision: String(snapshot.revision),
-        source: { id: String(MediaPoolItemIdSchema.parse(source.id)), name: source.name, snapshotRevision: String(source.snapshotRevision) },
-        sourceRange: resolvedSourceRange,
-        at: { domain: "timeline_record", value: { kind: "frames", value: framePosition(options.at, snapshot.frameRate, options.rounding) } },
-        videoTrackIndex: null,
-        audioTrackIndex: TrackIndexSchema.parse(options.audioTrack),
-        linkedAudio: "exclude",
-      }) as SdkTimelineEditIntent & { action: "insert" }, snapshot.frameRate);
-    },
-    previewOverwrite(snapshot, source, options) { return placement("overwrite", snapshot, source, options); },
-    previewTrim(snapshot, clip, options) {
-      assertSnapshot(snapshot, projectId, timelineId);
-      if (!clip?.id || clip.snapshotRevision !== snapshot.revision) throw new TypeError("Trim requires a durable clip from this exact snapshot.");
-      if (!options || (options.linkedAudio !== "preserve" && options.linkedAudio !== "exclude")) {
-        throw new TypeError("Trim requires an explicit linkedAudio policy: preserve or exclude.");
+  const audioPlacementIntent = (snapshot: TimelineSnapshot, source: MediaPoolAssetSnapshot, options: TimelineAudioPlacementPreviewOptions): SdkTimelineEditIntent & { action: "insert" } => {
+    assertSnapshot(snapshot, projectId, timelineId);
+    if (!source?.id) throw new TypeError("Timeline placement requires an authoritative Media Pool item identity.");
+    if (!options || typeof options !== "object") throw new TypeError("Audio placement options are required.");
+    const sourceRate = reportedSourceFrameRate(source.frameRate) ?? options.sourceRange.rate ?? snapshot.frameRate;
+    const resolvedSourceRange = frameSourceRange(options.sourceRange, sourceRate, options.rounding);
+    if (sourceRate) assertSourceRangeIsExactlyRepresentable(resolvedSourceRange, sourceRate, snapshot.frameRate);
+    return sdkTimelineEditIntentSchema.parse({
+      action: "insert",
+      placement: "audio",
+      projectId: String(projectId),
+      timelineId: String(timelineId),
+      timelineRevision: String(snapshot.revision),
+      source: { id: String(MediaPoolItemIdSchema.parse(source.id)), name: source.name, snapshotRevision: String(source.snapshotRevision) },
+      sourceRange: resolvedSourceRange,
+      at: { domain: "timeline_record", value: { kind: "frames", value: framePosition(options.at, snapshot.frameRate, options.rounding) } },
+      videoTrackIndex: null,
+      audioTrackIndex: TrackIndexSchema.parse(options.audioTrack),
+      linkedAudio: "exclude",
+    }) as SdkTimelineEditIntent & { action: "insert" };
+  };
+  const previewInsert = ((snapshot: TimelineSnapshot, sourceOrPlacements: MediaPoolAssetSnapshot | readonly TimelinePlacementPreview[], options?: TimelinePlacementPreviewOptions) => {
+      return Array.isArray(sourceOrPlacements)
+        ? placementMany("insert", snapshot, sourceOrPlacements as readonly TimelinePlacementPreview[])
+        : placement("insert", snapshot, sourceOrPlacements as MediaPoolAssetSnapshot, options as TimelinePlacementPreviewOptions);
+    }) as TimelineEditor["previewInsert"];
+  const previewInsertAudio = ((snapshot: TimelineSnapshot, sourceOrPlacements: MediaPoolAssetSnapshot | readonly TimelineAudioPlacementPreview[], options?: TimelineAudioPlacementPreviewOptions) => {
+      if (Array.isArray(sourceOrPlacements)) {
+        const placements = sourceOrPlacements as readonly TimelineAudioPlacementPreview[];
+        if (placements.length < 1 || placements.length > 256) throw new TypeError("Timeline edit plural preview requires between 1 and 256 items.");
+        return previewMany(placements.map(({ source, options: placementOptions }) => audioPlacementIntent(snapshot, source, placementOptions)), snapshot.frameRate);
       }
-      const headFrames = durationFrames(options?.head, snapshot.frameRate, options?.rounding);
-      const tailFrames = durationFrames(options?.tail, snapshot.frameRate, options?.rounding);
-      const clipDurationFrames = durationFrames(clip.duration, snapshot.frameRate);
-      if (headFrames + tailFrames < 1 || headFrames + tailFrames >= clipDurationFrames) throw new TypeError("Trim must preserve at least one frame and change at least one edge.");
-      const currentRecordRange = {
-        domain: "timeline_record_range" as const,
-        unit: "frames" as const,
-        start: framePosition(clip.recordRange.start, snapshot.frameRate),
-        endExclusive: framePosition(clip.recordRange.endExclusive, snapshot.frameRate),
-      };
-      return preview(sdkTimelineEditIntentSchema.parse({
-        action: "trim",
-        projectId: String(projectId),
-        timelineId: String(timelineId),
-        timelineRevision: String(snapshot.revision),
-        clipId: String(clip.id),
-        clipName: clip.name,
-        trackIndex: TrackIndexSchema.parse(snapshot.tracks.find((track) => track.snapshotId === clip.snapshotTrackId)?.index),
-        currentRecordRange,
-        headFrames,
-        tailFrames,
-        linkedAudio: options.linkedAudio,
-      }) as SdkTimelineEditIntent & { action: "trim" }, snapshot.frameRate);
-    },
-    previewRemove(snapshot, clip, options) {
-      assertSnapshot(snapshot, projectId, timelineId);
-      if (!clip?.id || clip.snapshotRevision !== snapshot.revision) throw new TypeError("Remove requires a durable clip from this exact snapshot.");
-      if (!options || options.linkedItems !== "exclude") throw new TypeError("Remove requires the explicit linkedItems policy: exclude.");
-      const track = snapshot.tracks.find((candidate) => candidate.snapshotId === clip.snapshotTrackId);
-      if (!track) throw new TypeError("Remove target track is absent from the exact snapshot.");
-      const currentRecordRange = {
-        domain: "timeline_record_range" as const,
-        unit: "frames" as const,
-        start: framePosition(clip.recordRange.start, snapshot.frameRate),
-        endExclusive: framePosition(clip.recordRange.endExclusive, snapshot.frameRate),
-      };
-      return preview(sdkTimelineEditIntentSchema.parse({
-        action: "remove", projectId: String(projectId), timelineId: String(timelineId), timelineRevision: String(snapshot.revision),
-        clipId: String(clip.id), clipName: clip.name, trackType: track.type, trackIndex: TrackIndexSchema.parse(track.index), currentRecordRange,
-        linkedItems: "exclude",
-      }) as SdkTimelineEditIntent & { action: "remove" }, snapshot.frameRate);
-    },
-    insert(impact, options) { return start("cutagent.action.edit.insert", "insert", impact, options); },
-    overwrite(impact, options) { return start("cutagent.action.edit.overwrite", "overwrite", impact, options); },
-    trim(impact, options) { return start("cutagent.action.edit.trim", "trim", impact, options); },
-    remove(impact, options) { return startRemove(impact, options); },
+      return preview(audioPlacementIntent(snapshot, sourceOrPlacements as MediaPoolAssetSnapshot, options as TimelineAudioPlacementPreviewOptions), snapshot.frameRate);
+    }) as TimelineEditor["previewInsertAudio"];
+  const previewOverwrite = ((snapshot: TimelineSnapshot, sourceOrPlacements: MediaPoolAssetSnapshot | readonly TimelinePlacementPreview[], options?: TimelinePlacementPreviewOptions) => {
+      return Array.isArray(sourceOrPlacements)
+        ? placementMany("overwrite", snapshot, sourceOrPlacements as readonly TimelinePlacementPreview[])
+        : placement("overwrite", snapshot, sourceOrPlacements as MediaPoolAssetSnapshot, options as TimelinePlacementPreviewOptions);
+    }) as TimelineEditor["previewOverwrite"];
+  const insert = ((impactOrImpacts: TimelineEditImpact<"insert"> | readonly TimelineEditImpact<"insert">[], options: TimelineEditMutationOptions) => Array.isArray(impactOrImpacts)
+    ? startMany("cutagent.action.edit.insert", "insert", impactOrImpacts as readonly TimelineEditImpact<"insert">[], options)
+    : start("cutagent.action.edit.insert", "insert", impactOrImpacts as TimelineEditImpact<"insert">, options)) as TimelineEditor["insert"];
+  const overwrite = ((impactOrImpacts: TimelineEditImpact<"overwrite"> | readonly TimelineEditImpact<"overwrite">[], options: TimelineEditMutationOptions) => Array.isArray(impactOrImpacts)
+    ? startMany("cutagent.action.edit.overwrite", "overwrite", impactOrImpacts as readonly TimelineEditImpact<"overwrite">[], options)
+    : start("cutagent.action.edit.overwrite", "overwrite", impactOrImpacts as TimelineEditImpact<"overwrite">, options)) as TimelineEditor["overwrite"];
+  const remove = ((impactOrImpacts: TimelineEditImpact<"remove"> | readonly TimelineEditImpact<"remove">[], options: TimelineEditMutationOptions) => Array.isArray(impactOrImpacts)
+    ? startRemoveMany(impactOrImpacts as readonly TimelineEditImpact<"remove">[], options)
+    : startRemove(impactOrImpacts as TimelineEditImpact<"remove">, options)) as TimelineEditor["remove"];
+  const trim = ((impactOrImpacts: TimelineEditImpact<"trim"> | readonly TimelineEditImpact<"trim">[], options: TimelineEditMutationOptions) => Array.isArray(impactOrImpacts)
+    ? startMany("cutagent.action.edit.trim", "trim", impactOrImpacts as readonly TimelineEditImpact<"trim">[], options)
+    : start("cutagent.action.edit.trim", "trim", impactOrImpacts as TimelineEditImpact<"trim">, options)) as TimelineEditor["trim"];
+  const trimIntent = (snapshot: TimelineSnapshot, clip: ClipSnapshot, options: TimelineTrimPreviewOptions): SdkTimelineEditIntent & { action: "trim" } => {
+    assertSnapshot(snapshot, projectId, timelineId);
+    if (!clip?.id || clip.snapshotRevision !== snapshot.revision) throw new TypeError("Trim requires a durable clip from this exact snapshot.");
+    if (!options || (options.linkedAudio !== "preserve" && options.linkedAudio !== "exclude")) {
+      throw new TypeError("Trim requires an explicit linkedAudio policy: preserve or exclude.");
+    }
+    const headFrames = trimEdgeDeltaFrames(options?.head, snapshot.frameRate, options?.rounding);
+    const tailFrames = trimEdgeDeltaFrames(options?.tail, snapshot.frameRate, options?.rounding);
+    const clipDurationFrames = durationFrames(clip.duration, snapshot.frameRate);
+    if (headFrames === 0 && tailFrames === 0) throw new TypeError("Trim must change at least one edge.");
+    if (clipDurationFrames - headFrames - tailFrames < 1) throw new TypeError("Trim must preserve at least one frame.");
+    const currentRecordRange = {
+      domain: "timeline_record_range" as const,
+      unit: "frames" as const,
+      start: framePosition(clip.recordRange.start, snapshot.frameRate),
+      endExclusive: framePosition(clip.recordRange.endExclusive, snapshot.frameRate),
+    };
+    return sdkTimelineEditIntentSchema.parse({
+      action: "trim", projectId: String(projectId), timelineId: String(timelineId), timelineRevision: String(snapshot.revision),
+      clipId: String(clip.id), clipName: clip.name,
+      trackIndex: TrackIndexSchema.parse(snapshot.tracks.find((track) => track.snapshotId === clip.snapshotTrackId)?.index),
+      currentRecordRange, headFrames, tailFrames, linkedAudio: options.linkedAudio,
+    }) as SdkTimelineEditIntent & { action: "trim" };
+  };
+  const removeIntent = (snapshot: TimelineSnapshot, clip: ClipSnapshot, options: TimelineRemovePreviewOptions): SdkTimelineEditIntent & { action: "remove" } => {
+    assertSnapshot(snapshot, projectId, timelineId);
+    if (!clip?.id || clip.snapshotRevision !== snapshot.revision) throw new TypeError("Remove requires a durable clip from this exact snapshot.");
+    if (!options || options.linkedItems !== "exclude") throw new TypeError("Remove requires the explicit linkedItems policy: exclude.");
+    const track = snapshot.tracks.find((candidate) => candidate.snapshotId === clip.snapshotTrackId);
+    if (!track) throw new TypeError("Remove target track is absent from the exact snapshot.");
+    const currentRecordRange = {
+      domain: "timeline_record_range" as const,
+      unit: "frames" as const,
+      start: framePosition(clip.recordRange.start, snapshot.frameRate),
+      endExclusive: framePosition(clip.recordRange.endExclusive, snapshot.frameRate),
+    };
+    return sdkTimelineEditIntentSchema.parse({
+      action: "remove", projectId: String(projectId), timelineId: String(timelineId), timelineRevision: String(snapshot.revision),
+      clipId: String(clip.id), clipName: clip.name, trackType: track.type, trackIndex: TrackIndexSchema.parse(track.index), currentRecordRange,
+      linkedItems: "exclude",
+    }) as SdkTimelineEditIntent & { action: "remove" };
+  };
+  const previewTrim = ((snapshot: TimelineSnapshot, clipOrTrims: ClipSnapshot | readonly TimelineTrimPreview[], options?: TimelineTrimPreviewOptions) => Array.isArray(clipOrTrims)
+    ? previewMany((clipOrTrims as readonly TimelineTrimPreview[]).map(({ clip, options: trimOptions }) => trimIntent(snapshot, clip, trimOptions)), snapshot.frameRate)
+    : preview(trimIntent(snapshot, clipOrTrims as ClipSnapshot, options as TimelineTrimPreviewOptions), snapshot.frameRate)) as TimelineEditor["previewTrim"];
+  const previewRemove = ((snapshot: TimelineSnapshot, clipOrRemovals: ClipSnapshot | readonly TimelineRemovePreview[], options?: TimelineRemovePreviewOptions) => Array.isArray(clipOrRemovals)
+    ? previewMany((clipOrRemovals as readonly TimelineRemovePreview[]).map(({ clip, options: removeOptions }) => removeIntent(snapshot, clip, removeOptions)), snapshot.frameRate)
+    : preview(removeIntent(snapshot, clipOrRemovals as ClipSnapshot, options as TimelineRemovePreviewOptions), snapshot.frameRate)) as TimelineEditor["previewRemove"];
+  const editor: TimelineEditor = {
+    previewInsert,
+    previewInsertAudio,
+    previewOverwrite,
+    previewTrim,
+    previewRemove,
+    insert,
+    overwrite,
+    trim,
+    remove,
   };
   Object.setPrototypeOf(editor, null);
   return Object.freeze(editor);

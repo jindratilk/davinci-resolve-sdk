@@ -289,7 +289,10 @@ export function registerSdkRuntimeRoutes({
         session: openedSession,
       });
     } catch (error) {
-      if (sdkIdentityFailureKind(error)) {
+      if (sdkIdentityFailureKind(error) === "session_changed") {
+        return respondSessionRejected(res, requestId);
+      }
+      if (sdkIdentityFailureKind(error) === "authentication_required") {
         return respondFailure(res, 401, "AUTHENTICATION_REQUIRED", "Sign in to CutAgent before connecting the SDK.", "sign_in", requestId);
       }
       if (error?.code === "SUBSCRIPTION_REQUIRED") {
@@ -617,11 +620,22 @@ export function registerSdkRuntimeRoutes({
     deadlineTimer.unref?.();
     try {
       if (controller.signal.aborted || req.aborted || res.destroyed) return;
-      const data = await withOwnerSession(ownerSession, () => liveInspectionService.read(parsed.data, {
-        accessToken: authenticated.accessToken,
-        deadlineAtMs: parsed.data.deadlineAtMs,
-        signal: controller.signal,
-      }));
+      const capturesExecutionState = parsed.data.operation === "project.context"
+        || parsed.data.operation === "timeline.snapshot";
+      const inspected = await withOwnerSession(ownerSession, () => capturesExecutionState
+        ? liveInspectionService.readWithMutationGuard(parsed.data, {
+          accessToken: authenticated.accessToken,
+          sdkSessionId: parsed.data.sessionId,
+          deadlineAtMs: parsed.data.deadlineAtMs,
+          signal: controller.signal,
+        })
+        : liveInspectionService.read(parsed.data, {
+          accessToken: authenticated.accessToken,
+          sdkSessionId: parsed.data.sessionId,
+          deadlineAtMs: parsed.data.deadlineAtMs,
+          signal: controller.signal,
+        }));
+      const data = capturesExecutionState ? inspected.value : inspected;
       if (controller.signal.aborted || req.aborted || res.destroyed) return;
       assertAuthenticatedSdkRequestCurrent(authService, authenticated);
       if (!sdkRuntimeService.validateSession({
@@ -631,6 +645,19 @@ export function registerSdkRuntimeRoutes({
         touch: false,
       })) {
         return respondSessionRejected(res, requestId, true);
+      }
+      if (parsed.data.operation === "project.context") {
+        sdkRuntimeService.captureExecutionProjectContext({
+          sessionId: parsed.data.sessionId,
+          accountFingerprint: authenticated.accountFingerprint,
+          inspected,
+        });
+      } else if (parsed.data.operation === "timeline.snapshot") {
+        sdkRuntimeService.captureExecutionTimelineState({
+          sessionId: parsed.data.sessionId,
+          accountFingerprint: authenticated.accountFingerprint,
+          inspected,
+        });
       }
       const response = sdkRuntimeReadSuccessSchema.safeParse({
         ok: true,

@@ -1,8 +1,8 @@
 # Generated from sdk-prepared-action-kernel.json and authoritative SDK action registries. Do not edit.
-PREPARED_ACTION_PROTOCOL_VERSION = 1
-PREPARED_ACTION_KERNEL_DIGEST = "sha256:f3b206e529ef03f1e5ca76713e607782a8d7159ef9b6b33345f381ba426857c4"
-PREPARED_ACTION_CONTRACT_DIGEST = "sha256:65f9c16dfdff6f89f8b1acbd0a0013fc0b4366537180fc39ee81853954f61f94"
-PREPARED_ACTION_CAPABILITY_DIGEST = "sha256:b114bf76ee3c1670fd2d8e427d76d3c91a2b32564419c3a033328b62c9c86579"
+PREPARED_ACTION_PROTOCOL_VERSION = 2
+PREPARED_ACTION_KERNEL_DIGEST = "sha256:e76c8d3035abb0847eafc519cea1a2125a0d2f9d9c52491f1dd696b5a53a4c90"
+PREPARED_ACTION_CONTRACT_DIGEST = "sha256:0de84120b23f26fcd90d8ed327ceb52da731bb512263247c2fd5ff88997134d9"
+PREPARED_ACTION_CAPABILITY_DIGEST = "sha256:9094f2a43290856f5be0fa80feab68a21b6d2aaa30aace394601b682e83ff89a"
 PREPARED_ACTION_PUBLIC_RESULT_MAX_BYTES = 12582912
 PREPARED_ACTION_ACTION_METADATA = {
     "cutagent.action.audio.beat_detect": {"operationClass": "mutation", "version": 1, "capabilityId": "audio.beat_detection"},
@@ -264,6 +264,7 @@ PREPARED_ACTION_ACTION_METADATA = {
     "cutagent.action.color.window.rectangle": {"operationClass": "mutation", "version": 1, "capabilityId": "fusion.mutation"},
     "cutagent.action.color.window.reorder": {"operationClass": "mutation", "version": 1, "capabilityId": "fusion.mutation"},
     "cutagent.action.dctl.apply": {"operationClass": "mutation", "version": 1, "capabilityId": "color.lut_set_clear"},
+    "cutagent.action.dctl.validate_source": {"operationClass": "read", "version": 1, "capabilityId": None},
     "cutagent.action.edit.auto_subtitle": {"operationClass": "mutation", "version": 1, "capabilityId": "timeline.subtitle_list_add_export"},
     "cutagent.action.edit.blade": {"operationClass": "mutation", "version": 1, "capabilityId": "edit.blade_native"},
     "cutagent.action.edit.camera_pip": {"operationClass": "mutation", "version": 1, "capabilityId": "clip.transform"},
@@ -341,6 +342,7 @@ PREPARED_ACTION_ACTION_METADATA = {
     "cutagent.action.fairlight.export.audio": {"operationClass": "mutation", "version": 1, "capabilityId": "fairlight.audio_export"},
     "cutagent.action.fairlight.external_process.list": {"operationClass": "read", "version": 1, "capabilityId": "fairlight.external_process_read"},
     "cutagent.action.fairlight.external_process.run": {"operationClass": "mutation", "version": 1, "capabilityId": "fairlight.external_process"},
+    "cutagent.action.fairlight.fade_curve": {"operationClass": "mutation", "version": 1, "capabilityId": "fairlight.fade_out_batch"},
     "cutagent.action.fairlight.fade_in.batch": {"operationClass": "mutation", "version": 1, "capabilityId": "fairlight.fade_in_batch"},
     "cutagent.action.fairlight.fade_out.batch": {"operationClass": "mutation", "version": 1, "capabilityId": "fairlight.fade_out_batch"},
     "cutagent.action.fairlight.group.assign": {"operationClass": "mutation", "version": 1, "capabilityId": "fairlight.groups"},
@@ -474,6 +476,7 @@ PREPARED_ACTION_ACTION_METADATA = {
     "cutagent.action.fusion.tool.list": {"operationClass": "read", "version": 1, "capabilityId": "fusion.tool_list_get_set"},
     "cutagent.action.fusion.tool.outputs": {"operationClass": "read", "version": 1, "capabilityId": "fusion.tool_list_get_set"},
     "cutagent.action.fusion.tool.paste": {"operationClass": "mutation", "version": 1, "capabilityId": "fusion.mutation"},
+    "cutagent.action.fusion.tool.registry": {"operationClass": "read", "version": 1, "capabilityId": "fusion.tool_list_get_set"},
     "cutagent.action.fusion.tool.set": {"operationClass": "mutation", "version": 1, "capabilityId": "fusion.mutation"},
     "cutagent.action.fusion.tracker.add": {"operationClass": "mutation", "version": 1, "capabilityId": "fusion.mutation"},
     "cutagent.action.lut_refresh": {"operationClass": "mutation", "version": 1, "capabilityId": "system.lut_refresh"},
@@ -538,6 +541,7 @@ PREPARED_ACTION_ACTION_METADATA = {
     "cutagent.action.media.timeline_matte.list": {"operationClass": "read", "version": 1, "capabilityId": "media.clip_management"},
     "cutagent.action.media.transcode": {"operationClass": "mutation", "version": 1, "capabilityId": "media.proxy_transcode"},
     "cutagent.action.media.transcribe": {"operationClass": "mutation", "version": 1, "capabilityId": None},
+    "cutagent.action.media.transcription": {"operationClass": "read", "version": 1, "capabilityId": None},
     "cutagent.action.media.unlink": {"operationClass": "mutation", "version": 1, "capabilityId": "media.unlink_relink"},
     "cutagent.action.multicam.angle.remove": {"operationClass": "mutation", "version": 1, "capabilityId": "multicam.angle.remove"},
     "cutagent.action.multicam.angle.rename": {"operationClass": "mutation", "version": 1, "capabilityId": "multicam.angle.rename"},
@@ -592,6 +596,7 @@ PREPARED_ACTION_ACTION_METADATA = {
     "cutagent.action.project.library.switch": {"operationClass": "mutation", "version": 1, "capabilityId": "project.library_switch"},
     "cutagent.action.project.list": {"operationClass": "read", "version": 1, "capabilityId": "project.list"},
     "cutagent.action.project.open": {"operationClass": "mutation", "version": 1, "capabilityId": "project.open"},
+    "cutagent.action.project.preset.export": {"operationClass": "mutation", "version": 1, "capabilityId": "project.preset_import_export"},
     "cutagent.action.project.preset.list": {"operationClass": "read", "version": 1, "capabilityId": "project.preset_list"},
     "cutagent.action.project.preset.load": {"operationClass": "mutation", "version": 1, "capabilityId": "project.preset_load"},
     "cutagent.action.project.preset.save": {"operationClass": "mutation", "version": 1, "capabilityId": "project.preset_save"},
@@ -624,6 +629,7 @@ PREPARED_ACTION_ACTION_METADATA = {
     "cutagent.action.render.preset_delete": {"operationClass": "mutation", "version": 1, "capabilityId": "render.preset_save"},
     "cutagent.action.render.preset_load": {"operationClass": "mutation", "version": 1, "capabilityId": "render.preset_load"},
     "cutagent.action.render.preset_save": {"operationClass": "mutation", "version": 1, "capabilityId": "render.preset_save"},
+    "cutagent.action.render.preset_update": {"operationClass": "mutation", "version": 1, "capabilityId": "render.preset_save"},
     "cutagent.action.render.presets": {"operationClass": "read", "version": 1, "capabilityId": "render.presets"},
     "cutagent.action.render.quick_export": {"operationClass": "mutation", "version": 1, "capabilityId": "render.quick_export"},
     "cutagent.action.render.quick_export_presets": {"operationClass": "read", "version": 1, "capabilityId": None},
@@ -647,6 +653,8 @@ PREPARED_ACTION_ACTION_METADATA = {
     "cutagent.action.storage.matte.timeline_add": {"operationClass": "mutation", "version": 1, "capabilityId": "media.clip_management"},
     "cutagent.action.storage.reveal": {"operationClass": "mutation", "version": 1, "capabilityId": "media.import"},
     "cutagent.action.storage.volumes": {"operationClass": "read", "version": 1, "capabilityId": None},
+    "cutagent.action.system.keyboard_preset.current": {"operationClass": "read", "version": 1, "capabilityId": "system.keyboard_preset_read"},
+    "cutagent.action.system.keyboard_preset.list": {"operationClass": "read", "version": 1, "capabilityId": "system.keyboard_preset_read"},
     "cutagent.action.system.keyframe_mode.get": {"operationClass": "read", "version": 1, "capabilityId": "system.keyframe_mode"},
     "cutagent.action.system.keyframe_mode.set": {"operationClass": "mutation", "version": 1, "capabilityId": "system.keyframe_mode"},
     "cutagent.action.text.insert": {"operationClass": "mutation", "version": 1, "capabilityId": "text.insert"},
@@ -697,6 +705,8 @@ PREPARED_ACTION_ACTION_METADATA = {
     "cutagent.action.timeline.marker.update": {"operationClass": "mutation", "version": 1, "capabilityId": "timeline.marker_crud"},
     "cutagent.action.timeline.media_pool_item": {"operationClass": "read", "version": 1, "capabilityId": "timeline.item_at"},
     "cutagent.action.timeline.node_graph.inspect": {"operationClass": "read", "version": 1, "capabilityId": "color.node_graph_ops"},
+    "cutagent.action.timeline.output_blanking.get": {"operationClass": "read", "version": 1, "capabilityId": "timeline.output_blanking"},
+    "cutagent.action.timeline.output_blanking.set": {"operationClass": "mutation", "version": 1, "capabilityId": "timeline.output_blanking"},
     "cutagent.action.timeline.overlay_stack.insert": {"operationClass": "mutation", "version": 1, "capabilityId": "timeline.overlay_stack"},
     "cutagent.action.timeline.playhead.get": {"operationClass": "read", "version": 1, "capabilityId": "timeline.playhead_set"},
     "cutagent.action.timeline.playhead.set": {"operationClass": "mutation", "version": 1, "capabilityId": "timeline.playhead_set"},

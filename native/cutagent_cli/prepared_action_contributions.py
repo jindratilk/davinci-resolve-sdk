@@ -43,6 +43,12 @@ from .private_sdk_descriptors.media_residual_prepared_action import (
     MediaExecutionAuthority,
     residual_media_execution_authorities,
 )
+from .private_sdk_descriptors.bulk_clip_state_prepared_action import (
+    bulk_clip_state_prepared_action_descriptors,
+)
+from .private_sdk_descriptors.bulk_clip_property_prepared_action import (
+    bulk_clip_property_prepared_action_descriptors,
+)
 
 
 @dataclass(frozen=True)
@@ -69,7 +75,11 @@ def _professional_primitive_packet() -> PreparedActionContributionPacket:
     owners = professional_primitive_production_owners()
     return PreparedActionContributionPacket(
         owner="professional-primitives",
-        descriptors=professional_primitive_prepared_action_descriptors(owners=owners),
+        descriptors=MappingProxyType({
+            **professional_primitive_prepared_action_descriptors(owners=owners),
+            **bulk_clip_state_prepared_action_descriptors(),
+            **bulk_clip_property_prepared_action_descriptors(),
+        }),
         execution_authorities=owners,
     )
 
@@ -150,6 +160,7 @@ _EDITORIAL_TIMELINE_READ_ACTION_IDS = (
     "cutagent.action.timeline.node_graph.inspect",
     "cutagent.action.timeline.playhead.get",
     "cutagent.action.timeline.settings",
+    "cutagent.action.timeline.output_blanking.get",
     "cutagent.action.timeline.summarize",
     "cutagent.action.timeline.track.items",
     "cutagent.action.timeline.track.list",
@@ -157,6 +168,7 @@ _EDITORIAL_TIMELINE_READ_ACTION_IDS = (
     "cutagent.action.timeline.voice_isolation.get",
 )
 _EDITORIAL_TIMELINE_ORDINARY_ACTION_IDS = (
+    "cutagent.action.timeline.clip_color.batch",
     "cutagent.action.timeline.create",
     "cutagent.action.timeline.delete",
     "cutagent.action.timeline.duplicate",
@@ -168,6 +180,7 @@ _EDITORIAL_TIMELINE_ORDINARY_ACTION_IDS = (
     "cutagent.action.timeline.rename",
     "cutagent.action.timeline.set_start_tc",
     "cutagent.action.timeline.settings_set",
+    "cutagent.action.timeline.output_blanking.set",
     "cutagent.action.timeline.start_tc",
     "cutagent.action.timeline.switch",
     "cutagent.action.timeline.dolby.analyze",
@@ -189,6 +202,8 @@ OPERATIONS_RENDER_PRODUCTION_CALLABLE_ACTION_IDS = (
     "cutagent.action.render.alpha",
     "cutagent.action.render.encoding",
     "cutagent.action.render.mode.set",
+    "cutagent.action.render.preset_save",
+    "cutagent.action.render.preset_update",
     "cutagent.action.render.subtitles",
 )
 

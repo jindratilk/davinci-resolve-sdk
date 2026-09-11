@@ -83,6 +83,7 @@ cutagent.action.edit.slip_selected
 cutagent.action.edit.social_crop
 cutagent.action.edit.split
 cutagent.action.edit.transition.add
+cutagent.action.edit.transition.batch
 cutagent.action.text.insert
 cutagent.action.text.insert_preset
 cutagent.action.text.insert_template
@@ -481,12 +482,12 @@ def assert_residual_av_prepare_candidate(
 
 
 def validate_residual_av_descriptor_packet() -> None:
-    if len(RESIDUAL_AV_ACTION_DESCRIPTORS) != 73:
+    if len(RESIDUAL_AV_ACTION_DESCRIPTORS) != 74:
         raise ValueError(
-            "residual Clip/Text/Audio/Edit packet must close exactly 73 actions"
+            "residual Clip/Text/Audio/Edit packet must close exactly 74 actions"
         )
     action_ids = {item.action_id for item in RESIDUAL_AV_ACTION_DESCRIPTORS}
-    if len(action_ids) != 73 or action_ids & _DEDICATED_OTHER_OWNERS:
+    if len(action_ids) != 74 or action_ids & _DEDICATED_OTHER_OWNERS:
         raise ValueError(
             "residual descriptor ownership overlaps or contains duplicates"
         )

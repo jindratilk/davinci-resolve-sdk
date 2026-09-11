@@ -10,7 +10,7 @@ import struct
 from typing import Any
 import zlib
 
-from . import audio_clip_fx, audio_eq_db
+from . import audio_clip_fx, audio_eq_db, clip_effects_db
 
 
 class AudioClipEffectReadbackError(ValueError):
@@ -57,16 +57,20 @@ def _decode_named_clip_fx(fields_blob: bytes) -> bytes | None:
     if len(fields_blob) < 10:
         raise AudioClipEffectReadbackError("FieldsBlob is too short")
     version, body_size = struct.unpack(">II", fields_blob[:8])
-    if version != 2 or body_size != len(fields_blob) - 8 or fields_blob[8] != 0x81:
+    if version != 2 or body_size != len(fields_blob) - 8 or fields_blob[8] not in (0x80, 0x81):
         raise AudioClipEffectReadbackError("unsupported FieldsBlob envelope")
-    if audio_clip_fx.zstandard is None:
-        raise AudioClipEffectReadbackError("zstandard is unavailable")
-    try:
-        proto = audio_clip_fx.zstandard.ZstdDecompressor().decompress(
-            fields_blob[9:], max_output_size=16 * 1024 * 1024
-        )
-    except Exception as exc:
-        raise AudioClipEffectReadbackError("FieldsBlob zstd payload is unreadable") from exc
+    if fields_blob[8] == 0x80:
+        proto = fields_blob[9:]
+    else:
+        if audio_clip_fx.zstandard is None:
+            raise AudioClipEffectReadbackError("zstandard is unavailable")
+        try:
+            proto = audio_clip_fx.zstandard.ZstdDecompressor().decompress(
+                fields_blob[9:], max_output_size=16 * 1024 * 1024
+            )
+        except Exception as exc:
+            raise AudioClipEffectReadbackError("FieldsBlob zstd payload is unreadable") from exc
+
     children = _named_clip_fx_children(proto)
     if not children:
         return None
@@ -146,6 +150,82 @@ def _exact_default_fairlight_eq(payload: bytes) -> dict[str, float] | None:
     return values
 
 
+def _decode_native_audio_controls(blob: bytes) -> tuple[list[dict[str, Any]], bool]:
+    """Read known controls and prove whether every effect group has a known identity."""
+    result = []
+    saw_known_group = False
+    identities_complete = True
+    names = {124: {95: "gainDb", 97: "fadeInFrames", 98: "fadeOutFrames",
+                   99: "fadeInControlPoint", 100: "fadeOutControlPoint"},
+             144: {96: "pan"}}
+    for entry in clip_effects_db.split_packed_blob_chain(blob):
+        fields = clip_effects_db._parse_wire_fields(clip_effects_db._effect_proto(entry))
+        if not fields:
+            return [], False
+        for top in fields:
+            if top.number != 1 or top.wire_type != 2 or not isinstance(top.value, bytes):
+                identities_complete = False
+                continue
+            effect_id = clip_effects_db._effect_message_id(top.value)
+            if effect_id not in names:
+                identities_complete = False
+                continue
+            effect_fields = clip_effects_db._parse_wire_fields(top.value)
+            if effect_fields is None:
+                identities_complete = False
+                continue
+            saw_known_group = True
+            params = {}
+            unread = []
+            seen = set()
+            for field in effect_fields:
+                if field.number == 1 and field.wire_type == 0:
+                    continue
+                if field.number != 9 or field.wire_type != 2:
+                    unread.append({"field": field.number, "wireType": field.wire_type, "rawHex": field.raw.hex()})
+                    continue
+                nested = clip_effects_db._parse_wire_fields(field.value)
+                parameter_id = clip_effects_db._audio_param_id(field.value)
+                key = names[effect_id].get(parameter_id)
+                if parameter_id in seen and key:
+                    params.pop(key, None)
+                if (not key or parameter_id in seen or nested is None or
+                        [(f.number, f.wire_type) for f in nested] != [(1, 0), (3, 2)]):
+                    unread.append({"field": 9, "parameterId": parameter_id, "rawHex": field.raw.hex()})
+                    continue
+                seen.add(parameter_id)
+                payload = nested[1].value
+                value = None
+                if parameter_id in (99, 100) and len(payload) == 20 and payload[:4] == b"\x0a\x12\x3a\x10":
+                    x, y = struct.unpack(">dd", payload[4:])
+                    if math.isfinite(x) and math.isfinite(y):
+                        value = {"x": x, "y": y}
+                elif parameter_id not in (99, 100) and len(payload) == 11 and payload[:3] == b"\x0a\x09\x11":
+                    number = struct.unpack("<d", payload[3:])[0]
+                    if math.isfinite(number):
+                        value = number
+                if value is None:
+                    unread.append({"field": 9, "parameterId": parameter_id, "rawHex": field.raw.hex()})
+                else:
+                    params[key] = value
+            if any(
+                not (
+                    (field.get("field"), field.get("wireType")) == (7, 0)
+                    or (field.get("field"), field.get("rawHex")) == (9, "4a00")
+                )
+                for field in unread
+            ):
+                identities_complete = False
+            result.append({"effectId": effect_id, "kind": "audioMix" if effect_id == 124 else "audioPan",
+                           "parameters": params, "unreadFields": unread})
+    return result, bool(saw_known_group and identities_complete)
+
+
+def _native_audio_controls(blob: bytes) -> list[dict[str, Any]]:
+    """Read exact known parameter encodings; retain every other field explicitly."""
+    return _decode_native_audio_controls(blob)[0]
+
+
 def read_audio_clip_effects(cursor: sqlite3.Cursor, *, item_id: str) -> dict[str, Any]:
     """Read exact, non-heuristic effect evidence for one audio timeline item."""
 
@@ -202,18 +282,22 @@ def read_audio_clip_effects(cursor: sqlite3.Cursor, *, item_id: str) -> dict[str
                 "payloadBytes": len(bytes(effect_filters)),
             }
 
+    native_controls, native_identities_complete = (
+        _decode_native_audio_controls(bytes(effect_filters)) if effect_filters else ([], False)
+    )
     unknown_effect_filters = None
-    if effect_filters and archive_eq is None:
+    if effect_filters and archive_eq is None and not native_identities_complete:
         raw = bytes(effect_filters)
         unknown_effect_filters = {
             "payloadSha256": hashlib.sha256(raw).hexdigest(),
             "payloadBytes": len(raw),
-            "reason": "EffectFiltersBA does not match an exact retained audio EQ fixture",
+            "reason": "EffectFiltersBA is not fully decoded; known native audio controls are reported separately",
         }
     return {
         "itemId": normalized_id,
         "clipFx": clip_fx,
         "archiveEq": archive_eq,
+        "nativeAudioControls": native_controls,
         "unknownEffectFilters": unknown_effect_filters,
         "source": "Project.db Sm2TiItem.FieldsBlob/EffectFiltersBA",
     }

@@ -1,4 +1,4 @@
-"""Audio analysis, preprocessing, and hosted voiceover commands."""
+"""Audio analysis, preprocessing, and AI voice tools."""
 
 from __future__ import annotations
 
@@ -20,13 +20,14 @@ from ..output import (
     set_verification_status,
 )
 from ..policy import enforce_mutation_policy
+from ..standalone_hosted import unavailable as hosted_service_unavailable
 from ..connection import get_connection
 from ..core import media_pool as media_pool_ops
 from ..core import timeline_ops
 
 app = typer.Typer(
     no_args_is_help=True,
-    help="File-level audio helpers and hosted voiceover generation. Use `clip audio-*` or `fairlight *` for DaVinci Resolve native audio work.",
+    help="File-level audio tools and AI voice generation in the CutAgent desktop app. Use `clip audio-*` or `fairlight *` for DaVinci Resolve audio editing.",
 )
 
 
@@ -50,7 +51,7 @@ def _pronunciation_dictionary_locators(values: Optional[list[str]]) -> list[dict
 @app.command("voice-list")
 @handle_errors
 def voice_list(
-    source: str = typer.Option("account", "--source", help="Voice source: account or library"),
+    source: str = typer.Option("account", "--source", help="Voice source: saved voices or public library"),
     search: Optional[str] = typer.Option(None, "--search", help="Filter ElevenLabs voices by name, description, or label"),
     page_token: Optional[str] = typer.Option(None, "--page-token", help="Continue from next_page_token returned by a previous voice list"),
     page: Optional[int] = typer.Option(None, "--page", min=0, max=10_000, help="Zero-based public Voice Library page"),
@@ -63,7 +64,8 @@ def voice_list(
     sort: Optional[str] = typer.Option(None, "--sort", help="Voice Library sort: trending, usage_character_count_1y, cloned_by_count, or created_date"),
     include_custom_rates: bool = typer.Option(False, "--include-custom-rates", help="Include voices with a provider credit multiplier above 1x"),
 ):
-    """List saved/default voices or search the public ElevenLabs Voice Library."""
+    """Browse AI voices in the CutAgent desktop app."""
+    hosted_service_unavailable("voice_catalog")
     normalized_source = source.strip().lower()
     if normalized_source not in {"account", "library"}:
         raise ValidationError("--source must be account or library.")
@@ -138,7 +140,8 @@ def voice_generate(
     ),
     force: bool = typer.Option(False, "--force", help="Replace an existing output file"),
 ):
-    """Generate and download an ElevenLabs voiceover through CutAgent usage."""
+    """Create an AI voiceover in the CutAgent desktop app."""
+    hosted_service_unavailable("voice_generation")
     normalized_voice_id = voice_id.strip()
     normalized_text = text.strip()
     if not normalized_voice_id or len(normalized_voice_id) < 8:

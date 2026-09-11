@@ -155,6 +155,11 @@ def _record_frame(conn: Any, value: Mapping[str, Any]) -> int:
     )
 
 
+def _duration_updates(value: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    updates = value.get("updates")
+    return list(updates) if isinstance(updates, list) else [value]
+
+
 def _timeline_format_mismatches(
     expected_format: Mapping[str, Any],
     actual_format: Mapping[str, Any],
@@ -267,18 +272,29 @@ class TimelineTopologyProductionAuthority:
                 raise ValidationError(
                     "Authored title transformed text must contain 1 to 8192 Unicode characters."
                 )
-        if action_id == "cutagent.action.timeline.items.set_duration" and "timelineItemId" not in normalized:
-            raise ValidationError("Timeline duration mutation requires an exact timelineItemId.")
+        if action_id == "cutagent.action.timeline.items.set_duration":
+            updates = _duration_updates(normalized)
+            item_ids = [update.get("timelineItemId") for update in updates]
+            if (
+                not updates
+                or any(not isinstance(item_id, str) or not item_id for item_id in item_ids)
+                or len(set(item_ids)) != len(item_ids)
+            ):
+                raise ValidationError("Timeline duration mutation requires unique exact timelineItemId values.")
         if action_id == "cutagent.action.timeline.sync_clips":
             sources = normalized["sourceItemIds"]
             if normalized.get("referenceItemId") is not None and normalized["referenceItemId"] not in sources:
                 raise ValidationError("Timeline synchronization referenceItemId must be one of sourceItemIds.")
         return normalized
 
-    def _inspect(self, value: Mapping[str, Any]) -> Mapping[str, Any]:
+    def _inspect(self, value: Mapping[str, Any], *, phase: str = "current") -> Mapping[str, Any]:
         if not callable(self._inspector):
             raise ValidationError("Timeline topology action lacks fresh private inspection.")
-        observed = self._inspector({"projectId": value["projectId"], "timelineId": value["timelineId"]})
+        observed = self._inspector({
+            "projectId": value["projectId"],
+            "timelineId": value["timelineId"],
+            "phase": phase,
+        })
         snapshot = observed.get("snapshot") if isinstance(observed, Mapping) else None
         if not isinstance(snapshot, Mapping):
             raise ValidationError("Timeline topology inspection omitted its snapshot.")
@@ -303,6 +319,33 @@ class TimelineTopologyProductionAuthority:
             raise ValidationError("Timeline topology action revision is stale.")
         current_rows = {clip.get("id"): (track, clip) for track, clip in _rows(snapshot)}
         current_tracks = {(track.get("type"), track.get("index")): track for track in snapshot.get("tracks", ())}
+        duration_roles: dict[str, str] = {}
+        if action_id == "cutagent.action.timeline.items.set_duration":
+            requested_ids = [update["timelineItemId"] for update in _duration_updates(value)]
+            requested_set = set(requested_ids)
+            if len(requested_set) != len(requested_ids) or any(item_id not in current_rows for item_id in requested_ids):
+                raise ValidationError("Timeline duration requested identity set is stale or ambiguous.")
+            closed_ids = set(requested_set)
+            for item_id in requested_ids:
+                linked_ids = current_rows[item_id][1].get("linkedItemIds", ())
+                if any(
+                    linked_id not in current_rows
+                    or item_id not in current_rows[linked_id][1].get("linkedItemIds", ())
+                    for linked_id in linked_ids
+                ):
+                    raise ValidationError("Timeline duration linked closure is no longer reciprocal.")
+                closed_ids.update(linked_ids)
+            bound_ids = {
+                target.get("stableId")
+                for target in topology["targets"]
+                if target.get("kind") == "clip"
+            }
+            if bound_ids != closed_ids:
+                raise ValidationError("Timeline duration target binding is not the exact requested and linked closure.")
+            duration_roles = {
+                item_id: "requested" if item_id in requested_set else "linked"
+                for item_id in closed_ids
+            }
         targets = []
         for target in topology["targets"]:
             kind = target.get("kind")
@@ -323,7 +366,11 @@ class TimelineTopologyProductionAuthority:
                     raise ValidationError("Timeline topology media target lost private native custody.")
                 targets.append({**dict(target), "revision": matches[0]["revision"]})
                 continue
-            targets.append({**dict(target), "revision": snapshot["revision"]})
+            targets.append({
+                **dict(target),
+                "revision": snapshot["revision"],
+                **({"impactRole": duration_roles[stable_id]} if stable_id in duration_roles else {}),
+            })
         operation_id = context.get("exactRequestBinding", {}).get("operationId")
         if not isinstance(operation_id, str):
             raise ValidationError("Timeline topology operation identity is unavailable.")
@@ -755,16 +802,37 @@ class TimelineTopologyProductionAuthority:
             finally:
                 path.unlink(missing_ok=True)
         if command_id == "timeline.items.set_duration":
-            native_id = self._bindings(context)["timelineItemNativeIdByPublicId"][value["timelineItemId"]]
-            target = next(row for row in prepared["domain"]["resolvedTargets"] if row["kind"] == "clip" and row["stableId"] == value["timelineItemId"])
-            return timeline_item_duration_db.set_timeline_item_duration(
-                conn, item_id=native_id,
-                track_type=target["trackType"], track_index=target["trackIndex"],
-                duration=f"{_frames(value['duration'])}f" if value.get("duration") else None,
-                target_end_frame=_record_ref(value["targetEnd"]) if value.get("targetEnd") else None,
-                allow_overlap=value.get("allowOverlap", False),
-                enforce_source_bounds=value.get("enforceSourceBounds", True),
-            )
+            native_by_public = self._bindings(context)["timelineItemNativeIdByPublicId"]
+            targets = {
+                row["stableId"]: row
+                for row in prepared["domain"]["resolvedTargets"]
+                if row["kind"] == "clip"
+            }
+            updates = _duration_updates(value)
+            if "updates" not in value:
+                update = updates[0]
+                target = targets[update["timelineItemId"]]
+                return timeline_item_duration_db.set_timeline_item_duration(
+                    conn, item_id=native_by_public[update["timelineItemId"]],
+                    track_type=target["trackType"], track_index=target["trackIndex"],
+                    duration=f"{_frames(update['duration'])}f" if update.get("duration") else None,
+                    target_end_frame=_record_ref(update["targetEnd"]) if update.get("targetEnd") else None,
+                    allow_overlap=update.get("allowOverlap", False),
+                    enforce_source_bounds=update.get("enforceSourceBounds", True),
+                )
+            entries = []
+            for update in updates:
+                target = targets[update["timelineItemId"]]
+                entries.append({
+                    "item_id": native_by_public[update["timelineItemId"]],
+                    "track_type": target["trackType"],
+                    "track_index": target["trackIndex"],
+                    "duration": f"{_frames(update['duration'])}f" if update.get("duration") else None,
+                    "target_end_frame": _record_ref(update["targetEnd"]) if update.get("targetEnd") else None,
+                    "allow_overlap": update.get("allowOverlap", False),
+                    "enforce_source_bounds": update.get("enforceSourceBounds", True),
+                })
+            return timeline_item_duration_db.set_timeline_item_durations(conn, entries)
         if command_id == "timeline.layer.ensure_media":
             media = next(row for row in self._bindings(context)["media"] if row["mediaPoolItemId"] == value["mediaPoolItemId"])
             return timeline_layer_ops.ensure_media_layer(
@@ -810,7 +878,7 @@ class TimelineTopologyProductionAuthority:
 
     def read_evidence(self, _context: Mapping[str, Any], action_id: str, prepared: Mapping[str, Any], result: Any) -> Mapping[str, Any]:
         value = prepared["lowering"]["normalizedInput"]
-        after = self._inspect(value)
+        after = self._inspect(value, phase="verify")
         before = self._bindings(_context)["snapshot"]
         before_rows = {clip["id"]: (track, clip) for track, clip in _rows(before)}
         after_rows = {clip["id"]: (track, clip) for track, clip in _rows(after)}
@@ -860,18 +928,15 @@ class TimelineTopologyProductionAuthority:
             expected = command_id.endswith("lock")
             target_matched = any(track["type"] == coordinate[0] and track["index"] == coordinate[1] and track.get("locked") is expected for track in after_tracks)
         elif command_id == "timeline.items.set_duration":
-            target = after_rows.get(input_value["timelineItemId"])
-            requested_duration = _frames(input_value["duration"]) if input_value.get("duration") else None
-            requested_end = (
-                _record_frame(get_connection(require_timeline=True), input_value["targetEnd"])
-                if input_value.get("targetEnd") else None
-            )
-            target_matched = target is not None and (
-                target[1]["recordRange"]["endExclusive"] - target[1]["recordRange"]["start"] == requested_duration
-                if requested_duration is not None else (
-                    target[1]["recordRange"]["endExclusive"] == requested_end
-                    if requested_end is not None else False
+            conn = get_connection(require_timeline=True)
+            target_matched = all(
+                (target := after_rows.get(update["timelineItemId"])) is not None
+                and (
+                    target[1]["recordRange"]["endExclusive"] - target[1]["recordRange"]["start"] == _frames(update["duration"])
+                    if update.get("duration") is not None
+                    else target[1]["recordRange"]["endExclusive"] == _record_frame(conn, update["targetEnd"])
                 )
+                for update in _duration_updates(input_value)
             )
         elif command_id in {"timeline.fusion_composition.insert", "timeline.insert_generator", "timeline.insert_title"}:
             created = [(track, clip) for track, clip in _rows(after) if clip["id"] not in before_rows]
@@ -1006,8 +1071,12 @@ class TimelineTopologyProductionAuthority:
             created = [(track, clip) for track, clip in after_rows if clip["id"] not in before_ids]
             if command_id in {"timeline.import_into", "timeline.items.set_duration", "timeline.sync_clips"}:
                 if command_id == "timeline.items.set_duration":
-                    target = prepared["lowering"]["normalizedInput"]["timelineItemId"]
-                    created = [(track, clip) for track, clip in after_rows if clip["id"] == target]
+                    requested = [
+                        update["timelineItemId"]
+                        for update in _duration_updates(prepared["lowering"]["normalizedInput"])
+                    ]
+                    by_id = {clip["id"]: (track, clip) for track, clip in after_rows}
+                    created = [by_id[target] for target in requested if target in by_id]
                 payload = {"items": [_clip_public(track, clip) for track, clip in created], "revisionChange": changed}
             else:
                 if len(created) != 1:
@@ -1030,7 +1099,7 @@ class TimelineTopologyProductionAuthority:
         conn = get_connection(require_project=True, require_timeline=True)
         result = version_ops.restore_checkpoint(conn, checkpoint_id, session_id=context.get("session", {}).get("sessionId"))
         restored = result.get("verified") is True and result.get("reopened") is True
-        snapshot = self._inspect(prepared["lowering"]["normalizedInput"]) if restored else None
+        snapshot = self._inspect(prepared["lowering"]["normalizedInput"], phase="verify") if restored else None
         expected_digest = domain.get("privateCanonicalPreState", {}).get("protectedStateDigest")
         readback_matched = bool(snapshot is not None and _digest(snapshot) == expected_digest)
         return {

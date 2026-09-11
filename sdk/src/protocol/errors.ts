@@ -27,7 +27,7 @@ export type FailureKind =
   | "runtime_unavailable" | "runtime_timeout" | "runtime_crashed" | "runtime_incompatible"
   | "authentication_required" | "subscription_required" | "connection_closed"
   | "dependency_unavailable" | "temporary_provider_failure" | "operation_failed"
-  | "operation_expired" | "idempotency_conflict" | "edit_constraint_violation"
+  | "operation_expired" | "idempotency_conflict"
   | "target_not_found" | "ambiguous_target" | "stale_revision" | "capability_unavailable"
   | "verification_failed" | "recovery_failed" | "cancelled" | "invalid_request" | "invalid_response" | "unknown";
 /** Stable high-level failure classification. @beta */
@@ -36,7 +36,7 @@ export const FailureKindSchema: z.ZodType<FailureKind> = sdkFailureKindSchema;
 export type PublicErrorCode =
   | "SDK_INCOMPATIBLE" | "AUTHENTICATION_REQUIRED" | "SUBSCRIPTION_REQUIRED" | "CONNECTION_CLOSED"
   | "INVALID_REQUEST" | "INVALID_RESPONSE" | "CAPABILITY_UNAVAILABLE" | "TARGET_NOT_FOUND" | "AMBIGUOUS_TARGET"
-  | "STALE_REVISION" | "EDIT_CONSTRAINT_VIOLATION" | "USAGE_EXHAUSTED" | "REQUEST_TOO_LARGE"
+  | "STALE_REVISION" | "USAGE_EXHAUSTED" | "REQUEST_TOO_LARGE"
   | "OUTPUT_LIMIT_REACHED" | "RUNTIME_UNAVAILABLE" | "RUNTIME_TIMEOUT" | "RUNTIME_CRASHED"
   | "DEPENDENCY_UNAVAILABLE" | "TEMPORARY_PROVIDER_FAILURE" | "OPERATION_FAILED"
   | "OPERATION_EXPIRED" | "IDEMPOTENCY_CONFLICT" | "VERIFICATION_FAILED" | "RECOVERY_FAILED"
@@ -93,26 +93,15 @@ export type PublicFailure = {
   idempotencyKey?: IdempotencyKey;
   incidentId?: IncidentId;
   cause?: PublicErrorCause;
-} & (
-  | {
-    kind: "edit_constraint_violation";
-    code: "EDIT_CONSTRAINT_VIOLATION";
-    retrySafe: false;
-    possibleMutation: "none";
-    usage: "not_reserved";
-    recovery: Exclude<Recovery, "retry">[];
-    readbackRequired: false;
-  }
-  | {
+} & {
     kind: FailureKind;
-    code: Exclude<PublicErrorCode, "EDIT_CONSTRAINT_VIOLATION">;
+    code: PublicErrorCode;
     retrySafe: boolean;
     retrySafetyProof?: RetrySafetyProof;
     possibleMutation: PossibleMutationState;
     usage: UsageState;
     recovery: Recovery[];
     readbackRequired: boolean;
-  }
-);
+};
 /** Fully typed public failure and recovery contract. @beta */
 export const PublicFailureSchema = sdkPublicFailureSchema as unknown as z.ZodType<PublicFailure>;

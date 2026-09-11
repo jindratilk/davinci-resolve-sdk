@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import os
+import re
 from typing import Optional
 
 import typer
 
 from ..connection import get_connection
-from ..errors import handle_errors
+from ..errors import ValidationError, handle_errors
 from ..output import is_dry_run, mutation_payload, output, set_recoverability, set_verification_status
 from ..policy import enforce_mutation_policy
 from ..core import version_ops
@@ -153,8 +153,21 @@ def prune(
 def restore(
     checkpoint_id: str = typer.Argument(..., help="Checkpoint id"),
     session_id: Optional[str] = typer.Option(None, "--session-id", help="Require the checkpoint to belong to this CutAgent session id"),
+    expected_current_state_hash: Optional[str] = typer.Option(
+        None,
+        "--expected-current-state-hash",
+        hidden=True,
+    ),
 ):
     """Restore a checkpoint by replacing its local Disk Project.db snapshot."""
+    if expected_current_state_hash is not None and re.fullmatch(
+        r"sha256:[a-f0-9]{64}", expected_current_state_hash
+    ) is None:
+        raise ValidationError(
+            "Expected current state hash must be one exact SHA-256 digest.",
+            details={"reason": "invalid_expected_current_state_hash"},
+            recoverability="not_applicable",
+        )
     enforce_mutation_policy(
         "version.checkpoint",
         intended_engine="api_native",
@@ -179,7 +192,7 @@ def restore(
         conn,
         checkpoint_id,
         session_id=session_id,
-        expected_current_state_hash=os.environ.get("CUTAGENT_WORKFLOW_EXPECTED_STATE_HASH"),
+        expected_current_state_hash=expected_current_state_hash,
     )
     message = (
         f"Restored project checkpoint: {result.get('restored_project_name')}"

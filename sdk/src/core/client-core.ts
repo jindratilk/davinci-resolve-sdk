@@ -142,6 +142,7 @@ export async function createCarrierClient(
   const workflows = createWorkflows({ session: () => transport });
   const objectModelRuntime = {
     get generation(): number { return generation; },
+    session: () => transport,
     workflows,
     async managedStartAtGeneration(expectedGeneration: number, binding: unknown, cancellationRequested: boolean, control: ReadControlOptions = {}) {
       if (closed || expectedGeneration !== generation) throw staleFailure("This object reference belongs to an earlier CutAgent SDK session.");

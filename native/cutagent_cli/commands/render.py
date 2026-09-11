@@ -18,6 +18,8 @@ from ..output import console, dry_run_message, get_output_mode, is_dry_run, muta
 from ..policy import enforce_mutation_policy
 from ..external_tools import resolve_tool
 from ..core import render_engine, timeline_ops
+from ..core._render_engine.presets import save_render_preset
+from ..core._render_engine.preset_update import update_render_preset
 
 app = typer.Typer(
     help=(
@@ -244,17 +246,33 @@ def presets():
 
 @app.command("formats")
 @handle_errors
-def formats():
-    """List available render formats."""
+def formats(
+    media: str = typer.Option("video", "--media", help="Format inventory: video or audio."),
+):
+    """List available video or audio render formats."""
     enforce_mutation_policy("render.formats", intended_engine="api_native", mutating=False)
     conn = get_connection(require_project=True)
-    fmt_dict = render_engine.get_render_formats(conn)
+    media_kind = str(media).strip().lower()
+    if media_kind not in {"video", "audio"}:
+        raise ValidationError("Render format media must be 'video' or 'audio'.", details={"media": media})
+    fmt_dict = (
+        render_engine.get_audio_render_formats(conn)
+        if media_kind == "audio"
+        else render_engine.get_render_formats(conn)
+    )
     if fmt_dict:
-        rows = [
-            {"format": k, "description": v, "source": "resolve_api"}
-            for k, v in sorted(fmt_dict.items(), key=lambda item: str(item[0]).casefold())
-        ]
-        output(rows, columns=[("format", "Format"), ("description", "Description"), ("source", "Source")])
+        if media_kind == "audio":
+            rows = [
+                {"format": k, "extension": v, "media": "audio", "source": "resolve_api"}
+                for k, v in sorted(fmt_dict.items(), key=lambda item: str(item[0]).casefold())
+            ]
+            output(rows, columns=[("format", "Format"), ("extension", "Extension"), ("media", "Media"), ("source", "Source")])
+        else:
+            rows = [
+                {"format": k, "description": v, "source": "resolve_api"}
+                for k, v in sorted(fmt_dict.items(), key=lambda item: str(item[0]).casefold())
+            ]
+            output(rows, columns=[("format", "Format"), ("description", "Description"), ("source", "Source")])
     else:
         output([])
 
@@ -263,13 +281,24 @@ def formats():
 @handle_errors
 def codecs(
     format_name: str = typer.Argument(..., help="Format name (e.g., mp4, QuickTime)"),
+    media: str = typer.Option("video", "--media", help="Codec inventory: video or audio."),
 ):
-    """List available codecs for a format."""
+    """List available video or audio codecs for a format."""
     conn = get_connection(require_project=True)
-    codec_dict = render_engine.get_render_codecs(conn, format_name)
+    media_kind = str(media).strip().lower()
+    if media_kind not in {"video", "audio"}:
+        raise ValidationError("Render codec media must be 'video' or 'audio'.", details={"media": media})
+    codec_dict = (
+        render_engine.get_audio_render_codecs(conn, format_name)
+        if media_kind == "audio"
+        else render_engine.get_render_codecs(conn, format_name)
+    )
     if codec_dict:
-        rows = [{"codec": k, "description": v} for k, v in codec_dict.items()]
-        output(rows, columns=[("codec", "Codec"), ("description", "Description")])
+        rows = [{"codec": k, "description": v, **({"media": "audio"} if media_kind == "audio" else {})} for k, v in codec_dict.items()]
+        columns = [("codec", "Codec"), ("description", "Description")]
+        if media_kind == "audio":
+            columns.append(("media", "Media"))
+        output(rows, columns=columns)
     else:
         output([])
 
@@ -1061,8 +1090,21 @@ def preset_save(
         return
 
     conn = get_connection(require_project=True)
-    conn.project.SaveAsNewRenderPreset(name)
+    save_render_preset(conn, name)
     success(f"Saved preset: {name}")
+
+
+@app.command("preset-update")
+@handle_errors
+def preset_update(
+    name: str = typer.Argument(..., help="Exact existing render preset name"),
+):
+    """Replace an existing preset with current render settings and verify its exported content."""
+    enforce_mutation_policy("render.preset_save", intended_engine="api_native", mutating=not is_dry_run())
+    if is_dry_run():
+        dry_run_message(f"Would update render preset: {name}")
+        return
+    output(update_render_preset(get_connection(require_project=True), name), title="Render Preset Update")
 
 
 @app.command("preset-delete")

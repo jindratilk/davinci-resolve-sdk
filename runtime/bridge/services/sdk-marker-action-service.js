@@ -5,7 +5,6 @@ import {
   sdkMarkerMutationResultSchema,
   sdkMarkerUpdateInputSchema,
 } from "../contracts/generated/sdk-operations.js";
-import {resolveSdkDirectMutationScope, sdkMutationScopeCandidates} from "./sdk-direct-mutation-scope.js";
 
 const ACTIONS = Object.freeze({
   "cutagent.action.timeline.marker.add": { action: "create", schema: sdkMarkerCreateInputSchema },
@@ -63,7 +62,6 @@ function semanticState(snapshot) {
 
 function failure(code, message, context, possibleMutation = "none", usage = possibleMutation === "none" ? "released" : "unknown") {
   const kind = code === "STALE_REVISION" ? "stale_revision"
-    : code === "EDIT_CONSTRAINT_VIOLATION" ? "edit_constraint_violation"
       : code === "RECOVERY_FAILED" ? "recovery_failed"
         : code === "VERIFICATION_FAILED" ? "verification_failed" : "operation_failed";
   return {
@@ -83,24 +81,12 @@ function failure(code, message, context, possibleMutation = "none", usage = poss
   };
 }
 
-function exactScope(gate, accountFingerprint, input, actionId, directScope = null) {
-  const scopes = sdkMutationScopeCandidates(gate, accountFingerprint, directScope).filter((scope) => (
-    scope.binding.level === "project+timeline"
-    && scope.binding.projectId === input.projectId
-    && scope.binding.timelineId === input.timelineId
-    && scope.binding.timelineRevision === input.timelineRevision
-    && (scope.constraints.allowedOperations.length === 0 || scope.constraints.allowedOperations.includes(actionId.replace("cutagent.action.", "")))
-  ));
-  if (scopes.length !== 1) {
-    const error = new Error("Exactly one current user-owned marker constraint scope is required.");
-    error.code = "EDIT_CONSTRAINT_VIOLATION";
-    throw error;
-  }
-  return scopes[0];
-}
-
 function findTarget(snapshot, markerId) {
   return snapshot.markers.find((marker) => marker.id === markerId) ?? null;
+}
+
+function targetIds(input) {
+  return input.markerIds ?? [input.markerId];
 }
 
 function sameMarker(left, right) {
@@ -112,23 +98,55 @@ function sameMarker(left, right) {
     && left?.duration.value.value === right?.duration.value.value;
 }
 
-function preservesOtherMarkers(before, after, beforeExcludedId = null, afterExcludedId = beforeExcludedId) {
-  const expected = before.markers.filter((marker) => marker.id !== beforeExcludedId);
-  const actual = after.markers.filter((marker) => marker.id !== afterExcludedId);
+function preservesOtherMarkers(before, after, beforeExcludedIds = [], afterExcludedIds = beforeExcludedIds) {
+  const beforeExcluded = new Set(beforeExcludedIds.filter(Boolean));
+  const afterExcluded = new Set(afterExcludedIds.filter(Boolean));
+  const expected = before.markers.filter((marker) => !beforeExcluded.has(marker.id));
+  const actual = after.markers.filter((marker) => !afterExcluded.has(marker.id));
   return expected.length === actual.length
     && expected.every((marker) => sameMarker(marker, actual.find((candidate) => candidate.id === marker.id)));
 }
 
+function markerUpdateEntries(input) {
+  return input.updates ?? [{ markerId: input.markerId, marker: input.marker }];
+}
+
+function expectedUpdatePost(before, after, updates) {
+  const previousMarkers = updates.map((update) => findTarget(before, update.markerId));
+  if (previousMarkers.some((marker) => marker === null)) {
+    return { ok: false, previousMarkers, markers: [] };
+  }
+  const markers = updates.map(({ marker: expected }) => after.markers.find((candidate) => (
+    candidate.position.value.value === expected.recordFrame
+    && candidate.color === expected.color
+    && candidate.name === expected.name
+    && candidate.note === expected.note
+    && candidate.duration.value.value === expected.durationFrames
+  )) ?? null);
+  const resultingIds = new Set(markers.filter(Boolean).map((marker) => marker.id));
+  const targetIds = new Set(updates.map((update) => update.markerId));
+  const exactCollection = markers.every(Boolean)
+    && resultingIds.size === updates.length
+    && before.markers.length === after.markers.length
+    && preservesOtherMarkers(before, after, [...targetIds], [...resultingIds])
+    && updates.every((update, index) => findTarget(after, update.markerId) === null || markers[index]?.id === update.markerId);
+  return { ok: exactCollection, previousMarkers, markers };
+}
+
 function expectedPost(action, before, after, input) {
-  const beforeTarget = action === "create" ? null : findTarget(before, input.markerId);
-  if (action !== "create" && !beforeTarget) return { ok: false, previous: null, marker: null };
+  const ids = action === "create" ? [] : targetIds(input);
+  const beforeTargets = ids.map((id) => findTarget(before, id));
+  const beforeTarget = beforeTargets[0] ?? null;
+  if (action !== "create" && beforeTargets.some((target) => target === null)) return { ok: false, previous: null, previousMarkers: [], marker: null, markers: [] };
   if (action === "delete") {
     return {
-      ok: findTarget(after, input.markerId) === null
-        && after.markers.length === before.markers.length - 1
-        && preservesOtherMarkers(before, after, input.markerId),
+      ok: ids.every((id) => findTarget(after, id) === null)
+        && after.markers.length === before.markers.length - ids.length
+        && preservesOtherMarkers(before, after, ids),
       previous: beforeTarget,
+      previousMarkers: beforeTargets,
       marker: null,
+      markers: [],
     };
   }
   const expected = input.marker;
@@ -140,17 +158,37 @@ function expectedPost(action, before, after, input) {
     && candidate.duration.value.value === expected.durationFrames
   )) ?? null;
   const exactCollection = action === "create"
-    ? after.markers.length === before.markers.length + 1 && preservesOtherMarkers(before, after, null, marker?.id)
+    ? after.markers.length === before.markers.length + 1 && preservesOtherMarkers(before, after, [], [marker?.id])
     : after.markers.length === before.markers.length
-      && preservesOtherMarkers(before, after, input.markerId, marker?.id)
+      && preservesOtherMarkers(before, after, ids, [marker?.id])
       && (findTarget(after, input.markerId) === null || marker?.id === input.markerId);
-  return { ok: Boolean(marker && exactCollection), previous: beforeTarget, marker };
+  return { ok: Boolean(marker && exactCollection), previous: beforeTarget, previousMarkers: beforeTargets, marker, markers: marker ? [marker] : [] };
 }
 
-export function createSdkMarkerActions({ liveInspectionService, resolveService, mutationPolicyGate, directMutationPolicyAuthority = null, activatedActionIds = Object.keys(ACTIONS) }) {
+function expectedCreateBatchPost(before, after, requestedMarkers) {
+  const beforeIds = new Set(before.markers.map((marker) => marker.id));
+  const created = requestedMarkers.map((expected) => after.markers.find((candidate) => (
+    !beforeIds.has(candidate.id)
+    && candidate.position.value.value === expected.recordFrame
+    && candidate.color === expected.color
+    && candidate.name === expected.name
+    && candidate.note === expected.note
+    && candidate.duration.value.value === expected.durationFrames
+  )) ?? null);
+  const createdIds = new Set(created.filter(Boolean).map((marker) => marker.id));
+  const preserved = before.markers.every((marker) => sameMarker(marker, after.markers.find((candidate) => candidate.id === marker.id)));
+  return {
+    ok: created.every(Boolean)
+      && createdIds.size === requestedMarkers.length
+      && after.markers.length === before.markers.length + requestedMarkers.length
+      && preserved,
+    markers: created.filter(Boolean),
+  };
+}
+
+export function createSdkMarkerActions({ liveInspectionService, resolveService, activatedActionIds = Object.keys(ACTIONS) }) {
   if (typeof liveInspectionService?.readWithMutationGuard !== "function") throw new TypeError("Marker actions require live inspection with a mutation guard.");
   if (typeof resolveService?.executeSdkMarkerMutation !== "function") throw new TypeError("Marker actions require the CutAgent CLI mutation boundary.");
-  if (typeof mutationPolicyGate?.bindVerifiedProtectedTargets !== "function") throw new TypeError("Marker actions require protected-target proof binding.");
   const activated = new Set(activatedActionIds);
   if (activated.size !== activatedActionIds.length || [...activated].some((actionId) => !Object.hasOwn(ACTIONS, actionId))) {
     throw new TypeError("Marker action activation must contain unique known action IDs.");
@@ -167,80 +205,62 @@ export function createSdkMarkerActions({ liveInspectionService, resolveService, 
       if (before.revision !== input.timelineRevision) {
         return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("STALE_REVISION", "The timeline changed after the marker impact preview.", context) };
       }
-      const target = definition.action === "create" ? null : findTarget(before, input.markerId);
-      if (definition.action !== "create" && !target) {
+      const createBatch = definition.action === "create" && "markers" in input;
+      const updates = definition.action === "update" ? markerUpdateEntries(input) : null;
+      const ids = updates?.map((update) => update.markerId) ?? (definition.action === "delete" ? targetIds(input) : []);
+      const targets = ids.map((id) => findTarget(before, id));
+      const target = targets[0] ?? null;
+      if (definition.action !== "create" && targets.some((item) => item === null)) {
         return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("STALE_REVISION", "The marker changed or disappeared after preview.", context) };
       }
-      if (definition.action === "update"
-        && target.position.value.value === input.marker.recordFrame
-        && target.color === input.marker.color && target.name === input.marker.name
-        && target.note === input.marker.note && target.duration.value.value === input.marker.durationFrames) {
+      if (definition.action === "update" && !Array.isArray(input.updates) && updates.some((update, index) => {
+        const current = targets[index];
+        return current.position.value.value === update.marker.recordFrame
+          && current.color === update.marker.color && current.name === update.marker.name
+          && current.note === update.marker.note && current.duration.value.value === update.marker.durationFrames;
+      })) {
         return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("OPERATION_FAILED", "Marker update must change at least one semantic value.", context) };
       }
-      let scope;
-      try {
-        const directScope = await resolveSdkDirectMutationScope({directMutationPolicyAuthority, context, liveInspectionService, level: "project+timeline", projectId: input.projectId, timelineId: input.timelineId, timelineRevision: input.timelineRevision});
-        scope = exactScope(mutationPolicyGate, context.accountFingerprint, input, actionId, directScope);
-      } catch (error) {
-        return { status: "failed", possibleMutation: "none", usage: "not_reserved", failure: failure("EDIT_CONSTRAINT_VIOLATION", error.message, context, "none", "not_reserved") };
-      }
-      const stableTarget = definition.action === "create"
-        ? { kind: "timeline", stableId: input.timelineId, revision: input.timelineRevision }
-        : { kind: "marker", stableId: input.markerId, revision: input.timelineRevision };
-      const policyContext = {
-        requestId: context.requestId,
-        operationId: context.operationId,
-        executionId: context.executionId,
-        scopeId: scope.scopeId,
-        scopeRevision: scope.revision,
-        projectLibraryId: scope.binding.projectLibraryId,
-        projectId: input.projectId,
-        timelineId: input.timelineId,
-        projectRevision: scope.binding.projectRevision,
-        timelineRevision: input.timelineRevision,
-        resolvedTargets: [stableTarget],
-        closedComposition: true,
-        executableStableTargetPrecondition: true,
-      };
-      let authorization = null;
       let executionError = null;
       const timelineStartFrame = before.start.value.value;
-      if (input.marker && input.marker.recordFrame < timelineStartFrame) {
+      const requestedMarkers = createBatch
+        ? input.markers
+        : updates?.map((update) => update.marker) ?? (input.marker ? [input.marker] : []);
+      if (requestedMarkers.some((marker) => marker.recordFrame < timelineStartFrame)) {
         return {
           status: "failed", possibleMutation: "none", usage: "released",
           failure: failure("OPERATION_FAILED", "Marker position cannot precede the current timeline start.", context),
         };
       }
-      let releaseProtectedTargetProof;
-      try {
-        releaseProtectedTargetProof = mutationPolicyGate.bindVerifiedProtectedTargets({
-          accountFingerprint: context.accountFingerprint,
-          executionId: context.executionId,
-          scopeId: scope.scopeId,
-          scopeRevision: scope.revision,
-          timelineRevision: input.timelineRevision,
-        });
-      } catch (error) {
-        return {
-          status: "failed", possibleMutation: "none", usage: "not_reserved",
-          failure: failure("EDIT_CONSTRAINT_VIOLATION", error.message, context, "none", "not_reserved"),
-        };
+      if (updates) {
+        const markerIds = updates.map((update) => update.markerId);
+        const recordFrames = updates.map((update) => update.marker.recordFrame);
+        const targetIdSet = new Set(markerIds);
+        const occupiedDestination = updates.some((update) => before.markers.some((marker) => (
+          !targetIdSet.has(marker.id) && marker.position.value.value === update.marker.recordFrame
+        )));
+        if (new Set(markerIds).size !== markerIds.length || new Set(recordFrames).size !== recordFrames.length || occupiedDestination) {
+          return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("OPERATION_FAILED", "Marker updates require unique targets and unoccupied destination positions.", context) };
+        }
       }
       try {
-        try {
-          await resolveService.executeSdkMarkerMutation(definition.action, {
-            ...(input.marker ?? {}),
-            ...(input.marker ? { recordFrame: input.marker.recordFrame - timelineStartFrame } : {}),
-            targetFrame: target?.position.value.value,
-          }, {
-            mutationGuard: inspected.mutationGuard,
-            policyContext,
-            onAuthorization(value) { authorization = value; },
-          });
-        } catch (error) { executionError = error; }
-      } finally {
-        releaseProtectedTargetProof();
-      }
+        const executionInput = createBatch
+          ? { markers: input.markers.map((marker) => ({ ...marker, recordFrame: marker.recordFrame - timelineStartFrame })) }
+          : updates
+            ? { updates: updates.map((update, index) => ({
+              targetFrame: targets[index].position.value.value,
+              ...update.marker,
+              recordFrame: update.marker.recordFrame - timelineStartFrame,
+            })) }
+            : {
+              ...(input.marker ?? {}),
+              ...(input.marker ? { recordFrame: input.marker.recordFrame - timelineStartFrame } : {}),
+              ...(definition.action === "delete"
+                ? { targetFrames: targets.map((item) => item.position.value.value) }
+                : { targetFrame: target?.position.value.value }),
+            };
+        await resolveService.executeSdkMarkerMutation(definition.action, executionInput, { mutationGuard: inspected.mutationGuard });
+      } catch (error) { executionError = error; }
       let after;
       try { after = (await liveInspectionService.readWithMutationGuard(inspectRequest, { deadlineAtMs: Date.now() + 60_000 })).value; } catch {
         return {
@@ -250,7 +270,11 @@ export function createSdkMarkerActions({ liveInspectionService, resolveService, 
         };
       }
       const protectedPreserved = digest(protectedState(before)) === digest(protectedState(after));
-      const expected = expectedPost(definition.action, before, after, input);
+      const expected = createBatch
+        ? expectedCreateBatchPost(before, after, input.markers)
+        : updates
+          ? expectedUpdatePost(before, after, updates)
+          : expectedPost(definition.action, before, after, input);
       const report = {
         outcome: expected.ok && protectedPreserved ? "passed" : "failed",
         summary: expected.ok && protectedPreserved ? "Exact marker readback and protected timeline structure matched." : "Marker readback or protected timeline structure did not match.",
@@ -261,25 +285,21 @@ export function createSdkMarkerActions({ liveInspectionService, resolveService, 
         protectedStatePreserved: protectedPreserved,
       };
       if (expected.ok && protectedPreserved) {
-        if (authorization?.policyDecision) {
-          mutationPolicyGate.assertProtectedStateEvidence(
-            authorization.policyDecision.decisionId,
-            report,
-          );
-        }
+        const result = createBatch
+          ? { action: definition.action, markers: expected.markers.map(markerValue), previousMarkers: [], timelineRevision: after.revision }
+          : input.updates
+            ? { action: "update", markers: expected.markers.map(markerValue), previousMarkers: expected.previousMarkers.map(markerValue), timelineRevision: after.revision }
+          : definition.action === "delete" && Array.isArray(input.markerIds)
+            ? { action: definition.action, markers: [], previousMarkers: expected.previousMarkers.map(markerValue), timelineRevision: after.revision }
+            : { action: definition.action, marker: markerValue(expected.marker), previousMarker: markerValue(expected.previous), timelineRevision: after.revision };
         return {
           status: "succeeded", possibleMutation: "confirmed", usage: "consumed", verification: report,
-          result: { action: definition.action, marker: markerValue(expected.marker), previousMarker: markerValue(expected.previous), timelineRevision: after.revision },
+          result,
         };
       }
       const unchanged = digest(semanticState(before)) === digest(semanticState(after));
       if (unchanged) {
-        if (executionError?.cli_error_code === "EDIT_CONSTRAINT_VIOLATION") {
-          return {
-            status: "failed", possibleMutation: "none", usage: "not_reserved",
-            failure: failure("EDIT_CONSTRAINT_VIOLATION", executionError.message, context, "none", "not_reserved"),
-          };
-        }
+
         return {
           status: "failed", possibleMutation: "none", usage: "released",
           failure: failure(executionError?.cli_error_code === "STALE_REVISION" ? "STALE_REVISION" : "OPERATION_FAILED", executionError?.message ?? "The marker mutation made no verified change.", context),

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .edit_insert_overwrite import insert_clip_at, overwrite_clip_at
+from .edit_insert_overwrite import insert_audio_clips_at, insert_clip_at, insert_clips_at, overwrite_clip_at, overwrite_clips_at
 
 # ---------------------------------------------------------------------------
 # Remove

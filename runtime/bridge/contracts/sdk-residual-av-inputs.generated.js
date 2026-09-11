@@ -1,4 +1,4 @@
-// Generated proprietary residual AV input schemas. Do not edit or publish.
+// Generated residual AV input schemas. Regenerate from the inventoried source.
 export const SDK_RESIDUAL_AV_PREPARED_INPUTS = [
   {
     "actionId": "cutagent.action.audio.beat_detect",
@@ -4239,6 +4239,575 @@ export const SDK_RESIDUAL_AV_PREPARED_INPUTS = [
         "durationFrames",
         "placement",
         "scope"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "actionId": "cutagent.action.edit.transition.batch",
+    "operationClass": "mutation",
+    "authority": "exact_project_timeline_revision",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "projectId": {
+          "maxLength": 160,
+          "pattern": "^project_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineId": {
+          "maxLength": 160,
+          "pattern": "^timeline_(?!item_)[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "timelineRevision": {
+          "maxLength": 160,
+          "pattern": "^revision_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+          "type": "string"
+        },
+        "transitions": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "durationFrames": {
+                  "maximum": 9007199254740991,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "editFrame": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "incoming": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "maxLength": 160,
+                      "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                      "type": "string"
+                    },
+                    "linkedItemIds": {
+                      "items": {
+                        "maxLength": 160,
+                        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "maxItems": 64,
+                      "type": "array",
+                      "uniqueItems": true
+                    },
+                    "mediaPoolItemId": {
+                      "oneOf": [
+                        {
+                          "maxLength": 160,
+                          "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "name": {
+                      "maxLength": 4096,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "recordEndFrame": {
+                      "maximum": 9007199254740991,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "recordStartFrame": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "snapshotId": {
+                      "maxLength": 160,
+                      "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                      "type": "string"
+                    },
+                    "trackIndex": {
+                      "maximum": 4096,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "trackType": {
+                      "enum": [
+                        "video"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "snapshotId",
+                    "id",
+                    "trackType",
+                    "trackIndex",
+                    "recordStartFrame",
+                    "recordEndFrame",
+                    "name",
+                    "mediaPoolItemId",
+                    "linkedItemIds"
+                  ],
+                  "type": "object"
+                },
+                "linkedAudioTargets": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "maxLength": 160,
+                        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "linkedItemIds": {
+                        "items": {
+                          "maxLength": 160,
+                          "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        "maxItems": 64,
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "mediaPoolItemId": {
+                        "oneOf": [
+                          {
+                            "maxLength": 160,
+                            "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "name": {
+                        "maxLength": 4096,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "recordEndFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "recordStartFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "snapshotId": {
+                        "maxLength": 160,
+                        "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "trackIndex": {
+                        "maximum": 4096,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "trackType": {
+                        "enum": [
+                          "audio"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "snapshotId",
+                      "id",
+                      "trackType",
+                      "trackIndex",
+                      "recordStartFrame",
+                      "recordEndFrame",
+                      "name",
+                      "mediaPoolItemId",
+                      "linkedItemIds"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 4096,
+                  "minItems": 0,
+                  "type": "array"
+                },
+                "outgoing": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "maxLength": 160,
+                      "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                      "type": "string"
+                    },
+                    "linkedItemIds": {
+                      "items": {
+                        "maxLength": 160,
+                        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "maxItems": 64,
+                      "type": "array",
+                      "uniqueItems": true
+                    },
+                    "mediaPoolItemId": {
+                      "oneOf": [
+                        {
+                          "maxLength": 160,
+                          "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "name": {
+                      "maxLength": 4096,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "recordEndFrame": {
+                      "maximum": 9007199254740991,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "recordStartFrame": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "snapshotId": {
+                      "maxLength": 160,
+                      "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                      "type": "string"
+                    },
+                    "trackIndex": {
+                      "maximum": 4096,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "trackType": {
+                      "enum": [
+                        "video"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "snapshotId",
+                    "id",
+                    "trackType",
+                    "trackIndex",
+                    "recordStartFrame",
+                    "recordEndFrame",
+                    "name",
+                    "mediaPoolItemId",
+                    "linkedItemIds"
+                  ],
+                  "type": "object"
+                },
+                "placement": {
+                  "enum": [
+                    "start",
+                    "end",
+                    "both"
+                  ]
+                },
+                "transitionType": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "outgoing",
+                "incoming",
+                "linkedAudioTargets",
+                "editFrame",
+                "transitionType",
+                "durationFrames",
+                "placement"
+              ],
+              "type": "object"
+            },
+            {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "durationFrames": {
+                    "maximum": 9007199254740991,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "editFrame": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "incoming": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "maxLength": 160,
+                        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "linkedItemIds": {
+                        "items": {
+                          "maxLength": 160,
+                          "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        "maxItems": 64,
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "mediaPoolItemId": {
+                        "oneOf": [
+                          {
+                            "maxLength": 160,
+                            "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "name": {
+                        "maxLength": 4096,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "recordEndFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "recordStartFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "snapshotId": {
+                        "maxLength": 160,
+                        "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "trackIndex": {
+                        "maximum": 4096,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "trackType": {
+                        "enum": [
+                          "video"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "snapshotId",
+                      "id",
+                      "trackType",
+                      "trackIndex",
+                      "recordStartFrame",
+                      "recordEndFrame",
+                      "name",
+                      "mediaPoolItemId",
+                      "linkedItemIds"
+                    ],
+                    "type": "object"
+                  },
+                  "linkedAudioTargets": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "maxLength": 160,
+                          "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        "linkedItemIds": {
+                          "items": {
+                            "maxLength": 160,
+                            "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                            "type": "string"
+                          },
+                          "maxItems": 64,
+                          "type": "array",
+                          "uniqueItems": true
+                        },
+                        "mediaPoolItemId": {
+                          "oneOf": [
+                            {
+                              "maxLength": 160,
+                              "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "name": {
+                          "maxLength": 4096,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "recordEndFrame": {
+                          "maximum": 9007199254740991,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "recordStartFrame": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "snapshotId": {
+                          "maxLength": 160,
+                          "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        "trackIndex": {
+                          "maximum": 4096,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "trackType": {
+                          "enum": [
+                            "audio"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "snapshotId",
+                        "id",
+                        "trackType",
+                        "trackIndex",
+                        "recordStartFrame",
+                        "recordEndFrame",
+                        "name",
+                        "mediaPoolItemId",
+                        "linkedItemIds"
+                      ],
+                      "type": "object"
+                    },
+                    "maxItems": 4096,
+                    "minItems": 0,
+                    "type": "array"
+                  },
+                  "outgoing": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "maxLength": 160,
+                        "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "linkedItemIds": {
+                        "items": {
+                          "maxLength": 160,
+                          "pattern": "^timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                          "type": "string"
+                        },
+                        "maxItems": 64,
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "mediaPoolItemId": {
+                        "oneOf": [
+                          {
+                            "maxLength": 160,
+                            "pattern": "^media_pool_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "name": {
+                        "maxLength": 4096,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "recordEndFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "recordStartFrame": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "snapshotId": {
+                        "maxLength": 160,
+                        "pattern": "^snapshot_timeline_item_[A-Za-z0-9][A-Za-z0-9._~-]*$",
+                        "type": "string"
+                      },
+                      "trackIndex": {
+                        "maximum": 4096,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "trackType": {
+                        "enum": [
+                          "video"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "snapshotId",
+                      "id",
+                      "trackType",
+                      "trackIndex",
+                      "recordStartFrame",
+                      "recordEndFrame",
+                      "name",
+                      "mediaPoolItemId",
+                      "linkedItemIds"
+                    ],
+                    "type": "object"
+                  },
+                  "placement": {
+                    "enum": [
+                      "start",
+                      "end",
+                      "both"
+                    ]
+                  },
+                  "transitionType": {
+                    "maxLength": 256,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "outgoing",
+                  "incoming",
+                  "linkedAudioTargets",
+                  "editFrame",
+                  "transitionType",
+                  "durationFrames",
+                  "placement"
+                ],
+                "type": "object"
+              },
+              "maxItems": 24,
+              "minItems": 1,
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "required": [
+        "projectId",
+        "timelineId",
+        "timelineRevision",
+        "transitions"
       ],
       "type": "object"
     }

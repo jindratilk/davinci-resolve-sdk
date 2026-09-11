@@ -50,7 +50,8 @@ def source_metadata(row: dict[str, Any], *, item_id: str, record_fps: float,
 
 
 def enrich_track_source_metadata(conn: Any, rows: list[dict[str, Any]], items: list[Any], *,
-                                 track_type: str, track_index: int) -> None:
+                                 track_type: str, track_index: int,
+                                 include_inspector_digest: bool = True) -> None:
     """Read one Disk DB snapshot per track; unsupported storage grants no authority."""
     if track_type not in {"video", "audio"}:
         return
@@ -83,9 +84,10 @@ def enrich_track_source_metadata(conn: Any, rows: list[dict[str, Any]], items: l
                 )
                 if persisted.get("Sm2TiItem_id") != native_id:
                     continue
-                effects = persisted.get("EffectFiltersBA")
-                if effects is None or isinstance(effects, (bytes, bytearray)):
-                    row["inspector_state_digest"] = inspector_state_digest(bytes(effects or b""))
+                if include_inspector_digest:
+                    effects = persisted.get("EffectFiltersBA")
+                    if effects is None or isinstance(effects, (bytes, bytearray)):
+                        row["inspector_state_digest"] = inspector_state_digest(bytes(effects or b""))
                 blob = persisted.get("MediaTimemapBA")
                 if isinstance(blob, (bytes, bytearray)):
                     row["retime_time_map_digest"] = time_map_digest(bytes(blob))

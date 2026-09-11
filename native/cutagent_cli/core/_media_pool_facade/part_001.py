@@ -1013,6 +1013,122 @@ def transcribe_audio(
     return {"target": "folder", "folder": folder_path or folder.GetName(), "language": language or "default"}
 
 
+_TRANSCRIPTION_MAX_SEGMENTS = 10_000
+_TRANSCRIPTION_MAX_WORDS = 100_000
+_TRANSCRIPTION_MAX_TEXT_BYTES = 16_384
+
+
+def _transcription_text(
+    value: Any,
+    *,
+    field: str,
+    nullable: bool = False,
+    max_bytes: int = _TRANSCRIPTION_MAX_TEXT_BYTES,
+) -> Optional[str]:
+    if value is None and nullable:
+        return None
+    if not isinstance(value, str):
+        raise APICallFailed(
+            "DaVinci Resolve returned malformed transcription data.",
+            details={"field": field},
+        )
+    try:
+        size = len(value.encode("utf-8"))
+    except UnicodeEncodeError as exc:
+        raise APICallFailed(
+            "DaVinci Resolve returned malformed transcription text.",
+            details={"field": field},
+        ) from exc
+    if size > max_bytes:
+        raise APICallFailed(
+            "DaVinci Resolve returned transcription text outside the bounded contract.",
+            details={"field": field, "max_bytes": max_bytes},
+        )
+    return value
+
+
+def normalize_transcription(raw: Any) -> Dict[str, Any]:
+    """Normalize the documented 21.1 transcription shape without guessing extensions."""
+    if raw is None or raw is False or raw == {}:
+        return {"available": False, "language": None, "segments": []}
+    if not isinstance(raw, dict):
+        raise APICallFailed("DaVinci Resolve returned malformed transcription data.")
+
+    language = _transcription_text(raw.get("language"), field="language", nullable=True)
+    raw_segments = raw.get("segments", [])
+    if not isinstance(raw_segments, list) or len(raw_segments) > _TRANSCRIPTION_MAX_SEGMENTS:
+        raise APICallFailed(
+            "DaVinci Resolve returned transcription segments outside the bounded contract.",
+            details={"max_segments": _TRANSCRIPTION_MAX_SEGMENTS},
+        )
+
+    segments: list[Dict[str, Any]] = []
+    total_words = 0
+    for segment_index, raw_segment in enumerate(raw_segments):
+        if not isinstance(raw_segment, dict):
+            raise APICallFailed(
+                "DaVinci Resolve returned a malformed transcription segment.",
+                details={"segment_index": segment_index},
+            )
+        raw_words = raw_segment.get("words", [])
+        if not isinstance(raw_words, list):
+            raise APICallFailed(
+                "DaVinci Resolve returned malformed transcription words.",
+                details={"segment_index": segment_index},
+            )
+        total_words += len(raw_words)
+        if total_words > _TRANSCRIPTION_MAX_WORDS:
+            raise APICallFailed(
+                "DaVinci Resolve returned transcription words outside the bounded contract.",
+                details={"max_words": _TRANSCRIPTION_MAX_WORDS},
+            )
+        words: list[Dict[str, Any]] = []
+        for word_index, raw_word in enumerate(raw_words):
+            if not isinstance(raw_word, dict):
+                raise APICallFailed(
+                    "DaVinci Resolve returned a malformed transcription word.",
+                    details={"segment_index": segment_index, "word_index": word_index},
+                )
+            words.append({
+                "start": _transcription_text(raw_word.get("start"), field="word.start", nullable=True, max_bytes=64),
+                "end": _transcription_text(raw_word.get("end"), field="word.end", nullable=True, max_bytes=64),
+                "text": _transcription_text(raw_word.get("text", ""), field="word.text"),
+            })
+        segments.append({
+            "start": _transcription_text(raw_segment.get("start"), field="segment.start", nullable=True, max_bytes=64),
+            "end": _transcription_text(raw_segment.get("end"), field="segment.end", nullable=True, max_bytes=64),
+            "text": _transcription_text(raw_segment.get("text", ""), field="segment.text"),
+            "speaker": _transcription_text(raw_segment.get("speaker"), field="segment.speaker", nullable=True),
+            "words": words,
+        })
+    return {"available": True, "language": language, "segments": segments}
+
+
+def get_transcription(
+    conn,
+    *,
+    clip_name: str,
+    use_nested_clip_transcription: bool = False,
+) -> Dict[str, Any]:
+    """Read persisted DaVinci Resolve transcription for one unambiguous clip name."""
+    match = find_clip_match(conn, clip_name)
+    if not match:
+        raise APICallFailed(f"Clip '{clip_name}' not found.")
+    getter = require_api_method(
+        match["clip"],
+        "GetTranscription",
+        capability_id="media.transcription_readback",
+        runtime_object="media_pool_item",
+    )
+    transcription = normalize_transcription(getter(bool(use_nested_clip_transcription)))
+    return {
+        "clip": clip_name,
+        "folder": match["folder"],
+        "use_nested_clip_transcription": bool(use_nested_clip_transcription),
+        **transcription,
+    }
+
+
 def clear_transcription(
     conn,
     *,

@@ -29,6 +29,7 @@ TIMELINE_READ_ACTION_CAPABILITIES: Mapping[str, str | None] = MappingProxyType(
         "cutagent.action.timeline.node_graph.inspect": "color.node_graph_ops",
         "cutagent.action.timeline.playhead.get": "timeline.playhead_set",
         "cutagent.action.timeline.settings": None,
+        "cutagent.action.timeline.output_blanking.get": "timeline.output_blanking",
         "cutagent.action.timeline.summarize": None,
         "cutagent.action.timeline.track.items": "timeline.track_management",
         "cutagent.action.timeline.track.list": "timeline.track_management",
@@ -614,6 +615,9 @@ def _read_execute(
             "actionId": action_id,
             "nodeGraph": {"present": raw.get("available") is True},
         }
+    if command_id == "timeline.output_blanking.get":
+        from . import output_blanking
+        return {"actionId": action_id, "state": output_blanking.read(conn, value)}
     if command_id == "timeline.voice_isolation.get":
         raw = timeline_ops.get_timeline_voice_isolation(conn, int(value["trackIndex"]))
         enabled = raw.get("isEnabled", raw.get("enabled"))

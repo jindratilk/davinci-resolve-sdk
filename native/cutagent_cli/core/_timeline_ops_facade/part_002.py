@@ -510,9 +510,221 @@ def update_marker(
     }
 
 
+def update_markers(conn, updates: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Atomically update exact markers in one connected execution."""
+    from ..errors import EditMutationRecoveryFailed, EditMutationRestored
+
+    if not isinstance(updates, list) or not updates:
+        raise ValidationError(
+            "Marker updates must contain at least one entry.",
+            recoverability="not_applicable",
+        )
+    if len(updates) > 10_000:
+        raise ValidationError(
+            "Marker updates may contain at most 10000 entries.",
+            details={"update_count": len(updates), "maximum": 10_000},
+            recoverability="not_applicable",
+        )
+
+    required = {"targetFrame", "recordFrame", "color", "name", "note", "durationFrames"}
+    normalized: List[Dict[str, Any]] = []
+    for index, raw in enumerate(updates):
+        if not isinstance(raw, dict) or set(raw) != required:
+            raise ValidationError(
+                "Each marker update must contain exact target and replacement values.",
+                details={"index": index, "required_fields": sorted(required)},
+                recoverability="not_applicable",
+            )
+        target_frame = raw["targetFrame"]
+        record_frame = raw["recordFrame"]
+        duration_frames = raw["durationFrames"]
+        if (
+            not isinstance(target_frame, int) or isinstance(target_frame, bool)
+            or not isinstance(record_frame, int) or isinstance(record_frame, bool)
+            or record_frame < 0
+            or not isinstance(duration_frames, int) or isinstance(duration_frames, bool)
+            or duration_frames < 1
+        ):
+            raise ValidationError(
+                "Marker update frame values are invalid.",
+                details={"index": index},
+                recoverability="not_applicable",
+            )
+        normalized.append({**raw, "index": index})
+
+    start_frame = _timeline_start_frame(conn)
+    markers_before = _read_timeline_marker_map(conn)
+    planned: List[Dict[str, Any]] = []
+    source_frames: set[int] = set()
+    destination_frames: set[int] = set()
+    for entry in normalized:
+        candidates = _delete_marker_frame_candidates(entry["targetFrame"], start_frame=start_frame)
+        source_frame = next((candidate for candidate in candidates if candidate in markers_before), None)
+        if source_frame is None:
+            raise APICallFailed(
+                f"No marker at frame {entry['targetFrame']}.",
+                details={"index": entry["index"], "requested_frame": entry["targetFrame"]},
+            )
+        destination_frame = int(entry["recordFrame"])
+        if source_frame in source_frames:
+            raise ValidationError(
+                "Marker updates must target each existing marker once.",
+                details={"index": entry["index"], "timeline_frame": source_frame},
+                recoverability="not_applicable",
+            )
+        if destination_frame in destination_frames:
+            raise ValidationError(
+                "Marker updates must use unique destination positions.",
+                details={"index": entry["index"], "timeline_frame": destination_frame},
+                recoverability="not_applicable",
+            )
+        source_frames.add(source_frame)
+        destination_frames.add(destination_frame)
+        original = dict(markers_before[source_frame])
+        replacement = {
+            "color": entry["color"],
+            "name": entry["name"],
+            "note": entry["note"],
+            "duration": entry["durationFrames"],
+            "customData": _marker_custom_data(original),
+        }
+        planned.append({
+            **entry,
+            "sourceFrame": source_frame,
+            "original": original,
+            "replacement": replacement,
+            "changed": destination_frame != source_frame or not _marker_values_match(original, replacement),
+        })
+
+    for entry in planned:
+        destination_frame = int(entry["recordFrame"])
+        if destination_frame in markers_before and destination_frame not in source_frames:
+            raise ValidationError(
+                "Another marker already exists at a requested update position.",
+                details={"index": entry["index"], "timeline_frame": destination_frame},
+                recoverability="not_applicable",
+            )
+
+    results: List[Dict[str, Any]] = []
+    changed_entries = [entry for entry in planned if entry["changed"]]
+    deleted_sources: set[int] = set()
+    added_destinations: set[int] = set()
+
+    def _restore_original_state(original_error: Exception) -> None:
+        rollback_errors: List[Dict[str, Any]] = []
+        current = _read_timeline_marker_map(conn)
+        for entry in reversed(changed_entries):
+            destination_frame = int(entry["recordFrame"])
+            if destination_frame not in added_destinations:
+                continue
+            existing = current.get(destination_frame)
+            if not _marker_values_match(existing, entry["replacement"]):
+                rollback_errors.append({"index": entry["index"], "phase": "remove_replacement"})
+                continue
+            if not conn.timeline.DeleteMarkerAtFrame(destination_frame):
+                rollback_errors.append({"index": entry["index"], "phase": "remove_replacement"})
+            current = _read_timeline_marker_map(conn)
+        for entry in changed_entries:
+            source_frame = int(entry["sourceFrame"])
+            if source_frame not in deleted_sources:
+                continue
+            existing = current.get(source_frame)
+            if existing is None:
+                if not _add_marker_with_custom_data(conn.timeline, source_frame, entry["original"]):
+                    rollback_errors.append({"index": entry["index"], "phase": "restore_original"})
+            elif not _marker_values_match(existing, entry["original"]):
+                rollback_errors.append({"index": entry["index"], "phase": "restore_original"})
+            current = _read_timeline_marker_map(conn)
+        restored_ok = not rollback_errors and _marker_maps_match(current, markers_before)
+        set_verification_status("failed")
+        if restored_ok:
+            raise EditMutationRestored(
+                "Marker update list failed and the original markers were restored.",
+                details={"completed_count": len(added_destinations)},
+            ) from original_error
+        raise EditMutationRecoveryFailed(
+            "Marker update list failed and could not restore every original marker.",
+            details={"completed_count": len(added_destinations), "rollback_errors": rollback_errors},
+        ) from original_error
+
+    try:
+        for entry in changed_entries:
+            source_frame = int(entry["sourceFrame"])
+            if not conn.timeline.DeleteMarkerAtFrame(source_frame):
+                raise APICallFailed(
+                    "Failed to remove a marker before applying the update list.",
+                    details={"index": entry["index"], "timeline_frame": source_frame},
+                )
+            deleted_sources.add(source_frame)
+        for entry in changed_entries:
+            destination_frame = int(entry["recordFrame"])
+            if not _add_marker_with_custom_data(conn.timeline, destination_frame, entry["replacement"]):
+                raise APICallFailed(
+                    "Failed to add a replacement marker from the update list.",
+                    details={"index": entry["index"], "timeline_frame": destination_frame},
+                )
+            added_destinations.add(destination_frame)
+        markers_after = _read_timeline_marker_map(conn)
+        for entry in planned:
+            destination_frame = int(entry["recordFrame"])
+            readback = markers_after.get(destination_frame)
+            if not _marker_values_match(readback, entry["replacement"]):
+                raise APICallFailed(
+                    "Marker update list could not be verified by native readback.",
+                    details={"index": entry["index"], "timeline_frame": destination_frame},
+                )
+            previous = _marker_row(entry["sourceFrame"], entry["original"], start_frame=start_frame, fps=conn.fps)
+            readback_row = _marker_row(destination_frame, readback, start_frame=start_frame, fps=conn.fps)
+            results.append({
+                "index": entry["index"],
+                "changed": entry["changed"],
+                "previous": previous,
+                "timeline_start_frame": start_frame,
+                "timeline_frame": destination_frame,
+                "record_frame": start_frame + destination_frame,
+                **_marker_timecodes(destination_frame, start_frame + destination_frame, conn.fps),
+                "color": entry["replacement"]["color"],
+                "name": entry["replacement"]["name"],
+                "note": entry["replacement"]["note"],
+                "duration": entry["replacement"]["duration"],
+                "api_result": True,
+                "verified": True,
+                "readback": readback_row,
+            })
+    except Exception as original_error:
+        if deleted_sources or added_destinations:
+            _restore_original_state(original_error)
+        raise
+
+    markers_after = _read_timeline_marker_map(conn)
+    unrelated_before = {
+        frame: marker for frame, marker in markers_before.items() if frame not in source_frames
+    }
+    unrelated_after = {
+        frame: marker for frame, marker in markers_after.items() if frame not in destination_frames
+    }
+    if not _marker_maps_match(unrelated_after, unrelated_before):
+        set_verification_status("failed")
+        set_recoverability("manual")
+        raise APICallFailed(
+            "Marker update list changed an unrelated marker.",
+            details={"updated_count": len(results)},
+        )
+
+    set_verification_status("verified")
+    set_recoverability("not_applicable")
+    return {
+        "changed": any(result.get("changed") for result in results),
+        "requested_count": len(planned),
+        "updated_count": sum(1 for result in results if result.get("changed")),
+        "updates": results,
+        "verified": True,
+    }
+
+
 def delete_marker(
     conn,
-    frame: Optional[int] = None,
+    frame: Optional[Union[int, List[int]]] = None,
     color: Optional[str] = None,
     all_markers: bool = False,
 ) -> Dict[str, Any]:
@@ -521,7 +733,7 @@ def delete_marker(
     
     Args:
         conn: ResolveConnection instance
-        frame: Delete marker at specific frame
+        frame: Delete a marker at one frame or markers at multiple exact frames
         color: Delete all markers of a color
         all_markers: Delete all markers
     
@@ -616,70 +828,117 @@ def delete_marker(
             "verified": True,
         }
     elif frame is not None:
-        requested_frame = int(frame)
+        requested_frames = [int(value) for value in frame] if isinstance(frame, (list, tuple)) else [int(frame)]
+        if not requested_frames:
+            raise MissingArgumentError("Provide at least one marker frame.")
+        if len(set(requested_frames)) != len(requested_frames):
+            raise ValidationError("Marker frames must be unique.")
         markers_before = _read_timeline_marker_map(conn)
-        candidate_frames = _delete_marker_frame_candidates(requested_frame, start_frame=start_frame)
-        timeline_frame = next((candidate for candidate in candidate_frames if candidate in markers_before), None)
-        if timeline_frame is None:
-            available_frames = sorted(markers_before.keys())
+        resolved: List[tuple[int, int, List[int]]] = []
+        claimed_timeline_frames = set()
+        missing = []
+        for requested_frame in requested_frames:
+            candidate_frames = _delete_marker_frame_candidates(requested_frame, start_frame=start_frame)
+            timeline_frame = next((candidate for candidate in candidate_frames if candidate in markers_before), None)
+            if timeline_frame is None:
+                missing.append({"requested_frame": requested_frame, "candidate_timeline_frames": candidate_frames})
+                continue
+            if timeline_frame in claimed_timeline_frames:
+                raise ValidationError("Marker frame selectors must resolve to unique exact markers.")
+            claimed_timeline_frames.add(timeline_frame)
+            resolved.append((requested_frame, timeline_frame, candidate_frames))
+        if missing:
+            if len(requested_frames) == 1:
+                missing_target = missing[0]
+                raise APICallFailed(
+                    f"No marker at frame {requested_frames[0]}.",
+                    details={
+                        **missing_target,
+                        "timeline_start_frame": start_frame,
+                        "available_timeline_frames": sorted(markers_before.keys()),
+                        "available_record_frames": [start_frame + value for value in sorted(markers_before.keys())],
+                    },
+                )
             raise APICallFailed(
-                f"No marker at frame {frame}.",
+                "One or more exact marker targets were not found.",
                 details={
-                    "requested_frame": requested_frame,
-                    "candidate_timeline_frames": candidate_frames,
+                    "missing": missing,
                     "timeline_start_frame": start_frame,
-                    "available_timeline_frames": available_frames,
-                    "available_record_frames": [start_frame + value for value in available_frames],
+                    "available_timeline_frames": sorted(markers_before.keys()),
+                    "available_record_frames": [start_frame + value for value in sorted(markers_before.keys())],
                 },
             )
 
-        marker_before = dict(markers_before[timeline_frame])
-        result = conn.timeline.DeleteMarkerAtFrame(timeline_frame)
-        if not result:
-            set_verification_status("failed")
-            raise APICallFailed(
-                f"No marker at frame {frame}.",
-                details={
-                    "requested_frame": requested_frame,
-                    "timeline_frame": timeline_frame,
-                    "record_frame": start_frame + timeline_frame,
-                    "candidate_timeline_frames": candidate_frames,
-                    "api_call": "Timeline.DeleteMarkerAtFrame",
-                    "api_result": result,
-                },
-            )
+        deleted = []
+        api_results = []
+        for requested_frame, timeline_frame, candidate_frames in resolved:
+            api_result = conn.timeline.DeleteMarkerAtFrame(timeline_frame)
+            api_results.append(api_result)
+            if not api_result:
+                set_verification_status("failed")
+                raise APICallFailed(
+                    f"No marker at frame {requested_frame}." if len(requested_frames) == 1 else f"Failed to delete marker at frame {requested_frame}.",
+                    details={
+                        "requested_frame": requested_frame,
+                        "timeline_frame": timeline_frame,
+                        "record_frame": start_frame + timeline_frame,
+                        "candidate_timeline_frames": candidate_frames,
+                        "deleted_timeline_frames": [item["timeline_frame"] for item in deleted],
+                        "api_call": "Timeline.DeleteMarkerAtFrame",
+                        "api_result": api_result,
+                    },
+                )
+            deleted.append({
+                "requested_frame": requested_frame,
+                "candidate_timeline_frames": candidate_frames,
+                "timeline_frame": timeline_frame,
+                "record_frame": start_frame + timeline_frame,
+                "marker": _marker_row(timeline_frame, markers_before[timeline_frame], start_frame=start_frame, fps=conn.fps),
+                **_marker_timecodes(timeline_frame, start_frame + timeline_frame, conn.fps),
+            })
+
         markers_after = _read_timeline_marker_map(conn)
-        if timeline_frame in markers_after:
+        expected_after = {key: value for key, value in markers_before.items() if key not in claimed_timeline_frames}
+        if not _marker_maps_match(markers_after, expected_after):
             set_verification_status("failed")
             raise APICallFailed(
                 "Marker deletion could not be verified by native readback.",
                 details={
-                    "requested_frame": requested_frame,
-                    "timeline_frame": timeline_frame,
-                    "record_frame": start_frame + timeline_frame,
-                    "candidate_timeline_frames": candidate_frames,
+                    "requested_frames": requested_frames,
+                    "deleted_timeline_frames": sorted(claimed_timeline_frames),
+                    "remaining_timeline_frames": sorted(markers_after.keys()),
+                    "unrelated_markers_preserved": _marker_maps_match(markers_after, expected_after),
                     "api_call": "Timeline.DeleteMarkerAtFrame",
-                    "api_result": result,
-                    "readback": markers_after.get(timeline_frame),
+                    "api_results": api_results,
                 },
             )
         set_verification_status("verified")
         set_recoverability("not_applicable")
+        if len(deleted) == 1:
+            item = deleted[0]
+            return {
+                "mode": "frame",
+                "changed": True,
+                "deleted": True,
+                **item,
+                "frame": item["timeline_frame"],
+                "marker_count_before": len(markers_before),
+                "marker_count_after": len(markers_after),
+                "api_result": api_results[0],
+                "verified": True,
+            }
         return {
-            "mode": "frame",
+            "mode": "frames",
             "changed": True,
             "deleted": True,
-            "requested_frame": requested_frame,
-            "candidate_timeline_frames": candidate_frames,
+            "deleted_count": len(deleted),
+            "requested_frames": requested_frames,
             "timeline_start_frame": start_frame,
-            "timeline_frame": timeline_frame,
-            "frame": timeline_frame,
-            "record_frame": start_frame + timeline_frame,
-            **_marker_timecodes(timeline_frame, start_frame + timeline_frame, conn.fps),
-            "marker": _marker_row(timeline_frame, marker_before, start_frame=start_frame, fps=conn.fps),
+            "markers": deleted,
             "marker_count_before": len(markers_before),
             "marker_count_after": len(markers_after),
-            "api_result": result,
+            "unrelated_markers_preserved": True,
+            "api_results": api_results,
             "verified": True,
         }
     else:
@@ -1228,6 +1487,7 @@ def get_track_items(
     index: int,
     *,
     include_unique_ids: bool = False,
+    include_revision_state: bool = True,
 ) -> List[Dict[str, Any]]:
     """
     List clips on a specific track.
@@ -1337,7 +1597,17 @@ def get_track_items(
 
     if include_unique_ids:
         from .retime_source_metadata import enrich_track_source_metadata
-        enrich_track_source_metadata(conn, rows, items, track_type=normalized_type, track_index=normalized_index)
+        enrich_track_source_metadata(
+            conn,
+            rows,
+            items,
+            track_type=normalized_type,
+            track_index=normalized_index,
+            include_inspector_digest=include_revision_state,
+        )
+        if include_revision_state:
+            from .native_clip_audio import enrich_inspector_revisions
+            enrich_inspector_revisions(conn, rows, items, track_type=normalized_type)
     return rows
 
 
@@ -1591,11 +1861,18 @@ def _timeline_summary_track(
     max_runs: int,
     include_items: bool,
     include_unique_ids: bool,
+    include_revision_state: bool,
 ) -> Dict[str, Any]:
     fps = float(getattr(conn, "fps", 24.0) or 24.0)
     track_type = str(track.get("type") or "")
     track_index = int(track.get("index") or 0)
-    all_items = get_track_items(conn, track_type, track_index, include_unique_ids=include_unique_ids)
+    all_items = get_track_items(
+        conn,
+        track_type,
+        track_index,
+        include_unique_ids=include_unique_ids,
+        include_revision_state=include_revision_state,
+    )
     window_items = [
         item
         for item in all_items
@@ -1711,6 +1988,7 @@ def summarize_timeline(
     max_runs: int = 24,
     include_items: bool = False,
     authoritative_track_state: bool = False,
+    include_revision_state: bool = True,
 ) -> Dict[str, Any]:
     """Return a compact, editor-readable map of the current timeline state."""
     normalized_track_type = normalize_timeline_item_track_type(track_type)
@@ -1745,6 +2023,7 @@ def summarize_timeline(
             max_runs=normalized_max_runs,
             include_items=include_items,
             include_unique_ids=authoritative_track_state,
+            include_revision_state=include_revision_state,
         )
         for track in tracks
     ]
@@ -1777,6 +2056,10 @@ def summarize_timeline(
             },
         },
         "window": window_info,
+        # Output blanking is available through its dedicated read action. Its
+        # native getter changes both the UI page and Deliver settings, so it is
+        # deliberately excluded from routine timeline summaries and guards.
+        "output_blanking": None,
         "tracks": track_summaries,
         "current_items": current_items,
         "readiness": _timeline_summary_readiness(track_summaries, info),
@@ -1860,6 +2143,8 @@ def inspect_sdk_live_state(
     retime_expected_targets: list[dict[str, Any]] | None = None,
     inspect_retime=None,
     node_stack_layer_index: int = 1,
+    media_pool_native_id: str | None = None,
+    use_nested_clip_transcription: bool = False,
 ) -> Dict[str, Any]:
     return _inspect_sdk_live_state(
         conn,
@@ -1879,6 +2164,8 @@ def inspect_sdk_live_state(
         inspect_retime=inspect_retime,
         inspect_fairlight=_inspect_sdk_fairlight_state,
         node_stack_layer_index=node_stack_layer_index,
+        media_pool_native_id=media_pool_native_id,
+        use_nested_clip_transcription=use_nested_clip_transcription,
     )
 
 

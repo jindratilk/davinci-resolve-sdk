@@ -3,6 +3,7 @@ import { sdkArtifactIdSchema, sdkConnectionIdSchema, sdkMediaPoolFolderIdSchema,
 import { sdkProjectContextObservationSchema } from "./sdk-project-media.js";
 import { CUTAGENT_SDK_PROTOCOL_DIGEST } from "./sdk-runtime-protocol.js";
 import { CUTAGENT_SDK_PREVIEW_VERSION, CUTAGENT_SDK_RUNTIME_MAX_EXCLUSIVE_VERSION, CUTAGENT_SDK_RUNTIME_MIN_VERSION, CUTAGENT_SDK_SUPPORTED_PACKAGE_MAJOR, CUTAGENT_SDK_SUPPORTED_PACKAGE_MINOR, } from "./sdk-runtime-policy.js";
+import { sdkFairlightFadeCurveStateSchema } from "./sdk-fairlight.js";
 import { sdkFusionCompositionReferenceSchema } from "./sdk-fusion.js";
 export * from "./sdk-operations.js";
 export * from "./sdk-fairlight.js";
@@ -340,6 +341,10 @@ const sdkFairlightNumericReadbackSchema = z.discriminatedUnion("status", [
     z.object({ status: z.literal("available"), value: z.number().finite() }).strict(),
     z.object({ status: z.literal("unavailable"), reason: z.enum(["readback_unavailable", "not_exposed_by_runtime"]) }).strict(),
 ]);
+const sdkFairlightCurveReadbackSchema = z.discriminatedUnion("status", [
+    z.object({ status: z.literal("available"), value: sdkFairlightFadeCurveStateSchema }).strict(),
+    z.object({ status: z.literal("unavailable"), reason: z.enum(["readback_unavailable", "not_exposed_by_runtime"]) }).strict(),
+]);
 const sdkFairlightSnapshotStateSchema = z.discriminatedUnion("status", [
     z.object({
         status: z.literal("available"),
@@ -355,6 +360,8 @@ const sdkFairlightSnapshotStateSchema = z.discriminatedUnion("status", [
             pan: sdkFairlightNumericReadbackSchema,
             fadeInFrames: sdkFairlightNumericReadbackSchema,
             fadeOutFrames: sdkFairlightNumericReadbackSchema,
+            fadeInCurve: sdkFairlightCurveReadbackSchema.optional(),
+            fadeOutCurve: sdkFairlightCurveReadbackSchema.optional(),
         }).strict()).max(100_000).refine((clips) => new Set(clips.map((clip) => clip.clipId)).size === clips.length, "Fairlight clip readback identities must be unique").default([]),
         buses: z.discriminatedUnion("status", [
             z.object({
@@ -532,6 +539,7 @@ export const sdkMediaPoolAssetSnapshotSchema = z.object({
     snapshotId: sdkSnapshotMediaPoolItemIdSchema,
     folderSnapshotId: sdkSnapshotMediaPoolFolderIdSchema,
     snapshotRevision: sdkRevisionSchema,
+    assetCustodyRevision: sdkRevisionSchema,
     name: z.string().min(1).max(4096),
     kind: sdkMediaPoolAssetKindSchema,
     selected: z.boolean(),
@@ -540,8 +548,12 @@ export const sdkMediaPoolAssetSnapshotSchema = z.object({
     resolution: z.string().max(4096).nullable(),
     frameRate: z.string().max(256).nullable(),
     startTimecode: z.string().max(256).nullable(),
+    metadataAvailable: z.boolean(),
     metadata: z.array(sdkMediaPoolMetadataEntrySchema).max(12),
 }).strict().superRefine((asset, context) => {
+    if (!asset.metadataAvailable && asset.metadata.length !== 0) {
+        context.addIssue({ code: "custom", path: ["metadata"], message: "Unavailable Media Pool metadata must remain empty" });
+    }
     const metadataKeys = new Set();
     for (let offset = 0; offset < asset.metadata.length; offset += 1) {
         const entry = asset.metadata[offset];
@@ -617,7 +629,7 @@ export const sdkMediaPoolPageSchema = z.object({
     }
     for (const entry of [...page.folders, ...page.assets]) {
         if (entry.snapshotRevision !== page.revision) {
-            context.addIssue({ code: "custom", message: "Media Pool entry is not bound to this snapshot revision" });
+            context.addIssue({ code: "custom", message: "Media Pool entry is not bound to this page revision" });
         }
         if (identities.has(entry.snapshotId)) {
             context.addIssue({ code: "custom", message: "Media Pool snapshot identities must be unique within a page" });
@@ -649,6 +661,38 @@ export const sdkMediaPoolPageSchema = z.object({
                 context.addIssue({ code: "custom", path: ["assets", offset], message: "Media Pool asset does not match the declared search" });
             }
         }
+    }
+});
+const sdkTranscriptionTextSchema = z.string().max(16_384);
+const sdkTranscriptionWordSchema = z.object({
+    start: z.string().max(64).nullable(),
+    end: z.string().max(64).nullable(),
+    text: sdkTranscriptionTextSchema,
+}).strict();
+const sdkTranscriptionSegmentSchema = z.object({
+    start: z.string().max(64).nullable(),
+    end: z.string().max(64).nullable(),
+    text: sdkTranscriptionTextSchema,
+    speaker: z.string().max(16_384).nullable(),
+    words: z.array(sdkTranscriptionWordSchema).max(100_000),
+}).strict();
+export const sdkMediaPoolTranscriptionSchema = z.object({
+    projectId: sdkProjectIdSchema,
+    assetId: sdkMediaPoolItemIdSchema,
+    useNestedClipTranscription: z.boolean(),
+    available: z.boolean(),
+    language: z.string().max(16_384).nullable(),
+    segments: z.array(sdkTranscriptionSegmentSchema).max(10_000),
+}).strict().superRefine((value, context) => {
+    const totalWords = value.segments.reduce((total, segment) => total + segment.words.length, 0);
+    if (totalWords > 100_000) {
+        context.addIssue({ code: "custom", path: ["segments"], message: "Transcription exceeds the total word limit" });
+    }
+    if (!value.available && (value.language !== null || value.segments.length !== 0)) {
+        context.addIssue({ code: "custom", message: "Unavailable transcription cannot contain content" });
+    }
+    if (new TextEncoder().encode(JSON.stringify(value)).byteLength > 7 * 1024 * 1024) {
+        context.addIssue({ code: "custom", message: "Transcription exceeds the transport-safe byte limit" });
     }
 });
 const sdkColorReadCapabilitySchema = z.discriminatedUnion("status", [
@@ -809,10 +853,23 @@ const sdkRenderFormatSchema = z.object({
     codecs: z.array(sdkRenderCodecSchema).max(256),
     codecSupport: sdkRenderSupportSchema,
 }).strict();
+const sdkAudioRenderCodecSchema = z.object({
+    codec: sdkRenderVersionedCodecSchema,
+    label: z.string().min(1).max(256),
+}).strict();
+const sdkAudioRenderFormatSchema = z.object({
+    format: sdkRenderVersionedFormatSchema,
+    label: z.string().min(1).max(256),
+    extension: z.string().min(1).max(32).regex(/^[A-Za-z0-9._-]+$/).nullable(),
+    codecs: z.array(sdkAudioRenderCodecSchema).max(256),
+    codecSupport: sdkRenderSupportSchema,
+}).strict();
 export const sdkRenderDiscoverySchema = z.object({
     projectId: sdkProjectIdSchema,
     formatSupport: sdkRenderSupportSchema,
     formats: z.array(sdkRenderFormatSchema).max(256),
+    audioFormatSupport: sdkRenderSupportSchema,
+    audioFormats: z.array(sdkAudioRenderFormatSchema).max(256),
 }).strict();
 export const sdkRenderPresetsSchema = z.object({
     projectId: sdkProjectIdSchema,
@@ -1020,7 +1077,6 @@ export const sdkManagedTimelinePreviewSchema = z.object({
     protectedStateDigest: z.string().regex(/^sha256:[a-f0-9]{64}$/),
     previewDigest: z.string().regex(/^sha256:[a-f0-9]{64}$/),
     ownershipGeneration: z.number().int().nonnegative(),
-    policyRevision: z.string().regex(/^policy_revision_[1-9][0-9]*$/),
     capabilityDigest: z.string().regex(/^sha256:[a-f0-9]{64}$/),
     drift: z.array(sdkManagedTimelineDriftSchema).max(100_000),
     blockers: z.array(sdkManagedTimelineBlockerSchema).max(100_000),
@@ -1146,6 +1202,17 @@ export const sdkRuntimeReadRequestSchema = z.discriminatedUnion("operation", [
         requestId: sdkRequestIdSchema,
         sessionId: sdkSessionIdSchema,
         deadlineAtMs: sdkRuntimeReadDeadlineSchema,
+        operation: z.literal("mediaPool.transcription"),
+        projectId: sdkProjectIdSchema,
+        mediaPoolItemId: sdkMediaPoolItemIdSchema,
+        expectedRevision: sdkRevisionSchema,
+        useNestedClipTranscription: z.boolean(),
+    }).strict(),
+    z.object({
+        protocolVersion: z.literal(CUTAGENT_SDK_WIRE_PROTOCOL),
+        requestId: sdkRequestIdSchema,
+        sessionId: sdkSessionIdSchema,
+        deadlineAtMs: sdkRuntimeReadDeadlineSchema,
         operation: z.literal("color.current"),
         projectId: sdkProjectIdSchema,
         timelineId: sdkTimelineIdSchema,
@@ -1189,8 +1256,13 @@ export const sdkRuntimeReadRequestSchema = z.discriminatedUnion("operation", [
         sessionId: sdkSessionIdSchema,
         deadlineAtMs: sdkRuntimeReadDeadlineSchema,
         operation: z.literal("timeline.edit.preview"),
-        intent: sdkTimelineEditIntentSchema,
-    }).strict(),
+        intent: sdkTimelineEditIntentSchema.optional(),
+        intents: z.array(sdkTimelineEditIntentSchema).min(1).max(256).optional(),
+    }).strict().superRefine((request, context) => {
+        if ((request.intent === undefined) === (request.intents === undefined)) {
+            context.addIssue({ code: "custom", message: "Timeline edit preview requires exactly one of intent or intents" });
+        }
+    }),
     z.object({
         protocolVersion: z.literal(CUTAGENT_SDK_WIRE_PROTOCOL),
         requestId: sdkRequestIdSchema,
@@ -1264,6 +1336,13 @@ export const sdkRuntimeReadSuccessSchema = z.discriminatedUnion("operation", [
         ok: z.literal(true),
         protocolVersion: z.literal(CUTAGENT_SDK_WIRE_PROTOCOL),
         requestId: sdkRequestIdSchema,
+        operation: z.literal("mediaPool.transcription"),
+        data: sdkMediaPoolTranscriptionSchema,
+    }).strict(),
+    z.object({
+        ok: z.literal(true),
+        protocolVersion: z.literal(CUTAGENT_SDK_WIRE_PROTOCOL),
+        requestId: sdkRequestIdSchema,
         operation: z.literal("color.current"),
         data: sdkColorTargetSnapshotSchema,
     }).strict(),
@@ -1279,7 +1358,10 @@ export const sdkRuntimeReadSuccessSchema = z.discriminatedUnion("operation", [
         protocolVersion: z.literal(CUTAGENT_SDK_WIRE_PROTOCOL),
         requestId: sdkRequestIdSchema,
         operation: z.literal("timeline.edit.preview"),
-        data: sdkTimelineEditImpactSchema,
+        data: z.union([
+            sdkTimelineEditImpactSchema,
+            z.object({ impacts: z.array(sdkTimelineEditImpactSchema).min(1).max(256) }).strict(),
+        ]),
     }).strict(),
     z.object({
         ok: z.literal(true), protocolVersion: z.literal(CUTAGENT_SDK_WIRE_PROTOCOL), requestId: sdkRequestIdSchema,

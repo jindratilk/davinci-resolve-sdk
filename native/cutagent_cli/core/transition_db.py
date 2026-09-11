@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from pathlib import Path
 import re
 import sqlite3
 import struct
@@ -12,6 +13,7 @@ import uuid
 from ..errors import ValidationError
 from ..fixtures.db_workaround_payloads import TRANSITION_REGISTRY, TransitionRegistryEntry
 from ..utils.time_ref import parse_record_frame
+from ..runtime_health import resolve_current_disk_project_db
 from .db_session import next_db_index, rebuild_track_item_indices
 from .db_timeline_rows import find_ti_item_row, insert_row, update_row
 from . import db_timeline_selection
@@ -336,6 +338,51 @@ def _plan_from_items(
             "positions": positions,
         },
     }
+
+
+def read_only_transition_batch_noop(
+    conn,
+    *,
+    plans: list[dict[str, object]],
+    timeline_name: str | None,
+) -> dict[str, object] | None:
+    """Reuse the batch writer in strict read-only mode to prove a complete no-op."""
+    if not plans:
+        return None
+    connection: sqlite3.Connection | None = None
+    try:
+        current = resolve_current_disk_project_db(
+            conn,
+            allow_project_name_inference=True,
+        )
+        uri = Path(str(current["project_db_path"])).resolve().as_uri() + "?mode=ro"
+        connection = sqlite3.connect(uri, uri=True, timeout=0.0)
+        connection.row_factory = sqlite3.Row
+        result = write_transition_batch(
+            connection.cursor(),
+            plans=plans,
+            timeline_name=timeline_name,
+        )
+        results = result.get("results")
+        if (
+            result.get("inserted")
+            or not isinstance(results, list)
+            or len(results) != len(plans)
+            or any(
+                not isinstance(row, dict)
+                or row.get("skipped") is not True
+                or row.get("changed") is not False
+                or not row.get("skipped_existing")
+                for row in results
+            )
+        ):
+            return None
+        return result
+    except Exception:
+        return None
+    finally:
+        if connection is not None:
+            connection.close()
 
 
 def plan_transition_batch(

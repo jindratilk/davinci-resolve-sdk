@@ -5,11 +5,11 @@ import {createSdkPreparedActionRuntimeClient} from "./sdk-prepared-action-runtim
 import {createSdkPreparedActionBuilderContribution} from "./sdk-prepared-action-carrier.js";
 import {captureAuthenticatedSdkRequest} from "./sdk-authenticated-request.js";
 import {preparedActionDigest} from "./sdk-prepared-action-digest.js";
-import {resolveSdkDirectMutationScope, sdkMutationScopeCandidates} from "./sdk-direct-mutation-scope.js";
 import {
   CUTAGENT_PREPARED_ACTION_CAPABILITY_DIGEST,
   CUTAGENT_PREPARED_ACTION_CONTRACT_DIGEST,
   CUTAGENT_PREPARED_ACTION_KERNEL_DIGEST,
+  CUTAGENT_PREPARED_ACTION_PROTOCOL_VERSION,
 } from "../contracts/generated/sdk-prepared-action.js";
 import {CUTAGENT_SDK_API_VERSION, CUTAGENT_SDK_WIRE_PROTOCOL} from "../contracts/generated/sdk-runtime.js";
 import {CUTAGENT_SDK_PROTOCOL_DIGEST} from "../contracts/generated/sdk-runtime-protocol.js";
@@ -196,12 +196,11 @@ export function createDesktopSdkPreparedActionComposition({
   appVersion,
   authService,
   cutagentCloudService,
-  mutationPolicyGate,
-  directMutationPolicyAuthority,
   liveInspectionService,
   artifactService,
   projectLibraryDestinationService,
   resolveService,
+  sdkRuntimeService = null,
   builderContributionFactories = [],
   createPreparedActionRuntimeClient = createSdkPreparedActionRuntimeClient,
   onRuntimeCallbackError = null,
@@ -216,7 +215,6 @@ export function createDesktopSdkPreparedActionComposition({
   const hostEntry = {sha256: sha256(fs.readFileSync(executablePath))};
   const runtimeEntry = {sha256: sha256(fs.readFileSync(path.join(runtimeRoot, "cutagent")))};
   const desktopArtifactDigest = manifestDigest;
-  const policyPublicJwk = {};
   const capturedRuntimeBindings = new Map();
   const cleanupPrivateInput = (binding) => {
     const inputPath = binding?.privateContext?.timelineTopology?.inputFile?.absolutePath;
@@ -256,18 +254,21 @@ export function createDesktopSdkPreparedActionComposition({
     return entry.binding;
   };
 
-  const captureMarkerBinding = async ({scope, input, operationId}) => {
-      const projectBefore = await liveInspectionService.readWithMutationGuard({operation: "project.context"});
-      const inspectedTimeline = await liveInspectionService.readWithMutationGuard({operation: "timeline.snapshot", projectId: input.projectId, timelineId: input.timelineId});
-      const projectAfter = await liveInspectionService.readWithMutationGuard({operation: "project.context"});
+  const scopedMarkerState = ({context, input}) => sdkRuntimeService?.readExecutionTimelineState?.({
+    sessionId: context.sdkSessionId,
+    accountFingerprint: context.accountFingerprint,
+    projectId: input.projectId,
+    timelineId: input.timelineId,
+    timelineRevision: input.timelineRevision,
+  }) ?? null;
+  const markerBinding = (projectBefore, inspectedTimeline, projectAfter, input) => {
       const timeline = inspectedTimeline.value;
       const projectLibraryId = projectBefore.privateExecutionIdentity?.projectLibraryId;
       const projectLibraryRevision = projectBefore.mutationGuard;
       const projectRevision = projectBefore.value?.projectRevision?.revision;
-      if (projectLibraryId !== scope.binding.projectLibraryId
+      if (typeof projectLibraryId !== "string" || !projectLibraryId
         || projectBefore.value?.project?.id !== input.projectId
         || projectBefore.value?.timeline?.id !== input.timelineId
-        || projectRevision !== scope.binding.projectRevision
         || projectAfter.privateExecutionIdentity?.projectLibraryId !== projectLibraryId
         || projectAfter.mutationGuard !== projectLibraryRevision
         || projectAfter.value?.project?.id !== input.projectId
@@ -289,32 +290,24 @@ export function createDesktopSdkPreparedActionComposition({
       });
       return binding;
   };
+  const captureMarkerBinding = async ({context, input}) => {
+      const scoped = scopedMarkerState({context, input});
+      if (scoped) return markerBinding(scoped.projectContext, scoped.timeline, scoped.projectContext, input);
+      const projectBefore = await liveInspectionService.readWithMutationGuard({operation: "project.context"});
+      const inspectedTimeline = await liveInspectionService.readWithMutationGuard({operation: "timeline.snapshot", projectId: input.projectId, timelineId: input.timelineId});
+      const projectAfter = await liveInspectionService.readWithMutationGuard({operation: "project.context"});
+      return markerBinding(projectBefore, inspectedTimeline, projectAfter, input);
+  };
 
   const markerContribution = createSdkPreparedActionBuilderContribution({
     inputSchema: sdkMarkerCreateInputSchema,
     mutationBinding: Object.freeze({minimumBinding: "project+timeline", referencedPayloadDigests: Object.freeze([])}),
     async captureRequestBinding({context, input}) {
-      const directScope = await resolveSdkDirectMutationScope({directMutationPolicyAuthority, context, liveInspectionService,
-        level: "project+timeline", projectId: input.projectId, timelineId: input.timelineId, timelineRevision: input.timelineRevision});
-      const scopes = sdkMutationScopeCandidates(mutationPolicyGate, context.accountFingerprint, directScope).filter((scope) => (
-        scope.binding.level === "project+timeline"
-        && scope.binding.projectId === input.projectId
-        && scope.binding.timelineId === input.timelineId
-        && scope.binding.timelineRevision === input.timelineRevision
-      ));
-      if (scopes.length !== 1) throw new Error("Prepared marker mutation requires one exact live policy scope.");
-      const scope = scopes[0];
       const binding = await captureMarkerBinding({
-        actionId: SDK_PREPARED_MARKER_ADD_ACTION_ID,
-        accountFingerprint: context.accountFingerprint,
-        requestId: context.requestId,
-        operationId: context.operationId,
-        executionId: context.executionId,
-        scope: structuredClone(scope),
+        context,
         input: structuredClone(input),
       });
-      if (binding?.projectLibraryId !== scope.binding.projectLibraryId
-        || binding?.projectId !== input.projectId
+      if (binding?.projectId !== input.projectId
         || binding?.timelineId !== input.timelineId
         || binding?.timelineRevision !== input.timelineRevision) {
         throw new Error("Prepared marker live identity capture drifted from the accepted target.");
@@ -332,8 +325,6 @@ export function createDesktopSdkPreparedActionComposition({
   const builderContributions = {[SDK_PREPARED_MARKER_ADD_ACTION_ID]: markerContribution};
   for (const factory of builderContributionFactories) {
     const packet = factory(Object.freeze({
-      mutationPolicyGate,
-      directMutationPolicyAuthority,
       liveInspectionService,
       artifactService,
       projectLibraryDestinationService,
@@ -353,7 +344,7 @@ export function createDesktopSdkPreparedActionComposition({
     builderContributions: Object.freeze(builderContributions),
     capturePrivateRuntimeBinding,
     releasePrivateRuntimeBinding,
-    async runtimeClientFactory({request, authenticated, sdkSessionId, advertisedActionIds, assertProtectedState, resolveLiveTargets = null, terminalRecovery = false}) {
+    async runtimeClientFactory({request, authenticated, sdkSessionId, advertisedActionIds, resolveLiveTargets = null, terminalRecovery = false}) {
       if (!sdkSessionId) throw new Error("Local prepared session is unavailable.");
       authService.assertCurrent(authenticated);
       const issuedAt = Date.now();
@@ -385,7 +376,6 @@ export function createDesktopSdkPreparedActionComposition({
           preparedActionKernelDigest: CUTAGENT_PREPARED_ACTION_KERNEL_DIGEST,
           preparedActionContractDigest: CUTAGENT_PREPARED_ACTION_CONTRACT_DIGEST,
           preparedActionCapabilityDigest: CUTAGENT_PREPARED_ACTION_CAPABILITY_DIGEST,
-          preparedActionPolicyPublicJwkDigest: preparedActionDigest("policy-decision", policyPublicJwk),
         },
         project: {
           projectLibraryId: request.identities.projectLibraryId,
@@ -420,7 +410,7 @@ export function createDesktopSdkPreparedActionComposition({
         executablePath,
         resourcesDir,
         initialization: {
-          runtimeContext, policyPublicJwk,
+          runtimeContext,
           custodyDatabasePath: path.join(secretDir, "sdk-operation-store", "prepared-action-custody.sqlite3"),
           advertisedActionIds,
         },
@@ -487,7 +477,37 @@ export function createDesktopSdkPreparedActionComposition({
           if (operation !== "timeline.snapshot") {
             throw new Error("Prepared-action private inspection operation is not admitted.");
           }
+          if (inspectionPhase === "current") {
+            const scoped = sdkRuntimeService?.readExecutionTimelineState?.({
+              sessionId: sdkSessionId,
+              accountFingerprint: authenticated.accountFingerprint,
+              projectId: request.identities.projectId,
+              timelineId: request.identities.timelineId,
+              timelineRevision: request.revisions.timeline,
+            });
+            if (scoped) {
+              return {
+                snapshot: scoped.timeline.value,
+                mutationGuard: scoped.timeline.mutationGuard,
+                projectBinding: {
+                  projectLibraryId: scoped.projectContext.privateExecutionIdentity.projectLibraryId,
+                  projectLibraryRevision: scoped.projectContext.mutationGuard,
+                  projectId: scoped.projectContext.value.project.id,
+                  projectRevision: scoped.projectContext.value.projectRevision.revision,
+                },
+                privateTimelineItemNativeIds: serializePrivateTimelineItemNativeIds(scoped.timeline),
+              };
+            }
+          }
           const projectBefore = await liveInspectionService.readWithMutationGuard({operation: "project.context"});
+          if (inspectionPhase === "current" && (
+            projectBefore.privateExecutionIdentity?.projectLibraryId !== request.identities.projectLibraryId
+            || projectBefore.value?.project?.id !== request.identities.projectId
+          )) {
+            throw Object.assign(new Error("Prepared-action live project binding changed before private timeline inspection."), {
+              code: "STALE_REVISION",
+            });
+          }
           const inspected = await liveInspectionService.readWithMutationGuard({
             operation: "timeline.snapshot",
             projectId: request.identities.projectId,
@@ -516,6 +536,18 @@ export function createDesktopSdkPreparedActionComposition({
             ))) {
             throw new Error("Prepared-action live project binding changed during private inspection.");
           }
+          if (inspectionPhase === "verify") {
+            sdkRuntimeService?.captureExecutionProjectContext?.({
+              sessionId: sdkSessionId,
+              accountFingerprint: authenticated.accountFingerprint,
+              inspected: projectAfter,
+            });
+            sdkRuntimeService?.captureExecutionTimelineState?.({
+              sessionId: sdkSessionId,
+              accountFingerprint: authenticated.accountFingerprint,
+              inspected,
+            });
+          }
           return {
             snapshot: inspected.value,
             mutationGuard: inspected.mutationGuard,
@@ -526,7 +558,6 @@ export function createDesktopSdkPreparedActionComposition({
         ...(admittedLiveResolver ? {
           resolveLiveTargets: admittedLiveResolver,
         } : {}),
-        assertProtectedState,
         });
       } catch (error) {
         releaseProjectLibraryDestinationReservation(projectLibraryDestinationService, captured);
@@ -536,6 +567,9 @@ export function createDesktopSdkPreparedActionComposition({
       return Object.freeze({
         ...runtime,
         async execute(payload) {
+          if (request.actionId.startsWith("cutagent.action.media.")) {
+            liveInspectionService.invalidateMediaPoolSnapshots?.(request.identities.projectId);
+          }
           try { return await runtime.execute(payload); } finally { cleanupPrivateInput(captured); }
         },
         async revoke(payload) {

@@ -622,11 +622,15 @@ def set_timeline_item_channel_mapping_db(
     clip: str,
     mapping: dict[str, Any],
 ) -> dict[str, Any]:
-    """Set a verified timeline-item stereo source-channel mapping through Disk DB."""
+    """Set a timeline-item mapping natively on 21.1, with the older Disk DB route retained."""
     timeline_name = _timeline_name(conn)
     if not timeline_name:
         raise APICallFailed("No active timeline is available for Fairlight channel mapping set.")
     normalized_mapping = _normalize_timeline_channel_mapping_request(mapping)
+    from .resolve_api_version import at_least
+    if at_least(conn, 21, 1):
+        from .native_channel_mapping import set_timeline_mapping
+        return set_timeline_mapping(conn, clip=clip, mapping=normalized_mapping)
     return db_session.execute_sqlite_disk_db_mutation(
         conn,
         context="Fairlight channel mapping set",

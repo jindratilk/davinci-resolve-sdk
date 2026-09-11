@@ -101,13 +101,12 @@ export function registerSdkWorkflowRoute({ app, sdkRuntimeService, authService, 
         }));
       }
       const code = ({
-        EDIT_CONSTRAINT_VIOLATION: "EDIT_CONSTRAINT_VIOLATION",
         OPERATION_EXPIRED: "OPERATION_EXPIRED",
         IDEMPOTENCY_CONFLICT: "IDEMPOTENCY_CONFLICT",
         WORKFLOW_RECOVERY_LINEAGE_UNPROVEN: "RECOVERY_FAILED",
         WORKFLOW_RESTORE_VERIFICATION_FAILED: "VERIFICATION_FAILED",
       })[error?.code] ?? "RUNTIME_UNAVAILABLE";
-      const uncertain = code !== "EDIT_CONSTRAINT_VIOLATION" && new Set([
+      const uncertain = new Set([
         "workflow.get",
         "workflow.create",
         "workflow.managed.start",
@@ -120,12 +119,10 @@ export function registerSdkWorkflowRoute({ app, sdkRuntimeService, authService, 
       ]).has(request.operation);
       const workflowId = error?.workflowId ?? snapshot?.workflowId ?? request.workflowId;
       const managedControl = request.operation === "workflow.managed.start" || request.operation === "workflow.managed.wait";
-      const preEffectConflict = (code === "EDIT_CONSTRAINT_VIOLATION" || code === "IDEMPOTENCY_CONFLICT")
+      const preEffectConflict = code === "IDEMPOTENCY_CONFLICT"
         && (!managedControl || (!workflowId && (error?.admissionState === "not_admitted" || request.operation === "workflow.managed.start")));
-      return res.status(["EDIT_CONSTRAINT_VIOLATION", "IDEMPOTENCY_CONFLICT"].includes(code) ? 409 : code === "OPERATION_EXPIRED" ? 410 : 503).json(failure(code, request.requestId, {
-        message: error?.message || (code === "EDIT_CONSTRAINT_VIOLATION"
-          ? "The workflow no longer matches the active editing constraints."
-          : "The workflow authority is unavailable."),
+      return res.status(code === "IDEMPOTENCY_CONFLICT" ? 409 : code === "OPERATION_EXPIRED" ? 410 : 503).json(failure(code, request.requestId, {
+        message: error?.message || "The workflow authority is unavailable.",
         possibleMutation: preEffectConflict ? "none" : uncertain ? "unknown" : "none",
         usage: preEffectConflict ? "not_reserved" : uncertain ? "unknown" : "not_reserved",
         recovery: preEffectConflict ? ["inspect_state"]

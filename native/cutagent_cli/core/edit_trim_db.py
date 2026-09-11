@@ -135,12 +135,20 @@ def _live_row(
     return row
 
 
-def _all_live_rows(conn: Any, *, include_direct_link_state: bool = False) -> list[dict[str, Any]]:
+def _all_live_rows(
+    conn: Any,
+    *,
+    include_direct_link_state: bool = False,
+    item_cache: dict[tuple[str, int], list[Any]] | None = None,
+) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for track_type in ("video", "audio", "subtitle"):
         track_count = int(conn.timeline.GetTrackCount(track_type) or 0)
         for track_index in range(1, track_count + 1):
-            for item in conn.timeline.GetItemListInTrack(track_type, track_index) or []:
+            items = list(conn.timeline.GetItemListInTrack(track_type, track_index) or [])
+            if item_cache is not None:
+                item_cache[(track_type, track_index)] = items
+            for item in items:
                 try:
                     rows.append(
                         _live_row(
@@ -279,6 +287,7 @@ def _select_video_item(
     start_frame: str | None,
     current_end_frame: str | None,
     name: str | None,
+    live_items: list[Any] | None = None,
 ) -> tuple[Any, Any]:
     if timeline_name:
         timeline_ops.switch_timeline(conn, name=timeline_name)
@@ -294,6 +303,7 @@ def _select_video_item(
         start_ref=start_frame,
         current_end_ref=current_end_frame,
         name=name,
+        live_items=live_items,
     )
 
 
@@ -301,6 +311,8 @@ def _resolve_linked_audio_items(
     conn: Any,
     video_item: Any,
     direct_link_state: dict[str, Any],
+    *,
+    item_cache: dict[tuple[str, int], list[Any]] | None = None,
 ) -> list[tuple[Any, Any, list[str]]]:
     """Resolve every direct link to one exact reciprocal audio occurrence."""
     video_uid = _item_uid(video_item)
@@ -320,7 +332,12 @@ def _resolve_linked_audio_items(
             )
         matches: list[tuple[Any, Any]] = []
         for track_index in range(1, int(conn.timeline.GetTrackCount("audio") or 0) + 1):
-            for item in conn.timeline.GetItemListInTrack("audio", track_index) or []:
+            items = (
+                item_cache.get(("audio", track_index), [])
+                if item_cache is not None
+                else (conn.timeline.GetItemListInTrack("audio", track_index) or [])
+            )
+            for item in items:
                 if _item_uid(item) == linked_uid:
                     live_target = timeline_item_duration_db.TimelineItemDurationTarget(
                         item_id=None,
@@ -350,6 +367,31 @@ def _resolve_linked_audio_items(
     return resolved
 
 
+def _capture_trim_context(conn: Any) -> dict[str, Any]:
+    project_uid, timeline_uid = _context_identity(conn)
+    item_cache: dict[tuple[str, int], list[Any]] = {}
+    try:
+        timeline_start_frame = int(conn.timeline.GetStartFrame())
+    except Exception:
+        timeline_start_frame = int(getattr(conn, "start_frame", 0) or 0)
+    return {
+        "project_name": _project_name(conn),
+        "project_uid": project_uid,
+        "timeline_name": _timeline_name(conn),
+        "timeline_uid": timeline_uid,
+        "fps": float(conn.fps),
+        "timeline_start_frame": timeline_start_frame,
+        "all_rows": _all_live_rows(conn, item_cache=item_cache),
+        "item_cache": item_cache,
+        "track_counts": {
+            "video": int(conn.timeline.GetTrackCount("video") or 0),
+            "audio": int(conn.timeline.GetTrackCount("audio") or 0),
+            "subtitle": int(conn.timeline.GetTrackCount("subtitle") or 0),
+        },
+        "track_state": _all_track_state(conn),
+    }
+
+
 def _preflight(
     conn: Any,
     *,
@@ -361,16 +403,22 @@ def _preflight(
     head_frames: int,
     tail_frames: int,
     linked_audio_mode: str,
+    shared_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if timeline_name:
+        timeline_ops.switch_timeline(conn, name=timeline_name)
+    context = shared_context or _capture_trim_context(conn)
     target, video_item = _select_video_item(
         conn,
-        timeline_name=timeline_name,
+        timeline_name=None,
         track_index=track_index,
         start_frame=start_frame,
         current_end_frame=current_end_frame,
         name=name,
+        live_items=context["item_cache"].get(("video", int(track_index)), []),
     )
-    project_uid, timeline_uid = _context_identity(conn)
+    project_uid = str(context["project_uid"])
+    timeline_uid = str(context["timeline_uid"])
     media_type = timeline_item_duration_db.media_pool_item_type(video_item)
     if media_type and media_type.casefold() == "multicam":
         raise ValidationError(
@@ -431,7 +479,9 @@ def _preflight(
     )
     live_targets = [(target, video_item, video_link_ids)]
     if direct_link_state is not None and direct_link_state["items"]:
-        live_targets.extend(_resolve_linked_audio_items(conn, video_item, direct_link_state))
+        live_targets.extend(
+            _resolve_linked_audio_items(conn, video_item, direct_link_state, item_cache=context["item_cache"])
+        )
         if any(
             int(linked_target.start) != int(target.start) or int(linked_target.end) != int(target.end)
             for linked_target, _, _ in live_targets[1:]
@@ -460,18 +510,47 @@ def _preflight(
                     "mutation_started": False,
                 },
             )
-        head_source_frames = edit_ops._timeline_to_source_frame_count(
-            head_frames,
+        head_source_frames = (1 if head_frames >= 0 else -1) * edit_ops._timeline_to_source_frame_count(
+            abs(head_frames),
             source_fps=float(source_frame_rate),
             timeline_fps=float(conn.fps),
         )
-        tail_source_frames = edit_ops._timeline_to_source_frame_count(
-            tail_frames,
+        tail_source_frames = (1 if tail_frames >= 0 else -1) * edit_ops._timeline_to_source_frame_count(
+            abs(tail_frames),
             source_fps=float(source_frame_rate),
             timeline_fps=float(conn.fps),
         )
         new_source_start = int(old_source_start) + int(head_source_frames)
         new_source_end = int(old_source_end) - int(tail_source_frames)
+        new_source_in = None if old_source_in is None else int(old_source_in) + head_frames
+        new_source_right_offset = (
+            None if row.get("source_right_offset") is None else int(row["source_right_offset"]) + tail_frames
+        )
+        if live_target.start + head_frames < int(context["timeline_start_frame"]):
+            raise ValidationError(
+                "Trim extension would place the item before the timeline start.",
+                details={"reason": "edit_trim_before_timeline_start", "timeline_start_frame": context["timeline_start_frame"]},
+            )
+        if head_frames < 0 and new_source_in is None:
+            raise APICallFailed(
+                "Available source material before the current in point could not be read.",
+                details={"reason": "edit_trim_source_head_extent_unavailable", "mutation_started": False},
+            )
+        if new_source_in is not None and new_source_in < 0:
+            raise ValidationError(
+                "Trim extension exceeds available source material before the current in point.",
+                details={"reason": "edit_trim_source_head_unavailable", "available_frames": old_source_in, "requested_extension_frames": -head_frames},
+            )
+        if tail_frames < 0 and new_source_right_offset is None:
+            raise APICallFailed(
+                "Available source material after the current out point could not be read.",
+                details={"reason": "edit_trim_source_tail_extent_unavailable", "mutation_started": False},
+            )
+        if new_source_right_offset is not None and new_source_right_offset < 0:
+            raise ValidationError(
+                "Trim extension exceeds available source material after the current out point.",
+                details={"reason": "edit_trim_source_tail_unavailable", "available_frames": row.get("source_right_offset"), "requested_extension_frames": -tail_frames},
+            )
         if new_source_end <= new_source_start:
             raise ValidationError(
                 "Trim must leave a non-empty source range.",
@@ -500,12 +579,8 @@ def _preflight(
                 "new_start": live_target.start + head_frames,
                 "new_end": live_target.end - tail_frames,
                 "new_duration": live_target.duration - head_frames - tail_frames,
-                "new_source_in": None if old_source_in is None else int(old_source_in) + head_frames,
-                "new_source_right_offset": (
-                    None
-                    if row.get("source_right_offset") is None
-                    else int(row["source_right_offset"]) + tail_frames
-                ),
+                "new_source_in": new_source_in,
+                "new_source_right_offset": new_source_right_offset,
                 "source_frame_rate": float(source_frame_rate),
                 "old_source_start_frame": int(old_source_start),
                 "old_source_end_frame_exclusive": int(old_source_end),
@@ -523,25 +598,34 @@ def _preflight(
             str(item.get("timeline_item_id") or ""),
         )
     )
-    all_rows = _all_live_rows(conn)
-    protected_rows = _without_targets(all_rows, targets, expected=False)
+    protected_rows = _without_targets(context["all_rows"], targets, expected=False)
+    if shared_context is None:
+        for target in targets:
+            conflicts = [
+                row for row in protected_rows
+                if row["track_type"] == target["track_type"]
+                and int(row["track_index"]) == int(target["track_index"])
+                and int(target["new_start"]) < int(row["end"])
+                and int(row["start"]) < int(target["new_end"])
+            ]
+            if conflicts:
+                raise ValidationError(
+                    "Trim extension would overlap another timeline item.",
+                    details={"reason": "edit_trim_overlap", "target": target, "conflicts": conflicts},
+                )
     return {
-        "project_name": _project_name(conn),
+        "project_name": context["project_name"],
         "project_uid": project_uid,
-        "timeline_name": _timeline_name(conn),
+        "timeline_name": context["timeline_name"],
         "timeline_uid": timeline_uid,
-        "fps": float(conn.fps),
+        "fps": float(context["fps"]),
         "head_frames": int(head_frames),
         "tail_frames": int(tail_frames),
         "linked_audio_mode": linked_audio_mode,
         "targets": targets,
         "protected_rows": protected_rows,
-        "track_counts": {
-            "video": int(conn.timeline.GetTrackCount("video") or 0),
-            "audio": int(conn.timeline.GetTrackCount("audio") or 0),
-            "subtitle": int(conn.timeline.GetTrackCount("subtitle") or 0),
-        },
-        "track_state": _all_track_state(conn),
+        "track_counts": context["track_counts"],
+        "track_state": context["track_state"],
     }
 
 
@@ -686,6 +770,7 @@ def _target_ref(target: dict[str, Any]) -> timeline_item_duration_db.TimelineIte
 def _decorate_update(update: dict[str, Any], target: dict[str, Any]) -> dict[str, Any]:
     return {
         **update,
+        **({"change_index": int(target["change_index"])} if "change_index" in target else {}),
         "old_start": int(target["old_start"]),
         "old_end": int(target["old_end"]),
         "old_duration": int(target["old_duration"]),
@@ -720,6 +805,8 @@ def _writer_for_plan(plan: dict[str, Any]):
     def _writer(_connection: sqlite3.Connection, cursor: sqlite3.Cursor, _session: db_session.DiskDbMutationSession) -> dict[str, Any]:
         updated_items: list[dict[str, Any]] = []
         for target in plan["targets"]:
+            head_frames = int(target.get("head_frames", plan["head_frames"]))
+            tail_frames = int(target.get("tail_frames", plan["tail_frames"]))
             ref = _target_ref(target)
             row = timeline_item_duration_db._fetch_db_row_for_live_target(
                 cursor,
@@ -742,7 +829,7 @@ def _writer_for_plan(plan: dict[str, Any]):
                         "recovery": "Remove or recreate the transition around the trim, then retry the bounded trim.",
                     },
                 )
-            if int(plan["head_frames"]):
+            if head_frames:
                 update = timeline_item_duration_db._apply_head_trim_update(
                     cursor,
                     target_row=row,
@@ -761,7 +848,7 @@ def _writer_for_plan(plan: dict[str, Any]):
                     track_type=str(target["track_type"]),
                     track_index=int(target["track_index"]),
                 )
-            if int(plan["tail_frames"]):
+            if tail_frames:
                 update = timeline_item_duration_db._apply_duration_update(
                     cursor,
                     target_row=row,
@@ -782,6 +869,7 @@ def _writer_for_plan(plan: dict[str, Any]):
             "head_trimmed_frames": int(plan["head_frames"]),
             "tail_trimmed_frames": int(plan["tail_frames"]),
             "linked_audio_mode": plan["linked_audio_mode"],
+            "changes": plan.get("changes"),
             "updated_items": updated_items,
             "protected_rows": plan["protected_rows"],
             "track_counts": plan["track_counts"],
@@ -983,7 +1071,7 @@ def _semantic_result(result: dict[str, Any]) -> dict[str, Any]:
         for step in result.get("steps", [])
         if step in {"save_project", "close_project", "reopen_project", "restore_timeline", "verify"}
     ]
-    return {
+    public = {
         "action": "edit.trim",
         "changed": True,
         "dry_run": False,
@@ -1000,6 +1088,224 @@ def _semantic_result(result: dict[str, Any]) -> dict[str, Any]:
             "manual_recovery_required": False,
         },
     }
+    if result.get("changes") is not None:
+        public["changes"] = [
+            {
+                "index": index,
+                "head_trimmed_frames": int(change["head_frames"]),
+                "tail_trimmed_frames": int(change["tail_frames"]),
+                "linked_audio_mode": change["linked_audio_mode"],
+                "updated_items": _semantic_items(
+                    [item for item in result.get("updated_items", []) if item.get("change_index") == index]
+                ),
+            }
+            for index, change in enumerate(result["changes"])
+        ]
+    return public
+
+
+def _trim_frame_counts(conn: Any, head_seconds: float, tail_seconds: float) -> tuple[int, int]:
+    if head_seconds == 0.0 and tail_seconds == 0.0:
+        raise ValidationError("Specify --head and/or --tail.", details={"head": head_seconds, "tail": tail_seconds})
+    head_frames = int(seconds_to_frames(head_seconds, conn.fps))
+    tail_frames = int(seconds_to_frames(tail_seconds, conn.fps))
+    if (head_seconds != 0 and head_frames == 0) or (tail_seconds != 0 and tail_frames == 0):
+        raise ValidationError(
+            "Each non-zero trim duration must resolve to at least one frame at the timeline frame rate.",
+            details={"fps": conn.fps, "head_seconds": head_seconds, "tail_seconds": tail_seconds, "head_frames": head_frames, "tail_frames": tail_frames},
+        )
+    return head_frames, tail_frames
+
+
+def _combine_trim_plans(context: dict[str, Any], plans: list[dict[str, Any]], changes: list[dict[str, Any]]) -> dict[str, Any]:
+    targets: list[dict[str, Any]] = []
+    target_keys: set[tuple[Any, ...]] = set()
+    for index, plan in enumerate(plans):
+        if plan["project_uid"] != context["project_uid"] or plan["timeline_uid"] != context["timeline_uid"]:
+            raise ValidationError("Every trim change must target the same project and timeline.")
+        for target in plan["targets"]:
+            key = (target["track_type"], target["track_index"], target.get("timeline_item_id"), target["old_start"], target["old_end"])
+            if key in target_keys:
+                raise ValidationError(
+                    "A trim group cannot target the same timeline item more than once.",
+                    details={"change_index": index, "target": target},
+                )
+            target_keys.add(key)
+            targets.append({
+                **target,
+                "change_index": index,
+                "head_frames": int(plan["head_frames"]),
+                "tail_frames": int(plan["tail_frames"]),
+            })
+    protected_rows = _without_targets(context["all_rows"], targets, expected=False)
+    for index, target in enumerate(targets):
+        conflicts = [
+            row for row in protected_rows
+            if row["track_type"] == target["track_type"]
+            and int(row["track_index"]) == int(target["track_index"])
+            and int(target["new_start"]) < int(row["end"])
+            and int(row["start"]) < int(target["new_end"])
+        ]
+        conflicts.extend(
+            other for other in targets[index + 1:]
+            if other["track_type"] == target["track_type"]
+            and int(other["track_index"]) == int(target["track_index"])
+            and int(target["new_start"]) < int(other["new_end"])
+            and int(other["new_start"]) < int(target["new_end"])
+        )
+        if conflicts:
+            raise ValidationError(
+                "Trim changes would overlap another item in the final timeline layout.",
+                details={"reason": "edit_trim_group_overlap", "change_index": target["change_index"], "target": target, "conflicts": conflicts},
+            )
+    targets.sort(key=lambda target: (
+        int(target["head_frames"]) < 0 or int(target["tail_frames"]) < 0,
+        int(target["change_index"]),
+        target["track_type"],
+        int(target["track_index"]),
+    ))
+    return {
+        **{key: context[key] for key in ("project_name", "project_uid", "timeline_name", "timeline_uid", "fps", "timeline_start_frame", "track_counts", "track_state")},
+        "head_frames": sum(int(plan["head_frames"]) for plan in plans),
+        "tail_frames": sum(int(plan["tail_frames"]) for plan in plans),
+        "linked_audio_mode": "preserve" if any(plan["linked_audio_mode"] == "preserve" for plan in plans) else "exclude",
+        "changes": changes,
+        "targets": targets,
+        "protected_rows": protected_rows,
+    }
+
+
+def _validate_batch_plan_still_current(conn: Any, plan: dict[str, Any]) -> None:
+    refresh = getattr(conn, "refresh", None)
+    if not callable(refresh):
+        raise ValidationError("Live DaVinci Resolve state cannot be refreshed before verified trim.")
+    refresh()
+    if _timeline_name(conn) != str(plan["timeline_name"]):
+        raise ValidationError("The active timeline changed while waiting for the project mutation lock.")
+    context = _capture_trim_context(conn)
+    current_plans = []
+    for change in plan["changes"]:
+        current_plans.append(_preflight(
+            conn,
+            timeline_name=None,
+            track_index=int(change["track_index"]),
+            start_frame=change.get("start_frame"),
+            current_end_frame=change.get("current_end_frame"),
+            name=change.get("name"),
+            head_frames=int(change["head_frames"]),
+            tail_frames=int(change["tail_frames"]),
+            linked_audio_mode=str(change["linked_audio_mode"]),
+            shared_context=context,
+        ))
+    current = _combine_trim_plans(context, current_plans, plan["changes"])
+    compared_fields = ("project_uid", "timeline_uid", "timeline_name", "fps", "timeline_start_frame", "targets", "protected_rows", "track_counts", "track_state")
+    changed = [field for field in compared_fields if current.get(field) != plan.get(field)]
+    if changed:
+        raise ValidationError(
+            "Trim targets or protected timeline state changed while waiting for the project mutation lock.",
+            details={"reason": "edit_trim_batch_state_changed_before_close", "changed_sections": changed, "mutation_started": False},
+            recoverability="retry_possible",
+        )
+
+
+def trim_video_items(
+    conn: Any,
+    changes: list[dict[str, Any]],
+    *,
+    timeline_name: str | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Trim several exact video occurrences in one preflight and DB mutation lifecycle."""
+    if not isinstance(changes, list) or not changes or len(changes) > 256:
+        raise ValidationError("Trim changes must contain between 1 and 256 items.")
+    if timeline_name:
+        timeline_ops.switch_timeline(conn, name=timeline_name)
+    context = _capture_trim_context(conn)
+    normalized: list[dict[str, Any]] = []
+    plans: list[dict[str, Any]] = []
+    for index, raw in enumerate(changes):
+        if not isinstance(raw, dict):
+            raise ValidationError("Each trim change must be an object.", details={"change_index": index})
+        allowed = {"track_index", "start_frame", "current_end_frame", "name", "head_seconds", "tail_seconds", "head_frames", "tail_frames", "linked_audio_mode"}
+        unknown = sorted(set(raw) - allowed)
+        if unknown:
+            raise ValidationError("Trim change contains unsupported fields.", details={"change_index": index, "fields": unknown})
+        linked_audio_mode = str(raw.get("linked_audio_mode", "preserve")).strip().lower()
+        if linked_audio_mode not in {"preserve", "exclude"}:
+            raise ValidationError("Linked audio mode must be 'preserve' or 'exclude'.", details={"change_index": index})
+        if any(key in raw for key in ("head_frames", "tail_frames")) and any(key in raw for key in ("head_seconds", "tail_seconds")):
+            raise ValidationError("Trim changes cannot mix frame and second edge values.", details={"change_index": index})
+        try:
+            head_seconds = float(raw.get("head_seconds", 0.0))
+            tail_seconds = float(raw.get("tail_seconds", 0.0))
+            track_index = int(raw.get("track_index", 1))
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("Trim change contains an invalid numeric value.", details={"change_index": index}) from exc
+        if track_index < 1:
+            raise ValidationError("Trim track index must be at least one.", details={"change_index": index})
+        if any(key in raw for key in ("head_frames", "tail_frames")):
+            head_frames = raw.get("head_frames", 0)
+            tail_frames = raw.get("tail_frames", 0)
+            if any(isinstance(value, bool) or not isinstance(value, int) for value in (head_frames, tail_frames)):
+                raise ValidationError("Trim frame edge values must be integers.", details={"change_index": index})
+            if head_frames == 0 and tail_frames == 0:
+                raise ValidationError("Trim frame edge values must change at least one edge.", details={"change_index": index})
+        else:
+            head_frames, tail_frames = _trim_frame_counts(conn, head_seconds, tail_seconds)
+        change = {
+            "track_index": track_index,
+            "start_frame": raw.get("start_frame"),
+            "current_end_frame": raw.get("current_end_frame"),
+            "name": raw.get("name"),
+            "head_frames": head_frames,
+            "tail_frames": tail_frames,
+            "linked_audio_mode": linked_audio_mode,
+        }
+        normalized.append(change)
+        plans.append(_preflight(
+            conn,
+            timeline_name=None,
+            track_index=track_index,
+            start_frame=change["start_frame"],
+            current_end_frame=change["current_end_frame"],
+            name=change["name"],
+            head_frames=head_frames,
+            tail_frames=tail_frames,
+            linked_audio_mode=linked_audio_mode,
+            shared_context=context,
+        ))
+    plan = _combine_trim_plans(context, plans, normalized)
+    if dry_run:
+        set_verification_status("not_requested")
+        set_recoverability("not_applicable")
+        return {
+            "action": "edit.trim", "changed": False, "dry_run": True,
+            "timeline_name": plan["timeline_name"], "changes": [
+                {
+                    "index": index,
+                    "head_trimmed_frames": change["head_frames"],
+                    "tail_trimmed_frames": change["tail_frames"],
+                    "linked_audio_mode": change["linked_audio_mode"],
+                    "targets": _semantic_items([target for target in plan["targets"] if target["change_index"] == index]),
+                }
+                for index, change in enumerate(normalized)
+            ],
+            "protected_item_count": len(plan["protected_rows"]),
+            "verification": {"status": "not_requested"},
+            "recovery": {"status": "not_applicable", "mutation_possible": False},
+        }
+    result = db_session.execute_sqlite_disk_db_mutation(
+        conn,
+        context="DB-backed grouped video timeline item trim",
+        writer=_writer_for_plan(plan),
+        verifier=_verify_trim,
+        pre_close_validator=lambda locked_conn, _session: _validate_batch_plan_still_current(locked_conn, plan),
+        allow_project_name_inference=True,
+    )
+    verification = result.get("verification") if isinstance(result, dict) else None
+    if not isinstance(verification, dict) or verification.get("status") != "verified":
+        raise APICallFailed("Grouped video trim did not verify after DaVinci Resolve reopened the project.", details={"mutation": result, "verification": verification}, recoverability="manual")
+    return _semantic_result(result)
 
 
 def trim_video_item(
@@ -1020,17 +1326,7 @@ def trim_video_item(
             "Linked audio mode must be 'preserve' or 'exclude'.",
             details={"linked_audio_mode": linked_audio_mode, "allowed": ["preserve", "exclude"]},
         )
-    if head_seconds < 0 or tail_seconds < 0:
-        raise ValidationError("Trim head and tail must be non-negative.", details={"head": head_seconds, "tail": tail_seconds})
-    if head_seconds == 0.0 and tail_seconds == 0.0:
-        raise ValidationError("Specify --head and/or --tail.", details={"head": head_seconds, "tail": tail_seconds})
-    head_frames = int(seconds_to_frames(head_seconds, conn.fps))
-    tail_frames = int(seconds_to_frames(tail_seconds, conn.fps))
-    if head_seconds > 0 and head_frames <= 0 or tail_seconds > 0 and tail_frames <= 0:
-        raise ValidationError(
-            "Each non-zero trim duration must resolve to at least one frame at the timeline frame rate.",
-            details={"fps": conn.fps, "head_seconds": head_seconds, "tail_seconds": tail_seconds, "head_frames": head_frames, "tail_frames": tail_frames},
-        )
+    head_frames, tail_frames = _trim_frame_counts(conn, head_seconds, tail_seconds)
     plan = _preflight(
         conn,
         timeline_name=timeline_name,
@@ -1049,11 +1345,6 @@ def trim_video_item(
         "current_end_frame": current_end_frame,
         "name": name,
     }
-    if linked_audio_mode == "exclude":
-        # Linked audio is protected state in this mode and must remain byte-for-byte equivalent in API readback.
-        plan["targets"] = [target for target in plan["targets"] if target["track_type"] == "video"]
-        all_rows = _all_live_rows(conn)
-        plan["protected_rows"] = _without_targets(all_rows, plan["targets"], expected=False)
     if dry_run:
         set_verification_status("not_requested")
         set_recoverability("not_applicable")

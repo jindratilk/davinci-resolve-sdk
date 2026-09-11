@@ -1,11 +1,11 @@
 // Generated from sdk-prepared-action-kernel.json. Do not edit.
 import { z } from "zod";
-import { CUTAGENT_MUTATION_POLICY_CONTRACT_VERSION, sdkConstraintBindingLevelSchema, sdkConstraintScopeIdSchema, sdkConstraintScopeRevisionSchema, sdkMutationImpactSchema, sdkSha256DigestSchema, sdkStableTargetIdSchema, sdkStateRevisionSchema, } from "./sdk-mutation-policy.js";
+import { CUTAGENT_MUTATION_POLICY_CONTRACT_VERSION, sdkConstraintBindingLevelSchema, sdkMutationImpactSchema, sdkSha256DigestSchema, sdkStableTargetIdSchema, sdkStateRevisionSchema, } from "./sdk-mutation-policy.js";
 import { sdkPublicActionResultSchema } from "./sdk-operations.js";
-export const CUTAGENT_PREPARED_ACTION_PROTOCOL_VERSION = 1;
-export const CUTAGENT_PREPARED_ACTION_KERNEL_DIGEST = "sha256:f3b206e529ef03f1e5ca76713e607782a8d7159ef9b6b33345f381ba426857c4";
-export const CUTAGENT_PREPARED_ACTION_CONTRACT_DIGEST = "sha256:65f9c16dfdff6f89f8b1acbd0a0013fc0b4366537180fc39ee81853954f61f94";
-export const CUTAGENT_PREPARED_ACTION_CAPABILITY_DIGEST = "sha256:b114bf76ee3c1670fd2d8e427d76d3c91a2b32564419c3a033328b62c9c86579";
+export const CUTAGENT_PREPARED_ACTION_PROTOCOL_VERSION = 2;
+export const CUTAGENT_PREPARED_ACTION_KERNEL_DIGEST = "sha256:e76c8d3035abb0847eafc519cea1a2125a0d2f9d9c52491f1dd696b5a53a4c90";
+export const CUTAGENT_PREPARED_ACTION_CONTRACT_DIGEST = "sha256:0de84120b23f26fcd90d8ed327ceb52da731bb512263247c2fd5ff88997134d9";
+export const CUTAGENT_PREPARED_ACTION_CAPABILITY_DIGEST = "sha256:9094f2a43290856f5be0fa80feab68a21b6d2aaa30aace394601b682e83ff89a";
 export const CUTAGENT_PREPARED_ACTION_RECEIPT_TTL_MS = 30000;
 export const CUTAGENT_PREPARED_ACTION_MAX_OUTSTANDING_RECEIPTS = 1024;
 export const CUTAGENT_PREPARED_ACTION_MAX_RESULT_BYTES = 16777216;
@@ -51,8 +51,6 @@ export const sdkPreparedActionMutationBaseSchema = z.object({
     requestId: opaqueSchema,
     operationId: opaqueSchema,
     executionId: opaqueSchema,
-    scopeId: sdkConstraintScopeIdSchema,
-    scopeRevision: sdkConstraintScopeRevisionSchema,
     projectLibraryId: sdkStableTargetIdSchema,
     projectId: sdkStableTargetIdSchema.optional(),
     timelineId: sdkStableTargetIdSchema.optional(),
@@ -60,7 +58,7 @@ export const sdkPreparedActionMutationBaseSchema = z.object({
     timelineRevision: sdkStateRevisionSchema.optional(),
 }).strict();
 export const sdkPreparedReadImpactSchema = z.object({
-    contractVersion: z.literal(CUTAGENT_PREPARED_ACTION_PROTOCOL_VERSION),
+    contractVersion: z.literal(1),
     status: z.literal("read"),
     complete: z.literal(true),
     targetDigests: z.array(digestSchema).max(10_000),
@@ -105,12 +103,6 @@ export const sdkPrepareActionResultSchema = z.object({
 export const sdkAdmitPreparedActionRequestSchema = z.object({
     receipt: z.string().min(32).max(4096),
     authorizationToken: z.string().min(64).max(16_384),
-    policyDecisionDigest: digestSchema.optional(),
-}).strict();
-export const sdkAcceptPreparedActionPolicyRequestSchema = z.object({
-    receipt: z.string().min(32).max(4096),
-    policyAttestation: z.string().min(64).max(16_384),
-    policyDecisionDigest: digestSchema,
 }).strict();
 export const sdkExecutePreparedActionRequestSchema = z.object({
     receipt: z.string().min(32).max(4096),

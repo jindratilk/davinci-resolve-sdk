@@ -1,8 +1,8 @@
 {
-  "name": "davinci-resolve-sdk",
+  "name": "cutagent-internal-sdk",
   "version": "0.2.0",
   "description": "TypeScript SDK and local native runtime for DaVinci Resolve",
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "type": "module",
   "sideEffects": false,
   "engines": {

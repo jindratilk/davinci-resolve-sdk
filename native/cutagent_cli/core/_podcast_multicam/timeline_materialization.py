@@ -9,6 +9,7 @@ from typing import Any
 
 from ...errors import APICallFailed, ValidationError
 from ...multicam_support import support_tier_for_angle_count
+from ...utils.timecode import timecode_to_seconds
 from .. import media_pool, multicam_switch_families, native_multicam_db, timeline_ops
 from .._native_multicam_db.seed_timeline import resolve_live_multicam_media_pool_item
 
@@ -31,6 +32,77 @@ def _timeline_track_items(conn, track_type: str) -> list[Any]:
     for index in range(1, count + 1):
         items.extend(getter(track_type, index) or [])
     return items
+
+
+def _snapshot_untouched_timeline_items(conn, *, switch_scope: str) -> list[dict[str, Any]]:
+    normalized_scope = _normalize_switch_scope(switch_scope)
+    changed_types = {"video", "audio"} if normalized_scope == "linked" else {normalized_scope}
+    timeline = getattr(conn, "timeline", None)
+    count_getter = getattr(timeline, "GetTrackCount", None)
+    item_getter = getattr(timeline, "GetItemListInTrack", None)
+    if not callable(count_getter) or not callable(item_getter):
+        raise APICallFailed(
+            "Cannot verify preserved timeline item positions because timeline track readback is unavailable.",
+            details={"switch_scope": normalized_scope},
+        )
+    rows: list[dict[str, Any]] = []
+    for track_type in ("video", "audio", "subtitle"):
+        if track_type in changed_types:
+            continue
+        try:
+            raw_track_count = count_getter(track_type)
+            if isinstance(raw_track_count, bool) or raw_track_count is None:
+                raise TypeError("track count is not numeric")
+            track_count = int(raw_track_count)
+            if track_count < 0:
+                raise ValueError("track count is negative")
+        except Exception as exc:
+            raise APICallFailed(
+                "Cannot verify preserved timeline item positions because track-count readback failed.",
+                details={"switch_scope": normalized_scope, "track_type": track_type},
+            ) from exc
+        for track_index in range(1, track_count + 1):
+            try:
+                track_items = item_getter(track_type, track_index)
+            except Exception as exc:
+                raise APICallFailed(
+                    "Cannot verify preserved timeline item positions because track-item readback failed.",
+                    details={"switch_scope": normalized_scope, "track_type": track_type, "track_index": track_index},
+                ) from exc
+            if not isinstance(track_items, (list, tuple)):
+                raise APICallFailed(
+                    "Cannot verify preserved timeline item positions because track-item readback was malformed.",
+                    details={"switch_scope": normalized_scope, "track_type": track_type, "track_index": track_index},
+                )
+            for item in track_items:
+                item_id = timeline_ops.documented_sdk_unique_id(item)
+                start_getter = getattr(item, "GetStart", None)
+                end_getter = getattr(item, "GetEnd", None)
+                if not item_id or not callable(start_getter) or not callable(end_getter):
+                    raise APICallFailed(
+                        "Cannot verify preserved timeline item positions for the scoped multicam switch.",
+                        details={"switch_scope": normalized_scope, "track_type": track_type, "track_index": track_index},
+                    )
+                try:
+                    row = {
+                        "item_id": str(item_id),
+                        "track_type": track_type,
+                        "track_index": track_index,
+                        "start": int(start_getter()),
+                        "end": int(end_getter()),
+                    }
+                except Exception as exc:
+                    raise APICallFailed(
+                        "Cannot verify preserved timeline item positions because item timing readback failed.",
+                        details={"switch_scope": normalized_scope, "track_type": track_type, "track_index": track_index, "item_id": str(item_id)},
+                    ) from exc
+                rows.append(row)
+    if len({row["item_id"] for row in rows}) != len(rows):
+        raise APICallFailed(
+            "Cannot verify preserved timeline item positions because item identities were not unique.",
+            details={"switch_scope": normalized_scope},
+        )
+    return sorted(rows, key=lambda row: row["item_id"])
 
 
 def _normalize_switch_scope(value: str | None) -> str:
@@ -209,6 +281,22 @@ def _restore_timeline_start_state(conn, *, timeline_name: str, start_state: dict
             },
         )
     changed = current_timecode != target_timecode
+    applied_record_delta_frames = 0
+    if changed:
+        if not current_timecode:
+            raise APICallFailed(
+                "Cannot preserve timeline item positions because the current timeline start timecode is unavailable.",
+                details={"timeline_name": timeline_name, "target_timecode": target_timecode},
+            )
+        try:
+            fps = float(getattr(conn, "fps", 24.0) or 24.0)
+            current_frame = int(round(timecode_to_seconds(current_timecode, fps) * fps))
+            applied_record_delta_frames = int(start_state.get("start_frame") or 0) - current_frame
+        except Exception as exc:
+            raise APICallFailed(
+                "Cannot preserve timeline item positions while restoring the timeline start timecode.",
+                details={"timeline_name": timeline_name, "target_timecode": target_timecode, "current_timecode": current_timecode},
+            ) from exc
     if changed and setter(target_timecode) is False:
         raise APICallFailed(
             "DaVinci Resolve refused to restore the timeline start timecode after native multicam switch.",
@@ -235,6 +323,7 @@ def _restore_timeline_start_state(conn, *, timeline_name: str, start_state: dict
         "initial_timecode": current_timecode,
         "final_timecode": final_timecode,
         "start_frame": start_state.get("start_frame"),
+        "applied_record_delta_frames": applied_record_delta_frames,
     }
 
 
@@ -780,6 +869,7 @@ def _materialize_timeline_from_switch_plan_unprotected(
     current_database = ops_module._current_database_details(conn)
     initial_video_item_count = 0
     initial_audio_item_count = 0
+    preserved_api_items_before: list[dict[str, Any]] = []
 
     if replace_active_timeline:
         active_timeline = getattr(conn, "timeline", None)
@@ -790,6 +880,7 @@ def _materialize_timeline_from_switch_plan_unprotected(
                 details={"multicam_name": multicam_name},
             )
         timeline_start_state = _capture_timeline_start_state(conn)
+        preserved_api_items_before = _snapshot_untouched_timeline_items(conn, switch_scope=switch_scope)
         timeline_name = active_name
         initial_video_item_count = len(active_timeline.GetItemListInTrack("video", 1) or [])
         initial_audio_item_count = len(active_timeline.GetItemListInTrack("audio", 1) or [])
@@ -977,6 +1068,8 @@ def _materialize_timeline_from_switch_plan_unprotected(
             multicam_name=multicam_name,
             segments=segments,
             switch_scope=switch_scope,
+            preserved_item_positions=segment_write.get("preserved_items_before") or [],
+            final_start_delta=int(timeline_start_restore.get("applied_record_delta_frames") or 0),
             multicam_media_id=multicam_media_id,
             timeline_native_id=timeline_native_id,
         )
@@ -1012,6 +1105,12 @@ def _materialize_timeline_from_switch_plan_unprotected(
         }
 
     conn.refresh()
+    preserved_api_items_after = _snapshot_untouched_timeline_items(conn, switch_scope=switch_scope)
+    if preserved_api_items_after != preserved_api_items_before:
+        raise APICallFailed(
+            "Scoped multicam switching changed a timeline item outside the requested media domain.",
+            details={"switch_scope": switch_scope, "before": preserved_api_items_before, "after": preserved_api_items_after},
+        )
     db_snapshot = ops_module._snapshot_timeline_multicam_segments_db(
         project_db_path,
         timeline_name=timeline_name,

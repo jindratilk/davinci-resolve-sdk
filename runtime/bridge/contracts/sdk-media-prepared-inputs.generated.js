@@ -1,4 +1,4 @@
-// Generated proprietary Media prepared input schemas. Do not edit or publish.
+// Generated Media prepared input schemas. Regenerate from the inventoried source.
 export const SDK_MEDIA_PREPARED_INPUTS = [
   {
     "actionId": "cutagent.action.media.clear_transcription",
@@ -84,16 +84,69 @@ export const SDK_MEDIA_PREPARED_INPUTS = [
   {
     "actionId": "cutagent.action.media.delete",
     "inputSchema": {
-      "additionalProperties": false,
-      "properties": {
-        "name": {
-          "type": "string"
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 1000,
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "assetIds": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 1000,
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "precondition": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "projectId": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "precondition",
+            "assetIds"
+          ],
+          "type": "object"
         }
-      },
-      "required": [
-        "name"
-      ],
-      "type": "object"
+      ]
     }
   },
   {

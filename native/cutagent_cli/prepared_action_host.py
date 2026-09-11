@@ -247,7 +247,7 @@ class PreparedActionHost:
     def _initialize(self, request_id: str, payload: Mapping[str, Any]) -> dict[str, Any]:
         if self._authority is not None:
             raise PreparedActionError("PREPARED_ACTION_INVALID_STATE", "Private host is already initialized.")
-        required = {"runtimeContext", "policyPublicJwk", "custodyDatabasePath"}
+        required = {"runtimeContext", "custodyDatabasePath"}
         if set(payload) not in (required, required | {"advertisedActionIds"}) \
                 or not isinstance(payload["runtimeContext"], dict):
             raise PreparedActionError("INVALID_REQUEST", "Private host initialization is invalid.")
@@ -263,13 +263,6 @@ class PreparedActionHost:
                 return False
             return self._callback(self._active_request_id, "redeemAuthorization", {
                 "jti": jti, "claims": dict(claims), "authorizationToken": token,
-            }) is True
-
-        def protected(claims: Mapping[str, Any], impact: Mapping[str, Any], report: Mapping[str, Any]) -> bool:
-            if self._active_request_id is None:
-                return False
-            return self._callback(self._active_request_id, "assertProtectedState", {
-                "claims": dict(claims), "impact": dict(impact), "report": dict(report),
             }) is True
 
         def inspect_timeline(payload: Mapping[str, Any]) -> Any:
@@ -296,8 +289,6 @@ class PreparedActionHost:
             registry=self._registry,
             runtime_context=lambda: dict(self._runtime_context or {}),
             redeem_authorization_jti=redeem,
-            assert_protected_state_evidence=protected,
-            policy_public_jwk=payload["policyPublicJwk"],
             custody_database_path=payload["custodyDatabasePath"],
             execution_authorities=self._execution_authorities,
             private_failure_observer=(
@@ -323,11 +314,8 @@ class PreparedActionHost:
             if set(payload) not in ({"request"}, {"request", "mutationBase"}):
                 raise PreparedActionError("INVALID_REQUEST", "Private prepare envelope is invalid.")
             return self._authority.prepare(payload["request"], payload.get("mutationBase"))
-        if method == "acceptPolicy":
-            self._authority.accept_policy(payload["receipt"], payload["policyAttestation"], payload["policyDecisionDigest"])
-            return None
         if method == "admit":
-            self._authority.admit(payload["receipt"], payload.get("authorizationToken"), payload.get("policyDecisionDigest"))
+            self._authority.admit(payload["receipt"], payload.get("authorizationToken"))
             return None
         if method == "execute":
             return self._authority.execute(payload["receipt"])

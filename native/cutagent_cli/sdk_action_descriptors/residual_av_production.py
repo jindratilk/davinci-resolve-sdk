@@ -47,16 +47,38 @@ PRODUCTION_VERIFIED_RESIDUAL_AV_ACTIONS = frozenset(
         ),
     }
 )
-_INDEPENDENT_READ_ACTIONS = frozenset(
+_SINGLE_RESULT_VALIDATION_ACTIONS = frozenset(
     {
-        # These file analyzers return semantic measurements rather than native
-        # timeline state. Execute each deterministic analyzer a second time after
-        # the admitted call and bind projection to an exact result digest match.
+        # These reads are calculations over one exact admitted input. Validate
+        # their result structure and input-derived invariants without repeating
+        # the potentially expensive underlying calculation.
         "cutagent.action.audio.beat_detect",
         "cutagent.action.audio.waveform_offset",
         "cutagent.action.clip.offset",
     }
 )
+
+
+def _stable_ordinary_timeline_items(snapshot):
+    """Compare timeline content while ignoring snapshot-identity churn."""
+    items = {}
+    for track in snapshot.get("tracks", ()):
+        stable_track = {
+            key: deepcopy(track.get(key))
+            for key in ("type", "index", "name", "enabled", "locked")
+            if key in track
+        }
+        for clip in track.get("clips", ()):
+            item_id = clip.get("id")
+            if not isinstance(item_id, str):
+                continue
+            stable_clip = {
+                key: deepcopy(value)
+                for key, value in clip.items()
+                if key not in {"snapshotId", "snapshotRevision", "snapshotTrackId"}
+            }
+            items[item_id] = (stable_track, stable_clip)
+    return items
 
 
 def _semantic_data_with_artifact_readback(action_id, data, context, value=None):
@@ -1342,18 +1364,32 @@ class ResidualAvProductionAuthority(ResidualAvHandlerExecutionAuthority):
 
     @staticmethod
     def _verified_semantic_state(action_id, value, targets, record, action_state):
-        if action_id in _INDEPENDENT_READ_ACTIONS:
-            first = record.get("handlerResult") if isinstance(record, Mapping) else None
-            second = (
-                record.get("independentHandlerResult")
-                if isinstance(record, Mapping)
-                else None
-            )
-            if second is None or _digest(first) != _digest(second):
-                raise ValidationError(
-                    "Residual read result did not match an independent second read."
-                )
-            return {"kind": "independent_read", "digest": _digest(second)}
+        if action_id in _SINGLE_RESULT_VALIDATION_ACTIONS:
+            raw = record.get("handlerResult") if isinstance(record, Mapping) else None
+            handler_input = record.get("handlerInput") \
+                if isinstance(record, Mapping) else None
+            data = raw.get("data", raw) if isinstance(raw, Mapping) else None
+            required = {
+                "cutagent.action.audio.beat_detect": {"input", "beats"},
+                "cutagent.action.audio.waveform_offset": {
+                    "offset_seconds", "offset_frames_float", "confidence",
+                },
+                "cutagent.action.clip.offset": {
+                    "clip", "left_offset", "right_offset",
+                },
+            }[action_id]
+            if not isinstance(data, Mapping) or not required <= set(data):
+                raise ValidationError("Residual read result is malformed.")
+            if not isinstance(handler_input, Mapping):
+                raise ValidationError("Residual read result lacks its admitted input.")
+            if action_id == "cutagent.action.audio.beat_detect" and data[
+                "input"
+            ] != handler_input.get("inputPath"):
+                raise ValidationError("Residual beat result does not match its input.")
+            if action_id == "cutagent.action.clip.offset" \
+                    and data["clip"] != handler_input.get("clipName"):
+                raise ValidationError("Residual clip offset result does not match its input.")
+            return {"kind": "validated_result"}
         if action_id.startswith("cutagent.action.clip.marker."):
             before_state = (
                 record.get("beforeActionState") if isinstance(record, Mapping) else None
@@ -1565,6 +1601,103 @@ class ResidualAvProductionAuthority(ResidualAvHandlerExecutionAuthority):
                     "inserted": deepcopy(inserted),
                     "verification": deepcopy(dict(verification)),
                 }
+            elif action_id == "cutagent.action.edit.transition.batch":
+                raw = record.get("handlerResult") if isinstance(record, Mapping) else None
+                data = raw.get("data", raw) if isinstance(raw, Mapping) else None
+                verification = data.get("verification") if isinstance(data, Mapping) else None
+                inserted = data.get("inserted") if isinstance(data, Mapping) else None
+                results = data.get("results") if isinstance(data, Mapping) else None
+                requested = value.get("transitions")
+                requested = requested if isinstance(requested, list) else [requested]
+                checks = verification.get("checks") if isinstance(verification, Mapping) else None
+                checks = checks if isinstance(checks, list) else []
+                check_ids = {
+                    check.get("observed_item_id")
+                    for check in checks
+                    if isinstance(check, Mapping)
+                    and check.get("ok") is True
+                    and check.get("expected_item_id") == check.get("observed_item_id")
+                }
+                if (
+                    not isinstance(inserted, list)
+                    or not isinstance(results, list)
+                    or len(results) != len(requested)
+                    or not isinstance(verification, Mapping)
+                    or verification.get("status") != "verified"
+                    or any(
+                        not isinstance(row, Mapping)
+                        or not isinstance(row.get("index"), int)
+                        for row in results
+                    )
+                    or sorted(row["index"] for row in results)
+                    != list(range(len(requested)))
+                ):
+                    raise ValidationError(
+                        "Transition batch lacks complete verified per-seam readback."
+                    )
+                observed_inserted = []
+                verified_results = []
+                for index, transition in enumerate(requested):
+                    result_rows = [
+                        row for row in results
+                        if isinstance(row, Mapping) and row.get("index") == index
+                    ]
+                    if len(result_rows) != 1 or not isinstance(transition, Mapping):
+                        raise ValidationError(
+                            "Transition batch lacks complete verified per-seam readback."
+                        )
+                    result_row = result_rows[0]
+                    inserted_rows = result_row.get("inserted") or []
+                    skipped_rows = result_row.get("skipped_existing") or []
+                    if (
+                        result_row.get("ok") is not True
+                        or not isinstance(inserted_rows, list)
+                        or not isinstance(skipped_rows, list)
+                        or bool(inserted_rows) == bool(skipped_rows)
+                    ):
+                        raise ValidationError(
+                            "Transition batch result is neither one verified insertion nor an idempotent skip."
+                        )
+                    expected_start = (
+                        transition["editFrame"]
+                        if transition["placement"] == "start"
+                        else transition["editFrame"] - transition["durationFrames"]
+                        if transition["placement"] == "end"
+                        else transition["editFrame"] - (transition["durationFrames"] // 2)
+                    )
+                    observed_rows = inserted_rows or skipped_rows
+                    if len(observed_rows) != 1 or any(
+                        not isinstance(row, Mapping)
+                        or row.get("track_type") != "video"
+                        or row.get("track_index") != transition["outgoing"]["trackIndex"]
+                        or row.get("start") != expected_start
+                        or row.get("duration") != transition["durationFrames"]
+                        for row in observed_rows
+                    ):
+                        raise ValidationError(
+                            "Transition batch readback drifted from a requested seam, duration, or track."
+                        )
+                    if inserted_rows and any(
+                        not isinstance(row.get("item_id"), str)
+                        or not row["item_id"]
+                        or row["item_id"] not in check_ids
+                        for row in inserted_rows
+                    ):
+                        raise ValidationError(
+                            "Transition batch insertion lacks exact native item identity readback."
+                        )
+                    observed_inserted.extend(inserted_rows)
+                    verified_results.append(deepcopy(dict(result_row)))
+                if observed_inserted != inserted:
+                    raise ValidationError(
+                        "Transition batch aggregate readback drifted from its per-seam results."
+                    )
+                native_transition_state = {
+                    "inserted": deepcopy(inserted),
+                    "results": verified_results,
+                    "verification": deepcopy(dict(verification)),
+                    "noOp": not inserted,
+                }
             if action_id == "cutagent.action.edit.from_edl":
                 preserved = record.get("preservedOriginalSnapshot")
                 if preserved != before_snapshot:
@@ -1580,22 +1713,30 @@ class ResidualAvProductionAuthority(ResidualAvHandlerExecutionAuthority):
                     raise ValidationError(
                         "EDL import did not reconcile to the exact expected new timeline."
                     )
-            elif before_snapshot.get("revision") == after_snapshot.get("revision"):
+            elif before_snapshot.get("revision") == after_snapshot.get("revision") and not (
+                action_id == "cutagent.action.edit.transition.batch"
+                and isinstance(native_transition_state, Mapping)
+                and native_transition_state.get("noOp") is True
+            ):
                 raise ValidationError(
                     "Edit mutation did not advance the exact timeline revision."
                 )
-            before_items = {
-                clip["id"]: (track, clip)
-                for track in before_snapshot.get("tracks", ())
-                for clip in track.get("clips", ())
-                if isinstance(clip.get("id"), str)
-            }
-            after_items = {
-                clip["id"]: (track, clip)
-                for track in after_snapshot.get("tracks", ())
-                for clip in track.get("clips", ())
-                if isinstance(clip.get("id"), str)
-            }
+            if action_id == "cutagent.action.edit.transition.batch":
+                before_items = _stable_ordinary_timeline_items(before_snapshot)
+                after_items = _stable_ordinary_timeline_items(after_snapshot)
+            else:
+                before_items = {
+                    clip["id"]: (track, clip)
+                    for track in before_snapshot.get("tracks", ())
+                    for clip in track.get("clips", ())
+                    if isinstance(clip.get("id"), str)
+                }
+                after_items = {
+                    clip["id"]: (track, clip)
+                    for track in after_snapshot.get("tracks", ())
+                    for clip in track.get("clips", ())
+                    if isinstance(clip.get("id"), str)
+                }
             removed = sorted(set(before_items) - set(after_items))
             created = sorted(set(after_items) - set(before_items))
             changed = sorted(
@@ -1603,6 +1744,53 @@ class ResidualAvProductionAuthority(ResidualAvHandlerExecutionAuthority):
                 for item_id in set(before_items) & set(after_items)
                 if before_items[item_id] != after_items[item_id]
             )
+            if action_id == "cutagent.action.edit.transition.batch":
+                unmatched_created = set(created)
+                matched_transition_ids = set()
+                for row in native_transition_state.get("inserted", ()):
+                    start = row.get("start")
+                    duration = row.get("duration")
+                    pretty_type = row.get("pretty_type")
+                    matches = []
+                    for item_id in unmatched_created:
+                        track, clip = after_items[item_id]
+                        record_range = clip.get("recordRange")
+                        if not isinstance(record_range, Mapping):
+                            continue
+                        if (
+                            track.get("type") == row.get("track_type")
+                            and track.get("index") == row.get("track_index")
+                            and record_range.get("start") == start
+                            and record_range.get("endExclusive") == start + duration
+                            and (
+                                not isinstance(pretty_type, str)
+                                or clip.get("name") == pretty_type
+                            )
+                        ):
+                            matches.append(item_id)
+                    if len(matches) != 1:
+                        raise ValidationError(
+                            "Transition batch could not reconcile one exact projected transition item.",
+                            details={
+                                "native_item_id": row.get("item_id"),
+                                "projected_matches": sorted(matches),
+                            },
+                        )
+                    matched_transition_ids.add(matches[0])
+                    unmatched_created.remove(matches[0])
+                created = [
+                    item_id for item_id in created
+                    if item_id not in matched_transition_ids
+                ]
+                if removed or created or changed:
+                    raise ValidationError(
+                        "Transition batch changed an unrelated ordinary timeline item.",
+                        details={
+                            "removed_item_ids": removed,
+                            "created_item_ids": created,
+                            "changed_item_ids": changed,
+                        },
+                    )
             if action_id == "cutagent.action.edit.from_edl":
                 removed = []
                 changed = []
@@ -1629,6 +1817,16 @@ class ResidualAvProductionAuthority(ResidualAvHandlerExecutionAuthority):
                     + list(value.get("sourceTargets", ()))
                     + list(value.get("sourceAudioTargets", ()))
                     + list(value.get("linkedAudioTargets", ()))
+                    + [
+                        item
+                        for transition in (
+                            value.get("transitions")
+                            if isinstance(value.get("transitions"), list)
+                            else [value.get("transitions")]
+                        )
+                        if isinstance(transition, Mapping)
+                        for item in (transition.get("outgoing"), transition.get("incoming"))
+                    ]
                 )
                 if isinstance(item, Mapping) and isinstance(item.get("id"), str)
             }
@@ -2029,6 +2227,7 @@ class ResidualAvProductionAuthority(ResidualAvHandlerExecutionAuthority):
             raise ValidationError(
                 "Residual child execution lacks exact private native target custody."
             )
+        exact_target = _mutable_copy(exact_target)
         exact_transition = None
         if action_id == "cutagent.action.edit.transition.add":
             private_bindings = context.get("privateBindings")
@@ -2042,14 +2241,30 @@ class ResidualAvProductionAuthority(ResidualAvHandlerExecutionAuthority):
                     "Residual transition execution lacks exact private native target custody."
                 )
             exact_transition = _mutable_copy(exact_transition)
+        exact_transition_batch = None
+        if action_id == "cutagent.action.edit.transition.batch":
+            private_bindings = context.get("privateBindings")
+            exact_transition_batch = (
+                private_bindings.get("exactTransitionBatchTargets")
+                if isinstance(private_bindings, Mapping)
+                else None
+            )
+            if not isinstance(exact_transition_batch, (list, tuple)) \
+                    or not exact_transition_batch:
+                raise ValidationError(
+                    "Residual transition batch execution lacks exact private native target custody."
+                )
+            exact_transition_batch = _mutable_copy(exact_transition_batch)
         env_key = "CUTAGENT_SDK_EXPECTED_CLIP_MOTION_TARGET"
         edl_env_key = "CUTAGENT_SDK_EXPECTED_EDL_TIMELINE_NAME"
         transition_env_key = "CUTAGENT_CLI_SDK_TRANSITION_TARGETS"
+        transition_batch_env_key = "CUTAGENT_CLI_SDK_TRANSITION_BATCH_TARGETS"
         track_type_env_key = "CUTAGENT_CLI_SDK_TIMELINE_TRACK_TYPE"
         track_index_env_key = "CUTAGENT_CLI_SDK_TIMELINE_TRACK_INDEX"
         prior_env = os.environ.get(env_key)
         prior_edl_env = os.environ.get(edl_env_key)
         prior_transition_env = os.environ.get(transition_env_key)
+        prior_transition_batch_env = os.environ.get(transition_batch_env_key)
         prior_track_type_env = os.environ.get(track_type_env_key)
         prior_track_index_env = os.environ.get(track_index_env_key)
         if exact_target is not None:
@@ -2059,6 +2274,10 @@ class ResidualAvProductionAuthority(ResidualAvHandlerExecutionAuthority):
             os.environ[transition_env_key] = json.dumps(exact_transition, separators=(",", ":"))
             os.environ[track_type_env_key] = str(primary["trackType"])
             os.environ[track_index_env_key] = str(primary["trackIndex"])
+        if exact_transition_batch is not None:
+            os.environ[transition_batch_env_key] = json.dumps(
+                exact_transition_batch, separators=(",", ":")
+            )
         if action_id == "cutagent.action.edit.from_edl":
             expected_name = handler_input.get("expectedTimelineName")
             if not isinstance(expected_name, str) or not expected_name:
@@ -2068,11 +2287,6 @@ class ResidualAvProductionAuthority(ResidualAvHandlerExecutionAuthority):
             result = super().invoke_admitted_handler(
                 action_id, context, prepared, handler_input
             )
-            independent_result = None
-            if action_id in _INDEPENDENT_READ_ACTIONS:
-                independent_result = super().invoke_admitted_handler(
-                    action_id, context, prepared, deepcopy(handler_input)
-                )
         finally:
             if exact_target is not None:
                 if prior_env is None:
@@ -2089,6 +2303,11 @@ class ResidualAvProductionAuthority(ResidualAvHandlerExecutionAuthority):
                         os.environ.pop(key, None)
                     else:
                         os.environ[key] = prior
+            if exact_transition_batch is not None:
+                if prior_transition_batch_env is None:
+                    os.environ.pop(transition_batch_env_key, None)
+                else:
+                    os.environ[transition_batch_env_key] = prior_transition_batch_env
             if action_id == "cutagent.action.edit.from_edl":
                 if prior_edl_env is None:
                     os.environ.pop(edl_env_key, None)
@@ -2098,7 +2317,7 @@ class ResidualAvProductionAuthority(ResidualAvHandlerExecutionAuthority):
         if isinstance(operation_id, str):
             self._handler_results[operation_id] = {
                 "handlerResult": deepcopy(result),
-                "independentHandlerResult": deepcopy(independent_result),
+                "handlerInput": deepcopy(handler_input),
                 "beforeTimelineItemIds": deepcopy(
                     prepared.get("domain", {})
                     .get("preState", {})
@@ -2118,7 +2337,10 @@ class ResidualAvProductionAuthority(ResidualAvHandlerExecutionAuthority):
         return result
 
     def _recover(self, action_id, context, prepared, _failure):
-        if action_id == "cutagent.action.edit.transition.add":
+        if action_id in {
+            "cutagent.action.edit.transition.add",
+            "cutagent.action.edit.transition.batch",
+        }:
             operation_id = context.get("operationId")
             record = self._handler_results.get(operation_id) \
                 if isinstance(operation_id, str) else None

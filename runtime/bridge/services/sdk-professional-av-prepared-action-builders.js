@@ -7,6 +7,9 @@ import {z} from "zod";
 
 import {SDK_RESIDUAL_AV_PREPARED_INPUTS} from "../contracts/sdk-residual-av-inputs.generated.js";
 import {
+  sdkBulkClipStateInputSchema,
+  sdkBulkClipStateResultSchema,
+  sdkBulkClipPropertyInputSchema,
   sdkClipFreezeInputSchema,
   sdkClipKeyframeAddInputSchema,
   sdkClipKeyframeAddResultSchema,
@@ -23,11 +26,13 @@ import {
   sdkExactRetimeCurveSchema,
 } from "../contracts/generated/sdk-operations.js";
 import {CUTAGENT_PREPARED_ACTION_ACTION_METADATA} from "../contracts/sdk-prepared-action-metadata.generated.js";
-import {resolveSdkPreparedMutationScope} from "./sdk-direct-mutation-scope.js";
 import {createSdkPreparedActionBuilderContribution} from "./sdk-prepared-action-carrier.js";
 
 const ajv = new Ajv2020({allErrors: true, strict: true, strictRequired: false});
 const PROFESSIONAL_INPUTS = Object.freeze({
+  "cutagent.action.bulk.disable": sdkBulkClipStateInputSchema,
+  "cutagent.action.bulk.enable": sdkBulkClipStateInputSchema,
+  "cutagent.action.bulk.property_set": sdkBulkClipPropertyInputSchema,
   "cutagent.action.edit.fx.add": z.object({
     projectId: z.string().min(1), timelineId: z.string().min(1), timelineRevision: z.string().min(1),
     target: z.object({
@@ -98,7 +103,7 @@ const publicTimeMap = z.object({
   }).strict()).max(4096),
   curves: z.array(sdkExactRetimeCurveSchema).min(1).max(514).optional(),
 }).strict();
-function publicRetimeResultSchema(actionId) {
+export function publicRetimeResultSchema(actionId) {
   return z.object({
     actionId: z.literal(actionId),
     payload: z.object({
@@ -172,9 +177,6 @@ function projectRetimeResult(actionId, raw) {
   return structuredClone(raw.publicResult);
 }
 
-function legacyMatchingScopes(mutationPolicyGate, accountFingerprint, binding) {
-  return mutationPolicyGate.listScopes({accountFingerprint}).filter((scope) => scope.binding.level === binding);
-}
 const RESIDUAL_EDIT_ACTIONS = new Set([
   "cutagent.action.edit.auto_subtitle", "cutagent.action.edit.camera_pip",
   "cutagent.action.edit.delete_through_edit", "cutagent.action.edit.from_edl",
@@ -183,6 +185,7 @@ const RESIDUAL_EDIT_ACTIONS = new Set([
   "cutagent.action.edit.scene_detect", "cutagent.action.edit.slide_selected",
   "cutagent.action.edit.slip_selected", "cutagent.action.edit.social_crop",
   "cutagent.action.edit.split", "cutagent.action.edit.transition.add",
+  "cutagent.action.edit.transition.batch",
 ]);
 
 function minimumBinding(authority) {
@@ -209,11 +212,18 @@ function sha256(value) { return crypto.createHash("sha256").update(value).digest
 function timelineItems(snapshot) {
   return (snapshot?.tracks ?? []).flatMap((track) => (track.clips ?? []).map((clip) => ({track, clip})));
 }
+function transitionBatchEntries(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return [];
+  return Array.isArray(input.transitions) ? input.transitions : [input.transitions].filter(Boolean);
+}
 function exactPublicTimelineTargets(input) {
   return [
     input.target, input.outgoing, input.incoming, input.leftNeighbor, input.rightNeighbor,
     ...(input.targets ?? []), ...(input.sourceTargets ?? []), ...(input.sourceAudioTargets ?? []),
-    ...(input.linkedAudioTargets ?? []),
+    ...(input.linkedAudioTargets ?? []), ...(input.items ?? []).map((item) => item.target),
+    ...transitionBatchEntries(input).flatMap((transition) => [
+      transition.outgoing, transition.incoming, ...(transition.linkedAudioTargets ?? []),
+    ]),
   ].filter((value) => value && typeof value.id === "string");
 }
 function assertPublicTimelineTarget(target, track, clip, actionId) {
@@ -346,6 +356,25 @@ function assertResidualEditHandlerScope(actionId, input, snapshot, rows) {
       || outgoing.clip.recordRange.endExclusive !== incoming.clip.recordRange.start
       || input.editFrame !== incoming.clip.recordRange.start) {
       throw new Error("Prepared edit-point neighbors do not describe one exact live edit.");
+    }
+  }
+  if (actionId === "cutagent.action.edit.transition.batch") {
+    for (const transition of transitionBatchEntries(input)) {
+      const outgoing = rows.find(({clip}) => clip.id === transition.outgoing.id);
+      const incoming = rows.find(({clip}) => clip.id === transition.incoming.id);
+      if (!outgoing || !incoming || outgoing.track.type !== "video"
+        || incoming.track.type !== "video" || outgoing.track.index !== incoming.track.index
+        || outgoing.clip.recordRange.endExclusive !== incoming.clip.recordRange.start
+        || transition.editFrame !== incoming.clip.recordRange.start) {
+        throw new Error("Prepared transition batch contains a stale or non-video edit seam.");
+      }
+      const declared = transition.linkedAudioTargets.map((item) => item.id);
+      const expected = [...new Set([
+        ...(outgoing.clip.linkedItemIds ?? []), ...(incoming.clip.linkedItemIds ?? []),
+      ])].filter((id) => byId.get(id)?.track.type === "audio");
+      if (!sameIds(declared, expected)) {
+        throw new Error("Prepared transition batch linked-audio custody is incomplete.");
+      }
     }
   }
   if (actionId === "cutagent.action.edit.ripple_delete") {
@@ -647,6 +676,7 @@ async function captureExactBinding(actionId, input, context, scope, minimum, dep
   let fusionImportMode = null;
   let exactTimelineItemTarget = null;
   let exactTransitionTargets = null;
+  let exactTransitionBatchTargets = null;
   const inputPaths = [input.inputPath, input.referencePath, input.targetPath, input.templatePath, input.imagePath,
     actionId === "cutagent.action.clip.fusion.import" ? input.path : null]
     .filter((value) => typeof value === "string" && value);
@@ -739,7 +769,7 @@ async function captureExactBinding(actionId, input, context, scope, minimum, dep
     if (RESIDUAL_EDIT_ACTIONS.has(actionId)) {
       assertResidualEditHandlerScope(actionId, input, snapshot, rows);
     }
-    if (actionId === "cutagent.action.edit.transition.add") {
+    if (["cutagent.action.edit.transition.add", "cutagent.action.edit.transition.batch"].includes(actionId)) {
       const nativeIds = new Map(inspected.privateTimelineItemNativeIdByPublicId ?? []);
       const privateTarget = (target) => {
         const id = nativeIds.get(target.id);
@@ -753,14 +783,25 @@ async function captureExactBinding(actionId, input, context, scope, minimum, dep
           name: target.name, linkedItemIds,
         };
       };
-      exactTransitionTargets = {
-        outgoing: privateTarget(input.outgoing),
-        incoming: privateTarget(input.incoming),
-        linkedAudioTargets: input.linkedAudioTargets.map(privateTarget),
-        editFrame: input.editFrame,
-        placement: input.placement,
-        scope: input.scope,
-      };
+      if (actionId === "cutagent.action.edit.transition.add") {
+        exactTransitionTargets = {
+          outgoing: privateTarget(input.outgoing),
+          incoming: privateTarget(input.incoming),
+          linkedAudioTargets: input.linkedAudioTargets.map(privateTarget),
+          editFrame: input.editFrame,
+          placement: input.placement,
+          scope: input.scope,
+        };
+      } else {
+        exactTransitionBatchTargets = transitionBatchEntries(input).map((transition) => ({
+          outgoing: privateTarget(transition.outgoing),
+          incoming: privateTarget(transition.incoming),
+          linkedAudioTargets: transition.linkedAudioTargets.map(privateTarget),
+          editFrame: transition.editFrame,
+          placement: transition.placement,
+          scope: "video",
+        }));
+      }
     }
     for (const {clip} of rows) {
       if (!targetIds.includes(clip.id)) { targetIds.push(clip.id); targetRevisions[clip.id] = snapshot.revision; }
@@ -939,22 +980,11 @@ async function captureExactBinding(actionId, input, context, scope, minimum, dep
       artifacts: privateArtifacts,
       ...(exactTimelineItemTarget ? {exactTimelineItemTarget} : {}),
       ...(exactTransitionTargets ? {exactTransitionTargets} : {}),
+      ...(exactTransitionBatchTargets ? {exactTransitionBatchTargets} : {}),
       ...(fusionBeforeReferences ? {fusionBeforeReferences} : {}),
       ...(fusionImportMode ? {fusionImportMode} : {}),
     },
   };
-}
-
-function bindingMatchesScope(binding, scope, minimum) {
-  return binding.projectLibraryId === scope.binding.projectLibraryId
-    && (minimum === "account/project-library" || (
-      binding.projectId === scope.binding.projectId
-      && binding.projectRevision === scope.binding.projectRevision
-    ))
-    && (minimum !== "project+timeline" || (
-      binding.timelineId === scope.binding.timelineId
-      && binding.timelineRevision === scope.binding.timelineRevision
-    ));
 }
 
 function assertBinding(actionId, captured, minimum) {
@@ -1010,42 +1040,17 @@ function builder({actionId, inputSchema, operationClass, authority}, dependencie
       resultSchema: RETIME_RESULT_SCHEMAS[actionId],
       projectResult: (value) => projectRetimeResult(actionId, value),
     } : {}),
+    ...(["cutagent.action.bulk.disable", "cutagent.action.bulk.enable"].includes(actionId) ? {
+      resultSchema: sdkBulkClipStateResultSchema,
+      projectResult: (value) => value,
+    } : {}),
     ...(mutationBinding ? {mutationBinding} : {}),
     async captureRequestBinding({context, input}) {
       if (["cutagent.action.clip.fusion.add", "cutagent.action.clip.fusion.import"].includes(actionId)) {
         validateFusionCreateSelector(actionId, input);
       }
-      let scope = null;
-      let captured = null;
-      if (operationClass !== "read") {
-        if (typeof dependencies.directMutationPolicyAuthority?.resolveScope !== "function") {
-          const matches = [];
-          for (const candidate of legacyMatchingScopes(dependencies.mutationPolicyGate, context.accountFingerprint, minimum)) {
-            try {
-              const candidateCapture = await captureExactBinding(actionId, input, context, candidate, minimum, dependencies);
-              if (bindingMatchesScope(assertBinding(actionId, candidateCapture, minimum), candidate, minimum)) matches.push({scope: candidate, captured: candidateCapture});
-            } catch {
-              // Retained only for isolated legacy fixtures; production always has direct authority.
-            }
-          }
-          if (matches.length !== 1) throw new Error(`Prepared action requires one exact live policy scope: ${actionId}`);
-          ({scope, captured} = matches[0]);
-        } else {
-          captured = await captureExactBinding(actionId, input, context, null, minimum, dependencies);
-          scope = await resolveSdkPreparedMutationScope({
-            directMutationPolicyAuthority: dependencies.directMutationPolicyAuthority,
-            context,
-            minimumBinding: minimum,
-            binding: assertBinding(actionId, captured, minimum),
-          });
-        }
-      } else {
-        captured = await captureExactBinding(actionId, input, context, null, minimum, dependencies);
-      }
-      const exactBinding = assertBinding(actionId, captured, minimum);
-      if (scope && !bindingMatchesScope(exactBinding, scope, minimum)) {
-        throw new Error(`Prepared action live identity capture escaped its policy scope: ${actionId}`);
-      }
+      const captured = await captureExactBinding(actionId, input, context, null, minimum, dependencies);
+      assertBinding(actionId, captured, minimum);
       const referencedPayloadDigests = captured.referencedPayloadDigests ?? [];
       if (!Array.isArray(referencedPayloadDigests)
         || referencedPayloadDigests.some((digest) => !/^sha256:[a-f0-9]{64}$/u.test(digest))) {
@@ -1061,7 +1066,7 @@ function builder({actionId, inputSchema, operationClass, authority}, dependencie
   });
 }
 
-/** Exact private 11 + 72 builder contribution consumed by the sole carrier. */
+/** Exact private 14 + 73 builder contribution consumed by the sole carrier. */
 export function createProfessionalAvPreparedActionBuilderContributions(dependencies = {}) {
   const rows = [
     ...Object.entries(PROFESSIONAL_INPUTS).map(([actionId, inputSchema]) => ({
@@ -1072,8 +1077,8 @@ export function createProfessionalAvPreparedActionBuilderContributions(dependenc
     })),
     ...SDK_RESIDUAL_AV_PREPARED_INPUTS.map((row) => ({...row, inputSchema: jsonInputSchema(row.actionId, row.inputSchema)})),
   ];
-  if (rows.length !== 83 || new Set(rows.map(({actionId}) => actionId)).size !== 83) {
-    throw new Error("Professional AV builder composition must own exactly 11 + 72 actions.");
+  if (rows.length !== 87 || new Set(rows.map(({actionId}) => actionId)).size !== 87) {
+    throw new Error("Professional AV builder composition must own exactly 14 + 73 actions.");
   }
   const selectedRows = dependencies.enabledActionIds == null
     ? rows

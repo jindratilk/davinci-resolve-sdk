@@ -487,6 +487,35 @@ def _update_item_track_binding(cursor: sqlite3.Cursor, *, item_id: str, target_t
     return next_index, updated_columns
 
 
+def _normalize_track_item_indexes(cursor: sqlite3.Cursor, *, track_ids: set[str]) -> None:
+    """Keep each track's persisted Items vector in record-order after a DB move."""
+    for track_id in sorted(value for value in track_ids if value):
+        rows = cursor.execute(
+            """
+            SELECT rel.rowid, rel.DbAssociate, rel.DbIndex, item.Start
+            FROM Sm2TiItem_Sm2TiTrack rel
+            JOIN Sm2TiItem item ON item.Sm2TiItem_id = rel.DbAssociate
+            WHERE rel.DbOwner = ? AND rel.DbPropertyName = 'Items'
+            ORDER BY CAST(item.Start AS INTEGER), CAST(rel.DbIndex AS INTEGER), rel.DbAssociate
+            """,
+            (track_id,),
+        ).fetchall()
+        if not rows:
+            continue
+        existing_indexes = [int(row[2]) for row in rows]
+        temporary_base = max(existing_indexes) + len(rows) + 1
+        for offset, row in enumerate(rows):
+            cursor.execute(
+                "UPDATE Sm2TiItem_Sm2TiTrack SET DbIndex = ? WHERE rowid = ?",
+                (temporary_base + offset, row[0]),
+            )
+        for index, row in enumerate(rows):
+            cursor.execute(
+                "UPDATE Sm2TiItem_Sm2TiTrack SET DbIndex = ? WHERE rowid = ?",
+                (index, row[0]),
+            )
+
+
 def _target_track_row(
     cursor: sqlite3.Cursor,
     *,
@@ -529,6 +558,8 @@ def _apply_move_update(
     update_start: bool = True,
     linked_video_item_ids: list[str] | None = None,
     timeline_start_frame: int = 0,
+    additional_moving_item_ids: set[str] | None = None,
+    normalize_track_indexes: bool = True,
 ) -> dict[str, Any]:
     item_id = str(target_row.get("Sm2TiItem_id") or "")
     old_start = timeline_item_duration_db._int_cell(target_row.get("Start"), field="Start")
@@ -599,6 +630,7 @@ def _apply_move_update(
         str(row.get("Sm2TiItem_id") or "")
         for row in [target_row, *linked_video_rows, *linked_audio_rows_to_move]
     }
+    moving_item_ids.update(additional_moving_item_ids or set())
 
     clip_conflicts, transition_conflicts = _track_item_conflicts(
         cursor,
@@ -790,6 +822,20 @@ def _apply_move_update(
             str(update["row"].get("Sm2TiItem_id") or ""),
             {"Start": str(int(update["new_start"]))},
         )
+    if normalize_track_indexes:
+        affected_track_ids = {old_track_id, new_track_id}
+        affected_track_ids.update(_track_id_from_row(update["row"]) for update in linked_video_updates)
+        affected_track_ids.update(_track_id_from_row(update["row"]) for update in linked_audio_updates)
+        _normalize_track_item_indexes(cursor, track_ids=affected_track_ids)
+        item_index_row = cursor.execute(
+            """
+            SELECT DbIndex FROM Sm2TiItem_Sm2TiTrack
+            WHERE DbAssociate = ? AND DbOwner = ? AND DbPropertyName = 'Items'
+            """,
+            (item_id, new_track_id),
+        ).fetchone()
+        if item_index_row is not None:
+            item_db_index = int(item_index_row[0])
     return {
         "item_id": item_id,
         "db_type": str(target_row.get("DbType") or ""),
@@ -1044,6 +1090,151 @@ def _verify_move_readback(fresh_conn: Any, mutation_result: dict[str, Any], _ses
         "evidence_modalities": ["live_timeline_readback", "project_db_structural_readback", "TimelineItem.GetLinkedItems"],
         "topology_checks": topology_checks,
     }
+
+
+def move_timeline_items(
+    conn: Any,
+    *,
+    moves: list[dict[str, Any]],
+    expected_moves: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Move multiple exact SDK video items in one DB transaction and one reopen."""
+    if not moves or len(moves) > 100 or len(expected_moves) != len(moves):
+        raise ValidationError("Plural timeline item move requires matching lists of 1 to 100 moves and private targets.")
+    target_timeline = timeline_item_duration_db._timeline_name(conn)
+    timeline_start_frame = timeline_item_duration_db._timeline_start_frame(conn)
+    prepared: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+    for move, private in zip(moves, expected_moves):
+        target_input = move.get("target") or {}
+        destination = move.get("destination") or {}
+        private_target = private.get("privateTarget") or {}
+        private_linked = private.get("privateLinkedAudioTargets") or []
+        try:
+            track_index = timeline_ops.validate_timeline_track_index(int(target_input["trackIndex"]))
+            target_track_index = timeline_ops.validate_timeline_track_index(int(destination["trackIndex"]))
+            start = int(target_input["recordStartFrame"])
+            end = int(target_input["recordEndFrame"])
+            new_start = int(destination["recordStartFrame"])
+            expected_id = str(private_target["id"])
+            name = str(target_input["name"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValidationError("A plural timeline item move is malformed.") from exc
+        if not expected_id or end <= start or expected_id in seen_ids:
+            raise ValidationError("Plural timeline item moves require unique positive-duration private targets.")
+        seen_ids.add(expected_id)
+        live_target, live_item = timeline_item_duration_db._select_live_item(
+            conn, track_type="video", track_index=track_index, start_ref=f"{start}f",
+            current_end_ref=f"{end}f", name=name, expected_item_id=expected_id,
+        )
+        if live_target.item_id != expected_id or live_target.start != start or live_target.end != end:
+            raise ValidationError("A live video item does not match its exact plural SDK preview.")
+        if new_start == live_target.start and target_track_index == live_target.track_index:
+            raise ValidationError("A plural timeline item move contains a no-op target.")
+        linked = _live_linked_targets(
+            conn, live_item, track_type="audio", expected_count=len(private_linked), expected_targets=private_linked,
+        )
+        include_linked = move.get("linkedAudio") == "preserve" and new_start != start
+        affected = [("video", track_index), ("video", target_track_index)]
+        if include_linked:
+            affected.extend(("audio", item.track_index) for item in linked)
+        _require_authoritatively_unlocked_tracks(conn, affected)
+        prepared.append({
+            "move": move, "target": live_target, "linked": linked, "new_start": new_start,
+            "target_track_index": target_track_index, "include_linked": include_linked,
+        })
+
+    def _writer(_connection: sqlite3.Connection, cursor: sqlite3.Cursor, _session: db_session.DiskDbMutationSession) -> dict[str, Any]:
+        rows: list[dict[str, Any]] = []
+        all_moving_ids: set[str] = set()
+        for entry in prepared:
+            target_row = _fetch_exact_db_row_for_live_target(cursor, target=entry["target"], timeline_name=target_timeline or "")
+            linked_rows = [_fetch_exact_db_row_for_live_target(cursor, target=item, timeline_name=target_timeline or "") for item in entry["linked"]]
+            target_track = _target_track_row(cursor, timeline_name=target_timeline, track_type="video", track_index=entry["target_track_index"])
+            rows.append({"target": target_row, "linked": linked_rows, "target_track_id": str(target_track["track_id"])})
+            all_moving_ids.add(str(target_row.get("Sm2TiItem_id") or ""))
+            if entry["include_linked"]:
+                all_moving_ids.update(str(row.get("Sm2TiItem_id") or "") for row in linked_rows)
+
+        final_ranges: list[dict[str, Any]] = []
+        for entry, row_group in zip(prepared, rows):
+            target = entry["target"]
+            final_ranges.append({"id": target.item_id, "track": row_group["target_track_id"], "start": entry["new_start"], "end": entry["new_start"] + target.duration, "allow": entry["move"].get("collisionPolicy") == "allow"})
+            if entry["include_linked"]:
+                delta = entry["new_start"] - target.start
+                for linked, linked_row in zip(entry["linked"], row_group["linked"]):
+                    final_ranges.append({"id": linked.item_id, "track": _track_id_from_row(linked_row), "start": linked.start + delta, "end": linked.end + delta, "allow": entry["move"].get("collisionPolicy") == "allow"})
+        for index, left in enumerate(final_ranges):
+            for right in final_ranges[index + 1:]:
+                if left["track"] == right["track"] and left["start"] < right["end"] and right["start"] < left["end"] and not (left["allow"] and right["allow"]):
+                    raise ValidationError("The jointly evaluated plural move destinations overlap.", details={"item_ids": [left["id"], right["id"]]})
+
+        updated_items: list[dict[str, Any]] = []
+        for entry, row_group in zip(prepared, rows):
+            target = entry["target"]
+            update = _apply_move_update(
+                cursor, target_row=row_group["target"], new_start=entry["new_start"],
+                allow_overlap=entry["move"].get("collisionPolicy") == "allow",
+                allow_linked_video_only=entry["move"].get("linkedAudio") == "exclude",
+                include_linked_audio=entry["include_linked"], linked_audio_rows=row_group["linked"],
+                timeline_name=target_timeline, target_track_id=row_group["target_track_id"],
+                update_start=entry["new_start"] != target.start, timeline_start_frame=timeline_start_frame,
+                additional_moving_item_ids=all_moving_ids,
+                normalize_track_indexes=False,
+            )
+            update.update({
+                "track_type": "video", "track_index": entry["target_track_index"],
+                "source_track_index": target.track_index, "target_track_index": entry["target_track_index"],
+                "selector": asdict(target), "readback_name_candidates": [target.name], "stable_identity_required": True,
+            })
+            updated_items.append(update)
+            for linked, linked_update in zip(entry["linked"], update.get("linked_audio_updates", [])):
+                updated_items.append({
+                    **linked_update, "track_type": "audio", "track_index": linked.track_index,
+                    "source_track_index": linked.track_index, "target_track_index": None,
+                    "old_track_id": linked_update.get("track_id"), "new_track_id": linked_update.get("track_id"),
+                    "selector": asdict(linked), "readback_name_candidates": [linked.name], "stable_identity_required": True,
+                })
+        affected_track_ids = {
+            str(track_id)
+            for item in updated_items
+            for track_id in (item.get("old_track_id"), item.get("new_track_id"), item.get("track_id"))
+            if str(track_id or "")
+        }
+        _normalize_track_item_indexes(cursor, track_ids=affected_track_ids)
+        for item in updated_items:
+            index_row = cursor.execute(
+                """
+                SELECT DbIndex FROM Sm2TiItem_Sm2TiTrack
+                WHERE DbAssociate = ? AND DbOwner = ? AND DbPropertyName = 'Items'
+                """,
+                (str(item.get("item_id") or ""), str(item.get("new_track_id") or item.get("track_id") or "")),
+            ).fetchone()
+            if index_row is not None:
+                item["item_db_index"] = int(index_row[0])
+        return {"action": "timeline.items.move", "timeline_name": target_timeline, "updated_items": updated_items, "move_count": len(prepared), "route": "db_native_plural"}
+
+    def _verified_or_raise(fresh_conn: Any, mutation_result: dict[str, Any], session: Any) -> dict[str, Any]:
+        verification = _verify_move_readback(fresh_conn, mutation_result, session)
+        if verification.get("status") != "verified":
+            raise APICallFailed("Plural timeline item move did not match native post-reopen readback.", details={"verification_status": verification.get("status")})
+        return verification
+
+    try:
+        result = db_session.execute_sqlite_disk_db_mutation(
+            conn, context="DB-backed plural timeline item move", writer=_writer,
+            verifier=_verified_or_raise, allow_project_name_inference=True,
+        )
+    except APICallFailed as exc:
+        details = dict(getattr(exc, "details", {}) or {})
+        if details.get("reason") != "db_mutation_post_commit_failure":
+            raise
+        recovery = details.get("recovery") if isinstance(details.get("recovery"), dict) else {}
+        restored = bool(recovery.get("rollback_performed")) and "reopen_project_after_rollback" in list(recovery.get("rollback_steps") or [])
+        if restored:
+            raise EditMutationRestored("Plural timeline item move failed verification and the original project state was restored.") from exc
+        raise EditMutationRecoveryFailed("Plural timeline item move failed verification and recovery could not be proved.") from exc
+    return result
 
 
 def move_timeline_item(

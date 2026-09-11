@@ -16,10 +16,12 @@ def apply_free_transform(path,text):
 
 def transform(path,text):
     text=apply_free_transform(path,text)
+    if path == 'sdk/LICENSE':
+        return (target/'LICENSE').read_text()
     if path in {'sdk/README.md','sdk/LIFECYCLE.md'}:
         return (target/'docs/package'/Path(path).name).read_text()
     # The fork has a distinct distribution; retain every public method and wire operation.
-    text=text.replace('desktop_managed','standalone_local').replace('@cutagent/sdk','davinci-resolve-sdk')
+    text=text.replace('desktop_managed','standalone_local').replace('@cutagent/sdk','cutagent')
     if path.startswith('bridge/'):
         text=text.replace('"./cutagent-cli-runtime.js"', '"../../local/cli-runtime.mjs"')
         text=text.replace('"../providers/resource-loader.js"', '"../../local/resources.mjs"')
@@ -31,7 +33,7 @@ def transform(path,text):
         text=text.replace('authService?.captureDesktopAuthBrokerSession','authService?.capture').replace('authService?.assertSessionIdentityCurrent','authService?.assertCurrent')
     if path=='bridge/services/resolve-service.js':
         text=text.replace('CUTAGENT_EMBEDDED_', 'DAVINCI_RESOLVE_SDK_EMBEDDED_').replace('18744','18764').replace('18745','18765').replace('18746','18766').replace('18747','18767').replace('18748','18768').replace('18749','18769')
-        text=text.replace('"CutAgent", scopedFileName','"DaVinciResolveSDK", scopedFileName')
+        text=text.replace('"CutAgent", scopedFileName','"CutAgentSDK", scopedFileName')
         start=text.index('function getEmbeddedAuthScope(')
         end=text.index('\nfunction ',start+1)
         text=text[:start]+'function getEmbeddedAuthScope() { return "standalone"; }\n'+text[end:]
@@ -63,6 +65,8 @@ export function assertAuthenticatedSdkRequestCurrent(authority, authenticated) {
 '''
     if path=='bridge/app/desktop-bridge-secret.js':
         text='export {requireLocalCapability as requireDesktopBridgeSecret} from "../../local/capability.mjs";\n'
+    if path=='sdk/test/artifact-copy.test.mjs':
+        text=text.replace('../src/domain/artifact-copy.ts','../sdk/src/domain/artifact-copy.ts')
     return transform_prepared(path,text)
 
 def copy(path,dest):
@@ -70,7 +74,7 @@ def copy(path,dest):
         inventory.append(existing[path])
         return dest.read_text() if dest.suffix in {".js",".mjs",".ts",".json",".md"} else ""
     raw=(source/path).read_bytes()
-    text=raw.decode() if Path(path).suffix in {'.js','.mjs','.ts','.json','.md'} else None
+    text=raw.decode() if path == 'sdk/LICENSE' or Path(path).suffix in {'.js','.mjs','.ts','.json','.md'} else None
     data=transform(path,text).encode() if text is not None else raw
     dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(data)
     inventory.append({'source':path,'destination':str(dest.relative_to(target)),'sourceSha256':hashlib.sha256(raw).hexdigest(),'sha256':hashlib.sha256(data).hexdigest(),'transformed':raw!=data})
@@ -80,10 +84,11 @@ for path in sorted((source/'sdk/src').rglob('*')):
     if path.is_file(): copy(str(path.relative_to(source)),target/'sdk'/path.relative_to(source/'sdk'))
 for name in ['LICENSE','README.md','LIFECYCLE.md','compatibility.json','compatibility.schema.json','tsconfig.json','tsconfig.types.json','scripts/build-js.mjs']:
     copy('sdk/'+name,target/'sdk'/name)
+copy('sdk/test/artifact-copy.test.mjs',target/'test/sdk-artifact-copy.test.mjs')
 # Resolve only the imported closure of existing full SDK route/session owners.
 queue=['bridge/app/sdk-runtime-route.js','bridge/services/sdk-runtime-service.js',
        'bridge/repos/sdk-operation-repo.js','bridge/services/sdk-operation-authority.js',
-       'bridge/repos/constraint-scope-repo.js','bridge/services/sdk-direct-mutation-policy-authority.js',
+       'bridge/services/sdk-operation-retention-lifecycle.js',
        'bridge/services/resolve-service.js','bridge/services/cutagent-cli-authorization.js',
        *['bridge/services/'+name+'.js' for name in [
           'sdk-marker-action-service','sdk-timeline-item-move-service','sdk-timeline-blade-service',

@@ -223,7 +223,10 @@ async function captureExactColorAction(actionId, input, context, dependencies) {
   const projectId = input.projectId ?? projectBefore.projectId;
   if (projectBefore.projectId !== projectId) throw new Error("Color prepared action project identity is stale.");
   const hasTimeline = typeof input.timelineId === "string";
-  const nodeStackLayerIndex = input.nodeStackLayerIndex ?? 1;
+  const pluralLutItems = actionId === "cutagent.action.color.lut" && Array.isArray(input.items) ? input.items : null;
+  const requestedTimelineItemIds = pluralLutItems?.map(({timelineItemId}) => timelineItemId)
+    ?? (typeof input.timelineItemId === "string" ? [input.timelineItemId] : []);
+  const nodeStackLayerIndex = pluralLutItems?.[0]?.nodeStackLayerIndex ?? input.nodeStackLayerIndex ?? 1;
   const colorRead = hasTimeline ? await liveInspectionService.readWithMutationGuard({operation: "color.current", projectId, timelineId: input.timelineId, nodeStackLayerIndex}) : null;
   const timelineRead = hasTimeline ? await liveInspectionService.readWithMutationGuard({operation: "timeline.snapshot", projectId, timelineId: input.timelineId}) : null;
   const color = colorRead?.value ?? null;
@@ -232,7 +235,7 @@ async function captureExactColorAction(actionId, input, context, dependencies) {
     const identityDrift = [
       ...(color?.project?.id !== projectId ? ["color_project"] : []),
       ...(color?.timeline?.id !== input.timelineId ? ["color_timeline"] : []),
-      ...(color?.clip?.id !== input.timelineItemId ? ["color_clip"] : []),
+      ...(!pluralLutItems && color?.clip?.id !== input.timelineItemId ? ["color_clip"] : []),
       ...(timeline?.project?.id !== projectId ? ["timeline_project"] : []),
       ...(timeline?.timeline?.id !== input.timelineId ? ["timeline"] : []),
       ...(typeof color?.revision !== "string" ? ["color_revision_missing"] : []),
@@ -249,7 +252,7 @@ async function captureExactColorAction(actionId, input, context, dependencies) {
   if (operationClass(actionId) === "mutation") {
     const revisionPrecondition = hasTimeline ? timelineRevision : projectBefore.projectRevision;
     if (typeof input.revision === "string" && input.revision !== revisionPrecondition) throw new Error("Color prepared action revision is stale.");
-    if (typeof input.colorRevision === "string" && input.colorRevision !== colorRevision) throw new Error("Color prepared action Color revision is stale.");
+    if (!pluralLutItems && typeof input.colorRevision === "string" && input.colorRevision !== colorRevision) throw new Error("Color prepared action Color revision is stale.");
   }
   const rows = hasTimeline ? timelineRows(timeline) : [];
   const nativeIds = timelineRead?.privateTimelineItemNativeIdByPublicId ?? new Map();
@@ -266,7 +269,9 @@ async function captureExactColorAction(actionId, input, context, dependencies) {
       privateNamedClipBindings[row.clip.name] = binding;
     }
   }
-  if (hasTimeline && !privateTargetBindings[input.timelineItemId]) throw new Error("Color prepared action target is absent or ambiguous.");
+  if (hasTimeline && requestedTimelineItemIds.some((stableId) => !privateTargetBindings[stableId])) {
+    throw new Error("Color prepared action target is absent or ambiguous.");
+  }
   const inventoryReader = dependencies.resolveService?.readSdkColorSelectorInventory;
   const inventoryKinds = requiredInventories(actionId, input);
   if (inventoryKinds.size && typeof inventoryReader !== "function") throw new Error("Color prepared action requires exact selector inventory custody.");
@@ -321,7 +326,7 @@ async function captureExactColorAction(actionId, input, context, dependencies) {
     const colorAfter = (await liveInspectionService.readWithMutationGuard({operation: "color.current", projectId, timelineId: input.timelineId, nodeStackLayerIndex}))?.value;
     const timelineAfter = (await liveInspectionService.readWithMutationGuard({operation: "timeline.snapshot", projectId, timelineId: input.timelineId}))?.value;
     if (colorAfter?.project?.id !== projectId || colorAfter?.timeline?.id !== input.timelineId
-      || colorAfter?.clip?.id !== input.timelineItemId || colorAfter?.timelineRevision !== colorTimelineRevision
+      || (!pluralLutItems && colorAfter?.clip?.id !== input.timelineItemId) || colorAfter?.timelineRevision !== colorTimelineRevision
       || colorAfter?.revision !== colorRevision || colorAfter?.nodeStackLayerIndex !== nodeStackLayerIndex
       || timelineAfter?.project?.id !== projectId || timelineAfter?.timeline?.id !== input.timelineId
       || timelineAfter?.revision !== timelineRevision) {
@@ -330,16 +335,18 @@ async function captureExactColorAction(actionId, input, context, dependencies) {
   }
   const projectAfter = exactProjectContext(await liveInspectionService.readWithMutationGuard({operation: "project.context"}));
   if (!sameProject(projectBefore, projectAfter)) throw new Error("Color prepared read identity changed during capture.");
-  const primaryId = input.timelineItemId ?? input.stillId ?? input.albumId ?? input.groupId ?? projectId;
+  const primaryIds = requestedTimelineItemIds.length > 0
+    ? requestedTimelineItemIds
+    : [input.stillId ?? input.albumId ?? input.groupId ?? projectId];
   const targetRevision = hasTimeline ? timelineRevision : (input.revision ?? projectBefore.projectRevision);
   if (typeof targetRevision !== "string") throw new Error("Color prepared action lost its exact target revision.");
   const targetIds = [...new Set([
-    primaryId,
+    ...primaryIds,
     ...selectedSelectorRecords.map(({stableId}) => stableId),
     ...artifacts.targets.map(({stableId}) => stableId),
   ])];
   const targetRevisions = {
-    [primaryId]: targetRevision,
+    ...Object.fromEntries(primaryIds.map((stableId) => [stableId, targetRevision])),
     ...Object.fromEntries(selectedSelectorRecords.map(({stableId, capturedRevision}) => [stableId, capturedRevision])),
     ...Object.fromEntries(artifacts.targets.map(({stableId, revision}) => [stableId, revision])),
   };

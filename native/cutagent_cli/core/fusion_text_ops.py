@@ -74,7 +74,20 @@ def _tool_input_names(tool: Any) -> set[str]:
         except Exception:
             raw = {}
         if isinstance(raw, dict):
-            return {str(key) for key in raw.keys()}
+            names = {str(key) for key in raw.keys() if isinstance(key, str)}
+            for input_object in raw.values():
+                attrs_getter = getattr(input_object, "GetAttrs", None)
+                if not callable(attrs_getter):
+                    continue
+                try:
+                    attrs = attrs_getter() or {}
+                except Exception:
+                    continue
+                for key in ("INPS_ID", "INPS_Name"):
+                    value = attrs.get(key) if isinstance(attrs, dict) else None
+                    if isinstance(value, str) and value:
+                        names.add(value)
+            return names
         if isinstance(raw, (list, tuple, set)):
             return {str(value) for value in raw}
     return set()
@@ -206,6 +219,7 @@ def set_text_on_item(
     bold_style: str = "ExtraBold",
     styled: bool | None = None,
     cls_tool_candidates: list[str] | None = None,
+    require_exact_target: bool = False,
 ) -> dict[str, Any]:
     comp = get_fusion_comp_for_item(item)
     if comp is None:
@@ -214,11 +228,56 @@ def set_text_on_item(
             details={"role": role, "recovery_hint": "Use a clip/template that already contains a Text+ or Fusion text tool."},
         )
 
+    return set_text_on_comp(
+        item,
+        comp,
+        text=text,
+        role=role,
+        explicit_tool=explicit_tool,
+        tool_candidates=tool_candidates,
+        input_names=input_names,
+        uppercase=uppercase,
+        double_spaces=double_spaces,
+        bold_style=bold_style,
+        styled=styled,
+        cls_tool_candidates=cls_tool_candidates,
+        require_exact_target=require_exact_target,
+    )
+
+
+def set_text_on_comp(
+    item: Any,
+    comp: Any,
+    *,
+    text: str,
+    role: str | None = None,
+    explicit_tool: str | None = None,
+    tool_candidates: list[str] | None = None,
+    input_names: list[str] | None = None,
+    uppercase: bool = False,
+    double_spaces: bool = False,
+    bold_style: str = "ExtraBold",
+    styled: bool | None = None,
+    cls_tool_candidates: list[str] | None = None,
+    require_exact_target: bool = False,
+) -> dict[str, Any]:
+    """Set text on one already-bound Fusion composition."""
+
     current_time = None
     try:
         current_time = int(getattr(comp, "CurrentTime", 0))
     except Exception:
         current_time = 0
+
+    if require_exact_target:
+        requested_inputs = list(input_names or [])
+        selected_exact = find_tool(comp, str(explicit_tool or "")) if explicit_tool else None
+        available_inputs = _tool_input_names(selected_exact) if selected_exact is not None else set()
+        if selected_exact is None or len(requested_inputs) != 1 or requested_inputs[0] not in available_inputs:
+            raise APICallFailed(
+                "Exact Fusion text tool or input was not found.",
+                details={"tool": explicit_tool, "input": requested_inputs[0] if len(requested_inputs) == 1 else None},
+            )
 
     normalized_text = normalize_role_text(text, role=role, uppercase=uppercase, double_spaces=double_spaces)
     parsed = parse_text_value(normalized_text, bold_style=bold_style, styled=styled)
@@ -239,7 +298,7 @@ def set_text_on_item(
                 input_applied = input_name
                 break
     property_attempts = []
-    if input_applied is None:
+    if input_applied is None and not require_exact_target:
         property_attempts = set_item_property_multi(item, list(TEXT_TIMELINE_PROPERTY_FALLBACKS), parsed["clean_text"])
         attempts.extend(property_attempts)
         for row in property_attempts:

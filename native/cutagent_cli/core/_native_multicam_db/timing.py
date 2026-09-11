@@ -2,11 +2,23 @@ from __future__ import annotations
 
 from typing import Any
 
+from ...errors import ValidationError
+
 
 def _derive_multicam_fps(reference: Any, source_rows: list[Any], decode_rate_blob_fn) -> float:
-    for row in source_rows:
-        if row.fps and row.fps > 0:
-            return float(row.fps)
+    source_rates = [float(row.fps) for row in source_rows if row.fps and row.fps > 0]
+    if source_rates:
+        first_rate = source_rates[0]
+        mismatches = [rate for rate in source_rates[1:] if abs(rate - first_rate) > 1e-6]
+        if mismatches:
+            raise ValidationError(
+                "Native multicam creation requires one shared source frame rate.",
+                details={
+                    "reason": "mixed_source_frame_rates_unsupported",
+                    "source_frame_rates": source_rates,
+                },
+            )
+        return first_rate
     for candidate in (
         decode_rate_blob_fn(reference.sequence_frame_rate),
         decode_rate_blob_fn(reference.frame_rate),
@@ -114,7 +126,7 @@ def _load_source_templates(
                 media_timemap_ba=preferred_video_reference.media_timemap_ba or defaults.video_item.media_timemap_ba,
                 preconform_media_extents=preferred_video_reference.preconform_media_extents
                 or defaults.video_item.preconform_media_extents,
-                media_frame_rate=preferred_video_reference.media_frame_rate or defaults.video_item.media_frame_rate,
+                media_frame_rate=defaults.video_item.media_frame_rate,
                 virtual_audio_track_ba=None,
                 fields_blob=preferred_video_reference.fields_blob or defaults.video_item.fields_blob,
                 in_value=preferred_video_reference.in_value
@@ -142,10 +154,7 @@ def _load_source_templates(
                     preferred_audio_reference.media_timemap_ba or defaults.audio_item.media_timemap_ba,
                 ),
                 preconform_media_extents=None,
-                media_frame_rate=_coalesce_template_value(
-                    audio_row["MediaFrameRate"] if audio_row else None,
-                    preferred_audio_reference.media_frame_rate or defaults.audio_item.media_frame_rate,
-                ),
+                media_frame_rate=defaults.audio_item.media_frame_rate,
                 virtual_audio_track_ba=_coalesce_template_value(
                     audio_row["VirtualAudioTrackBA"] if audio_row else None,
                     preferred_audio_reference.virtual_audio_track_ba or defaults.audio_item.virtual_audio_track_ba,
@@ -218,10 +227,7 @@ def _load_source_templates(
                 video_row["PreConformMediaExtents"] if video_row else None,
                 preferred_video_reference.preconform_media_extents or defaults.video_item.preconform_media_extents,
             ),
-            media_frame_rate=_coalesce_template_value(
-                video_row["MediaFrameRate"] if video_row else None,
-                preferred_video_reference.media_frame_rate or defaults.video_item.media_frame_rate,
-            ),
+            media_frame_rate=defaults.video_item.media_frame_rate,
             virtual_audio_track_ba=None,
             fields_blob=_coalesce_template_value(
                 video_row["FieldsBlob"] if video_row else None,
@@ -258,10 +264,7 @@ def _load_source_templates(
                 preferred_audio_reference.media_timemap_ba or defaults.audio_item.media_timemap_ba,
             ),
             preconform_media_extents=None,
-            media_frame_rate=_coalesce_template_value(
-                audio_row["MediaFrameRate"] if audio_row else None,
-                preferred_audio_reference.media_frame_rate or defaults.audio_item.media_frame_rate,
-            ),
+            media_frame_rate=defaults.audio_item.media_frame_rate,
             virtual_audio_track_ba=_coalesce_template_value(
                 audio_row["VirtualAudioTrackBA"] if audio_row else None,
                 preferred_audio_reference.virtual_audio_track_ba or defaults.audio_item.virtual_audio_track_ba,
@@ -350,7 +353,9 @@ def _resolve_angle_timing(
         item_start_frame=item_start_frame,
         media_start_time_seconds=float(baseline_media_start_time) + media_start_time_offset_seconds,
         item_duration_frames=item_duration_frames,
-        media_timemap_duration_frames=item_duration_frames,
+        media_timemap_duration_frames=(
+            source_duration_frames if source_duration_frames > 0 else item_duration_frames
+        ),
         sequence_extents_start_frame=int(reference.item_start),
         sequence_extents_duration_frames=max(1, int(multicam_duration_frames)),
         source_in_frame=source_in_frame,

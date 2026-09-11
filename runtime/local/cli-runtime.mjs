@@ -13,7 +13,7 @@ export function buildCutAgentCliEnv({args, sessionEnv = {}, extraEnv = {}} = {})
   const keys = ['PATH','HOME','USERPROFILE','APPDATA','LOCALAPPDATA','SYSTEMROOT','WINDIR','TMPDIR','TEMP','LANG','RESOLVE_SCRIPT_API','RESOLVE_SCRIPT_LIB','DYLD_LIBRARY_PATH','DAVINCI_RESOLVE_SDK_EMBEDDED_AUTH_PATH','DAVINCI_RESOLVE_SDK_EMBEDDED_PORT'];
   const env = Object.fromEntries(keys.filter(key => process.env[key] !== undefined).map(key => [key, process.env[key]]));
   for (const [key,value] of Object.entries({...sessionEnv, ...extraEnv})) {
-    if (/^CUTAGENT_.*AUTH/.test(key) || key === 'CUTAGENT_MUTATION_POLICY_SCOPE_VALID') continue;
+    if (/^CUTAGENT_.*AUTH/.test(key)) continue;
     env[key] = value;
   }
   env.PATH = `${join(root, '.venv/bin')}:${env.PATH ?? ''}`;
@@ -23,7 +23,6 @@ export function buildCutAgentCliEnv({args, sessionEnv = {}, extraEnv = {}} = {})
     const digest = createHash('sha256').update(JSON.stringify(args)).digest('hex');
     env.DAVINCI_RESOLVE_SDK_COMMAND_SHA256 = digest;
     env.DAVINCI_RESOLVE_SDK_PARENT_PID = String(process.pid);
-    if (extraEnv.CUTAGENT_MUTATION_POLICY_ARGS_SHA256 === digest) env.CUTAGENT_MUTATION_POLICY_SCOPE_VALID = '1';
   }
   return env;
 }

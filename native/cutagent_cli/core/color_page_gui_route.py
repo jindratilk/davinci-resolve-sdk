@@ -29,6 +29,7 @@ from ..errors import (
 from ..output import set_recoverability, set_verification_status
 from ..utils.timecode import frames_to_timecode
 from . import clip_ops
+from .macos_project_library_accessibility import _AX as _ExactPidAccessibility
 from .magic_mask_gui_route import (
     DEFAULT_PROOF_DIR as MAGIC_MASK_DEFAULT_PROOF_DIR,
     MacOSMagicMaskGuiDriver,
@@ -922,241 +923,308 @@ class MacOSColorPageGuiDriver(MacOSMagicMaskGuiDriver):
             delay_seconds=delay_seconds,
         )
 
-    def _set_accessibility_value_at_point(
-        self,
-        point: tuple[int, int],
-        text_value: str,
-    ) -> dict[str, Any]:
-        """Set a Qt numeric field without sending keyboard input to the foreground app."""
-
-        target_window = self._focus_free_ax_window_target()
-        script = f"""
-const se = Application("System Events");
-const targetWindow = {json.dumps(target_window)};
-const targetPid = targetWindow.pid;
-const point = {json.dumps([int(point[0]), int(point[1])])};
-const textValue = {json.dumps(str(text_value))};
-const numericValue = Number(textValue);
-const settableRoles = new Set({json.dumps(sorted(SETTABLE_CONTROL_ROLES))});
-const matches = se.applicationProcesses.whose({{ unixId: targetPid }})();
-const candidates = [];
-if (matches.length > 0) {{
-  const roots = matches[0].windows().filter(win => {{
-    try {{
-      const name = String(win.name() || "");
-      const position = win.position();
-      const size = win.size();
-      return name === targetWindow.name &&
-        Math.abs(Number(position[0]) - targetWindow.x) <= 3 &&
-        Math.abs(Number(position[1]) - targetWindow.y) <= 3 &&
-        Math.abs(Number(size[0]) - targetWindow.width) <= 3 &&
-        Math.abs(Number(size[1]) - targetWindow.height) <= 3;
-    }} catch (e) {{ return false; }}
-  }});
-  let elements = [];
-  if (roots.length === 1) {{
-    try {{ elements = [roots[0], ...roots[0].entireContents.get()]; }} catch (e) {{ elements = []; }}
-  }}
-  for (const item of elements) {{
-    let role = "";
-    let position = null;
-    let size = null;
-    try {{
-      const properties = item.properties();
-      role = String(properties.role || "");
-      position = properties.position || null;
-      size = properties.size || null;
-    }} catch (e) {{}}
-    if (settableRoles.has(role) && position && size) {{
-      const x = Number(position[0]);
-      const y = Number(position[1]);
-      const width = Number(size[0]);
-      const height = Number(size[1]);
-      if (
-        Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(width) && Number.isFinite(height) &&
-        point[0] >= x - 2 && point[0] <= x + width + 2 &&
-        point[1] >= y - 2 && point[1] <= y + height + 2
-      ) {{
-        const centerX = x + width / 2.0;
-        const centerY = y + height / 2.0;
-        candidates.push({{
-          item,
-          role,
-          position,
-          size,
-          area: Math.max(1, width * height),
-          distance: Math.abs(centerX - point[0]) + Math.abs(centerY - point[1]),
-        }});
-      }}
-    }}
-  }}
-}}
-candidates.sort((a, b) => a.distance - b.distance || a.area - b.area);
-let result = {{ matched: false, set: false, target_pid: targetPid, point, text_value: textValue }};
-for (const candidate of candidates) {{
-  result.matched = true;
-  result.role = candidate.role;
-  result.position = candidate.position;
-  result.size = candidate.size;
-  result.errors = [];
-  if (Number.isFinite(numericValue)) {{
-    try {{ candidate.item.value = numericValue; result.set = true; result.value_type = "number"; }}
-    catch (e) {{ result.errors.push(String(e)); }}
-  }}
-  if (!result.set) {{
-    try {{ candidate.item.value = textValue; result.set = true; result.value_type = "string"; }}
-    catch (e) {{ result.errors.push(String(e)); }}
-  }}
-  if (result.set) {{
-    try {{ result.readback = String(candidate.item.value()); }} catch (e) {{}}
-    break;
-  }}
-}}
-JSON.stringify(result);
-"""
-        proc = _run_osascript(script, language="JavaScript", timeout=20.0)
-        if proc.returncode != 0:
+    @contextmanager
+    def _exact_pid_accessibility_items(self):
+        target_pid = self._focus_free_target_pid()
+        target_window_id = self._focus_free_target_window_id()
+        target_rect = self._focus_free_target_window_rect()
+        client = _ExactPidAccessibility()
+        if not client.ax.AXIsProcessTrusted():
+            raise ColorPagePanelNotReady("macOS Accessibility is not authorized for exact-PID Color Page input.")
+        windows = client.windows(target_pid)
+        matches = [
+            window
+            for window in windows
+            if client.pid(window) == target_pid and client.window_id(window) == target_window_id
+        ]
+        if len(matches) != 1:
+            client.release_all(windows)
             raise ColorPagePanelNotReady(
-                "Failed to set DaVinci Resolve numeric field through focus-free Accessibility input.",
-                details={"point": list(point), "text_value": text_value, "stderr": proc.stderr[-500:]},
+                "The exact DaVinci Resolve PID/window Accessibility target is unavailable or ambiguous.",
+                details={"target_pid": target_pid, "target_window_id": target_window_id, "match_count": len(matches)},
             )
-        try:
-            payload = json.loads(proc.stdout.strip() or "{}")
-        except json.JSONDecodeError as exc:
+        selected = matches[0]
+        position = client.point(selected)
+        size = client.size(selected)
+        if (
+            position is None
+            or size is None
+            or abs(position[0] - target_rect.x) > 3
+            or abs(position[1] - target_rect.y) > 3
+            or abs(size[0] - target_rect.width) > 3
+            or abs(size[1] - target_rect.height) > 3
+        ):
+            client.release_all(windows)
             raise ColorPagePanelNotReady(
-                "Focus-free DaVinci Resolve numeric field input returned invalid JSON.",
-                details={"point": list(point), "text_value": text_value, "stdout": proc.stdout[-500:]},
-            ) from exc
-        if isinstance(payload, dict) and payload.get("matched") and payload.get("set"):
-            try:
-                accessibility_matches = math.isclose(float(payload["readback"]), float(text_value), abs_tol=0.011)
-            except (KeyError, TypeError, ValueError):
-                accessibility_matches = False
-            if accessibility_matches:
-                payload.pop("errors", None)
-                payload["method"] = "focus_free_accessibility_value"
-                payload["readback_matches_requested"] = True
-                return payload
+                "The exact DaVinci Resolve Accessibility window geometry no longer matches the verified target.",
+                details={
+                    "target_pid": target_pid,
+                    "target_window_id": target_window_id,
+                    "expected_rect": target_rect.as_payload(),
+                    "position": position,
+                    "size": size,
+                },
+            )
+        for window in windows:
+            if window != selected:
+                client.release(window)
+        try:
+            items = client.flatten(selected, label="Color Page exact window", max_elements=4000)
+        except Exception:
+            client.release(selected)
+            raise
+        try:
+            yield client, items
+        finally:
+            client.release_all(items)
+
+    @staticmethod
+    def _accessibility_candidates_at_point(
+        client: Any,
+        items: list[int],
+        point: tuple[int, int],
+        *,
+        roles: set[str] | None = None,
+    ) -> list[dict[str, Any]]:
+        candidates: list[dict[str, Any]] = []
+        for item in items:
+            role = client.string(item, "AXRole")
+            if roles is not None and role not in roles:
+                continue
+            position = client.point(item)
+            size = client.size(item)
+            if position is None or size is None:
+                continue
+            x, y = position
+            width, height = size
+            if (
+                point[0] >= x - 2
+                and point[0] <= x + width + 2
+                and point[1] >= y - 2
+                and point[1] <= y + height + 2
+            ):
+                candidates.append(
+                    {
+                        "item": item,
+                        "role": role,
+                        "position": [x, y],
+                        "size": [width, height],
+                        "area": max(1.0, width * height),
+                        "distance": abs(x + width / 2.0 - point[0]) + abs(y + height / 2.0 - point[1]),
+                    }
+                )
+        candidates.sort(key=lambda row: (row["distance"], row["area"]))
+        return candidates
+
+    def _attempt_accessibility_values_at_points(
+        self,
+        writes: list[dict[str, Any]],
+        *,
+        settle_seconds: float,
+    ) -> list[dict[str, Any]]:
+        """Try multiple Qt numeric fields through one exact-window AX traversal."""
 
         target_pid = self._focus_free_target_pid()
         target_window_id = self._focus_free_target_window_id()
         target_window_rect = self._focus_free_target_window_rect()
-        _post_mouse_drag(
-            [point],
-            target_pid=target_pid,
-            target_window_id=target_window_id,
-            target_window_rect=target_window_rect,
-            delay_seconds=0.05,
-            deactivate_after=False,
-        )
+        results: list[dict[str, Any]] = []
         try:
-            _post_focus_free_keyboard_value(
-                target_pid=target_pid,
-                target_window_id=target_window_id,
-                text_value=text_value,
-            )
-        finally:
-            # A final targeted click lets the shared helper remove DaVinci
-            # Resolve's synthetic app/key-window state without activating it
-            # at the macOS Workspace level.
-            _post_mouse_drag(
-                [point],
-                target_pid=target_pid,
-                target_window_id=target_window_id,
-                target_window_rect=target_window_rect,
-                delay_seconds=0.04,
-                deactivate_after=True,
-            )
-        time.sleep(0.15)
-        readback = self._read_accessibility_value_at_point(point)
-        try:
-            matches_expected = math.isclose(float(readback["value"]), float(text_value), abs_tol=0.011)
-        except (KeyError, TypeError, ValueError):
-            matches_expected = False
-        if not matches_expected:
+            with self._exact_pid_accessibility_items() as (client, items):
+                for row in writes:
+                    point = (int(row["point"][0]), int(row["point"][1]))
+                    text_value = str(row["text_value"])
+                    result: dict[str, Any] = {
+                        "matched": False,
+                        "set": False,
+                        "target_pid": target_pid,
+                        "target_window_id": target_window_id,
+                        "point": list(point),
+                        "text_value": text_value,
+                    }
+                    candidates = self._accessibility_candidates_at_point(
+                        client, items, point, roles=SETTABLE_CONTROL_ROLES
+                    )
+                    for candidate in candidates:
+                        result.update(
+                            matched=True,
+                            role=candidate["role"],
+                            position=candidate["position"],
+                            size=candidate["size"],
+                            errors=[],
+                        )
+                        try:
+                            client.set_number(candidate["item"], float(text_value))
+                            result.update(set=True, value_type="number")
+                        except (TypeError, ValueError, RuntimeError) as exc:
+                            result["errors"].append(str(exc))
+                        if not result["set"]:
+                            try:
+                                client.set_string(candidate["item"], text_value)
+                                result.update(set=True, value_type="string")
+                            except RuntimeError as exc:
+                                result["errors"].append(str(exc))
+                        if result["set"]:
+                            result["readback"] = client.scalar_text(candidate["item"])
+                            break
+
+                    try:
+                        direct_matches = math.isclose(
+                            float(result["readback"]), float(text_value), abs_tol=0.011
+                        )
+                    except (KeyError, TypeError, ValueError):
+                        direct_matches = False
+                    if direct_matches:
+                        result.pop("errors", None)
+                        result["method"] = "focus_free_accessibility_value"
+                        result["readback_matches_requested"] = True
+                    else:
+                        _post_mouse_drag(
+                            [point],
+                            target_pid=target_pid,
+                            target_window_id=target_window_id,
+                            target_window_rect=target_window_rect,
+                            delay_seconds=0.05,
+                            deactivate_after=False,
+                        )
+                        try:
+                            _post_focus_free_keyboard_value(
+                                target_pid=target_pid,
+                                target_window_id=target_window_id,
+                                text_value=text_value,
+                            )
+                        finally:
+                            # Remove the synthetic app/key-window state after
+                            # committing the exact PID/window keyboard write.
+                            _post_mouse_drag(
+                                [point],
+                                target_pid=target_pid,
+                                target_window_id=target_window_id,
+                                target_window_rect=target_window_rect,
+                                delay_seconds=0.04,
+                                deactivate_after=True,
+                            )
+                        time.sleep(0.15)
+                        result.update(
+                            matched=True,
+                            set=True,
+                            method="focus_free_pid_targeted_keyboard",
+                            readback=self._accessibility_numeric_readback_at_point(client, items, point),
+                            keyboard_fallback_attempted=True,
+                        )
+                    results.append(result)
+                    if settle_seconds > 0:
+                        time.sleep(settle_seconds)
+
+                    if result.get("method") == "focus_free_pid_targeted_keyboard":
+                        try:
+                            fallback_matches = math.isclose(
+                                float(result["readback"]["value"]), float(text_value), abs_tol=0.011
+                            )
+                        except (KeyError, TypeError, ValueError):
+                            fallback_matches = False
+                        if not fallback_matches:
+                            break
+        except (PermissionError, RuntimeError) as exc:
             raise ColorPagePanelNotReady(
-                "DaVinci Resolve numeric field did not match the focus-free targeted keyboard write.",
+                "Failed to set DaVinci Resolve numeric fields through exact-PID Accessibility input.",
+                details={"target_pid": target_pid, "target_window_id": target_window_id, "error": str(exc)},
+            ) from exc
+        return results
+
+    def _finish_accessibility_value_at_point(
+        self,
+        point: tuple[int, int],
+        text_value: str,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        if isinstance(payload, dict) and payload.get("matched") and payload.get("set"):
+            readback = payload.get("readback")
+            readback_value = readback.get("value") if isinstance(readback, dict) else readback
+            try:
+                accessibility_matches = math.isclose(float(readback_value), float(text_value), abs_tol=0.011)
+            except (TypeError, ValueError):
+                accessibility_matches = False
+            if accessibility_matches:
+                payload.pop("errors", None)
+                payload.setdefault("method", "focus_free_accessibility_value")
+                payload["readback_matches_requested"] = True
+                return payload
+        raise ColorPagePanelNotReady(
+            "DaVinci Resolve numeric field did not match the exact-PID input write.",
+            details={
+                "point": list(point),
+                "text_value": text_value,
+                "accessibility_attempt": payload,
+                "readback": payload.get("readback") if isinstance(payload, dict) else None,
+            },
+        )
+
+    def _set_accessibility_values_at_points(
+        self,
+        writes: list[dict[str, Any]],
+        *,
+        settle_seconds: float,
+    ) -> list[dict[str, Any]]:
+        if not writes:
+            return []
+        attempts = self._attempt_accessibility_values_at_points(writes, settle_seconds=settle_seconds)
+        results: list[dict[str, Any]] = []
+        for index, (row, attempt) in enumerate(zip(writes, attempts)):
+            point = (int(row["point"][0]), int(row["point"][1]))
+            text_value = str(row["text_value"])
+            try:
+                result = self._finish_accessibility_value_at_point(point, text_value, attempt)
+            except ColorPagePanelNotReady as exc:
+                exc.details = {
+                    **exc.details,
+                    "failed_index": index,
+                    "completed_results": results,
+                    "accessibility_attempts": attempts,
+                }
+                raise
+            results.append(result)
+        if len(results) != len(writes):
+            raise ColorPagePanelNotReady(
+                "Exact-PID numeric input stopped before completing the requested batch.",
                 details={
-                    "point": list(point),
-                    "text_value": text_value,
-                    "accessibility_attempt": payload,
-                    "readback": readback,
+                    "failed_index": len(results),
+                    "completed_results": results,
+                    "accessibility_attempts": attempts,
                 },
             )
+        return results
+
+    def _accessibility_numeric_readback_at_point(
+        self,
+        client: Any,
+        items: list[int],
+        point: tuple[int, int],
+    ) -> dict[str, Any]:
+        candidates = self._accessibility_candidates_at_point(client, items, point)
+        numeric = []
+        for row in candidates:
+            try:
+                float(client.scalar_text(row["item"]))
+            except (TypeError, ValueError):
+                continue
+            numeric.append(row)
+        numeric.sort(key=lambda row: row["area"])
+        if not numeric:
+            return {}
+        selected = numeric[0]
         return {
-            "matched": True,
-            "set": True,
-            "target_pid": target_pid,
-            "target_window_id": target_window_id,
-            "point": list(point),
-            "text_value": text_value,
-            "readback": readback,
-            "method": "focus_free_pid_targeted_keyboard",
+            "role": selected["role"],
+            "value": client.scalar_text(selected["item"]),
+            "position": selected["position"],
+            "size": selected["size"],
         }
 
     def _read_accessibility_value_at_point(self, point: tuple[int, int]) -> dict[str, Any]:
-        target_window = self._focus_free_ax_window_target()
-        script = f"""
-const se = Application("System Events");
-const targetWindow = {json.dumps(target_window)};
-const point = {json.dumps([int(point[0]), int(point[1])])};
-const matches = se.applicationProcesses.whose({{ unixId: targetWindow.pid }})();
-const candidates = [];
-if (matches.length > 0) {{
-  const roots = matches[0].windows().filter(win => {{
-    try {{
-      const name = String(win.name() || "");
-      const position = win.position();
-      const size = win.size();
-      return name === targetWindow.name &&
-        Math.abs(Number(position[0]) - targetWindow.x) <= 3 &&
-        Math.abs(Number(position[1]) - targetWindow.y) <= 3 &&
-        Math.abs(Number(size[0]) - targetWindow.width) <= 3 &&
-        Math.abs(Number(size[1]) - targetWindow.height) <= 3;
-    }} catch (e) {{ return false; }}
-  }});
-  let elements = [];
-  if (roots.length === 1) {{
-    try {{ elements = roots[0].entireContents.get(); }} catch (e) {{ elements = []; }}
-  }}
-  for (const item of elements) {{
-    let properties = {{}};
-    try {{ properties = item.properties(); }} catch (e) {{ continue; }}
-    const position = properties.position;
-    const size = properties.size;
-    if (!position || !size) continue;
-    const x = Number(position[0]);
-    const y = Number(position[1]);
-    const width = Number(size[0]);
-    const height = Number(size[1]);
-    if (
-      point[0] >= x - 2 && point[0] <= x + width + 2 &&
-      point[1] >= y - 2 && point[1] <= y + height + 2
-    ) {{
-      const value = properties.value ?? properties.name ?? properties.title;
-      if (value !== undefined && value !== null && Number.isFinite(Number(value))) {{
-        candidates.push({{
-          role: String(properties.role || ""),
-          value: String(value),
-          position,
-          size,
-          area: Math.max(1, width * height),
-        }});
-      }}
-    }}
-  }}
-}}
-candidates.sort((a, b) => a.area - b.area);
-JSON.stringify(candidates[0] || {{}});
-"""
-        proc = _run_osascript(script, language="JavaScript", timeout=10.0)
-        if proc.returncode != 0:
-            return {"ok": False, "stderr": proc.stderr[-500:]}
         try:
-            payload = json.loads(proc.stdout.strip() or "{}")
-        except json.JSONDecodeError:
-            return {"ok": False, "stdout": proc.stdout[-500:]}
-        return payload if isinstance(payload, dict) else {}
+            with self._exact_pid_accessibility_items() as (client, items):
+                return self._accessibility_numeric_readback_at_point(client, items, point)
+        except (PermissionError, RuntimeError, ColorPagePanelNotReady) as exc:
+            return {"ok": False, "error": str(exc)}
 
     def _panel_control_bounds(self, panel: str) -> dict[str, float] | None:
         try:
@@ -1983,24 +2051,33 @@ JSON.stringify(rows.slice(0, 260));
                     "summary": _summarize_primary_panel_controls(rows),
                 },
             )
-        results: list[dict[str, Any]] = []
+        write_plan: list[dict[str, Any]] = []
         for control in controls:
             control_name = str(control.get("control") or "")
             field = numeric_controls[control_name]
             point = field["point"]
             text_value = _format_primary_gui_value(control_name, float(control["value"]))
-            input_result = self._set_accessibility_value_at_point(
-                (int(point["x"]), int(point["y"])),
-                text_value,
+            write_plan.append(
+                {
+                    "control": control,
+                    "field": field,
+                    "point": (int(point["x"]), int(point["y"])),
+                    "text_value": text_value,
+                }
             )
-            time.sleep(0.18)
+        input_results = self._set_accessibility_values_at_points(write_plan, settle_seconds=0.18)
+        results: list[dict[str, Any]] = []
+        for row, input_result in zip(write_plan, input_results, strict=True):
+            control = row["control"]
+            field = row["field"]
+            control_name = str(control.get("control") or "")
             results.append(
                 {
                     "control": control_name,
                     "label": field.get("label"),
-                    "point": point,
+                    "point": field["point"],
                     "value": control["value"],
-                    "text_value": text_value,
+                    "text_value": row["text_value"],
                     "matched": True,
                     "set": True,
                     "method": input_result.get("method", "focus_free_pid_window_targeted_input"),
@@ -2040,24 +2117,33 @@ JSON.stringify(rows.slice(0, 260));
                     "summary": _summarize_power_window_panel_controls(rows),
                 },
             )
-        results: list[dict[str, Any]] = []
+        write_plan: list[dict[str, Any]] = []
         for control in controls:
             control_name = str(control.get("control") or "")
             field = numeric_controls[control_name]
             point = field["point"]
             text_value = _format_power_window_gui_value(control_name, float(control["value"]))
-            input_result = self._set_accessibility_value_at_point(
-                (int(point["x"]), int(point["y"])),
-                text_value,
+            write_plan.append(
+                {
+                    "control": control,
+                    "field": field,
+                    "point": (int(point["x"]), int(point["y"])),
+                    "text_value": text_value,
+                }
             )
-            time.sleep(0.14)
+        input_results = self._set_accessibility_values_at_points(write_plan, settle_seconds=0.14)
+        results: list[dict[str, Any]] = []
+        for row, input_result in zip(write_plan, input_results, strict=True):
+            control = row["control"]
+            field = row["field"]
+            control_name = str(control.get("control") or "")
             results.append(
                 {
                     "control": control_name,
                     "label": field.get("label"),
-                    "point": point,
+                    "point": field["point"],
                     "value": control["value"],
-                    "text_value": text_value,
+                    "text_value": row["text_value"],
                     "matched": True,
                     "set": True,
                     "method": input_result.get("method", "focus_free_pid_window_targeted_input"),
@@ -2312,7 +2398,7 @@ JSON.stringify({{ results }});
         return self.set_qualifier_controls(controls)
 
     def _set_qualifier_numeric_controls(self, write_plan: list[dict[str, Any]]) -> dict[str, Any]:
-        results: list[dict[str, Any]] = []
+        batch_writes: list[dict[str, Any]] = []
         for row in write_plan:
             point = row.get("point") if isinstance(row.get("point"), dict) else {}
             try:
@@ -2324,8 +2410,12 @@ JSON.stringify({{ results }});
                     details={"row": row},
                 ) from exc
             text_value = str(row.get("text_value") or row.get("value") or "")
-            input_result = self._set_accessibility_value_at_point((x, y), text_value)
-            time.sleep(0.18)
+            batch_writes.append({"point": (x, y), "text_value": text_value})
+        input_results = self._set_accessibility_values_at_points(batch_writes, settle_seconds=0.18)
+        results: list[dict[str, Any]] = []
+        for row, input_result in zip(write_plan, input_results, strict=True):
+            point = row.get("point") if isinstance(row.get("point"), dict) else {}
+            text_value = str(row.get("text_value") or row.get("value") or "")
             results.append(
                 {
                     "control": row.get("control"),

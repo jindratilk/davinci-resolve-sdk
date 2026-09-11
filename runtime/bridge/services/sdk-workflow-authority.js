@@ -5,10 +5,9 @@ import { ensureCanonicalPrivateDirectory, writePrivateJsonDurableAtomic } from "
 import { sdkWorkflowSnapshotSchema } from "../contracts/generated/sdk-operations.js";
 import { sdkManagedTimelineExportSchema, sdkManagedTimelinePreviewSchema } from "../contracts/generated/sdk-runtime.js";
 import { CUTAGENT_SDK_ACTION_SCHEMA_DIGEST } from "../contracts/generated/sdk-operation-actions.js";
-import { CUTAGENT_MUTATION_POLICY_CONTRACT_VERSION } from "../contracts/generated/sdk-mutation-policy.js";
-import { mutationPolicyDigest, PRIVATE_IMPACT_REGISTRY_DIGEST } from "./mutation-policy/impact-lowering.js";
-import { resolveSdkDirectMutationScope } from "./sdk-direct-mutation-scope.js";
 import { getSdkOwnerSession } from "./sdk-owner-session-context.js";
+import { readLegacySdkPublicFailure } from "./sdk-legacy-public-failure.js";
+import { sdkOperationPostTimelineRevision } from "./sdk-operation-terminal.js";
 
 const opaque = (prefix) => `${prefix}${crypto.randomUUID()}`;
 const terminalOperationStatuses = new Set(["succeeded", "failed", "cancelled", "partially_applied", "verification_failed", "recovery_failed"]);
@@ -39,14 +38,28 @@ const protectedSnapshot = (snapshot, excludedIds) => ({
   tracks: snapshot.tracks.map((track) => ({ type: track.type, index: track.index, name: track.name, enabled: track.enabled, locked: track.locked,
     clips: track.clips.filter((clip) => !excludedIds.has(clip.id)).map(({ snapshotId: _snapshotId, snapshotTrackId: _trackId, snapshotRevision: _revision, ...clip }) => clip) })),
 });
+const protectedSnapshotComponentDigests = (snapshot, excludedIds) => {
+  const value = protectedSnapshot(snapshot, excludedIds);
+  return {
+    project: sha256(value.project), timeline: sha256(value.timeline), frameRate: sha256(value.frameRate), start: sha256(value.start),
+    markers: sha256(value.markers),
+    trackProperties: sha256(value.tracks.map(({ clips: _clips, ...track }) => track)),
+    clips: sha256(value.tracks.map((track) => ({ type: track.type, index: track.index, clips: track.clips }))),
+  };
+};
 const managedEvidence = (summary, value, modality = "structural") => ({ modality, summary, digest: sha256(value) });
 const managedInspectionDeadline = () => Date.now() + MANAGED_INSPECTION_PHASE_TIMEOUT_MS;
 const isCancellationOrTimeout = (error) => error?.name === "AbortError" || error?.name === "TimeoutError";
+const operationResultValues = (operation) => {
+  const value = operation?.public?.result?.value;
+  if (!value || typeof value !== "object") return [];
+  return Array.isArray(value.results) ? value.results : [value];
+};
+const chunksOf = (values, size) => Array.from({ length: Math.ceil(values.length / size) }, (_, index) => values.slice(index * size, (index + 1) * size));
 const sameManagedAssetCustody = (left, right) => {
   if (!left || !right) return left === right;
-  return left.stableInventoryDigest === right.stableInventoryDigest
-    && canonical(left.assets.map(({ id, fingerprint }) => ({ id, fingerprint })))
-      === canonical(right.assets.map(({ id, fingerprint }) => ({ id, fingerprint })));
+  return canonical(left.assets.map(({ id, fingerprint }) => ({ id, fingerprint })))
+    === canonical(right.assets.map(({ id, fingerprint }) => ({ id, fingerprint })));
 };
 
 /**
@@ -60,7 +73,7 @@ export function createSdkWorkflowOwnershipResolver({ storageDir, clock = Date.no
   return Object.freeze({
     assertOwnedBinding({ accountFingerprint, workflowId, projectId, timelineId }) {
       if (![accountFingerprint, workflowId, projectId, timelineId].every((value) => typeof value === "string" && value)) {
-        throw Object.assign(new Error("Workflow ownership binding is incomplete."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+        throw Object.assign(new Error("Workflow ownership binding is incomplete."), { code: "INVALID_REQUEST" });
       }
       let journal;
       try {
@@ -86,7 +99,7 @@ export function createSdkWorkflowOwnershipResolver({ storageDir, clock = Date.no
   });
 }
 
-export function createSdkWorkflowAuthority({ storageDir, operationAuthority, checkpointService, mutationPolicyGate, directMutationPolicyAuthority = null, liveInspectionService, persistState = writePrivateJsonDurableAtomic, recoveryCrashInjector = null, clock = Date.now }) {
+export function createSdkWorkflowAuthority({ storageDir, operationAuthority, checkpointService, liveInspectionService, persistState = writePrivateJsonDurableAtomic, recoveryCrashInjector = null, clock = Date.now }) {
   for (const method of ["inspectOwned", "findOwnedByIdempotency", "retainForWorkflow", "get", "cancel"]) {
     if (typeof operationAuthority?.[method] !== "function") {
       throw new Error(`SDK workflow authority requires operationAuthority.${method}().`);
@@ -106,9 +119,9 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
     state.checkpointPrunes ??= [];
     state.managedOwnerships ??= {};
     for (const record of Object.values(state.workflows ?? {})) {
+      if (record.public?.failure) record.public.failure = readLegacySdkPublicFailure(record.public.failure);
       record.public.retentionExpiresAt ??= new Date(Date.parse(record.public.updatedAt) + WORKFLOW_JOURNAL_RETENTION_MS).toISOString();
       record.public.authorityKind ??= record.managedClaim || record.public.binding?.managedClaim ? "managed" : "generic";
-      if (!Object.hasOwn(record, "currentProjectRevision")) record.currentProjectRevision = record.currentStateHash;
       if (!record.managedClaim && record.public.binding?.managedClaim) { record.managedClaim = record.public.binding.managedClaim; delete record.public.binding.managedClaim; }
     }
   }
@@ -160,9 +173,11 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
   const operationMatchesReservation = (record, step, operation) => {
     const input = operation?.private?.normalizedInput;
     const reservation = record.stepReservations?.[step.name];
-    const projectId = input?.projectId ?? input?.impact?.intent?.projectId;
-    const timelineId = input?.timelineId ?? input?.impact?.intent?.timelineId;
-    const timelineRevision = input?.timelineRevision ?? input?.precondition ?? input?.impact?.intent?.timelineRevision;
+    const representative = input?.moves?.[0] ?? input?.removals?.[0] ?? input?.impacts?.[0] ?? input;
+    const bindingInput = representative?.intent ?? representative;
+    const projectId = input?.projectId ?? input?.impact?.intent?.projectId ?? bindingInput?.projectId;
+    const timelineId = input?.timelineId ?? input?.impact?.intent?.timelineId ?? bindingInput?.timelineId;
+    const timelineRevision = input?.timelineRevision ?? input?.precondition ?? input?.impact?.intent?.timelineRevision ?? bindingInput?.timelineRevision;
     const managedPreparationMatches = !record.managedClaim || Boolean(reservation?.expectedActionId && reservation?.expectedInputDigest
       && operation.public.actionId === reservation.expectedActionId && sha256(input) === reservation.expectedInputDigest);
     return Boolean(input && managedPreparationMatches
@@ -180,16 +195,16 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
     const key = ownershipKey(accountFingerprint, claim.ownershipId);
     const previous = state.managedOwnerships[key] ?? null;
     if (previous && previous.status !== "active" && previous.status !== "restored") {
-      throw Object.assign(new Error("Managed ownership has unresolved provisional or recovery-required state."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+      throw Object.assign(new Error("Managed ownership has unresolved provisional or recovery-required state."), { code: "INVALID_REQUEST" });
     }
     if (previous && (previous.projectId !== binding.projectId || previous.timelineId !== binding.timelineId
       || JSON.stringify(previous.scope) !== JSON.stringify(claim.scope))) {
-      throw Object.assign(new Error("Managed ownership cannot be rebound to another project, timeline, or scope."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+      throw Object.assign(new Error("Managed ownership cannot be rebound to another project, timeline, or scope."), { code: "INVALID_REQUEST" });
     }
     for (const [candidateKey, candidate] of Object.entries(state.managedOwnerships)) {
       if (candidateKey === key || candidate.accountFingerprint !== accountFingerprint || candidate.projectId !== binding.projectId
         || candidate.timelineId !== binding.timelineId || candidate.status === "restored") continue;
-      if (scopesOverlap(candidate.scope, claim.scope)) throw Object.assign(new Error("Managed ownership overlaps another active managed scope."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+      if (scopesOverlap(candidate.scope, claim.scope)) throw Object.assign(new Error("Managed ownership overlaps another active managed scope."), { code: "INVALID_REQUEST" });
     }
     return { key, previous };
   };
@@ -340,7 +355,7 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
       }
       const asset = matches[0];
       resolvedAssets.set(asset.id, asset);
-      elements.push({key: binding.key, assetId: asset.id, assetName: asset.name, assetRevision: asset.snapshotRevision,
+      elements.push({key: binding.key, assetId: asset.id, assetName: asset.name, assetRevision: asset.assetCustodyRevision,
         videoTrack: track.index, audioTrack: linkedAudio?.track.index ?? null, atFrame: clip.recordRange.start,
         sourceStartFrame: clip.sourceRange.start, sourceEndExclusiveFrame: clip.sourceRange.endExclusive,
         sourceFrameRate: clip.sourceFrameRate,
@@ -439,6 +454,14 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
           && linkedAudio[0].clip.sourceRange?.start === element.sourceStartFrame
           && linkedAudio[0].clip.sourceRange?.endExclusive === element.sourceEndExclusiveFrame
           && sameFrameRate(linkedAudio[0].clip.sourceFrameRate, element.sourceFrameRate);
+      const linkedAudioPositionOnly = element.linkedAudio === "exclude" ? linkedAudio.length === 0
+        : element.audioTrack !== null && linkedAudio.length === 1 && linkedAudio[0].track.index === element.audioTrack
+          && linkedAudio[0].clip.mediaPoolItemId === element.assetId
+          && linkedAudio[0].clip.recordRange.start === clip.recordRange.start
+          && linkedAudio[0].clip.recordRange.endExclusive === clip.recordRange.endExclusive
+          && linkedAudio[0].clip.sourceRange?.start === element.sourceStartFrame
+          && linkedAudio[0].clip.sourceRange?.endExclusive === element.sourceEndExclusiveFrame
+          && sameFrameRate(linkedAudio[0].clip.sourceFrameRate, element.sourceFrameRate);
       const exact = track.type === "video" && track.index === element.videoTrack
         && clip.recordRange.start === element.atFrame
         && clip.recordRange.endExclusive === desiredEnd
@@ -448,7 +471,6 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
         && sameFrameRate(clip.sourceFrameRate, element.sourceFrameRate)
         && linkedAudioExact;
       const positionOnly = !exact
-        && element.linkedAudio === "exclude"
         && track.type === "video" && track.index === element.videoTrack
         && clip.recordRange.start !== element.atFrame
         && clip.recordRange.endExclusive - clip.recordRange.start === recordDuration
@@ -456,7 +478,7 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
         && clip.sourceRange?.start === element.sourceStartFrame
         && clip.sourceRange?.endExclusive === element.sourceEndExclusiveFrame
         && sameFrameRate(clip.sourceFrameRate, element.sourceFrameRate)
-        && linkedAudioExact;
+        && linkedAudioPositionOnly;
       if (positionOnly) positionMoveKeys.add(element.key);
       drift.push({ kind: exact ? "preserve" : "update", key: element.key, timelineItemId: mappedId, summary: exact ? `Preserve managed clip ${element.key}.` : `Managed clip ${element.key} differs from desired state.` });
       if (!exact && !positionOnly) {
@@ -516,43 +538,19 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
       if (inside) drift.push({ kind: "preserve", key: `protected:${clip.id ?? clip.snapshotId}`, ...(clip.id ? { timelineItemId: clip.id } : {}), summary: `Preserve undeclared protected clip ${clip.name}.` });
     }
     drift.sort((left, right) => left.key.localeCompare(right.key) || left.kind.localeCompare(right.kind));
-    let scope = [];
-    if (directMutationPolicyAuthority !== null && sdkSessionId !== null) {
-      try {
-        const directScope = await resolveSdkDirectMutationScope({
-          directMutationPolicyAuthority,
-          context: { sdkSessionId, accountFingerprint },
-          liveInspectionService,
-          level: "project+timeline",
-          projectId: program.projectId,
-          timelineId: program.timelineId,
-          timelineRevision: snapshot.revision,
-        });
-        scope = directScope === null ? [] : [directScope];
-      } catch (error) {
-        if (isCancellationOrTimeout(error)) throw error;
-      }
-    } else {
-      scope = mutationPolicyGate.listScopes({ accountFingerprint }).filter((candidate) => candidate.binding?.projectId === program.projectId
-        && candidate.binding?.timelineId === program.timelineId && (candidate.binding?.timelineRevision ?? candidate.binding?.revision) === snapshot.revision);
-    }
-    if (scope.length !== 1) blockers.push({ code: "protected_state_unproven", message: "The exact Mutation Policy generation is unavailable or ambiguous." });
-    if (scope.length === 1 && scope[0].constraints.protectedMediaRoles.length > 0
-      && drift.some((entry) => entry.kind === "create" || (entry.kind === "update" && !positionMoveKeys.has(entry.key)))) {
-      blockers.push({ code: "protected_state_unproven", message: "Managed insertion cannot prove an authoritative media role against this scope's protected media roles." });
-    }
     const desiredStateDigest = sha256({ ownershipId: program.ownershipId, projectId: program.projectId, timelineId: program.timelineId, scope: program.scope, elements: program.elements });
     let managedAssetCustody = null;
     if (program.elements.length > 0) {
-      const revisions = new Set(program.elements.map((element) => element.assetRevision));
-      if (revisions.size !== 1) blockers.push({ code: "stale_revision", message: "Managed source assets do not share one admitted Media Pool revision." });
-      else try {
+      try {
         managedAssetCustody = await liveInspectionService.captureManagedTimelineAssets({
           projectId: program.projectId,
           timelineId: program.timelineId,
           assetIds: program.elements.map((element) => element.assetId),
-          expectedRevision: ownershipOverride ? null : [...revisions][0],
         }, inspectionOptions);
+        const currentAssets = new Map(managedAssetCustody.assets.map((asset) => [asset.id, asset]));
+        if (program.elements.some((element) => currentAssets.get(element.assetId)?.revision !== element.assetRevision)) {
+          blockers.push({ code: "stale_revision", message: "A managed source asset changed after it was selected." });
+        }
       } catch (error) {
         if (isCancellationOrTimeout(error)) throw error;
         blockers.push({ code: "stale_revision", message: "Managed source-asset custody changed before admission." });
@@ -563,19 +561,19 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
       currentRevision: snapshot.revision,
       ownershipGeneration: ownership?.generation ?? 0,
       ownershipDigest: sha256(ownership ?? null),
-      policyRevision: scope.length === 1 ? `policy_revision_${scope[0].revision}` : "policy_revision_1",
       capabilityDigest: `sha256:${CUTAGENT_SDK_ACTION_SCHEMA_DIGEST}`,
       protectedStateDigest: sha256({ timeline: protectedSnapshot(snapshot, excludedManagedIds), protectedFamilies: protectedFamilyAttestation?.protectedStateDigest ?? null }),
     };
     const contextDigest = sha256(context);
     const status = blockers.length ? "blocked" : drift.some((entry) => entry.kind !== "preserve") || adoptionNeeded || !ownership ? "ready" : "no_change";
-    const base = { status, projectId: program.projectId, timelineId: program.timelineId, revision: snapshot.revision, ownershipId: program.ownershipId, scope: program.scope, desiredStateDigest, contextDigest, protectedStateDigest: context.protectedStateDigest, ownershipGeneration: context.ownershipGeneration, policyRevision: context.policyRevision, capabilityDigest: context.capabilityDigest, drift, blockers };
+    const base = { status, projectId: program.projectId, timelineId: program.timelineId, revision: snapshot.revision, ownershipId: program.ownershipId, scope: program.scope, desiredStateDigest, contextDigest, protectedStateDigest: context.protectedStateDigest, ownershipGeneration: context.ownershipGeneration, capabilityDigest: context.capabilityDigest, drift, blockers };
     const result = sdkManagedTimelinePreviewSchema.parse({ ...base, previewDigest: sha256(base) });
     managedPreviewEvidence.set(result.previewDigest, { protectedFamilyDigest: protectedFamilyAttestation?.protectedStateDigest ?? null,
       affectedStateDigest: protectedFamilyAttestation?.affectedStateDigest ?? null,
       affectedNativeItemIds: protectedFamilyAttestation?.privateAffectedNativeItemIds ?? null,
       affectedItemIds: [...attestationAffectedIds].sort(), positionMoveKeys: [...positionMoveKeys].sort(),
-      snapshot: structuredClone(snapshot), managedAssetCustody: structuredClone(managedAssetCustody) });
+      snapshot: structuredClone(snapshot), protectedComponentDigests: protectedSnapshotComponentDigests(snapshot, excludedManagedIds),
+      managedAssetCustody: structuredClone(managedAssetCustody) });
     return result;
   };
   const commitRecord = (record, change) => {
@@ -607,181 +605,11 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
       delete draft.public.managedState;
     }
   };
-  const findScope = async (accountFingerprint, binding, { sdkSessionId = null, accessToken = null, deadlineAtMs = null } = {}) => {
-    if (directMutationPolicyAuthority !== null) {
-      const inspectedProjectContext = await liveInspectionService.readWithMutationGuard(
-        { operation: "project.context" },
-        { accessToken, deadlineAtMs: deadlineAtMs ?? managedInspectionDeadline() },
-      );
-      return resolveSdkDirectMutationScope({
-        directMutationPolicyAuthority,
-        context: { sdkSessionId, accountFingerprint },
-        liveInspectionService,
-        level: "project+timeline",
-        projectId: binding.projectId,
-        timelineId: binding.timelineId,
-        timelineRevision: binding.revision,
-        inspectedProjectContext,
-      });
-    }
-    const matches = mutationPolicyGate.listScopes({ accountFingerprint }).filter((scope) => {
-      const candidate = scope.binding ?? {};
-      return candidate.projectId === binding.projectId && candidate.timelineId === binding.timelineId
-        && (candidate.timelineRevision ?? candidate.revision) === binding.revision;
-    });
-    if (matches.length !== 1) throw Object.assign(new Error("Exact Mutation Policy scope is unavailable or ambiguous."), { code: "EDIT_CONSTRAINT_VIOLATION" });
-    const scope = matches[0];
-    return scope;
-  };
-  const preflightManagedAggregate = ({ accountFingerprint, binding, scope, preview, claim }) => {
-    const evidence = managedPreviewEvidence.get(preview.previewDigest);
-    const snapshot = evidence?.snapshot;
-    if (!snapshot) throw Object.assign(new Error("Managed aggregate impact lost its authoritative preview evidence."), { code: "EDIT_CONSTRAINT_VIOLATION", admissionState: "not_admitted" });
-    const rows = snapshot.tracks.flatMap((track) => track.clips.map((clip) => ({ track, clip })));
-    const elements = new Map(claim.elements.map((element) => [element.key, element]));
-    const timelineTarget = { kind: "timeline", stableId: binding.timelineId, revision: binding.revision };
-    const trackTarget = (type, index) => {
-      const track = snapshot.tracks.find((candidate) => candidate.type === type && candidate.index === index);
-      return track ? { kind: "track", stableId: track.snapshotId, revision: binding.revision, trackType: type, trackIndex: index } : null;
-    };
-    const clipTargets = (timelineItemId) => {
-      const target = rows.find(({ clip }) => clip.id === timelineItemId);
-      if (!target) return [];
-      return [target, ...rows.filter(({ clip }) => target.clip.linkedItemIds?.includes(clip.id))].map(({ track, clip }) => ({
-        kind: "clip", stableId: clip.id, revision: binding.revision, trackType: track.type, trackIndex: track.index,
-      }));
-    };
-    const effects = [];
-    for (const entry of preview.drift.filter((candidate) => candidate.kind !== "preserve")) {
-      const element = elements.get(entry.key);
-      const positionMove = entry.kind === "update" && evidence.positionMoveKeys?.includes(entry.key);
-      if (positionMove) {
-        const targets = [timelineTarget, ...clipTargets(entry.timelineItemId), trackTarget("video", element.videoTrack)].filter(Boolean);
-        effects.push({ operation: "timeline.items.move", kind: "update", trackTypes: ["video"], targets,
-          placementIntent: "explicit", broad: false, ambiguous: targets.length < 3, complete: targets.length >= 3 });
-        continue;
-      }
-      if (entry.kind === "remove" || entry.kind === "update") {
-        const targets = [timelineTarget, ...clipTargets(entry.timelineItemId)];
-        effects.push({ operation: "timeline.items.delete", kind: "delete", trackTypes: [...new Set(targets.map((target) => target.trackType).filter(Boolean))], targets,
-          placementIntent: "explicit", broad: false, ambiguous: targets.length < 2, complete: targets.length >= 2 });
-      }
-      if (entry.kind === "create" || entry.kind === "update") {
-        const targets = [timelineTarget, trackTarget("video", element.videoTrack), ...(element.linkedAudio === "include" ? [trackTarget("audio", element.audioTrack)] : []),
-          { kind: "media", stableId: element.assetId, revision: element.assetRevision }].filter(Boolean);
-        const rolesProven = (scope.constraints.protectedMediaRoles ?? []).length === 0;
-        effects.push({ operation: "edit.insert", kind: "create", trackTypes: [...new Set(["video", ...(element.linkedAudio === "include" ? ["audio"] : [])])], targets,
-          placementIntent: "explicit", broad: false, ambiguous: !rolesProven, complete: rolesProven && targets.length === (element.linkedAudio === "include" ? 4 : 3) });
-      }
-    }
-    const correlation = crypto.randomUUID().replaceAll("-", "");
-    const executionId = `execution_managed_${correlation}`;
-    const impact = { contractVersion: CUTAGENT_MUTATION_POLICY_CONTRACT_VERSION, carrier: "composition", status: "mutation", minimumBinding: "project+timeline",
-      registryDigest: PRIVATE_IMPACT_REGISTRY_DIGEST, canonicalRequestDigest: mutationPolicyDigest({ ownershipId: claim.ownershipId, previewDigest: preview.previewDigest, effects }), referencedPayloadDigests: [],
-      requestId: `request_managed_${correlation}`, operationId: `operation_managed_${correlation}`, executionId,
-      scopeId: scope.scopeId, scopeRevision: scope.revision, projectLibraryId: scope.binding.projectLibraryId, projectId: binding.projectId, timelineId: binding.timelineId,
-      projectRevision: scope.binding.projectRevision, timelineRevision: binding.revision, effects, closedComposition: true,
-      complete: effects.length > 0 && effects.every((effect) => effect.complete), ambiguous: effects.some((effect) => effect.ambiguous), broad: false,
-      executableStableTargetPrecondition: true, verificationPolicy: { minimumEvidence: ["readback", "structural"], requireProtectedStatePreserved: true, protectedTargetEvidence: "every_declared_target" } };
-    try { return mutationPolicyGate.preflight({ accountFingerprint, impact }); }
-    catch (error) { error.admissionState = "not_admitted"; throw error; }
-    finally { mutationPolicyGate.onSessionClose?.({ accountFingerprint, executionId }); }
-  };
-  const assertScopeCurrent = (record) => {
-    const scope = mutationPolicyGate.getScope({ accountFingerprint: record.accountFingerprint, scopeId: record.scopeId });
-    const binding = scope?.binding ?? {};
-    if (!scope || scope.revision !== record.scopeRevision || binding.projectId !== record.public.binding.projectId
-      || binding.timelineId !== record.public.binding.timelineId || (binding.projectRevision ?? null) !== record.currentProjectRevision
-      || (binding.timelineRevision ?? binding.revision) !== record.currentRevision) {
-      throw Object.assign(new Error("Mutation Policy revision changed after workflow admission."), { code: "EDIT_CONSTRAINT_VIOLATION" });
-    }
-    return scope;
-  };
-  const advanceScopeRevision = (record, timelineRevision, stateHash = record.currentStateHash) => {
-    let scope = mutationPolicyGate.getScope({ accountFingerprint: record.accountFingerprint, scopeId: record.scopeId });
-    if (scope?.revision === record.scopeRevision + 1
-      && (scope.binding?.timelineRevision ?? scope.binding?.revision) === timelineRevision
-      && (scope.binding?.projectRevision ?? null) === record.currentProjectRevision
-      && JSON.stringify(scope.constraints) === JSON.stringify(record.scopeConstraints)) {
-      return commitRecord(record, (draft) => {
-        draft.scopeRevision = scope.revision;
-        draft.currentRevision = timelineRevision;
-        draft.currentStateHash = stateHash;
-        draft.currentProjectRevision = scope.binding.projectRevision ?? null;
-        draft.public.binding.policyRevision = `policy_revision_${scope.revision}`;
-      });
-    }
-    scope = assertScopeCurrent(record);
-    const advanced = mutationPolicyGate.updateScope({
-      accountFingerprint: record.accountFingerprint,
-      scopeId: record.scopeId,
-      expectedRevision: record.scopeRevision,
-      binding: { ...scope.binding, timelineRevision },
-      constraints: record.scopeConstraints,
-    });
-    if (!advanced) throw Object.assign(new Error("Mutation Policy scope disappeared during workflow progression."), { code: "EDIT_CONSTRAINT_VIOLATION" });
-    recoveryCrashInjector?.("after_policy_cas_before_journal", record.public.workflowId);
-    return commitRecord(record, (draft) => {
-      draft.scopeRevision = advanced.revision;
-      draft.currentRevision = timelineRevision;
-      draft.currentStateHash = stateHash;
-      draft.currentProjectRevision = advanced.binding.projectRevision ?? null;
-      draft.public.binding.policyRevision = `policy_revision_${advanced.revision}`;
-    });
-  };
-  const bindScopeStateHashForRestore = (record, stateHash) => {
-    let scope = mutationPolicyGate.getScope({ accountFingerprint: record.accountFingerprint, scopeId: record.scopeId });
-    if (scope?.revision === record.scopeRevision + 1
-      && scope.binding?.projectRevision === stateHash
-      && (scope.binding?.timelineRevision ?? scope.binding?.revision) === record.currentRevision
-      && JSON.stringify(scope.constraints) === JSON.stringify(record.scopeConstraints)) {
-      return commitRecord(record, (draft) => {
-        draft.scopeRevision = scope.revision;
-        draft.currentProjectRevision = stateHash;
-        draft.public.binding.policyRevision = `policy_revision_${scope.revision}`;
-      });
-    }
-    scope = assertScopeCurrent(record);
-    const advanced = mutationPolicyGate.updateScope({
-      accountFingerprint: record.accountFingerprint,
-      scopeId: record.scopeId,
-      expectedRevision: record.scopeRevision,
-      binding: { ...scope.binding, projectRevision: stateHash },
-      constraints: record.scopeConstraints,
-    });
-    if (!advanced) throw Object.assign(new Error("Mutation Policy scope disappeared before workflow recovery."), { code: "EDIT_CONSTRAINT_VIOLATION" });
-    recoveryCrashInjector?.("after_policy_cas_before_journal", record.public.workflowId);
-    return commitRecord(record, (draft) => {
-      draft.scopeRevision = advanced.revision;
-      draft.currentProjectRevision = stateHash;
-      draft.public.binding.policyRevision = `policy_revision_${advanced.revision}`;
-    });
-  };
-  const checkpointPolicyContext = ({ workflowId, accountFingerprint, scope, binding, phase, expectedCurrentStateHash = null }) => {
-    const correlation = crypto.createHash("sha256")
-      .update(`${accountFingerprint}\0${workflowId}\0${phase}\0${scope.revision}\0${binding.revision}`)
-      .digest("hex").slice(0, 24);
-    return {
-      requestId: `request_workflow_${correlation}`,
-      operationId: `operation_workflow_${correlation}`,
-      executionId: `execution_workflow_${correlation}`,
-      scopeId: scope.scopeId,
-      scopeRevision: scope.revision,
-      projectLibraryId: scope.binding.projectLibraryId,
-      projectId: binding.projectId,
-      timelineId: binding.timelineId,
-      projectRevision: scope.binding.projectRevision,
-      timelineRevision: binding.revision,
-      resolvedTargets: [{ kind: "timeline", stableId: binding.timelineId, revision: binding.revision }],
-      workflowCheckpointAuthority: "sdk_workflow_v1",
-      ...(expectedCurrentStateHash ? { expectedCurrentStateHash } : {}),
-      closedComposition: true,
-      executableStableTargetPrecondition: true,
-    };
-  };
+  const advanceWorkflowRevision = (record, timelineRevision, stateHash = record.currentStateHash) => commitRecord(record, (draft) => {
+    draft.currentRevision = timelineRevision;
+    draft.currentStateHash = stateHash;
+  });
   const restoreWorkflowStart = async (record, accessToken, expectedLiveRevision) => {
-    let scope = mutationPolicyGate.getScope({ accountFingerprint: record.accountFingerprint, scopeId: record.scopeId });
-    if (!scope) throw Object.assign(new Error("Mutation Policy scope disappeared during recovery."), { code: "WORKFLOW_RECOVERY_LINEAGE_UNPROVEN" });
     if (typeof expectedLiveRevision !== "string") {
       throw Object.assign(new Error("Workflow recovery has no authoritative post-state revision."), {
         code: "WORKFLOW_RECOVERY_LINEAGE_UNPROVEN",
@@ -814,9 +642,7 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
           code: "WORKFLOW_RECOVERY_LINEAGE_UNPROVEN",
         });
       }
-      record = advanceScopeRevision(record, record.public.binding.revision, record.startStateHash);
-      record = bindScopeStateHashForRestore(record, record.startStateHash);
-      recoveryCrashInjector?.("after_policy_cas", record.public.workflowId);
+      record = advanceWorkflowRevision(record, record.public.binding.revision, record.startStateHash);
       return commitRecord(record, (draft) => { delete draft.recoveryIntent; });
     }
     if (!exactLiveIdentity || live.revision !== expectedLiveRevision) {
@@ -841,24 +667,14 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
       });
     }
     if (record.currentRevision !== expectedLiveRevision) {
-      record = advanceScopeRevision(record, expectedLiveRevision);
-      scope = assertScopeCurrent(record);
+      record = advanceWorkflowRevision(record, expectedLiveRevision);
     }
-    record = bindScopeStateHashForRestore(record, status.state_hash);
-    scope = assertScopeCurrent(record);
     record = commitRecord(record, (draft) => {
       draft.recoveryIntent = { expectedLiveRevision, expectedStateHash: status.state_hash, phase: "prepared", preparedAt: nowIso() };
     });
     const restored = await checkpointService.restoreCheckpoint({
       session: { id: record.public.workflowId }, checkpointId: record.checkpointId, accessToken,
-      policyContext: checkpointPolicyContext({
-        workflowId: record.public.workflowId,
-        accountFingerprint: record.accountFingerprint,
-        scope,
-        binding: { ...record.public.binding, revision: record.currentRevision },
-        phase: `restore:${record.public.sequence}`,
-        expectedCurrentStateHash: record.recoveryIntent.expectedStateHash,
-      }),
+      expectedCurrentStateHash: record.recoveryIntent.expectedStateHash,
     });
     if (restored?.restored_on_disk !== true || restored?.reopened !== true
       || restored?.verified !== true || restored?.verification_status !== "verified") {
@@ -901,9 +717,7 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
         code: "WORKFLOW_RECOVERY_LINEAGE_UNPROVEN",
       });
     }
-    record = advanceScopeRevision(record, record.public.binding.revision, record.startStateHash);
-    record = bindScopeStateHashForRestore(record, record.startStateHash);
-    recoveryCrashInjector?.("after_policy_cas", record.public.workflowId);
+    record = advanceWorkflowRevision(record, record.public.binding.revision, record.startStateHash);
     return commitRecord(record, (draft) => { delete draft.recoveryIntent; });
   };
   const reconcileCancellation = async (record, assertRequestCurrent = () => {}) => {
@@ -961,29 +775,6 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
   const authority = {
     exportManaged,
     previewManaged,
-    resolveStepScope({ accountFingerprint, sdkSessionId, idempotencyKey, binding }) {
-      if (typeof idempotencyKey !== "string" || !idempotencyKey) return null;
-      const matches = Object.values(state.workflows).filter((record) => record.accountFingerprint === accountFingerprint
-        && record.public.status === "active"
-        && record.currentRevision === binding.timelineRevision
-        && record.public.binding.projectId === binding.projectId
-        && record.public.binding.timelineId === binding.timelineId
-        && record.public.steps.some((step) => step.idempotencyKey === idempotencyKey && !step.outcome));
-      if (matches.length === 0) return null;
-      if (matches.length !== 1) throw new Error("Workflow step scope ownership is ambiguous.");
-      const record = matches[0];
-      const scope = mutationPolicyGate.getScope({ accountFingerprint, scopeId: record.scopeId });
-      if (!scope || scope.revision !== record.scopeRevision
-        || scope.binding?.projectLibraryId !== binding.projectLibraryId
-        || scope.binding?.projectId !== binding.projectId
-        || (scope.binding?.projectRevision ?? null) !== record.currentProjectRevision
-        || scope.binding?.timelineId !== binding.timelineId
-        || scope.binding?.timelineRevision !== binding.timelineRevision
-        || JSON.stringify(scope.constraints) !== JSON.stringify(record.scopeConstraints)) {
-        throw Object.assign(new Error("Workflow step Mutation Policy scope changed before execution."), { code: "EDIT_CONSTRAINT_VIOLATION" });
-      }
-      return scope;
-    },
     async reconcileStartup() {
       await drainCheckpointPrunes();
       for (const initial of Object.values(state.workflows)) {
@@ -1062,14 +853,14 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
         if (admitting.ownerSessionId !== ownerSessionId) {
           throw Object.assign(new Error("Workflow is unavailable."), { code: "OPERATION_EXPIRED" });
         }
-        if (!sameWorkflowBinding(admitting.binding, binding) || JSON.stringify(admitting.managedClaim ?? null) !== JSON.stringify(managedClaim)) throw Object.assign(new Error("Workflow idempotency key is being admitted for a different target, revision, or authority kind."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+        if (!sameWorkflowBinding(admitting.binding, binding) || JSON.stringify(admitting.managedClaim ?? null) !== JSON.stringify(managedClaim)) throw Object.assign(new Error("Workflow idempotency key is being admitted for a different target, revision, or authority kind."), { code: "INVALID_REQUEST" });
         return admitting.task;
       }
       const task = (async () => {
         const targetKey = binding.projectId;
-        if (admittingTargets.has(targetKey)) throw Object.assign(new Error("Another mutating workflow is being admitted for this project."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+        if (admittingTargets.has(targetKey)) throw Object.assign(new Error("Another mutating workflow is being admitted for this project."), { code: "INVALID_REQUEST" });
         if (Object.values(state.workflows).some((record) => ownsMutationTarget(record) && record.public.binding.projectId === binding.projectId)) {
-          throw Object.assign(new Error("Another mutating workflow already owns this project."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+          throw Object.assign(new Error("Another mutating workflow already owns this project."), { code: "INVALID_REQUEST" });
         }
         admittingTargets.add(targetKey);
       try {
@@ -1081,20 +872,17 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
           }, deadlineAtMs: deadlineAtMs ?? managedInspectionDeadline(), signal });
           if (currentPreview.status !== "ready" || currentPreview.previewDigest !== managedClaim.previewDigest
             || currentPreview.contextDigest !== managedClaim.contextDigest || currentPreview.desiredStateDigest !== managedClaim.desiredStateDigest) {
-            throw Object.assign(new Error("Managed preview or captured runtime context changed before admission."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+            throw Object.assign(new Error("Managed preview or captured runtime context changed before admission."), { code: "STALE_REVISION" });
           }
           admittedManagedPreview = currentPreview;
         }
         const managedReservation = managedClaim ? assertManagedClaimAvailable(accountFingerprint, binding, managedClaim) : null;
-        let scope = await findScope(accountFingerprint, binding, { sdkSessionId, accessToken, deadlineAtMs });
         if (admittedManagedPreview) {
-          if (admittedManagedPreview.protectedStateDigest !== managedClaim.protectedStateDigest) throw Object.assign(new Error("Protected state changed before managed admission."), { code: "EDIT_CONSTRAINT_VIOLATION" });
-          const mutating = admittedManagedPreview.drift.filter((entry) => entry.kind !== "preserve");
-          if (mutating.length > 0) preflightManagedAggregate({ accountFingerprint, binding, scope, preview: admittedManagedPreview, claim: managedClaim });
+          if (admittedManagedPreview.protectedStateDigest !== managedClaim.protectedStateDigest) throw Object.assign(new Error("Protected state changed before managed admission."), { code: "STALE_REVISION" });
         }
         const workflowId = opaque("workflow_");
         const at = nowIso();
-        const authoritativeBinding = { ...binding, policyRevision: `policy_revision_${scope.revision}` };
+        const authoritativeBinding = { ...binding };
         const previewEvidence = admittedManagedPreview ? managedPreviewEvidence.get(admittedManagedPreview.previewDigest) : null;
         const previewRows = previewEvidence?.snapshot?.tracks.flatMap((track) => track.clips.map((clip) => ({ track, clip }))) ?? [];
         const plan = admittedManagedPreview?.drift.filter((entry) => entry.kind !== "preserve").map((entry) => {
@@ -1103,14 +891,14 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
           if (kind === "move") return base;
           if (!entry.timelineItemId || (entry.kind !== "remove" && entry.kind !== "update")) return base;
           const target = previewRows.find(({ clip }) => clip.id === entry.timelineItemId);
-          if (!target) throw Object.assign(new Error("Managed removal plan lost its exact preview target."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+          if (!target) throw Object.assign(new Error("Managed removal plan lost its exact preview target."), { code: "STALE_REVISION" });
           const closure = new Set([target.clip.id, ...(target.clip.linkedItemIds ?? [])]);
           const closureRows = previewRows.filter(({ clip }) => closure.has(clip.id));
           const removalTargets = closureRows.map(({ track, clip }) => ({
             track: { type: track.type, index: track.index }, affectedItemIds: [clip.id], clipId: clip.id,
             range: structuredClone(clip.recordRange), name: clip.name,
           })).sort((left, right) => left.track.type.localeCompare(right.track.type) || left.track.index - right.track.index || left.clipId.localeCompare(right.clipId));
-          if (removalTargets.length !== closure.size) throw Object.assign(new Error("Managed removal plan could not persist its complete exact linked closure."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+          if (removalTargets.length !== closure.size) throw Object.assign(new Error("Managed removal plan could not persist its complete exact linked closure."), { code: "STALE_REVISION" });
           const simulatedLinks = new Map(closureRows.map(({ clip }) => [clip.id, [...(clip.linkedItemIds ?? [])]]));
           const remainingIds = new Set(closure);
           for (const removalTarget of removalTargets) {
@@ -1124,7 +912,7 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
           }
           return { ...base, removalTargets };
         }) ?? [];
-        const record = { accountFingerprint, ownerSessionId, checkpointId: null, nativeTimelineId: null, startStateHash: null, currentStateHash: null, currentProjectRevision: scope.binding.projectRevision ?? null, stepReservations: {}, scopeId: scope.scopeId, scopeRevision: scope.revision, scopeConstraints: structuredClone(scope.constraints), currentRevision: binding.revision, executablePlan: plan, managedAffectedItemIds: structuredClone(previewEvidence?.affectedItemIds ?? []), managedAffectedNativeItemIds: structuredClone(previewEvidence?.affectedNativeItemIds ?? []), managedAssetCustody: structuredClone(previewEvidence?.managedAssetCustody ?? null), protectedStateDigest: managedClaim?.protectedStateDigest ?? null, protectedFamilyDigest: previewEvidence?.protectedFamilyDigest ?? null, ...(managedClaim ? { managedClaim: structuredClone(managedClaim) } : {}), ...(managedReservation ? { managedOwnershipKey: managedReservation.key, priorManagedOwnership: structuredClone(managedReservation.previous) } : {}), public: { workflowId, authorityKind: managedClaim ? "managed" : "generic", binding: authoritativeBinding, sequence: 1, status: "checkpoint_pending", steps: [], createdAt: at, updatedAt: at, retentionExpiresAt: new Date(clock() + WORKFLOW_JOURNAL_RETENTION_MS).toISOString(), manualRecoveryRequired: false, cancellationDoesNotRollback: true } };
+        const record = { accountFingerprint, ownerSessionId, checkpointId: null, nativeTimelineId: null, startStateHash: null, currentStateHash: null, stepReservations: {}, currentRevision: binding.revision, executablePlan: plan, managedAffectedItemIds: structuredClone(previewEvidence?.affectedItemIds ?? []), managedAffectedNativeItemIds: structuredClone(previewEvidence?.affectedNativeItemIds ?? []), managedAssetCustody: structuredClone(previewEvidence?.managedAssetCustody ?? null), managedProtectedComponentDigests: structuredClone(previewEvidence?.protectedComponentDigests ?? null), protectedStateDigest: managedClaim?.protectedStateDigest ?? null, protectedFamilyDigest: previewEvidence?.protectedFamilyDigest ?? null, ...(managedClaim ? { managedClaim: structuredClone(managedClaim) } : {}), ...(managedReservation ? { managedOwnershipKey: managedReservation.key, priorManagedOwnership: structuredClone(managedReservation.previous) } : {}), public: { workflowId, authorityKind: managedClaim ? "managed" : "generic", binding: authoritativeBinding, sequence: 1, status: "checkpoint_pending", steps: [], createdAt: at, updatedAt: at, retentionExpiresAt: new Date(clock() + WORKFLOW_JOURNAL_RETENTION_MS).toISOString(), manualRecoveryRequired: false, cancellationDoesNotRollback: true } };
         const admittedState = structuredClone(state);
         admittedState.workflows[workflowId] = record;
         admittedState.idempotency[idempotencyKey] = workflowId;
@@ -1141,11 +929,10 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
         try {
         const before = await inspectBinding();
         if (before.projectId !== binding.projectId || before.timelineId !== binding.timelineId || before.revision !== binding.revision) {
-          throw Object.assign(new Error("Live timeline revision changed before workflow checkpoint capture."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+          throw Object.assign(new Error("Live timeline revision changed before workflow checkpoint capture."), { code: "STALE_REVISION" });
         }
         const checkpoint = await checkpointService.createBeforePromptCheckpoint({
           session: { id: workflowId }, prompt: "SDK checkpoint-backed workflow", accessToken,
-          policyContext: checkpointPolicyContext({ workflowId, accountFingerprint, scope, binding, phase: "create" }),
         });
         if (checkpoint.project_name !== before.projectName || checkpoint.timeline_name !== before.timelineName
           || checkpoint.timeline_id !== before.nativeTimelineId) throw new Error("Checkpoint native project or timeline identity changed.");
@@ -1154,15 +941,15 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
         if (typeof checkpointStateHash !== "string" || checkpointStatus?.state_hash !== checkpointStateHash
           || checkpointStatus.project_name !== before.projectName || checkpointStatus.timeline_name !== before.timelineName
           || checkpointStatus.timeline_id !== before.nativeTimelineId) {
-          throw Object.assign(new Error("Project state changed during workflow checkpoint capture."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+          throw Object.assign(new Error("Project state changed during workflow checkpoint capture."), { code: "STALE_REVISION" });
         }
         const after = await inspectBinding();
         if (after.projectId !== before.projectId || after.timelineId !== before.timelineId || after.revision !== before.revision
-          || after.nativeTimelineId !== before.nativeTimelineId) throw Object.assign(new Error("Live timeline changed during workflow checkpoint capture."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+          || after.nativeTimelineId !== before.nativeTimelineId) throw Object.assign(new Error("Live timeline changed during workflow checkpoint capture."), { code: "STALE_REVISION" });
         const startStateHash = checkpointStateHash;
         return mutate(owned(workflowId, accountFingerprint), (draft) => {
           draft.checkpointId = checkpoint.id; draft.nativeTimelineId = before.nativeTimelineId; draft.startStateHash = startStateHash; draft.currentStateHash = startStateHash;
-          draft.scopeRevision = scope.revision; draft.public.binding.policyRevision = `policy_revision_${scope.revision}`; draft.public.status = "active";
+          draft.public.status = "active";
         });
         } catch (error) {
           const pending = owned(workflowId, accountFingerprint);
@@ -1190,7 +977,6 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
       if (record.public.status !== "active") return publicSnapshot(record);
       const existing = record.public.steps.find((step) => step.name === name);
       if (existing) return publicSnapshot(record);
-      assertScopeCurrent(record);
       if (record.public.steps.some((step) => !step.outcome)) throw new Error("Parallel workflow mutation is denied.");
       if (record.public.steps.length >= 1_000) throw new Error("Workflow step limit is 1000.");
       return mutate(record, (draft) => {
@@ -1201,21 +987,20 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
     },
     prepareManagedStep({ accountFingerprint, workflowId, name, actionId, input }) {
       const record = owned(workflowId, accountFingerprint);
-      if (record.public.status !== "active" || !record.managedClaim) throw Object.assign(new Error("Only an active managed workflow can prepare a step."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+      if (record.public.status !== "active" || !record.managedClaim) throw Object.assign(new Error("Only an active managed workflow can prepare a step."), { code: "INVALID_REQUEST" });
       const step = record.public.steps.find((item) => item.name === name);
-      if (!step || step.operationId || step.outcome) throw Object.assign(new Error("Managed step is not an unresolved reservation."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+      if (!step || step.operationId || step.outcome) throw Object.assign(new Error("Managed step is not an unresolved reservation."), { code: "INVALID_REQUEST" });
       return mutate(record, (draft) => { draft.stepReservations[name] = { ...(draft.stepReservations[name] ?? {}), expectedActionId: actionId, expectedInputDigest: sha256(input), preparedAt: nowIso() }; });
     },
     async attach({ accountFingerprint, workflowId, name, operationId, assertRequestCurrent = () => {} }) {
       let record = owned(workflowId, accountFingerprint);
       if (record.public.status !== "active" && record.public.status !== "cancellation_requested") throw Object.assign(new Error("Workflow is no longer attachable."), { code: "OPERATION_EXPIRED", workflowId });
-      assertScopeCurrent(record);
       const step = record.public.steps.find((item) => item.name === name);
-      if (!step || step.outcome) throw Object.assign(new Error("Workflow step was not reserved or is already terminal."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+      if (!step || step.outcome) throw Object.assign(new Error("Workflow step was not reserved or is already terminal."), { code: "INVALID_REQUEST" });
       const operation = operationAuthority.inspectOwned({ accountFingerprint, operationId });
       const input = operation.private.normalizedInput;
-      if (!operationMatchesReservation(record, step, operation)) throw Object.assign(new Error("Workflow operation ownership does not match its exact binding, action, and input."), { code: "EDIT_CONSTRAINT_VIOLATION" });
-      if (step.operationId && step.operationId !== operationId) throw Object.assign(new Error("Workflow step operation cannot be replaced."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+      if (!operationMatchesReservation(record, step, operation)) throw Object.assign(new Error("Workflow operation ownership does not match its exact binding, action, and input."), { code: "INVALID_REQUEST" });
+      if (step.operationId && step.operationId !== operationId) throw Object.assign(new Error("Workflow step operation cannot be replaced."), { code: "INVALID_REQUEST" });
       operationAuthority.retainForWorkflow({
         accountFingerprint,
         operationId,
@@ -1295,7 +1080,7 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
       if (step && !step.operationId) {
         const operation = operationAuthority.findOwnedByIdempotency({ accountFingerprint, idempotencyKey: step.idempotencyKey });
         if (operation) {
-          if (!operationMatchesReservation(record, step, operation)) throw Object.assign(new Error("Recovered workflow operation does not match its exact binding, action, and input."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+          if (!operationMatchesReservation(record, step, operation)) throw Object.assign(new Error("Recovered workflow operation does not match its exact binding, action, and input."), { code: "STALE_REVISION" });
           operationAuthority.retainForWorkflow({
             accountFingerprint,
             operationId: operation.public.operationId,
@@ -1351,28 +1136,56 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
         }
       }
       const nextRevision = ownedOperation.private.postTimelineRevision
-        ?? operation.result?.value?.timelineRevision
-        ?? operation.result?.value?.payload?.revision?.after;
+        ?? sdkOperationPostTimelineRevision(operation.result?.value);
+      let observationFailure = null;
       if (outcome === "completed" && operation.possibleMutation === "confirmed") {
-        if (typeof nextRevision !== "string") outcome = "manual_recovery_required";
+        if (typeof nextRevision !== "string") {
+          observationFailure = {
+            phase: "advance_revision",
+            code: "WORKFLOW_OBSERVATION_REVISION_UNAVAILABLE",
+            message: "The terminal operation did not provide one canonical post-timeline revision.",
+            details: { expectedNativeTimelineId: record.nativeTimelineId, expectedRevision: null },
+          };
+          outcome = "manual_recovery_required";
+        }
         else {
+          const details = { expectedNativeTimelineId: record.nativeTimelineId, expectedRevision: nextRevision };
           try {
             const liveBeforeStatus = await liveInspectionService.readWorkflowBinding({
               operation: "timeline.snapshot", projectId: record.public.binding.projectId, timelineId: record.public.binding.timelineId,
             }, { accessToken });
-            if (liveBeforeStatus.nativeTimelineId !== record.nativeTimelineId || liveBeforeStatus.revision !== nextRevision) throw new Error("Workflow live revision does not match the operation result.");
+            Object.assign(details, { observedBeforeNativeTimelineId: liveBeforeStatus.nativeTimelineId, observedBeforeRevision: liveBeforeStatus.revision });
+            if (liveBeforeStatus.nativeTimelineId !== record.nativeTimelineId || liveBeforeStatus.revision !== nextRevision) {
+              throw Object.assign(new Error("Workflow live revision does not match the operation result."), { code: "WORKFLOW_OBSERVATION_REVISION_MISMATCH" });
+            }
             const status = await checkpointService.getStatus({ session: { id: record.public.workflowId }, accessToken });
-            if (status?.timeline_id !== record.nativeTimelineId || typeof status?.state_hash !== "string") throw new Error("Workflow state hash readback is unavailable.");
+            Object.assign(details, { checkpointTimelineId: status?.timeline_id ?? null, checkpointStateHash: status?.state_hash ?? null });
+            if (status?.timeline_id !== record.nativeTimelineId || typeof status?.state_hash !== "string") {
+              throw Object.assign(new Error("Workflow state hash readback is unavailable."), { code: "WORKFLOW_OBSERVATION_CHECKPOINT_UNAVAILABLE" });
+            }
             const liveAfterStatus = await liveInspectionService.readWorkflowBinding({
               operation: "timeline.snapshot", projectId: record.public.binding.projectId, timelineId: record.public.binding.timelineId,
             }, { accessToken });
-            if (liveAfterStatus.nativeTimelineId !== record.nativeTimelineId || liveAfterStatus.revision !== nextRevision) throw new Error("Workflow live revision changed during state-hash capture.");
-            record = advanceScopeRevision(record, nextRevision, status.state_hash);
+            Object.assign(details, { observedAfterNativeTimelineId: liveAfterStatus.nativeTimelineId, observedAfterRevision: liveAfterStatus.revision });
+            if (liveAfterStatus.nativeTimelineId !== record.nativeTimelineId || liveAfterStatus.revision !== nextRevision) {
+              throw Object.assign(new Error("Workflow live revision changed during state-hash capture."), { code: "WORKFLOW_OBSERVATION_REVISION_RACE" });
+            }
+            record = advanceWorkflowRevision(record, nextRevision, status.state_hash);
           }
-          catch { outcome = "manual_recovery_required"; }
+          catch (error) {
+            observationFailure = {
+              phase: "advance_revision",
+              code: typeof error?.code === "string" ? error.code : "WORKFLOW_OBSERVATION_FAILED",
+              message: typeof error?.message === "string" ? error.message : "Workflow revision observation failed.",
+              details,
+            };
+            outcome = "manual_recovery_required";
+          }
         }
       }
       return mutate(record, (draft, next) => {
+        if (observationFailure) draft.lastObservationFailure = { ...observationFailure, observedAt: nowIso() };
+        else if (outcome === "completed") delete draft.lastObservationFailure;
         draft.public.steps.find((item) => item.name === name).outcome = outcome;
         if (outcome === "checkpoint_restored") {
           for (const prior of draft.public.steps) if (prior.outcome === "completed") prior.outcome = "checkpoint_restored";
@@ -1394,6 +1207,22 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
         if (draft.managedOwnershipKey) {
           const ownership = next.managedOwnerships[draft.managedOwnershipKey];
           if (!ownership || ownership.workflowId !== workflowId) throw new Error("Managed ownership admission disappeared before completion.");
+          const groupedCreatedIds = new Map();
+          const groupedCreatePlan = [...(draft.executablePlan ?? [])]
+            .filter((entry) => entry.kind === "create" || entry.kind === "update")
+            .sort((left, right) => left.key.localeCompare(right.key));
+          const groupedCreateChunks = chunksOf(groupedCreatePlan, 256);
+          for (const [index, createChunk] of groupedCreateChunks.entries()) {
+            const name = groupedCreateChunks.length === 1 ? "managed-creates" : `managed-creates-${index + 1}`;
+            const step = draft.public.steps.find((candidate) => candidate.name === name);
+            if (!step?.operationId || step.outcome !== "completed") continue;
+            const values = operationResultValues(operationAuthority.inspectOwned({ accountFingerprint, operationId: step.operationId }));
+            if (values.length !== createChunk.length) continue;
+            values.forEach((value, resultIndex) => {
+              const id = value.affectedClips?.find((clip) => clip.trackType === "video")?.id;
+              if (typeof id === "string") groupedCreatedIds.set(createChunk[resultIndex].key, id);
+            });
+          }
           const mappings = [];
           for (const element of draft.managedClaim.elements) {
             const planEntry = draft.executablePlan?.find((entry) => entry.key === element.key);
@@ -1401,9 +1230,10 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
               ?? draft.priorManagedOwnership?.elementMappings?.find((entry) => entry.key === element.key)?.timelineItemId;
             if (!timelineItemId) {
               const step = draft.public.steps.find((candidate) => candidate.name === `managed-${element.key}-create`);
-              if (!step?.operationId || step.outcome !== "completed") throw new Error(`Managed element ${element.key} has no verified workflow operation.`);
-              const operation = operationAuthority.inspectOwned({ accountFingerprint, operationId: step.operationId });
-              timelineItemId = operation.public.result?.value?.affectedClips?.find((clip) => clip.trackType === "video")?.id;
+              if (step?.operationId && step.outcome === "completed") {
+                const operation = operationAuthority.inspectOwned({ accountFingerprint, operationId: step.operationId });
+                timelineItemId = operationResultValues(operation)[0]?.affectedClips?.find((clip) => clip.trackType === "video")?.id;
+              } else timelineItemId = groupedCreatedIds.get(element.key);
             }
             if (typeof timelineItemId !== "string") throw new Error(`Managed element ${element.key} has no authoritative verified timeline-item identity.`);
             mappings.push({ key: element.key, timelineItemId });
@@ -1450,7 +1280,6 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
       if (current.public.status === "checkpoint_pending") throw Object.assign(new Error("Managed workflow checkpoint admission is not terminal; reattach by WorkflowId."), { code: "IDEMPOTENCY_CONFLICT", workflowId, idempotencyKey: current.public.binding.idempotencyKey });
       if (current.public.status === "active" && !managedExecutions.has(workflowId) && current.managedClaim) {
         const binding = { ...current.public.binding, managedClaim: current.managedClaim };
-        delete binding.policyRevision;
         const task = Promise.resolve().then(() => authority.executeManaged({ accountFingerprint, accessToken, sdkSessionId, binding, assertRequestCurrent })).catch(() => {
           const record = owned(workflowId, accountFingerprint);
           if (record.public.status !== "active") return publicSnapshot(record);
@@ -1489,10 +1318,28 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
       const recordAtAdmission = owned(snapshot.workflowId, accountFingerprint);
       const plan = [...(recordAtAdmission.executablePlan ?? [])].sort((left, right) => left.key.localeCompare(right.key));
       const elements = new Map(binding.managedClaim.elements.map((element) => [element.key, element]));
+      const resumeLegacySteps = recordAtAdmission.public.steps.some((step) => (
+        /^managed-.+-move$/.test(step.name)
+        || /^managed-.+-create$/.test(step.name)
+        || /^managed-.+-remove-(video|audio|subtitle)-\d+$/.test(step.name)
+      ));
       const verifyProtectedAfterStep = async (name) => {
         const record = owned(snapshot.workflowId, accountFingerprint);
+        const failStepVerification = (code, message, details = {}) => {
+          mutate(owned(snapshot.workflowId, accountFingerprint), (draft) => {
+            draft.lastManagedVerificationFailure = {
+              phase: "managed_step_verification", stepName: name, code, message,
+              details: structuredClone(details), observedAt: nowIso(),
+            };
+          });
+          return false;
+        };
         const current = await liveInspectionService.read({ operation: "timeline.snapshot", projectId: binding.projectId, timelineId: binding.timelineId }, { accessToken, deadlineAtMs: managedInspectionDeadline() });
-        if (current.revision !== record.currentRevision) return false;
+        if (current.revision !== record.currentRevision) return failStepVerification(
+          "STEP_REVISION_MISMATCH",
+          "The post-step live timeline revision does not match the workflow revision.",
+          { expectedRevision: record.currentRevision, observedRevision: current.revision },
+        );
         const rows = current.tracks.flatMap((track) => track.clips.map((clip) => ({ track, clip })));
         const managedIds = new Set([
           ...(record.managedAffectedItemIds ?? []),
@@ -1500,9 +1347,11 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
           ...binding.managedClaim.elements.map((element) => element.adoptTimelineItemId).filter(Boolean),
         ]);
         for (const step of record.public.steps) {
-          if (!step.operationId || step.outcome !== "completed" || !step.name.endsWith("-create")) continue;
+          if (!step.operationId || step.outcome !== "completed") continue;
           const operation = operationAuthority.inspectOwned({ accountFingerprint, operationId: step.operationId });
-          for (const clip of operation.public.result?.value?.affectedClips ?? []) if (typeof clip.id === "string") managedIds.add(clip.id);
+          for (const value of operationResultValues(operation)) {
+            for (const clip of value.affectedClips ?? []) if (typeof clip.id === "string") managedIds.add(clip.id);
+          }
         }
         for (const { clip } of rows) if (managedIds.has(clip.id)) for (const linkedId of clip.linkedItemIds ?? []) managedIds.add(linkedId);
         let familyDigest = null;
@@ -1513,11 +1362,34 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
               affectedNativeItemIds: record.managedAffectedNativeItemIds ?? [],
               affectedItemIds: [...managedIds].filter((id) => rows.some(({ clip }) => clip.id === id)).sort() }, { accessToken, deadlineAtMs: managedInspectionDeadline() });
             familyDigest = attestation.protectedStateDigest;
-          } catch { return false; }
-          if (familyDigest !== record.protectedFamilyDigest) return false;
+          } catch (error) {
+            return failStepVerification(
+              "STEP_ATTESTATION_FAILED",
+              "The post-step managed protected-state attestation failed.",
+              { causeName: typeof error?.name === "string" ? error.name : null,
+                causeCode: typeof error?.code === "string" ? error.code : null,
+                causeMessage: typeof error?.message === "string" ? error.message.slice(0, 500) : null,
+                timelineRevision: current.revision, affectedItemCount: managedIds.size },
+            );
+          }
+          if (familyDigest !== record.protectedFamilyDigest) return failStepVerification(
+            "STEP_PROTECTED_FAMILY_DIGEST_MISMATCH",
+            "The post-step protected-family digest does not match the admitted baseline.",
+            { expectedDigest: record.protectedFamilyDigest, observedDigest: familyDigest },
+          );
         }
         const digest = sha256({ timeline: protectedSnapshot(current, managedIds), protectedFamilies: familyDigest });
-        if (digest !== record.protectedStateDigest) return false;
+        if (digest !== record.protectedStateDigest) {
+          const observedComponents = protectedSnapshotComponentDigests(current, managedIds);
+          const expectedComponents = record.managedProtectedComponentDigests ?? {};
+          const changedComponents = Object.keys(observedComponents).filter((key) => observedComponents[key] !== expectedComponents[key]);
+          return failStepVerification(
+            "STEP_PROTECTED_STATE_DIGEST_MISMATCH",
+            "The post-step canonical protected-state digest does not match the admitted baseline.",
+            { expectedDigest: record.protectedStateDigest, observedDigest: digest, changedComponents,
+              expectedComponents, observedComponents },
+          );
+        }
         mutate(record, (draft) => {
           draft.managedStepEvidence ??= [];
           if (!draft.managedStepEvidence.some((entry) => entry.name === name)) draft.managedStepEvidence.push({ name, revision: current.revision, protectedStateDigest: digest });
@@ -1561,20 +1433,20 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
       };
       const removalInput = async (entry, removalTarget, currentRevision) => {
         const current = await liveInspectionService.read({ operation: "timeline.snapshot", projectId: binding.projectId, timelineId: binding.timelineId }, { accessToken, deadlineAtMs: managedInspectionDeadline() });
-        if (current.revision !== currentRevision) throw Object.assign(new Error("Managed removal must resolve against the workflow's current revision."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+        if (current.revision !== currentRevision) throw Object.assign(new Error("Managed removal must resolve against the workflow's current revision."), { code: "STALE_REVISION" });
         const rows = current.tracks.flatMap((track) => track.clips.map((clip) => ({ track, clip })));
         const target = rows.filter(({ clip }) => clip.id === removalTarget.clipId);
-        if (target.length !== 1) throw Object.assign(new Error(`Managed element ${entry.key} no longer has one exact removal target.`), { code: "EDIT_CONSTRAINT_VIOLATION" });
+        if (target.length !== 1) throw Object.assign(new Error(`Managed element ${entry.key} no longer has one exact removal target.`), { code: "STALE_REVISION" });
         if (target[0].track.type !== removalTarget.track.type || target[0].track.index !== removalTarget.track.index
           || target[0].clip.name !== removalTarget.name || target[0].clip.recordRange.start !== removalTarget.range.start
-          || target[0].clip.recordRange.endExclusive !== removalTarget.range.endExclusive) throw Object.assign(new Error(`Managed element ${entry.key} removal selector changed after admission.`), { code: "EDIT_CONSTRAINT_VIOLATION" });
+          || target[0].clip.recordRange.endExclusive !== removalTarget.range.endExclusive) throw Object.assign(new Error(`Managed element ${entry.key} removal selector changed after admission.`), { code: "STALE_REVISION" });
         const affectedItemIds = structuredClone(removalTarget.affectedItemIds);
         const affectedTracks = [structuredClone(removalTarget.track)];
         const expectedLinkTransitions = structuredClone(removalTarget.expectedLinkTransitions ?? []);
         for (const transition of expectedLinkTransitions) {
           const survivor = rows.find(({ clip }) => clip.id === transition.itemId);
           if (!survivor || JSON.stringify([...(survivor.clip.linkedItemIds ?? [])].sort()) !== JSON.stringify([...transition.beforeLinkedItemIds].sort())) {
-            throw Object.assign(new Error(`Managed element ${entry.key} reciprocal-link transition changed after admission.`), { code: "EDIT_CONSTRAINT_VIOLATION" });
+            throw Object.assign(new Error(`Managed element ${entry.key} reciprocal-link transition changed after admission.`), { code: "STALE_REVISION" });
           }
         }
         const transitionIds = new Set(expectedLinkTransitions.map((transition) => transition.itemId));
@@ -1584,87 +1456,224 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
           clipId: removalTarget.clipId, track: structuredClone(removalTarget.track),
           range: { start: removalTarget.range.start, endExclusive: removalTarget.range.endExclusive }, name: removalTarget.name };
       };
-      const insertionInput = async (element, currentRevision) => {
+      const groupedRemovalInput = async (targets, currentRevision) => {
+        const current = await liveInspectionService.read({ operation: "timeline.snapshot", projectId: binding.projectId, timelineId: binding.timelineId }, { accessToken, deadlineAtMs: managedInspectionDeadline() });
+        if (current.revision !== currentRevision) throw Object.assign(new Error("Managed removals must resolve against the workflow's current revision."), { code: "STALE_REVISION" });
+        const rows = current.tracks.flatMap((track) => track.clips.map((clip) => ({ track, clip })));
+        const affectedItemIds = targets.flatMap(({ removalTarget }) => removalTarget.affectedItemIds);
+        if (new Set(affectedItemIds).size !== affectedItemIds.length) throw Object.assign(new Error("Managed removal targets overlap."), { code: "STALE_REVISION" });
+        const affected = new Set(affectedItemIds);
+        const removals = targets.map(({ entry, removalTarget }) => {
+          const matches = rows.filter(({ clip }) => clip.id === removalTarget.clipId);
+          if (matches.length !== 1) throw Object.assign(new Error(`Managed element ${entry.key} no longer has one exact removal target.`), { code: "STALE_REVISION" });
+          const { track, clip } = matches[0];
+          if (track.type !== removalTarget.track.type || track.index !== removalTarget.track.index
+            || clip.name !== removalTarget.name || clip.recordRange.start !== removalTarget.range.start
+            || clip.recordRange.endExclusive !== removalTarget.range.endExclusive) {
+            throw Object.assign(new Error(`Managed element ${entry.key} removal selector changed after admission.`), { code: "STALE_REVISION" });
+          }
+          const expectedLinkTransitions = structuredClone(removalTarget.expectedLinkTransitions ?? [])
+            .filter((transition) => !affected.has(transition.itemId));
+          for (const transition of expectedLinkTransitions) {
+            const survivor = rows.find(({ clip: candidate }) => candidate.id === transition.itemId);
+            if (!survivor || JSON.stringify([...(survivor.clip.linkedItemIds ?? [])].sort()) !== JSON.stringify([...transition.beforeLinkedItemIds].sort())) {
+              throw Object.assign(new Error(`Managed element ${entry.key} reciprocal-link transition changed after admission.`), { code: "STALE_REVISION" });
+            }
+          }
+          return { operation: "clip_remove", projectId: binding.projectId, timelineId: binding.timelineId, timelineRevision: currentRevision,
+            affectedTracks: [structuredClone(removalTarget.track)], affectedItemIds: structuredClone(removalTarget.affectedItemIds), expectedLinkTransitions,
+            protectedItemIds: [], clipId: removalTarget.clipId, track: structuredClone(removalTarget.track),
+            range: { start: removalTarget.range.start, endExclusive: removalTarget.range.endExclusive }, name: removalTarget.name };
+        });
+        const transitionIds = new Set(removals.flatMap((removal) => removal.expectedLinkTransitions.map((transition) => transition.itemId)));
+        const protectedItemIds = rows.map(({ clip }) => clip.id).filter((id) => !affected.has(id) && !transitionIds.has(id));
+        for (const removal of removals) removal.protectedItemIds = structuredClone(protectedItemIds);
+        return { operation: "clip_remove_many", removals };
+      };
+      const insertionInput = async (insertionElements, currentRevision, plural) => {
         const record = owned(snapshot.workflowId, accountFingerprint);
         const baseline = record.managedAssetCustody;
-        if (!baseline) throw Object.assign(new Error("Managed source-asset custody is unavailable."), { code: "EDIT_CONSTRAINT_VIOLATION" });
-        const refreshed = await liveInspectionService.captureManagedTimelineAssets({
-          projectId: binding.projectId,
-          timelineId: binding.timelineId,
-          assetIds: binding.managedClaim.elements.map((candidate) => candidate.assetId),
-        }, { accessToken, deadlineAtMs: managedInspectionDeadline() });
-        if (!sameManagedAssetCustody(refreshed, baseline)) {
-          throw Object.assign(new Error("Managed source assets or unrelated Media Pool content changed after admission."), { code: "EDIT_CONSTRAINT_VIOLATION" });
+        if (!baseline) throw Object.assign(new Error("Managed source-asset custody is unavailable."), { code: "STALE_REVISION" });
+        const intents = [];
+        for (const element of insertionElements) {
+          const admittedAsset = baseline.assets.find((candidate) => candidate.id === element.assetId);
+          if (!admittedAsset) throw Object.assign(new Error("Managed source asset lacks admitted custody."), { code: "STALE_REVISION" });
+          const refreshed = await liveInspectionService.refreshManagedTimelineAsset({
+            projectId: binding.projectId,
+            timelineId: binding.timelineId,
+            assetId: element.assetId,
+            expectedFingerprint: admittedAsset.fingerprint,
+          }, { accessToken, deadlineAtMs: managedInspectionDeadline() });
+          intents.push({
+            action: "insert", projectId: binding.projectId, timelineId: binding.timelineId, timelineRevision: currentRevision,
+            source: { id: element.assetId, name: element.assetName, snapshotRevision: refreshed.revision },
+            sourceRange: { domain: "source_range", unit: "frames", start: element.sourceStartFrame, endExclusive: element.sourceEndExclusiveFrame },
+            at: { domain: "timeline_record", value: { kind: "frames", value: element.atFrame } },
+            videoTrackIndex: element.videoTrack, audioTrackIndex: element.audioTrack, linkedAudio: element.linkedAudio,
+          });
         }
-        const refreshedAsset = refreshed.assets.find((candidate) => candidate.id === element.assetId);
-        if (!refreshedAsset) throw Object.assign(new Error("Managed source asset lost exact custody."), { code: "EDIT_CONSTRAINT_VIOLATION" });
-        const prepared = await liveInspectionService.prepareTimelineEdit({
-          action: "insert", projectId: binding.projectId, timelineId: binding.timelineId, timelineRevision: currentRevision,
-          source: { id: element.assetId, name: element.assetName, snapshotRevision: refreshedAsset.revision },
-          sourceRange: { domain: "source_range", unit: "frames", start: element.sourceStartFrame, endExclusive: element.sourceEndExclusiveFrame },
-          at: { domain: "timeline_record", value: { kind: "frames", value: element.atFrame } },
-          videoTrackIndex: element.videoTrack, audioTrackIndex: element.audioTrack, linkedAudio: element.linkedAudio,
-        }, { accessToken, deadlineAtMs: Date.now() + 60_000 });
-        const expectedDuration = managedRecordDuration(element.sourceStartFrame, element.sourceEndExclusiveFrame,
-          element.sourceFrameRate, binding.managedClaim.timelineFrameRate);
-        if (expectedDuration === null || prepared.impact.recordRange?.start !== element.atFrame
-          || prepared.impact.recordRange?.endExclusive !== element.atFrame + expectedDuration) {
-          throw Object.assign(new Error("Managed insertion preview returned different mixed-rate record geometry."), { code: "EDIT_CONSTRAINT_VIOLATION" });
-        }
-        return { impact: prepared.impact };
+        const preparationOptions = { accessToken, sdkSessionId, deadlineAtMs: managedInspectionDeadline() };
+        const prepared = plural
+          ? await liveInspectionService.prepareTimelineEdits(intents, preparationOptions)
+          : { impacts: [(await liveInspectionService.prepareTimelineEdit(intents[0], preparationOptions)).impact] };
+        prepared.impacts.forEach((impact, index) => {
+          const element = insertionElements[index];
+          const expectedDuration = managedRecordDuration(element.sourceStartFrame, element.sourceEndExclusiveFrame,
+            element.sourceFrameRate, binding.managedClaim.timelineFrameRate);
+          if (expectedDuration === null || impact.recordRange?.start !== element.atFrame
+            || impact.recordRange?.endExclusive !== element.atFrame + expectedDuration) {
+            throw Object.assign(new Error("Managed insertion preview returned different mixed-rate record geometry."), { code: "STALE_REVISION" });
+          }
+        });
+        return plural ? { impacts: prepared.impacts } : { impact: prepared.impacts[0] };
       };
-      const moveInput = async (entry, element, currentRevision) => {
+      const moveInput = async (entries, currentRevision) => {
         const current = await liveInspectionService.read({ operation: "timeline.snapshot", projectId: binding.projectId, timelineId: binding.timelineId }, { accessToken, deadlineAtMs: managedInspectionDeadline() });
-        if (current.revision !== currentRevision) throw Object.assign(new Error("Managed move must resolve against the workflow's current revision."), { code: "EDIT_CONSTRAINT_VIOLATION" });
-        const matches = current.tracks.flatMap((track) => track.clips.map((clip) => ({ track, clip })))
-          .filter(({ clip }) => clip.id === entry.timelineItemId);
-        const expectedDuration = managedRecordDuration(element.sourceStartFrame, element.sourceEndExclusiveFrame,
-          element.sourceFrameRate, binding.managedClaim.timelineFrameRate);
-        if (matches.length !== 1 || expectedDuration === null) throw Object.assign(new Error(`Managed element ${entry.key} no longer has one exact move target.`), { code: "EDIT_CONSTRAINT_VIOLATION" });
-        const { track, clip } = matches[0];
-        if (element.linkedAudio !== "exclude" || track.type !== "video" || track.index !== element.videoTrack
-          || clip.linkedItemIds?.length !== 0 || clip.recordRange.endExclusive - clip.recordRange.start !== expectedDuration
-          || clip.mediaPoolItemId !== element.assetId || clip.sourceRange?.start !== element.sourceStartFrame
-          || clip.sourceRange?.endExclusive !== element.sourceEndExclusiveFrame
-          || !sameFrameRate(clip.sourceFrameRate, element.sourceFrameRate)) {
-          throw Object.assign(new Error(`Managed element ${entry.key} is no longer a position-only move.`), { code: "EDIT_CONSTRAINT_VIOLATION" });
-        }
-        return { projectId: binding.projectId, timelineId: binding.timelineId, timelineRevision: currentRevision,
-          target: { snapshotId: clip.snapshotId, id: clip.id, trackIndex: track.index,
-            recordStartFrame: clip.recordRange.start, recordEndFrame: clip.recordRange.endExclusive,
-            name: clip.name, mediaPoolItemId: clip.mediaPoolItemId },
-          linkedAudioTargets: [], destination: { trackIndex: element.videoTrack, recordStartFrame: element.atFrame },
-          linkedAudio: "exclude", collisionPolicy: "reject" };
+        if (current.revision !== currentRevision) throw Object.assign(new Error("Managed move must resolve against the workflow's current revision."), { code: "STALE_REVISION" });
+        const rows = current.tracks.flatMap((track) => track.clips.map((clip) => ({ track, clip })));
+        return { moves: entries.map(({ entry, element }) => {
+          const matches = rows.filter(({ clip }) => clip.id === entry.timelineItemId);
+          const expectedDuration = managedRecordDuration(element.sourceStartFrame, element.sourceEndExclusiveFrame,
+            element.sourceFrameRate, binding.managedClaim.timelineFrameRate);
+          if (matches.length !== 1 || expectedDuration === null) throw Object.assign(new Error(`Managed element ${entry.key} no longer has one exact move target.`), { code: "STALE_REVISION" });
+          const { track, clip } = matches[0];
+          const linkedRows = (clip.linkedItemIds ?? []).map((id) => rows.find(({ clip: candidate }) => candidate.id === id)).filter(Boolean);
+          const exactLinkedAudio = element.linkedAudio === "exclude" ? linkedRows.length === 0
+            : element.audioTrack !== null && linkedRows.length === 1 && linkedRows[0].track.type === "audio"
+              && linkedRows[0].track.index === element.audioTrack
+              && linkedRows[0].clip.linkedItemIds?.length === 1 && linkedRows[0].clip.linkedItemIds[0] === clip.id
+              && linkedRows[0].clip.mediaPoolItemId === element.assetId
+              && linkedRows[0].clip.recordRange.start === clip.recordRange.start
+              && linkedRows[0].clip.recordRange.endExclusive === clip.recordRange.endExclusive
+              && linkedRows[0].clip.sourceRange?.start === element.sourceStartFrame
+              && linkedRows[0].clip.sourceRange?.endExclusive === element.sourceEndExclusiveFrame
+              && sameFrameRate(linkedRows[0].clip.sourceFrameRate, element.sourceFrameRate);
+          if (track.type !== "video" || track.index !== element.videoTrack
+            || !exactLinkedAudio || clip.recordRange.endExclusive - clip.recordRange.start !== expectedDuration
+            || clip.mediaPoolItemId !== element.assetId || clip.sourceRange?.start !== element.sourceStartFrame
+            || clip.sourceRange?.endExclusive !== element.sourceEndExclusiveFrame
+            || !sameFrameRate(clip.sourceFrameRate, element.sourceFrameRate)) {
+            throw Object.assign(new Error(`Managed element ${entry.key} is no longer a position-only move.`), { code: "STALE_REVISION" });
+          }
+          return { projectId: binding.projectId, timelineId: binding.timelineId, timelineRevision: currentRevision,
+            target: { snapshotId: clip.snapshotId, id: clip.id, trackIndex: track.index,
+              recordStartFrame: clip.recordRange.start, recordEndFrame: clip.recordRange.endExclusive,
+              name: clip.name, mediaPoolItemId: clip.mediaPoolItemId },
+            linkedAudioTargets: linkedRows.map(({ track: linkedTrack, clip: linkedClip }) => ({
+              snapshotId: linkedClip.snapshotId, id: linkedClip.id, trackIndex: linkedTrack.index,
+              recordStartFrame: linkedClip.recordRange.start, recordEndFrame: linkedClip.recordRange.endExclusive,
+              name: linkedClip.name, mediaPoolItemId: linkedClip.mediaPoolItemId,
+            })), destination: { trackIndex: element.videoTrack, recordStartFrame: element.atFrame },
+            linkedAudio: element.linkedAudio === "include" ? "preserve" : "exclude", collisionPolicy: "reject" };
+        }) };
       };
-      for (const entry of plan.filter((candidate) => candidate.kind === "move")) {
+      const moves = plan.filter((candidate) => candidate.kind === "move").map((entry) => {
         const element = elements.get(entry.key);
         if (!element) throw new Error(`Managed executable plan refers to absent element ${entry.key}.`);
-        if (!await runStep(`managed-${entry.key}-move`, "cutagent.action.timeline.items.move", (revision) => moveInput(entry, element, revision))) return snapshot;
+        return { entry, element };
+      });
+      const moveChunks = chunksOf(moves, 100);
+      if (resumeLegacySteps) {
+        for (const move of moves) {
+          if (!await runStep(`managed-${move.entry.key}-move`, "cutagent.action.timeline.items.move", async (revision) => (
+            await moveInput([move], revision)
+          ).moves[0])) return snapshot;
+        }
+      } else for (const [index, moveChunk] of moveChunks.entries()) {
+          const name = moveChunks.length === 1 ? "managed-moves" : `managed-moves-${index + 1}`;
+          if (!await runStep(name, "cutagent.action.timeline.items.move", (revision) => moveInput(moveChunk, revision))) return snapshot;
       }
+      const removalGroups = [];
       for (const entry of plan.filter((candidate) => candidate.kind === "remove" || candidate.kind === "update")) {
         if (!Array.isArray(entry.removalTargets) || entry.removalTargets.length === 0) return authority.fail({ accountFingerprint, accessToken, workflowId: snapshot.workflowId });
-        for (const removalTarget of entry.removalTargets) {
+        if (entry.removalTargets.length > 256) return authority.fail({ accountFingerprint, accessToken, workflowId: snapshot.workflowId });
+        removalGroups.push(entry.removalTargets.map((removalTarget) => ({ entry, removalTarget })));
+      }
+      const removals = removalGroups.flat();
+      const removalChunks = [];
+      for (const group of removalGroups) {
+        const currentChunk = removalChunks.at(-1);
+        if (!currentChunk || currentChunk.length + group.length > 256) removalChunks.push([...group]);
+        else currentChunk.push(...group);
+      }
+      if (resumeLegacySteps) {
+        for (const { entry, removalTarget } of removals) {
           const stepName = `managed-${entry.key}-remove-${removalTarget.track.type}-${removalTarget.track.index}`;
           if (!await runStep(stepName, "cutagent.action.timeline.items.delete", (revision) => removalInput(entry, removalTarget, revision))) return snapshot;
         }
+      } else for (const [index, removalChunk] of removalChunks.entries()) {
+        const name = removalChunks.length === 1 ? "managed-removes" : `managed-removes-${index + 1}`;
+        if (!await runStep(name, "cutagent.action.timeline.items.delete", (revision) => groupedRemovalInput(removalChunk, revision))) return snapshot;
       }
-      for (const entry of plan.filter((candidate) => candidate.kind === "create" || candidate.kind === "update")) {
+      const creates = plan.filter((candidate) => candidate.kind === "create" || candidate.kind === "update").map((entry) => {
         const element = elements.get(entry.key);
         if (!element) throw new Error(`Managed executable plan refers to absent element ${entry.key}.`);
-        if (!await runStep(`managed-${entry.key}-create`, "cutagent.action.edit.insert", (revision) => insertionInput(element, revision))) return snapshot;
+        return { entry, element };
+      });
+      const createChunks = chunksOf(creates, 256);
+      if (resumeLegacySteps) {
+        for (const create of creates) {
+          if (!await runStep(`managed-${create.entry.key}-create`, "cutagent.action.edit.insert", (revision) => insertionInput([create.element], revision, false))) return snapshot;
+        }
+      } else for (const [index, createChunk] of createChunks.entries()) {
+        const name = createChunks.length === 1 ? "managed-creates" : `managed-creates-${index + 1}`;
+        if (!await runStep(name, "cutagent.action.edit.insert", (revision) => insertionInput(createChunk.map(({ element }) => element), revision, true))) return snapshot;
       }
       const record = owned(snapshot.workflowId, accountFingerprint);
+      const failManagedVerification = async (code, message, details = {}) => {
+        const current = owned(snapshot.workflowId, accountFingerprint);
+        mutate(current, (draft) => {
+          draft.lastManagedVerificationFailure = {
+            phase: "final_managed_verification",
+            code,
+            message,
+            details: structuredClone(details),
+            observedAt: nowIso(),
+          };
+        });
+        return authority.fail({ accountFingerprint, accessToken, workflowId: snapshot.workflowId });
+      };
       const finalSnapshot = await liveInspectionService.read({ operation: "timeline.snapshot", projectId: binding.projectId, timelineId: binding.timelineId }, { accessToken, deadlineAtMs: managedInspectionDeadline() });
-      if (finalSnapshot.revision !== record.currentRevision) return authority.fail({ accountFingerprint, accessToken, workflowId: snapshot.workflowId });
+      if (finalSnapshot.revision !== record.currentRevision) return failManagedVerification(
+        "FINAL_REVISION_MISMATCH",
+        "The final live timeline revision does not match the workflow revision.",
+        { expectedRevision: record.currentRevision, observedRevision: finalSnapshot.revision },
+      );
+      const createdIdsByKey = new Map();
+      if (resumeLegacySteps) {
+        for (const { entry } of creates) {
+          const step = record.public.steps.find((candidate) => candidate.name === `managed-${entry.key}-create`);
+          const operation = step?.operationId ? operationAuthority.inspectOwned({ accountFingerprint, operationId: step.operationId }) : null;
+          const created = operationResultValues(operation)[0]?.affectedClips?.find((clip) => clip.trackType === "video")?.id;
+          if (typeof created === "string") createdIdsByKey.set(entry.key, created);
+        }
+      } else for (const [index, createChunk] of createChunks.entries()) {
+        const name = createChunks.length === 1 ? "managed-creates" : `managed-creates-${index + 1}`;
+        const step = record.public.steps.find((candidate) => candidate.name === name);
+        const operation = step?.operationId ? operationAuthority.inspectOwned({ accountFingerprint, operationId: step.operationId }) : null;
+        const values = operationResultValues(operation);
+        if (values.length !== createChunk.length) return failManagedVerification(
+          "CREATED_RESULT_COUNT_MISMATCH",
+          "The grouped create result count does not match the admitted create plan.",
+          { stepName: name, expectedCount: createChunk.length, observedCount: values.length },
+        );
+        values.forEach((value, resultIndex) => {
+          const created = value.affectedClips?.find((clip) => clip.trackType === "video")?.id;
+          if (typeof created === "string") createdIdsByKey.set(createChunk[resultIndex].entry.key, created);
+        });
+      }
       const mappings = binding.managedClaim.elements.map((element) => {
         const planEntry = record.executablePlan?.find((entry) => entry.key === element.key);
         const retained = planEntry?.kind === "create" || planEntry?.kind === "update" ? null : element.adoptTimelineItemId
           ?? record.priorManagedOwnership?.elementMappings?.find((entry) => entry.key === element.key)?.timelineItemId;
-        const step = record.public.steps.find((entry) => entry.name === `managed-${element.key}-create`);
-        const created = step?.operationId ? operationAuthority.inspectOwned({ accountFingerprint, operationId: step.operationId }).public.result?.value?.affectedClips?.find((clip) => clip.trackType === "video")?.id : null;
-        return { key: element.key, timelineItemId: retained ?? created };
+        return { key: element.key, timelineItemId: retained ?? createdIdsByKey.get(element.key) };
       });
-      if (mappings.some((entry) => typeof entry.timelineItemId !== "string")) return authority.fail({ accountFingerprint, accessToken, workflowId: snapshot.workflowId });
+      const missingMappingKeys = mappings.filter((entry) => typeof entry.timelineItemId !== "string").map((entry) => entry.key);
+      if (missingMappingKeys.length) return failManagedVerification(
+        "MANAGED_MAPPING_UNAVAILABLE",
+        "One or more managed elements have no authoritative timeline-item identity.",
+        { missingKeys: missingMappingKeys },
+      );
       const finalManagedIds = new Set(mappings.map((entry) => entry.timelineItemId));
       const finalRows = finalSnapshot.tracks.flatMap((track) => track.clips.map((clip) => ({ track, clip })));
       for (const { clip } of finalRows) if (finalManagedIds.has(clip.id)) for (const linkedId of clip.linkedItemIds ?? []) finalManagedIds.add(linkedId);
@@ -1678,8 +1687,25 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
           finalProtectedFamilyDigest = finalAttestation.protectedStateDigest;
           finalAffectedStateDigest = finalAttestation.affectedStateDigest;
         }
-        catch { return authority.fail({ accountFingerprint, accessToken, workflowId: snapshot.workflowId }); }
-        if (finalProtectedFamilyDigest !== record.protectedFamilyDigest) return authority.fail({ accountFingerprint, accessToken, workflowId: snapshot.workflowId });
+        catch (error) {
+          return failManagedVerification(
+            "FINAL_ATTESTATION_FAILED",
+            "The final managed protected-state attestation failed.",
+            {
+              causeName: typeof error?.name === "string" ? error.name : null,
+              causeCode: typeof error?.code === "string" ? error.code : null,
+              causeMessage: typeof error?.message === "string" ? error.message.slice(0, 500) : null,
+              timelineRevision: finalSnapshot.revision,
+              affectedNativeItemCount: (record.managedAffectedNativeItemIds ?? []).length,
+              affectedItemCount: finalManagedIds.size,
+            },
+          );
+        }
+        if (finalProtectedFamilyDigest !== record.protectedFamilyDigest) return failManagedVerification(
+          "PROTECTED_FAMILY_DIGEST_MISMATCH",
+          "The final protected-family digest does not match the admitted baseline.",
+          { expectedDigest: record.protectedFamilyDigest, observedDigest: finalProtectedFamilyDigest },
+        );
       }
       const finalPreview = await previewManaged({ accountFingerprint, accessToken, sdkSessionId, ownershipOverride: { accountFingerprint, ownershipId: binding.managedClaim.ownershipId,
         projectId: binding.projectId, timelineId: binding.timelineId, scope: binding.managedClaim.scope, status: "active", generation: 1,
@@ -1688,12 +1714,24 @@ export function createSdkWorkflowAuthority({ storageDir, operationAuthority, che
         program: { projectId: binding.projectId, timelineId: binding.timelineId, revision: record.currentRevision, ownershipId: binding.managedClaim.ownershipId, scope: binding.managedClaim.scope, timelineFrameRate: binding.managedClaim.timelineFrameRate, elements: binding.managedClaim.elements },
         deadlineAtMs: managedInspectionDeadline() });
       const finalAssetCustody = managedPreviewEvidence.get(finalPreview.previewDigest)?.managedAssetCustody ?? null;
-      if (!sameManagedAssetCustody(finalAssetCustody, record.managedAssetCustody)) return authority.fail({ accountFingerprint, accessToken, workflowId: snapshot.workflowId });
-      if (finalPreview.status !== "no_change" || finalPreview.blockers.length) return authority.fail({ accountFingerprint, accessToken, workflowId: snapshot.workflowId });
+      if (!sameManagedAssetCustody(finalAssetCustody, record.managedAssetCustody)) return failManagedVerification(
+        "MANAGED_ASSET_CUSTODY_MISMATCH",
+        "The final managed Media Pool custody does not match the admitted source custody.",
+        { expectedAssetCount: record.managedAssetCustody?.assets?.length ?? 0, observedAssetCount: finalAssetCustody?.assets?.length ?? 0 },
+      );
+      if (finalPreview.status !== "no_change" || finalPreview.blockers.length) return failManagedVerification(
+        "FINAL_PREVIEW_NOT_CONVERGED",
+        "The final managed preview did not converge to no_change.",
+        { status: finalPreview.status, blockerCodes: finalPreview.blockers.slice(0, 20).map((blocker) => blocker.code ?? null), blockerCount: finalPreview.blockers.length },
+      );
       const combinedFinalProtectedStateDigest = sha256({ timeline: protectedSnapshot(finalSnapshot, finalManagedIds), protectedFamilies: finalProtectedFamilyDigest });
       const expectedManagedStateDigest = sha256(binding.managedClaim.elements.map((element) => ({ key: element.key, timelineItemId: mappings.find((entry) => entry.key === element.key).timelineItemId,
         assetId: element.assetId, videoTrack: element.videoTrack, audioTrack: element.audioTrack, atFrame: element.atFrame, sourceStartFrame: element.sourceStartFrame, sourceEndExclusiveFrame: element.sourceEndExclusiveFrame, sourceFrameRate: element.sourceFrameRate, linkedAudio: element.linkedAudio })));
-      if (combinedFinalProtectedStateDigest !== record.protectedStateDigest) return authority.fail({ accountFingerprint, accessToken, workflowId: snapshot.workflowId });
+      if (combinedFinalProtectedStateDigest !== record.protectedStateDigest) return failManagedVerification(
+        "PROTECTED_STATE_DIGEST_MISMATCH",
+        "The final canonical protected-state digest does not match the admitted baseline.",
+        { expectedDigest: record.protectedStateDigest, observedDigest: combinedFinalProtectedStateDigest },
+      );
       const verification = { outcome: "passed", finalRevision: record.currentRevision, protectedStateDigest: combinedFinalProtectedStateDigest, expectedManagedStateDigest,
         evidence: [managedEvidence("Verified canonical protected state after every durable managed substep and against the admitted baseline.", { baseline: record.protectedStateDigest, final: combinedFinalProtectedStateDigest, protectedFamilyDigest: finalProtectedFamilyDigest, steps: record.managedStepEvidence ?? [] }), managedEvidence("Read back the complete converged managed program at the exact final revision.", { finalRevision: record.currentRevision, mappings, previewDigest: finalPreview.previewDigest }, "readback")] };
       return authority.complete({ accountFingerprint, workflowId: snapshot.workflowId, managedVerification: verification,

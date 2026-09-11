@@ -33,7 +33,7 @@ from .fairlight_prepared_evaluation import (
 ACTION_ID = "cutagent.action.sdk.fairlight.plan.apply"
 _HANDLER_LOCK = threading.RLock()
 _SUPPORTED_KINDS = frozenset(
-    {"clip_gain", "clip_pan", "clip_fade", "track_mix", "effect", "loudness"}
+    {"clip_gain", "clip_pan", "clip_fade", "clip_fade_curve", "track_mix", "effect", "loudness"}
 )
 _UNSUPPORTED_KIND_REASONS = MappingProxyType(
     {
@@ -59,8 +59,11 @@ _CAPABILITY_BY_HANDLER = MappingProxyType(
     {
         "audio_gain_batch": "fairlight.audio_gain_batch",
         "audio_pan_batch": "fairlight.audio_pan_batch",
+        "_sdk_audio_pan_items": "fairlight.audio_pan_batch",
         "fade_in_batch": "fairlight.fade_in_batch",
         "fade_out_batch": "fairlight.fade_out_batch",
+        "crossfade_batch": "fairlight.crossfade_batch",
+        "fade_curve": "fairlight.fade_out_batch",
         "mixer_fader": "fairlight.fader",
         "mixer_pan": "fairlight.pan",
         "effect_add": "fairlight.clip_effect_param_write",
@@ -87,6 +90,30 @@ def _default(parameter: inspect.Parameter) -> Any:
 
 def _invoke(handler_name: str, supplied: Mapping[str, Any]) -> Mapping[str, Any]:
     from .commands import fairlight as commands
+
+    if handler_name == "crossfade_batch":
+        if set(supplied) != {"entries", "clamp_half_clip"}:
+            raise FairlightEvaluationError(
+                "VALIDATION_ERROR",
+                "Private Fairlight crossfade lowering changed its contract.",
+            )
+        commands.enforce_mutation_policy(
+            "fairlight.crossfade_batch",
+            intended_engine="db_workaround",
+            mutating=False,
+        )
+        result = commands.fairlight_ops.apply_audio_crossfade_batch(
+            commands.get_connection(require_timeline=True),
+            entries=deepcopy(supplied["entries"]),
+            duration=None,
+            clamp_half_clip=bool(supplied["clamp_half_clip"]),
+            allow_empty=False,
+        )
+        if not isinstance(result, Mapping):
+            raise FairlightEvaluationError(
+                "API_CALL_FAILED", "Fairlight crossfade batch returned no structured result."
+            )
+        return _canonical(result)
 
     handler = getattr(commands, handler_name, None)
     if not callable(handler) or handler_name not in _CAPABILITY_BY_HANDLER:
@@ -118,11 +145,11 @@ def _invoke(handler_name: str, supplied: Mapping[str, Any]) -> Mapping[str, Any]
             capability_id, *, intended_engine="api_native", mutating=True
         ):
             if (
-                capability_id != _CAPABILITY_BY_HANDLER[handler_name]
+                capability_id != ("fairlight.fade_in_batch" if handler_name == "fade_curve" and supplied.get("direction") == "in" else _CAPABILITY_BY_HANDLER[handler_name])
                 or mutating is not True
             ):
                 raise FairlightEvaluationError(
-                    "EDIT_CONSTRAINT_VIOLATION",
+                    "CAPABILITY_NEGOTIATION_FAILED",
                     "A Fairlight plan step changed its admitted capability.",
                 )
             return old_policy(
@@ -150,6 +177,102 @@ def _invoke(handler_name: str, supplied: Mapping[str, Any]) -> Mapping[str, Any]
             "API_CALL_FAILED", "A Fairlight plan step returned no structured result."
         )
     return _canonical(structured[0])
+
+
+def _invoke_audio_gain_entries(entries: list[dict[str, Any]]) -> Mapping[str, Any]:
+    """Execute one or many exact clip gains through one plural native operation."""
+    if len(entries) == 1:
+        entry = entries[0]
+        return _invoke(
+            "audio_gain_batch",
+            {
+                "db": entry["gain_db"],
+                "item_ids": [entry["item_id"]],
+                "allow_multiple": False,
+            },
+        )
+    from .commands import fairlight as commands
+
+    with _HANDLER_LOCK:
+        commands.enforce_mutation_policy(
+            _CAPABILITY_BY_HANDLER["audio_gain_batch"],
+            intended_engine="db_workaround",
+            mutating=False,
+        )
+        conn = commands.get_connection(require_timeline=True)
+        result = commands.fairlight_ops.apply_audio_gain_entries(
+            conn, entries=deepcopy(entries)
+        )
+    if not isinstance(result, Mapping):
+        raise FairlightEvaluationError(
+            "API_CALL_FAILED", "The Fairlight gain batch returned no structured result."
+        )
+    return _canonical(result)
+
+
+def _invoke_fade_batch(
+    handler_name: str, steps: list[Mapping[str, Any]]
+) -> Mapping[str, Any]:
+    """Invoke one existing plural fade command with per-item durations."""
+    if handler_name not in {"fade_in_batch", "fade_out_batch"} or not steps:
+        raise FairlightEvaluationError(
+            "VALIDATION_ERROR", "Private Fairlight fade batch lowering is invalid."
+        )
+    frame_key = "fade_in_frames" if handler_name == "fade_in_batch" else "fade_out_frames"
+    entries: list[dict[str, Any]] = []
+    for supplied in steps:
+        item_ids = supplied.get("item_ids")
+        duration = supplied.get("duration")
+        if (
+            not isinstance(item_ids, list)
+            or len(item_ids) != 1
+            or not isinstance(item_ids[0], str)
+            or not item_ids[0]
+            or not isinstance(duration, str)
+            or not duration.endswith("f")
+        ):
+            raise FairlightEvaluationError(
+                "VALIDATION_ERROR", "Private Fairlight fade batch entry is invalid."
+            )
+        try:
+            frames = int(duration[:-1])
+        except ValueError as exc:
+            raise FairlightEvaluationError(
+                "VALIDATION_ERROR", "Private Fairlight fade duration is invalid."
+            ) from exc
+        if frames <= 0:
+            raise FairlightEvaluationError(
+                "VALIDATION_ERROR", "Private Fairlight fade duration is invalid."
+            )
+        entries.append({"item_id": item_ids[0], frame_key: frames})
+
+    from .commands import fairlight as commands
+
+    apply = (
+        commands.fairlight_ops.apply_audio_fade_in_batch
+        if handler_name == "fade_in_batch"
+        else commands.fairlight_ops.apply_audio_fade_out_batch
+    )
+    with _HANDLER_LOCK:
+        commands.enforce_mutation_policy(
+            _CAPABILITY_BY_HANDLER[handler_name],
+            intended_engine="db_workaround",
+            mutating=False,
+        )
+        result = apply(
+            commands.get_connection(require_timeline=True),
+            entries=entries,
+            duration=None,
+            skip_adjacent_same_track=False,
+            clamp_half_clip=False,
+            gain_db=None,
+            allow_empty=False,
+        )
+    if not isinstance(result, Mapping):
+        raise FairlightEvaluationError(
+            "API_CALL_FAILED", "The Fairlight fade batch returned no structured result."
+        )
+    return _canonical(result)
 
 
 def _validate_plan(value: Any) -> dict[str, Any]:
@@ -184,6 +307,7 @@ def _validate_plan(value: Any) -> dict[str, Any]:
             "clip_gain",
             "clip_pan",
             "clip_fade",
+            "clip_fade_curve",
             "track_mix",
             "routing",
             "eq",
@@ -331,6 +455,10 @@ def _step_lowering(
                 },
             )
         ]
+    if kind == "clip_fade_curve":
+        point = change["curve"]["controlPoint"]
+        return [("fade_curve", {"item_id": locator["nativeId"], "direction": change["direction"],
+            "linear": point is None, "x": None if point is None else point["x"], "y": None if point is None else point["y"]})]
     if kind == "clip_fade":
         handler = "fade_in_batch" if change["direction"] == "in" else "fade_out_batch"
         adjacent = "skip_adjacent_same_track"
@@ -486,6 +614,55 @@ def _plan_lowerings(
                 before_readback=before_readback,
             )
         )
+
+    crossfade_groups: list[tuple[int, int, Mapping[str, Any], Mapping[str, Any]]] = []
+    index = 0
+    while index + 1 < len(plan["changes"]):
+        outgoing = plan["changes"][index]
+        incoming = plan["changes"][index + 1]
+        if (
+            outgoing.get("kind") == "clip_fade"
+            and outgoing.get("direction") == "out"
+            and incoming.get("kind") == "clip_fade"
+            and incoming.get("direction") == "in"
+            and outgoing.get("durationFrames") == incoming.get("durationFrames")
+        ):
+            outgoing_locator = locators[("clip", outgoing["target"]["clipId"])]
+            incoming_locator = locators[("clip", incoming["target"]["clipId"])]
+            if (
+                outgoing_locator.get("trackIndex") == incoming_locator.get("trackIndex")
+                and outgoing_locator.get("recordEndFrameExclusive") == incoming_locator.get("recordStartFrame")
+            ):
+                crossfade_groups.append((index, index + 1, outgoing, incoming))
+                index += 2
+                continue
+        index += 1
+    group_start = 0
+    while group_start < len(crossfade_groups):
+        group_end = group_start + 1
+        while (
+            group_end < len(crossfade_groups)
+            and crossfade_groups[group_end][0]
+            == crossfade_groups[group_end - 1][1] + 1
+        ):
+            group_end += 1
+        contiguous_pairs = crossfade_groups[group_start:group_end]
+        entries = [
+            {
+                "left_item_id": locators[("clip", outgoing["target"]["clipId"])]["nativeId"],
+                "right_item_id": locators[("clip", incoming["target"]["clipId"])]["nativeId"],
+                "fade_duration_frames": outgoing["durationFrames"],
+            }
+            for _outgoing_index, _incoming_index, outgoing, incoming in contiguous_pairs
+        ]
+        shared = (
+            "crossfade_batch",
+            {"entries": entries, "clamp_half_clip": False},
+        )
+        for outgoing_index, incoming_index, _outgoing, _incoming in contiguous_pairs:
+            lowerings[outgoing_index] = [shared]
+            lowerings[incoming_index] = [shared]
+        group_start = group_end
     return lowerings
 
 
@@ -675,7 +852,7 @@ def _readback_value(
             "VERIFICATION_FAILED", "Fresh Fairlight plan readback is unavailable."
         )
     kind = change["kind"]
-    if kind in {"clip_gain", "clip_pan", "clip_fade"}:
+    if kind in {"clip_gain", "clip_pan", "clip_fade", "clip_fade_curve"}:
         rows = readback.get("clips")
         matches = [
             row
@@ -702,6 +879,11 @@ def _readback_value(
                 if isinstance(value, (int, float)) and not isinstance(value, bool)
                 else None
             )
+        if kind == "clip_fade_curve":
+            value = row.get("fadeInCurve" if change["direction"] == "in" else "fadeOutCurve")
+            if not isinstance(value, Mapping) or "controlPoint" not in value:
+                raise FairlightEvaluationError("VERIFICATION_FAILED", "Fresh fade curve readback is unavailable.")
+            return dict(value)
         field = "fadeInFrames" if change["direction"] == "in" else "fadeOutFrames"
         # An explicit native null means no fade envelope: zero frames. A
         # missing field remains unavailable, just like the gain baseline.
@@ -828,8 +1010,12 @@ def _semantic_change(
                 "VERIFICATION_FAILED", "Fairlight pan receipt is incomplete."
             )
         return {"kind": kind, "before": before, "after": after}
+    if kind == "clip_fade_curve":
+        if len(results) != 1 or not _verified_handler(results[0]):
+            raise FairlightEvaluationError("VERIFICATION_FAILED", "Fade curve receipt is incomplete.")
+        return {"kind": kind, "direction": change["direction"], "before": before, "after": after}
     if kind == "clip_fade":
-        if not isinstance(before, int) or isinstance(before, bool):
+        if not isinstance(before, (int, float)) or isinstance(before, bool) or not math.isfinite(before) or before < 0:
             raise FairlightEvaluationError(
                 "VERIFICATION_FAILED", "Fresh Fairlight fade baseline is unavailable."
             )
@@ -961,7 +1147,7 @@ class FairlightPlanPreparedActionDescriptor:
     def execute(self, context: Mapping[str, Any], prepared: Mapping[str, Any]) -> Any:
         if context.get("executionAuthority") is not self.authority:
             raise FairlightEvaluationError(
-                "EDIT_CONSTRAINT_VIOLATION", "Fairlight plan authority changed."
+                "AUTH_REQUIRED", "Fairlight plan authority changed."
             )
         admission = prepared.get("lowering", {}).get("carrierAdmission")
         if admission != {
@@ -969,7 +1155,7 @@ class FairlightPlanPreparedActionDescriptor:
             "executionId": context.get("executionId"),
         }:
             raise FairlightEvaluationError(
-                "EDIT_CONSTRAINT_VIOLATION", "Fairlight plan admission changed."
+                "AUTH_REQUIRED", "Fairlight plan admission changed."
             )
         plan = prepared["lowering"]["normalizedInput"]
         step_results: list[list[Mapping[str, Any]] | None] = [
@@ -978,13 +1164,124 @@ class FairlightPlanPreparedActionDescriptor:
         # Loudness proves final audio, so all other authored changes execute first.
         # This prevents a later fade/gain in the same aggregate plan from
         # invalidating the measured LUFS result.
-        for index, (change, step) in enumerate(
-            zip(plan["changes"], prepared["lowering"]["steps"], strict=True)
-        ):
-            if change["kind"] != "loudness":
+        index = 0
+        while index < len(plan["changes"]):
+            change = plan["changes"][index]
+            if change["kind"] == "loudness":
+                index += 1
+                continue
+            if change["kind"] == "clip_gain":
+                gain_entries: list[dict[str, Any]] = []
+                gain_indices: list[int] = []
+                next_index = index
+                while (
+                    next_index < len(plan["changes"])
+                    and plan["changes"][next_index]["kind"] == "clip_gain"
+                ):
+                    kwargs = prepared["lowering"]["steps"][next_index][0][1]
+                    gain_entries.append(
+                        {
+                            "item_id": kwargs["item_ids"][0],
+                            "gain_db": plan["changes"][next_index]["gainDb"],
+                        }
+                    )
+                    gain_indices.append(next_index)
+                    next_index += 1
+                gain_result = _invoke_audio_gain_entries(gain_entries)
+                for gain_index in gain_indices:
+                    step_results[gain_index] = [gain_result]
+                index = next_index
+                continue
+            if change["kind"] != "clip_pan":
+                step = prepared["lowering"]["steps"][index]
+                if len(step) == 1 and step[0][0] == "crossfade_batch":
+                    end = index + 1
+                    while (
+                        end < len(plan["changes"])
+                        and prepared["lowering"]["steps"][end] == step
+                    ):
+                        end += 1
+                    receipt = _invoke(*step[0])
+                    for position in range(index, end):
+                        step_results[position] = [receipt]
+                    index = end
+                    continue
+                if (
+                    change["kind"] == "clip_fade"
+                    and len(step) == 1
+                    and step[0][0] in {"fade_in_batch", "fade_out_batch"}
+                ):
+                    handler = step[0][0]
+                    end = index + 1
+                    while end < len(plan["changes"]):
+                        candidate_change = plan["changes"][end]
+                        candidate_step = prepared["lowering"]["steps"][end]
+                        if (
+                            candidate_change["kind"] != "clip_fade"
+                            or len(candidate_step) != 1
+                            or candidate_step[0][0] != handler
+                        ):
+                            break
+                        end += 1
+                    if end - index > 1:
+                        batch_result = _invoke_fade_batch(
+                            handler,
+                            [
+                                prepared["lowering"]["steps"][position][0][1]
+                                for position in range(index, end)
+                            ],
+                        )
+                        for position in range(index, end):
+                            step_results[position] = [batch_result]
+                        index = end
+                        continue
                 step_results[index] = [
                     _invoke(handler, kwargs) for handler, kwargs in step
                 ]
+                index += 1
+                continue
+
+            pan_items: list[dict[str, Any]] = []
+            pan_indices: list[int] = []
+            next_index = index
+            while (
+                next_index < len(plan["changes"])
+                and plan["changes"][next_index]["kind"] == "clip_pan"
+            ):
+                step = prepared["lowering"]["steps"][next_index]
+                if not step:
+                    step_results[next_index] = []
+                    next_index += 1
+                    continue
+                if len(step) != 1 or step[0][0] != "audio_pan_batch":
+                    raise FairlightEvaluationError(
+                        "CAPABILITY_NEGOTIATION_FAILED",
+                        "Fairlight pan lowering changed its reviewed plural route.",
+                    )
+                kwargs = step[0][1]
+                item_ids = kwargs.get("item_ids")
+                if (
+                    not isinstance(item_ids, list)
+                    or len(item_ids) != 1
+                    or not isinstance(item_ids[0], str)
+                    or not item_ids[0]
+                ):
+                    raise FairlightEvaluationError(
+                        "VALIDATION_ERROR", "Fairlight pan target identity is invalid."
+                    )
+                pan_items.append(
+                    {"item_id": item_ids[0], "value": kwargs.get("value")}
+                )
+                pan_indices.append(next_index)
+                next_index += 1
+            if pan_items:
+                pan_result = _invoke(
+                    "_sdk_audio_pan_items",
+                    {"items": pan_items[0] if len(pan_items) == 1 else pan_items},
+                )
+                for pan_index in pan_indices:
+                    step_results[pan_index] = [pan_result]
+            index = next_index
         from .core import fairlight_track_loudness
 
         for index, change in enumerate(plan["changes"]):
@@ -992,7 +1289,7 @@ class FairlightPlanPreparedActionDescriptor:
                 binding = prepared["lowering"]["trackLoudness"].get(str(index))
                 if not isinstance(binding, Mapping):
                     raise FairlightEvaluationError(
-                        "EDIT_CONSTRAINT_VIOLATION",
+                        "STALE_REVISION",
                         "Track loudness binding changed after preparation.",
                     )
                 step_results[index] = [
@@ -1000,7 +1297,7 @@ class FairlightPlanPreparedActionDescriptor:
                 ]
         if any(result is None for result in step_results):
             raise FairlightEvaluationError(
-                "EDIT_CONSTRAINT_VIOLATION", "Fairlight plan execution is incomplete."
+                "VERIFICATION_FAILED", "Fairlight plan execution is incomplete."
             )
         response = _callback(
             self.authority,
@@ -1136,6 +1433,8 @@ class FairlightPlanPreparedActionDescriptor:
             )
             if change.get("kind") == "track_mix":
                 expected = {"levelDb": change["levelDb"], "pan": change["pan"]}
+            elif change.get("kind") == "clip_fade_curve":
+                expected = change["curve"]
             elif change.get("kind") == "effect":
                 expected = True
             elif change.get("kind") == "loudness":

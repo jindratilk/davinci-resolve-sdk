@@ -8,7 +8,6 @@ import {
   sdkMulticamSwitchInputSchema,
   sdkMulticamSwitchResultSchema,
 } from "../contracts/generated/sdk-operations.js";
-import {resolveSdkDirectMutationScope, sdkMutationScopeCandidates} from "./sdk-direct-mutation-scope.js";
 import {
   sdkMediaPoolItemIdSchema,
   sdkMulticamAngleIdSchema,
@@ -71,7 +70,6 @@ const RESIDUAL_ACTIONS = Object.freeze({
   "cutagent.action.multicam.source.move": { action: "source.move", schema: sourceTarget({ recordStartFrame: frame, scope: avScope }) },
   "cutagent.action.multicam.source.remove": { action: "source.remove", schema: sourceTarget({ scope: avScope }) },
   "cutagent.action.multicam.source.property_set": { action: "source.property_set", schema: sourceTarget({ recordFrame: frame, mediaType: z.enum(["video", "audio"]), property: z.string().min(1).max(256), value: z.string().min(1).max(4096) }) },
-  "cutagent.action.multicam.source.grade_cdl": { action: "source.grade_cdl", schema: sourceTarget({ recordFrame: frame, versionName: z.string().min(1).max(1024).optional(), slope: z.tuple([z.number(), z.number(), z.number()]).optional(), offset: z.tuple([z.number(), z.number(), z.number()]).optional(), power: z.tuple([z.number(), z.number(), z.number()]).optional(), saturation: z.number().min(0).max(16).optional() }).refine((input) => input.slope || input.offset || input.power || input.saturation !== undefined, { message: "At least one CDL value is required" }) },
   "cutagent.action.multicam.source.raw_braw_set": { action: "source.raw_braw_set", schema: sourceTarget({ recordFrame: frame, adjustments: z.object({ iso: z.number().int().min(1).max(204800).optional(), exposure: z.number().min(-20).max(20).optional(), whiteBalanceKelvin: z.number().int().min(1000).max(50000).optional(), whiteBalanceTint: z.number().min(-200).max(200).optional() }).strict().refine((settings) => Object.keys(settings).length > 0, { message: "At least one Blackmagic RAW adjustment is required" }) }) },
   "cutagent.action.multicam.reorder_angles": { action: "reorder_angles", schema: target({ angleIds: z.array(sdkMulticamAngleIdSchema).min(2).max(256), includeAudio: z.boolean(), renameTracks: z.boolean(), strict: z.boolean() }).refine((input) => new Set(input.angleIds).size === input.angleIds.length, { message: "Angle identities must be unique" }) },
   "cutagent.action.multicam.set_start_timecode": { action: "set_start_timecode", schema: target({ startTimecode: z.string().regex(/^\d{2,3}:\d{2}:\d{2}[:;]\d{2}$/).max(12) }) },
@@ -135,7 +133,8 @@ function failure(code, message, context, possibleMutation = "none", usage = poss
     kind: code === "STALE_REVISION" ? "stale_revision"
       : code === "TARGET_NOT_FOUND" ? "target_not_found"
         : code === "AMBIGUOUS_TARGET" ? "ambiguous_target"
-      : code === "EDIT_CONSTRAINT_VIOLATION" ? "edit_constraint_violation"
+      : code === "AUTHENTICATION_REQUIRED" ? "authentication_required"
+      : code === "INVALID_REQUEST" ? "invalid_request"
         : code === "CAPABILITY_UNAVAILABLE" ? "capability_unavailable"
           : code === "RECOVERY_FAILED" ? "recovery_failed"
             : code === "VERIFICATION_FAILED" ? "verification_failed" : "operation_failed",
@@ -161,44 +160,6 @@ function readFailure(code, message, context, usage = "unknown") {
   };
 }
 
-function exactScope(gate, accountFingerprint, input, action, directScope = null) {
-  const operation = `multicam.${action}`;
-  const scopes = sdkMutationScopeCandidates(gate, accountFingerprint, directScope).filter((scope) => {
-    if (scope.binding.projectId !== input.projectId) return false;
-    if (scope.constraints.allowedOperations.length > 0 && !scope.constraints.allowedOperations.includes(operation)) return false;
-    if (scope.constraints.protectedTargets.length > 0 || scope.constraints.protectedMediaRoles.length > 0) return false;
-    if (action === "create") {
-      return scope.binding.level === "project";
-    }
-    return scope.binding.level === "project+timeline"
-      && scope.binding.timelineId === input.timelineId
-      && scope.binding.timelineRevision === input.timelineRevision;
-  });
-  if (scopes.length !== 1) {
-    const error = new Error("Exactly one current user-owned multicam scope with no unresolved protected targets or media roles is required.");
-    error.code = "EDIT_CONSTRAINT_VIOLATION";
-    throw error;
-  }
-  return scopes[0];
-}
-
-function exactResidualScope(gate, accountFingerprint, input, operation, directScope = null) {
-  const scopes = sdkMutationScopeCandidates(gate, accountFingerprint, directScope).filter((scope) => {
-    if (scope.binding.projectId !== input.projectId) return false;
-    if (scope.constraints.allowedOperations.length > 0 && !scope.constraints.allowedOperations.includes(`multicam.${operation}`)) return false;
-    if (scope.constraints.protectedTargets.length > 0 || scope.constraints.protectedMediaRoles.length > 0) return false;
-    return input.timelineId
-      ? scope.binding.level === "project+timeline" && scope.binding.timelineId === input.timelineId && scope.binding.timelineRevision === input.timelineRevision
-      : scope.binding.level === "project";
-  });
-  if (scopes.length !== 1) {
-    const error = new Error("Exactly one current multicam policy scope with a complete unprotected impact is required.");
-    error.code = "EDIT_CONSTRAINT_VIOLATION";
-    throw error;
-  }
-  return scopes[0];
-}
-
 function changedMulticamState(before, after) {
   const beforeAngles = new Map(before.angles.map((angle) => [angle.id, angle]));
   const afterAngles = new Map(after.angles.map((angle) => [angle.id, angle]));
@@ -215,7 +176,6 @@ function verifiedResidualExecution(action, execution, input) {
   if (!execution || typeof execution !== "object" || execution.changed === false) return false;
   if (execution.verification?.status !== "verified") return false;
   if (action === "source.property_set") return String(execution.verification.actual) === input.value;
-  if (action === "source.grade_cdl") return execution.verification.requested_values_match_readback === true;
   if (action === "source.raw_braw_set") return execution.verification.requested_patch_retained === true
     && execution.verification.davinci_resolve_api_reserialized === true;
   if (action === "smart_switch") return execution.smart_switch && Number.isSafeInteger(execution.segments_applied) && execution.segments_applied > 0;
@@ -341,7 +301,7 @@ function executionVerified(action, execution, input, prepared) {
     && execution.grade_policy === input.gradePolicy;
 }
 
-export function createSdkMulticamActions({ liveInspectionService, resolveService, mutationPolicyGate, directMutationPolicyAuthority = null }) {
+export function createSdkMulticamActions({ liveInspectionService, resolveService }) {
   if (typeof liveInspectionService?.prepareMulticamCreate !== "function"
     || typeof liveInspectionService?.prepareMulticamTimelineMutation !== "function"
     || typeof liveInspectionService?.readMulticamById !== "function"
@@ -351,9 +311,7 @@ export function createSdkMulticamActions({ liveInspectionService, resolveService
   }
   if (typeof resolveService?.executeSdkMulticamMutation !== "function"
     || typeof resolveService?.executeSdkMulticamMatchFrame !== "function") throw new TypeError("Multicam actions require the CutAgent CLI boundary.");
-  if (typeof mutationPolicyGate?.listScopes !== "function" || typeof mutationPolicyGate?.bindVerifiedProtectedTargets !== "function") {
-    throw new TypeError("Multicam actions require Mutation Policy authority and protected-target proof binding.");
-  }
+
 
   const mutationActions = Object.fromEntries(Object.entries(ACTIONS).map(([actionId, definition]) => [actionId, {
     inputSchema: definition.inputSchema,
@@ -380,65 +338,23 @@ export function createSdkMulticamActions({ liveInspectionService, resolveService
         return { status: "failed", possibleMutation: "none", usage: "released",
           failure: failure("CAPABILITY_UNAVAILABLE", "Multicam switching requires an isolated, contiguous exact-target program on track 1; unrelated timeline content is never replaced.", context) };
       }
-      let scope;
-      try {
-        const directScope = await resolveSdkDirectMutationScope({directMutationPolicyAuthority, context, liveInspectionService, level: definition.action === "create" ? "project" : "project+timeline", projectId: input.projectId, timelineId: input.timelineId ?? null, timelineRevision: input.timelineRevision ?? null});
-        scope = exactScope(mutationPolicyGate, context.accountFingerprint, input, definition.action, directScope);
-      } catch (error) {
-        return { status: "failed", possibleMutation: "none", usage: "not_reserved", failure: failure("EDIT_CONSTRAINT_VIOLATION", error.message, context, "none", "not_reserved") };
-      }
-      const projectRevision = scope.binding.projectRevision;
-      const affectedTrackTypes = definition.action === "create"
-        ? []
-        : [...mutableTrackTypes(definition.action, input)];
-      const policyContext = {
-        requestId: context.requestId, operationId: context.operationId, executionId: context.executionId,
-        scopeId: scope.scopeId, scopeRevision: scope.revision, projectLibraryId: scope.binding.projectLibraryId,
-        projectId: input.projectId, projectRevision,
-        ...(definition.action === "create" ? {} : { timelineId: input.timelineId, timelineRevision: input.timelineRevision }),
-        resolvedTargets: definition.action === "create"
-          ? input.sources.map((source) => ({ kind: "media", stableId: source.mediaPoolItemId, revision: input.mediaPoolRevision }))
-          : [{ kind: "timeline", stableId: input.timelineId, revision: input.timelineRevision }],
-        affectedTrackTypes,
-        semanticMulticamAction: definition.action,
-        closedComposition: true, executableStableTargetPrecondition: true,
-      };
       let execution = null;
       let executionError = null;
       let executionStarted = false;
-      let authorization = null;
-      let releaseProtectedTargetProof = null;
-      if (definition.action !== "create") {
-        try {
-          releaseProtectedTargetProof = mutationPolicyGate.bindVerifiedProtectedTargets({
-            accountFingerprint: context.accountFingerprint,
-            executionId: context.executionId,
-            scopeId: scope.scopeId,
-            scopeRevision: scope.revision,
-            timelineRevision: input.timelineRevision,
-          });
-        } catch (error) {
-          return { status: "failed", possibleMutation: "none", usage: "not_reserved",
-            failure: failure("EDIT_CONSTRAINT_VIOLATION", error.message, context, "none", "not_reserved") };
-        }
-      }
       try {
         execution = await resolveService.executeSdkMulticamMutation(definition.action, input, prepared, {
-          policyContext,
-          onAuthorization(value) { authorization = value; },
           onSpawnAttempt() {
             context.reportExecutionStarted();
             executionStarted = true;
           },
         });
       } catch (error) { executionError = error; }
-      finally { releaseProtectedTargetProof?.(); }
 
       if (executionError && !executionStarted) {
         const reported = executionError?.cli_error_code ?? executionError?.code;
-        const code = ["STALE_REVISION", "TARGET_NOT_FOUND", "AMBIGUOUS_TARGET", "CAPABILITY_UNAVAILABLE", "EDIT_CONSTRAINT_VIOLATION"].includes(reported)
+        const code = ["STALE_REVISION", "TARGET_NOT_FOUND", "AMBIGUOUS_TARGET", "CAPABILITY_UNAVAILABLE", "AUTHENTICATION_REQUIRED"].includes(reported)
           ? reported : "OPERATION_FAILED";
-        const usage = code === "EDIT_CONSTRAINT_VIOLATION" ? "not_reserved" : "released";
+        const usage = code === "AUTHENTICATION_REQUIRED" ? "not_reserved" : "released";
         return { status: "failed", possibleMutation: "none", usage,
           failure: failure(code, executionError.message ?? "The multicam mutation failed before execution.", context, "none", usage) };
       }
@@ -480,7 +396,6 @@ export function createSdkMulticamActions({ liveInspectionService, resolveService
           protectedStatePreserved: ok,
         };
         if (ok) {
-          if (authorization?.policyDecision) mutationPolicyGate.assertProtectedStateEvidence(authorization.policyDecision.decisionId, report);
           return { status: "succeeded", possibleMutation: "confirmed", usage: "consumed", verification: report,
             ...(timeline ? { postTimelineRevision: timeline.revision } : {}),
             result: { actionId, multicam, timeline } };
@@ -527,15 +442,14 @@ export function createSdkMulticamActions({ liveInspectionService, resolveService
         protectedStatePreserved: invariantPreserved && exactSwitchProgramPreserved,
       };
       if (verifiedOk) {
-        if (authorization?.policyDecision) mutationPolicyGate.assertProtectedStateEvidence(authorization.policyDecision.decisionId, report);
         return { status: "succeeded", possibleMutation: "confirmed", usage: "consumed", verification: report, postTimelineRevision: after.revision,
           result: { actionId, multicam, timeline: { id: after.timeline.id, projectId: after.project.id, revision: after.revision, name: after.timeline.name }, changedSegments: count } };
       }
       if (!changed) {
         const reported = executionError?.cli_error_code;
-        const code = ["STALE_REVISION", "CAPABILITY_UNAVAILABLE", "EDIT_CONSTRAINT_VIOLATION"].includes(reported) ? reported : "OPERATION_FAILED";
-        return { status: "failed", possibleMutation: "none", usage: reported === "EDIT_CONSTRAINT_VIOLATION" ? "not_reserved" : "released",
-          failure: failure(code, executionError?.message ?? "The multicam mutation made no verified change.", context, "none", reported === "EDIT_CONSTRAINT_VIOLATION" ? "not_reserved" : "released") };
+        const code = ["STALE_REVISION", "CAPABILITY_UNAVAILABLE", "AUTHENTICATION_REQUIRED"].includes(reported) ? reported : "OPERATION_FAILED";
+        return { status: "failed", possibleMutation: "none", usage: reported === "AUTHENTICATION_REQUIRED" ? "not_reserved" : "released",
+          failure: failure(code, executionError?.message ?? "The multicam mutation made no verified change.", context, "none", reported === "AUTHENTICATION_REQUIRED" ? "not_reserved" : "released") };
       }
       if (executionError?.cli_error_code === "EDIT_MUTATION_RECOVERY_FAILED") {
         return { status: "recovery_failed", possibleMutation: "partial", usage: "consumed", postTimelineRevision: after.revision,
@@ -564,7 +478,7 @@ export function createSdkMulticamActions({ liveInspectionService, resolveService
       if (definition.action === "reorder_angles") {
         const current = prepared.multicam.value.angles.map((angle) => angle.id).sort();
         if (JSON.stringify([...input.angleIds].sort()) !== JSON.stringify(current)) {
-          return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("EDIT_CONSTRAINT_VIOLATION", "Angle reordering must name every exact angle once.", context) };
+          return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("INVALID_REQUEST", "Angle reordering must name every exact angle once.", context) };
         }
       }
       if (definition.action === "smart_switch"
@@ -572,40 +486,18 @@ export function createSdkMulticamActions({ liveInspectionService, resolveService
         return { status: "failed", possibleMutation: "none", usage: "released",
           failure: failure("CAPABILITY_UNAVAILABLE", "SmartSwitch requires an isolated, contiguous exact-target multicam program on track 1.", context) };
       }
-      let scope;
-      try {
-        const directScope = await resolveSdkDirectMutationScope({directMutationPolicyAuthority, context, liveInspectionService, level: input.timelineId ? "project+timeline" : "project", projectId: input.projectId, timelineId: input.timelineId ?? null, timelineRevision: input.timelineRevision ?? null});
-        scope = exactResidualScope(mutationPolicyGate, context.accountFingerprint, input, definition.action, directScope);
-      }
-      catch (error) { return { status: "failed", possibleMutation: "none", usage: "not_reserved", failure: failure("EDIT_CONSTRAINT_VIOLATION", error.message, context, "none", "not_reserved") }; }
-      const policyContext = {
-        requestId: context.requestId, operationId: context.operationId, executionId: context.executionId,
-        scopeId: scope.scopeId, scopeRevision: scope.revision, projectLibraryId: scope.binding.projectLibraryId,
-        projectId: input.projectId, projectRevision: scope.binding.projectRevision,
-        ...(input.timelineId ? { timelineId: input.timelineId, timelineRevision: input.timelineRevision } : {}),
-        resolvedTargets: input.timelineId
-          ? [{ kind: "timeline", stableId: input.timelineId, revision: input.timelineRevision }, ...(input.multicamId ? [{ kind: "media", stableId: input.multicamId, revision: input.multicamRevision }] : [])]
-          : [{ kind: "media", stableId: input.multicamId, revision: input.multicamRevision }],
-        affectedTrackTypes: definition.timeline ? ["video", ...(definition.action === "smart_switch" && input.scope === "linked" ? ["audio"] : [])] : [],
-        closedComposition: true, executableStableTargetPrecondition: true,
-      };
-      let releaseProof = null;
-      let authorization = null;
       let executionStarted = false;
       let execution;
       try {
-        if (input.timelineId) releaseProof = mutationPolicyGate.bindVerifiedProtectedTargets({ accountFingerprint: context.accountFingerprint,
-          executionId: context.executionId, scopeId: scope.scopeId, scopeRevision: scope.revision, timelineRevision: input.timelineRevision });
         execution = await resolveService.executeSdkMulticamResidual(definition.action, input, prepared, {
-          policyContext, onAuthorization(value) { authorization = value; },
           onSpawnAttempt() { executionStarted = true; context.reportExecutionStarted(); },
         });
       } catch (error) {
         const reported = error?.cli_error_code ?? error?.code;
-        const code = ["STALE_REVISION", "TARGET_NOT_FOUND", "AMBIGUOUS_TARGET", "CAPABILITY_UNAVAILABLE", "EDIT_CONSTRAINT_VIOLATION", "RECOVERY_FAILED"].includes(reported) ? reported : "OPERATION_FAILED";
+        const code = ["STALE_REVISION", "TARGET_NOT_FOUND", "AMBIGUOUS_TARGET", "CAPABILITY_UNAVAILABLE", "AUTHENTICATION_REQUIRED", "RECOVERY_FAILED"].includes(reported) ? reported : "OPERATION_FAILED";
         return { status: "failed", possibleMutation: executionStarted ? "possible" : "none", usage: executionStarted ? "unknown" : "released",
           failure: failure(code, error?.message ?? "The exact multicam action failed.", context, executionStarted ? "possible" : "none", executionStarted ? "unknown" : "released") };
-      } finally { releaseProof?.(); }
+      }
       try {
         if (definition.timeline) {
           const after = await liveInspectionService.read({ operation: "timeline.snapshot", projectId: input.projectId, timelineId: input.timelineId }, { deadlineAtMs: Date.now() + 60_000 });
@@ -632,7 +524,6 @@ export function createSdkMulticamActions({ liveInspectionService, resolveService
             evidence: [evidence("readback", "Read back the exact timeline and multicam postcondition.", result),
               evidence("structural", "Compared every unaffected timeline track and marker before and after execution.", { before: timelineInvariant(prepared.timeline, mutableTypes), after: timelineInvariant(after, mutableTypes) })],
             protectedStatePreserved };
-          if (authorization?.policyDecision) mutationPolicyGate.assertProtectedStateEvidence(authorization.policyDecision.decisionId, report);
           return { status: "succeeded", result, possibleMutation: "confirmed", usage: "consumed", postTimelineRevision: after.revision, verification: report };
         }
         const before = prepared.multicam.value;
@@ -662,7 +553,6 @@ export function createSdkMulticamActions({ liveInspectionService, resolveService
           previousRevision: before.revision, multicamRevision: after.revision, changedAngleIds, affectedMediaPoolItemIds });
         const report = { outcome: "passed", summary: "The exact multicam revision and complete angle/source structure were read back after mutation.",
           evidence: [evidence("structural", "Compared complete multicam structure before and after execution.", { before, after })], protectedStatePreserved: protectedStructurePreserved };
-        if (authorization?.policyDecision) mutationPolicyGate.assertProtectedStateEvidence(authorization.policyDecision.decisionId, report);
         return { status: "succeeded", result, possibleMutation: "confirmed", usage: "consumed", verification: report };
       } catch (error) {
         return { status: "verification_failed", possibleMutation: "possible", usage: "consumed",

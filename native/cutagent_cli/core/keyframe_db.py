@@ -17,6 +17,7 @@ except Exception:  # pragma: no cover
 from ..errors import APICallFailed, ClipNotFound, SdkMutationStaleRevision, ValidationError
 from . import clip_effects_db, db_session, db_timeline_rows, db_timeline_selection
 from .db_timeline_selection import LiveItemRef
+from .retime_native_coordinates import native_frame_position
 from .sdk_clip_motion import expected_target, resolve_exact_timeline_item
 from .video_fade_readback import is_strict_video_fade_entry
 
@@ -258,10 +259,18 @@ def _parse_groups(payload: bytes) -> list[_Group]:
         # DaVinci Resolve can persist field 7 before the parameter entries on
         # reopen. Preserve its encoded value without assigning it semantics.
         native_header = b""
+        # Native TimelineItem.SetProperty writes can also add a field-2 mode
+        # before field 7 on the opaque kind-118 group. This group is not one of
+        # CutAgent's editable keyframe groups; retain the exact wire bytes so
+        # transform-only clips remain readable without interpreting them.
+        if int(kind) == 118 and entry_offset < len(inner) and inner[entry_offset] == 0x10:
+            header_start = entry_offset
+            _value, entry_offset = _read_varint(inner, entry_offset + 1)
+            native_header += inner[header_start:entry_offset]
         if entry_offset < len(inner) and inner[entry_offset] == 0x38:
             header_start = entry_offset
             _value, entry_offset = _read_varint(inner, entry_offset + 1)
-            native_header = inner[header_start:entry_offset]
+            native_header += inner[header_start:entry_offset]
         entries: list[bytes] = []
         while entry_offset < len(inner):
             if inner[entry_offset] != 0x4A:
@@ -334,7 +343,7 @@ def _entry_keyframe_payload(entry: bytes) -> bytes | None:
 def _decode_keyframe_payload(
     payload: bytes | None,
     *,
-    frame_origin: int = 0,
+    frame_origin: float = 0,
 ) -> list[InspectorKeyframe]:
     if not payload:
         return []
@@ -368,7 +377,7 @@ def _decode_keyframe_payload(
 def _encode_keyframe_payload(
     points: list[InspectorKeyframe],
     *,
-    frame_origin: int = 0,
+    frame_origin: float = 0,
 ) -> bytes:
     if not points:
         raise ValidationError("Timeline item keyframe payload requires at least one point.")
@@ -392,7 +401,7 @@ def _encode_keyframe_entry(
     param_id: int,
     points: list[InspectorKeyframe],
     *,
-    frame_origin: int = 0,
+    frame_origin: float = 0,
 ) -> bytes:
     payload = _encode_keyframe_payload(points, frame_origin=frame_origin)
     return b"\x08" + _write_varint(int(param_id)) + _length_field(10, payload)
@@ -558,7 +567,7 @@ def _read_points_from_groups(
     groups: list[_Group],
     spec: PropertySpec,
     *,
-    frame_origin: int = 0,
+    frame_origin: float = 0,
 ) -> list[InspectorKeyframe]:
     for group in groups:
         if int(group.kind) != spec.group.kind:
@@ -589,7 +598,7 @@ def _write_points_to_groups(
     spec: PropertySpec,
     points: list[InspectorKeyframe],
     *,
-    frame_origin: int = 0,
+    frame_origin: float = 0,
 ) -> None:
     group = _ensure_group(groups, spec)
     slot = spec.group.slot_by_param.get(spec.param_id)
@@ -617,7 +626,7 @@ def _sync_zoom_counterpart(
     before: list[InspectorKeyframe],
     updated: list[InspectorKeyframe],
     *,
-    frame_origin: int = 0,
+    frame_origin: float = 0,
 ) -> None:
     counterpart_param_id = {42: 43, 43: 42}.get(spec.param_id)
     if counterpart_param_id is None:
@@ -735,19 +744,19 @@ def _ensure_effect_fields_marker(payload: bytes) -> bytes:
     return updated
 
 
-def _row_keyframe_origin(row: dict[str, Any], spec: PropertySpec) -> int:
+def _row_keyframe_origin(row: dict[str, Any], spec: PropertySpec) -> float:
     # Retained native evidence establishes the Sm2TiItem.In coordinate for
     # video Inspector curves. Audio automation has a separate payload family
     # and may use fractional native In values, so preserve its current domain
     # until an audio-specific fixture proves the corresponding conversion.
     if spec.media_kind != "video":
-        return 0
+        return 0.0
     raw = row.get("In")
     if raw is None or raw == "":
-        return 0
+        return 0.0
     try:
-        return int(float(str(raw).strip()))
-    except (TypeError, ValueError, OverflowError) as exc:
+        return native_frame_position(raw)
+    except ValidationError as exc:
         raise ValidationError(
             "Timeline item keyframe storage origin is invalid.",
             details={"in": raw},

@@ -4065,6 +4065,18 @@
       "summary": "Apply a DCTL as a node LUT to a timeline clip."
     },
     {
+      "card": "cards/dctl--encrypt.md",
+      "path": "dctl encrypt",
+      "search_terms": [
+        "encrypt DCTL",
+        "create .dctle",
+        "protect DCTL source",
+        "EncryptDCTL",
+        "set DCTL expiry"
+      ],
+      "summary": "Create an encrypted DCTL artifact."
+    },
+    {
       "card": "cards/dctl--install.md",
       "path": "dctl install",
       "search_terms": [
@@ -4131,6 +4143,17 @@
         "check generated DCTL"
       ],
       "summary": "Check a DCTL file."
+    },
+    {
+      "card": "cards/dctl--validate_source.md",
+      "path": "dctl validate-source",
+      "search_terms": [
+        "dctl validate-source",
+        "Read DCTL diagnostics from DaVinci Resolve Studio 21.1+.",
+        "dctl validate-source help",
+        "dctl validate-source command"
+      ],
+      "summary": "Read DCTL diagnostics from DaVinci Resolve Studio 21.1+."
     },
     {
       "card": "cards/developer--capability--audit.md",
@@ -4878,22 +4901,22 @@
       "path": "fairlight automation list",
       "search_terms": [
         "fairlight automation list",
-        "Runs the public `fairlight automation list` CutAgent command.",
+        "Read audio-clip volume envelopes and diagnostic mixer tokens.",
         "fairlight automation list help",
         "fairlight automation list command"
       ],
-      "summary": "Runs the public `fairlight automation list` CutAgent command."
+      "summary": "Read audio-clip volume envelopes and diagnostic mixer tokens."
     },
     {
       "card": "cards/fairlight--automation--write.md",
       "path": "fairlight automation write",
       "search_terms": [
         "fairlight automation write",
-        "Check Fairlight write controls.",
+        "Wrote an audio-clip volume-envelope point.",
         "fairlight automation write help",
         "fairlight automation write command"
       ],
-      "summary": "Check Fairlight write controls."
+      "summary": "Wrote an audio-clip volume-envelope point."
     },
     {
       "card": "cards/fairlight--bounce--mix_to_track.md",
@@ -5631,6 +5654,17 @@
         "RX connect round trip"
       ],
       "summary": "Check Fairlight external audio process availability."
+    },
+    {
+      "card": "cards/fairlight--fade_curve.md",
+      "path": "fairlight fade-curve",
+      "search_terms": [
+        "audio fade curvature",
+        "fade-in control point",
+        "fade-out control point",
+        "preserve opposite fade"
+      ],
+      "summary": "Read and edit an audio fade curve without changing either fade duration."
     },
     {
       "card": "cards/fairlight--fade_in--batch.md",
@@ -8039,6 +8073,17 @@
       "summary": "Paste Fusion nodes."
     },
     {
+      "card": "cards/fusion--tool--registry.md",
+      "path": "fusion tool registry",
+      "search_terms": [
+        "Fusion available tools",
+        "Fusion creation IDs",
+        "installed Fusion effects",
+        "Fusion registry categories"
+      ],
+      "summary": "List available Fusion node creation IDs from the live registry."
+    },
+    {
       "card": "cards/fusion--tool--set.md",
       "path": "fusion tool set",
       "search_terms": [
@@ -9081,6 +9126,17 @@
       "summary": "Transcribe clip audio."
     },
     {
+      "card": "cards/media--transcription.md",
+      "path": "media transcription",
+      "search_terms": [
+        "media transcription",
+        "Read existing DaVinci Resolve transcription for one media pool clip.",
+        "media transcription help",
+        "media transcription command"
+      ],
+      "summary": "Read existing DaVinci Resolve transcription for one media pool clip."
+    },
+    {
       "card": "cards/media--unlink.md",
       "path": "media unlink",
       "search_terms": [
@@ -9309,7 +9365,7 @@
         "exact source CDL",
         "per angle grading"
       ],
-      "summary": "Apply a source grade inside a multicam angle."
+      "summary": "Validate an unavailable multicam source CDL target."
     },
     {
       "card": "cards/multicam--source--move.md",
@@ -9936,6 +9992,39 @@
       "summary": "Open an existing project."
     },
     {
+      "card": "cards/project--preset--delete.md",
+      "path": "project preset delete",
+      "search_terms": [
+        "project preset delete",
+        "Delete a project settings preset.",
+        "project preset delete help",
+        "project preset delete command"
+      ],
+      "summary": "Delete a project settings preset."
+    },
+    {
+      "card": "cards/project--preset--export.md",
+      "path": "project preset export",
+      "search_terms": [
+        "project preset export",
+        "Export a project settings preset.",
+        "project preset export help",
+        "project preset export command"
+      ],
+      "summary": "Export a project settings preset."
+    },
+    {
+      "card": "cards/project--preset--import.md",
+      "path": "project preset import",
+      "search_terms": [
+        "import project settings preset",
+        "project preset artifact",
+        "explicit new preset name",
+        "exact catalog insertion"
+      ],
+      "summary": "Import a project settings preset."
+    },
+    {
       "card": "cards/project--preset--list.md",
       "path": "project preset list",
       "search_terms": [
@@ -10200,7 +10289,7 @@
         "codec selector values",
         "query Deliver codecs"
       ],
-      "summary": "List available codecs for a format."
+      "summary": "List available video and audio codecs for a format."
     },
     {
       "card": "cards/render--custom_range.md",
@@ -10281,7 +10370,7 @@
         "Deliver format inventory",
         "query available render formats"
       ],
-      "summary": "List available render formats."
+      "summary": "List available video and audio render formats."
     },
     {
       "card": "cards/render--import_preset.md",
@@ -10384,14 +10473,23 @@
       "path": "render preset-save",
       "search_terms": [
         "save render preset",
-        "capture Deliver settings",
         "create custom render preset",
+        "capture current Deliver settings",
         "reusable render configuration",
-        "save current render settings",
-        "prepare preset for export",
-        "custom drpx workflow"
+        "prepare preset for export"
       ],
       "summary": "Save current render settings as a preset."
+    },
+    {
+      "card": "cards/render--preset_update.md",
+      "path": "render preset-update",
+      "search_terms": [
+        "render preset-update",
+        "Replace an existing preset with current render settings and verify its exported content.",
+        "render preset-update help",
+        "render preset-update command"
+      ],
+      "summary": "Replace an existing preset with current render settings and verify its exported content."
     },
     {
       "card": "cards/render--presets.md",
@@ -10789,6 +10887,72 @@
         "browseable storage roots"
       ],
       "summary": "List mounted storage volumes."
+    },
+    {
+      "card": "cards/system--keyboard_preset--current.md",
+      "path": "system keyboard-preset current",
+      "search_terms": [
+        "system keyboard-preset current",
+        "Read the currently active keyboard preset.",
+        "system keyboard-preset current help",
+        "system keyboard-preset current command"
+      ],
+      "summary": "Read the currently active keyboard preset."
+    },
+    {
+      "card": "cards/system--keyboard_preset--delete.md",
+      "path": "system keyboard-preset delete",
+      "search_terms": [
+        "system keyboard-preset delete",
+        "Delete one inactive keyboard preset.",
+        "system keyboard-preset delete help",
+        "system keyboard-preset delete command"
+      ],
+      "summary": "Delete one inactive keyboard preset."
+    },
+    {
+      "card": "cards/system--keyboard_preset--export.md",
+      "path": "system keyboard-preset export",
+      "search_terms": [
+        "system keyboard-preset export",
+        "Export one keyboard preset without replacing a file.",
+        "system keyboard-preset export help",
+        "system keyboard-preset export command"
+      ],
+      "summary": "Export one keyboard preset without replacing a file."
+    },
+    {
+      "card": "cards/system--keyboard_preset--import.md",
+      "path": "system keyboard-preset import",
+      "search_terms": [
+        "system keyboard-preset import",
+        "Import a keyboard preset from one local file.",
+        "system keyboard-preset import help",
+        "system keyboard-preset import command"
+      ],
+      "summary": "Import a keyboard preset from one local file."
+    },
+    {
+      "card": "cards/system--keyboard_preset--list.md",
+      "path": "system keyboard-preset list",
+      "search_terms": [
+        "system keyboard-preset list",
+        "List available keyboard presets.",
+        "system keyboard-preset list help",
+        "system keyboard-preset list command"
+      ],
+      "summary": "List available keyboard presets."
+    },
+    {
+      "card": "cards/system--keyboard_preset--load.md",
+      "path": "system keyboard-preset load",
+      "search_terms": [
+        "system keyboard-preset load",
+        "Load an exact keyboard preset.",
+        "system keyboard-preset load help",
+        "system keyboard-preset load command"
+      ],
+      "summary": "Load an exact keyboard preset."
     },
     {
       "card": "cards/system--keyframe_mode--get.md",
@@ -11508,6 +11672,28 @@
       "summary": "Inspect the current timeline node graph when available."
     },
     {
+      "card": "cards/timeline--output_blanking--get.md",
+      "path": "timeline output-blanking get",
+      "search_terms": [
+        "output blanking",
+        "image bounds",
+        "letterbox",
+        "clip blanking inheritance"
+      ],
+      "summary": "Read output blanking and clip inheritance without modifying the timeline."
+    },
+    {
+      "card": "cards/timeline--output_blanking--set.md",
+      "path": "timeline output-blanking set",
+      "search_terms": [
+        "output blanking",
+        "image bounds",
+        "letterbox",
+        "clip blanking inheritance"
+      ],
+      "summary": "Set all four pixel edges, and explicitly select clip inheritance."
+    },
+    {
       "card": "cards/timeline--overlay_stack--insert.md",
       "path": "timeline overlay-stack insert",
       "search_terms": [
@@ -12025,6 +12211,17 @@
         "local Disk project status"
       ],
       "summary": "Check project checkpoint status."
+    },
+    {
+      "card": "cards/video--generate.md",
+      "path": "video generate",
+      "search_terms": [
+        "video generate",
+        "Generate a video and return its downloaded file and artifact in the active chat.",
+        "video generate help",
+        "video generate command"
+      ],
+      "summary": "Generate a video and return its downloaded file and artifact in the active chat."
     },
     {
       "card": "cards/workflow--callback--script--create.md",

@@ -9,15 +9,10 @@ from ..sdk_clip_motion import expected_target, resolve_exact_timeline_item
 
 def get_current_item(conn) -> object:
     timeline = conn.timeline
-    if timeline and hasattr(timeline, "GetCurrentVideoItem"):
-        try:
-            current_item = timeline.GetCurrentVideoItem()
-            if current_item:
-                return current_item
-        except Exception:
-            pass
-
-    tc = timeline.GetCurrentTimecode() if timeline else None
+    try:
+        tc = timeline.GetCurrentTimecode() if timeline else None
+    except Exception:
+        return None
     if not tc:
         return None
 
@@ -28,34 +23,63 @@ def get_current_item(conn) -> object:
     except Exception:
         return None
 
-    start_frame = 0
     try:
-        start_frame = int(getattr(conn, "start_frame", 0) or 0)
+        track_enabled = timeline.GetIsTrackEnabled
+        track_count = timeline.GetTrackCount
+        track_items = timeline.GetItemListInTrack
+    except AttributeError:
+        return None
+
+    visible_video: list[tuple[int, object, str]] = []
+    try:
+        video_track_count = int(track_count("video"))
+        for index in range(video_track_count, 0, -1):
+            if track_enabled("video", index) is not True:
+                continue
+            matches = []
+            for item in track_items("video", index) or []:
+                item_id = str(item.GetUniqueId() or "").strip()
+                start = int(item.GetStart())
+                end = int(item.GetEnd())
+                if item_id and start <= current_frame < end:
+                    matches.append((index, item, item_id))
+            if len(matches) > 1:
+                return None
+            if matches:
+                visible_video = matches
+                break
     except Exception:
-        start_frame = 0
-    if start_frame == 0 and timeline and hasattr(timeline, "GetStartFrame"):
+        return None
+
+    if visible_video:
         try:
-            start_frame = int(timeline.GetStartFrame())
+            current_item = timeline.GetCurrentVideoItem()
+            current_id = str(current_item.GetUniqueId() or "").strip() if current_item else ""
         except Exception:
-            start_frame = 0
+            current_id = ""
+        if current_id:
+            current_matches = [entry for entry in visible_video if entry[2] == current_id]
+            if len(current_matches) == 1:
+                return current_matches[0][1]
+        return visible_video[0][1]
 
-    candidate_frames = {current_frame}
-    if start_frame:
-        candidate_frames.add(current_frame - start_frame)
-
-    for track_type in ("video", "audio"):
-        track_count = timeline.GetTrackCount(track_type) or 0
-        for i in range(1, track_count + 1):
-            items = timeline.GetItemListInTrack(track_type, i) or []
-            for item in items:
-                try:
-                    start = int(item.GetStart())
-                    end = int(item.GetEnd())
-                except Exception:
-                    continue
-                for frame in candidate_frames:
-                    if start <= frame < end:
-                        return item
+    try:
+        audio_track_count = int(track_count("audio"))
+        for index in range(audio_track_count, 0, -1):
+            if track_enabled("audio", index) is not True:
+                continue
+            matches = [
+                item
+                for item in (track_items("audio", index) or [])
+                if str(item.GetUniqueId() or "").strip()
+                and int(item.GetStart()) <= current_frame < int(item.GetEnd())
+            ]
+            if len(matches) > 1:
+                return None
+            if matches:
+                return matches[0]
+    except Exception:
+        return None
     return None
 
 

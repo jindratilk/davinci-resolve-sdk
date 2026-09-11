@@ -27,6 +27,7 @@ from .timeline_version_prepared_action import (
 
 
 TIMELINE_ORDINARY_ACTION_IDS = (
+    "cutagent.action.timeline.clip_color.batch",
     "cutagent.action.timeline.create",
     "cutagent.action.timeline.delete",
     "cutagent.action.timeline.duplicate",
@@ -38,6 +39,7 @@ TIMELINE_ORDINARY_ACTION_IDS = (
     "cutagent.action.timeline.rename",
     "cutagent.action.timeline.set_start_tc",
     "cutagent.action.timeline.settings_set",
+    "cutagent.action.timeline.output_blanking.set",
     "cutagent.action.timeline.start_tc",
     "cutagent.action.timeline.switch",
 )
@@ -148,6 +150,7 @@ def _item_rows_for_timeline(timeline: Any, timeline_id: str) -> list[dict[str, A
                     "nativeId": native_id, "trackType": track_type, "trackIndex": index,
                     "name": str(item.GetName() or ""),
                     "start": int(item.GetStart()), "end": int(item.GetEnd()),
+                    "clipColor": str(item.GetClipColor() or "") if callable(getattr(item, "GetClipColor", None)) else None,
                 })
     native_ids = [row["nativeId"] for row in rows]
     if len(set(native_ids)) != len(native_ids):
@@ -247,12 +250,16 @@ def _active_state(conn: Any, project_id: str) -> dict[str, Any]:
     }
 
 
-def _state(conn: Any, project_id: str) -> dict[str, Any]:
+def _state(conn: Any, project_id: str, blanking_value=None) -> dict[str, Any]:
     native_project_id = documented_unique_id(conn.project)
     if not native_project_id:
         raise ValueError("Active project lacks an authoritative native identity.")
     timelines = _timeline_rows(conn, project_id)
     active = _active_state(conn, project_id)
+    if blanking_value is not None:
+        from . import output_blanking
+        active["outputBlanking"] = output_blanking.read(conn, blanking_value)
+        active["outputBlankingAll"] = output_blanking.output_blanking.snapshot(conn)
     public = {
         "projectNativeId": native_project_id,
         "timelines": [{key: row[key] for key in ("timelineId", "nativeId", "name", "index", "revision")} for row in timelines],
@@ -270,6 +277,9 @@ def _validate_input(action_id: str, value: Any) -> Mapping[str, Any]:
     schema = timeline_action_input_schema(command_id)
     if not isinstance(value, Mapping) or not _matches_schema(schema, value):
         raise ValueError("Timeline mutation input does not match its exact public schema.")
+    if action_id == "cutagent.action.timeline.output_blanking.set":
+        if value["operation"]["kind"] == "inheritance" and "timelineItemId" not in value:
+            raise ValueError("Specify four blanking edges or exact clip inheritance.")
     if action_id == "cutagent.action.timeline.dolby.analyze" and value.get("enableProjectControls") is not False:
         raise ValueError("SDK Dolby analysis requires project controls to remain disabled.")
     return _canonical(value)
@@ -312,8 +322,6 @@ def _assert_carrier(context: Mapping[str, Any], action_id: str, value: Mapping[s
             raise ValueError("Timeline action Timeline revision is stale.")
     if mutation_base.get("operationId") != context.get("operationId"):
         raise ValueError("Timeline action operation custody changed.")
-    if mutation_base.get("complete") is False:
-        raise ValueError("Timeline action lacks carrier-owned Mutation Policy custody.")
     if action_id == "cutagent.action.timeline.import":
         private = context.get("privateBindings")
         topology = private.get("timelineTopology") if isinstance(private, Mapping) else None
@@ -397,7 +405,7 @@ def _authority(context: Mapping[str, Any], action_id: str, value: Mapping[str, A
         require_timeline=action_id not in _PROJECT_ACTIONS,
     )
     project_id = str(project["projectId"])
-    before = _state(conn, project_id)
+    before = (_state(conn, project_id, value) if action_id == "cutagent.action.timeline.output_blanking.set" else _state(conn, project_id))
     private = context.get("privateBindings")
     if isinstance(private, Mapping):
         expected = private.get("nativeProjectId")
@@ -415,13 +423,27 @@ def _authority(context: Mapping[str, Any], action_id: str, value: Mapping[str, A
     resolved: list[dict[str, Any]]
     if action_id in {"cutagent.action.timeline.create", "cutagent.action.timeline.import"}:
         resolved = [{"kind": "project", "stableId": project_id, "revision": str(project["projectRevision"])}]
-    elif action_id == "cutagent.action.timeline.dolby.analyze":
+    elif action_id in {"cutagent.action.timeline.clip_color.batch", "cutagent.action.timeline.dolby.analyze"}:
         items = _item_rows(conn, str(timeline["id"]))
-        requested = list(value.get("timelineItemIds") or [])
+        requested = (
+            [row["timelineItemId"] for row in value["updates"]]
+            if action_id == "cutagent.action.timeline.clip_color.batch"
+            else list(value.get("timelineItemIds") or [])
+        )
         by_public_id = {row["timelineItemId"]: row for row in items}
         if len(by_public_id) != len(items) or any(item_id not in by_public_id for item_id in requested):
-            raise ValueError("Dolby analysis target set is missing or ambiguous.")
+            raise ValueError("Timeline item target set is missing or ambiguous.")
         selected = [by_public_id[item_id] for item_id in requested]
+        if action_id == "cutagent.action.timeline.clip_color.batch":
+            for update, row in zip(value["updates"], selected):
+                if (
+                    update["trackType"] != row["trackType"]
+                    or update["trackIndex"] != row["trackIndex"]
+                    or update["recordStartFrame"] != row["start"]
+                    or update["recordEndFrame"] != row["end"]
+                    or update["name"] != row["name"]
+                ):
+                    raise ValueError("Timeline clip-color target changed after snapshot capture.")
         resolved = [{
             "kind": "clip", "stableId": row["timelineItemId"], "publicId": row["timelineItemId"],
             "nativeId": row["nativeId"],
@@ -443,7 +465,7 @@ def _authority(context: Mapping[str, Any], action_id: str, value: Mapping[str, A
         "project": {"id": project_id, "revision": str(project["projectRevision"])},
         **({"timeline": timeline} if timeline else {}),
         "resolvedTargets": resolved,
-        "closedComposition": action_id == "cutagent.action.timeline.dolby.analyze",
+        "closedComposition": descriptor.closed_composition,
         "linkedTopologyComplete": True,
         "privatePreState": {
             "targetStableIds": sorted(row["stableId"] for row in resolved),
@@ -459,7 +481,7 @@ def _authority(context: Mapping[str, Any], action_id: str, value: Mapping[str, A
 def _impact(context: Mapping[str, Any], _action_id: str, effect: Mapping[str, Any]) -> Mapping[str, Any]:
     base = context.get("mutationBase")
     if not isinstance(base, Mapping):
-        raise ValueError("Timeline mutation lacks its carrier Mutation Policy base.")
+        raise ValueError("Timeline mutation lacks its carrier mutation base.")
     return {
         **_canonical(base), "status": "mutation", "complete": True,
         "closedComposition": True, "ambiguous": False, "broad": False,
@@ -533,7 +555,7 @@ def _execute(context: Mapping[str, Any], command_id: str, value: Mapping[str, An
     )
     project_id = str(value["projectId"])
     before = _pre_mutation_phase(
-        "timeline.before_state", lambda: _state(conn, project_id)
+        "timeline.before_state", lambda: (_state(conn, project_id, value) if action_id == "cutagent.action.timeline.output_blanking.set" else _state(conn, project_id))
     )
     before_fairlight = (
         _pre_mutation_phase(
@@ -606,6 +628,9 @@ def _execute(context: Mapping[str, Any], command_id: str, value: Mapping[str, An
         else:
             start = value["startTimecode"] if command_id == "timeline.set_start_tc" else operation["startTimecode"]
             raw = timeline_ops.set_start_timecode(conn, _start_timecode(start, conn.fps), return_details=True)
+    elif command_id == "timeline.output_blanking.set":
+        from . import output_blanking
+        raw = output_blanking.write(conn, value)
     elif command_id == "timeline.settings_set":
         raw = _execution_phase(
             "timeline.setting_mutation",
@@ -644,11 +669,46 @@ def _execute(context: Mapping[str, Any], command_id: str, value: Mapping[str, An
             }
             for row in selected
         ]
+    elif command_id == "timeline.clip_color.batch":
+        items = _item_rows(conn, value["timelineId"])
+        by_public_id = {row["timelineItemId"]: row for row in items}
+        color_results = []
+        for update in value["updates"]:
+            row = by_public_id.get(update["timelineItemId"])
+            if row is None or any((
+                row["trackType"] != update["trackType"],
+                row["trackIndex"] != update["trackIndex"],
+                row["start"] != update["recordStartFrame"],
+                row["end"] != update["recordEndFrame"],
+                row["name"] != update["name"],
+            )):
+                raise ValueError("Timeline clip-color target changed at the mutation boundary.")
+            requested = update["color"]
+            before_color = row["clipColor"] or None
+            method_name = "ClearClipColor" if requested is None else "SetClipColor"
+            method = getattr(row["item"], method_name, None)
+            if not callable(method):
+                raise ValueError(f"Timeline item does not expose {method_name}.")
+            accepted = method() if requested is None else method(requested)
+            if accepted is False:
+                raise ValueError("DaVinci Resolve rejected a timeline clip-color change.")
+            getter = getattr(row["item"], "GetClipColor", None)
+            if not callable(getter):
+                raise ValueError("Timeline clip-color readback is unavailable.")
+            actual = str(getter() or "") or None
+            if actual != requested:
+                raise ValueError("Timeline clip-color readback did not match the request.")
+            color_results.append({
+                "clipId": update["timelineItemId"], "name": row["name"],
+                "requestedColor": requested, "actualColor": actual,
+                "changed": before_color != actual,
+            })
+        raw = {"clips": color_results, "verified": True}
     else:
         raise ValueError("Ordinary Timeline executor does not own this action.")
     _execution_phase("timeline.refresh", conn.refresh)
     after = _execution_phase(
-        "timeline.after_state", lambda: _state(conn, project_id)
+        "timeline.after_state", lambda: (_state(conn, project_id, value) if action_id == "cutagent.action.timeline.output_blanking.set" else _state(conn, project_id))
     )
     after_fairlight = _fairlight_digest(conn) if command_id == "timeline.fairlight_preset.apply" else None
     return {
@@ -724,6 +784,8 @@ def _project_result(_context: Mapping[str, Any], action_id: str, prepared: Mappi
         if value["operation"]["kind"] == "get":
             return {"actionId": action_id, "operationResult": {"kind": "get", "startTimecode": start}}
         return {"actionId": action_id, "operationResult": {"kind": "set", "startTimecode": start, "revisionChange": revision}}
+    if command == "timeline.output_blanking.set":
+        return {"actionId": action_id, "state": after["active"]["outputBlanking"], "revisionChange": revision}
     if command == "timeline.settings_set":
         actual = after["active"]["settings"].get(value["key"])
         return {"actionId": action_id, "setting": {"key": value["key"], "value": _setting_value(actual)}, "revisionChange": revision}
@@ -731,6 +793,12 @@ def _project_result(_context: Mapping[str, Any], action_id: str, prepared: Mappi
         return {"actionId": action_id, "presetName": value["presetName"], "revisionChange": revision}
     if command == "timeline.dolby.analyze":
         return {"actionId": action_id, "analyzedItemIds": list(value.get("timelineItemIds") or []), "revisionChange": revision}
+    if command == "timeline.clip_color.batch":
+        return {
+            "actionId": action_id,
+            "clips": list(result["raw"]["clips"]),
+            "timelineRevision": str(after["revision"]),
+        }
     raise ValueError("Timeline result projector does not own this action.")
 
 
@@ -769,6 +837,17 @@ def _evidence(context: Mapping[str, Any], action_id: str, prepared: Mapping[str,
     before, after = result["before"], result["after"]
     changed = projected.get("revisionChange", projected.get("operationResult", {}).get("revisionChange", {})).get("changed") is True
     target_matched = changed
+    if command == "timeline.clip_color.batch":
+        target_matched = (
+            result.get("raw", {}).get("verified") is True
+            and len(projected["clips"]) == len(value["updates"])
+            and all(
+                observed["clipId"] == requested["timelineItemId"]
+                and observed["requestedColor"] == requested["color"]
+                and observed["actualColor"] == requested["color"]
+                for observed, requested in zip(projected["clips"], value["updates"])
+            )
+        )
     if command == "timeline.create":
         target_matched = projected["timeline"]["name"] == value["name"]
     elif command == "timeline.delete":
@@ -796,6 +875,9 @@ def _evidence(context: Mapping[str, Any], action_id: str, prepared: Mapping[str,
         target_matched = _playhead_readback_matches(result)
     elif command in {"timeline.set_start_tc", "timeline.start_tc"}:
         target_matched = result.get("raw", {}).get("verified") is True
+    elif command == "timeline.output_blanking.set":
+        actual = projected["state"]
+        target_matched = (actual["blanking"] == value["operation"]["blanking"] and actual["useTimeline"] is not True) if value["operation"]["kind"] == "edges" else actual["useTimeline"] is value["operation"]["useTimeline"]
     elif command == "timeline.settings_set":
         target_matched = result.get("raw", {}).get("verified") is True
     elif command == "timeline.fairlight_preset.apply":
@@ -814,8 +896,15 @@ def _evidence(context: Mapping[str, Any], action_id: str, prepared: Mapping[str,
         before_rows[timeline_id]["nativeId"] == after_rows[timeline_id]["nativeId"]
         for timeline_id in unaffected_timeline_ids
     )
-    before_structures = before.get("timelineStructures", {})
-    after_structures = after.get("timelineStructures", {})
+    before_structures = _canonical(before.get("timelineStructures", {}))
+    after_structures = _canonical(after.get("timelineStructures", {}))
+    if command == "timeline.clip_color.batch":
+        selected_ids = {update["timelineItemId"] for update in value["updates"]}
+        for structures in (before_structures, after_structures):
+            for structure in structures.values():
+                for item in structure.get("items", []):
+                    if item.get("timelineItemId") in selected_ids:
+                        item["clipColor"] = "<selected>"
     common_structure_ids = set(before_structures).intersection(after_structures)
     active_structure_preserved = all(
         before_structures[timeline_id].get("items")
@@ -861,6 +950,21 @@ def _evidence(context: Mapping[str, Any], action_id: str, prepared: Mapping[str,
             and isinstance(readback.get("after"), str)
             and readback["before"] != readback["after"]
         )
+    if command == "timeline.output_blanking.set":
+        prior = before["active"]["outputBlankingAll"]
+        current = after["active"]["outputBlankingAll"]
+        requested_item = value.get("timelineItemId")
+        if requested_item is not None:
+            def unaffected(snapshot):
+                return {native_id: state for native_id, state in snapshot["items"].items()
+                        if _digest("timeline_item_", {"timelineId": value["timelineId"], "nativeId": native_id}) != requested_item}
+            blanking_preserved = prior["timeline"] == current["timeline"] and unaffected(prior) == unaffected(current)
+        else:
+            def own_states(snapshot):
+                return {native_id: (dict(state) if state.get("available") is False else {key: state[key] for key in ("blanking", "use_timeline")})
+                        for native_id, state in snapshot["items"].items()}
+            blanking_preserved = own_states(prior) == own_states(current)
+        active_structure_preserved = active_structure_preserved and blanking_preserved
     protected_truth = {
         "project_identity": before["projectNativeId"] == after["projectNativeId"],
         "timeline_identity": timeline_identities_preserved,

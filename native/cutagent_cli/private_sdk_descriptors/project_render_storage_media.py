@@ -68,7 +68,6 @@ _RENDER_UNSUPPORTED = {
     },
     "cutagent.action.render.burnin.load": "burnin_preset_delta_has_no_complete_native_readback",
     "cutagent.action.render.preset_load": "stable_render_preset_identity_and_revision_missing",
-    "cutagent.action.render.preset_save": "created_render_preset_has_no_verified_delete_compensation",
     "cutagent.action.render.add": "superseded_by_managed_durable_render_export",
     "cutagent.action.render.cancel": "snapshot_job_identity_cannot_authorize_durable_operation_cancellation",
     "cutagent.action.render.delete": "destructive_queue_delete_has_no_native_restore_operation",
@@ -120,19 +119,23 @@ _RESIDUAL_SEMANTIC_EQUIVALENTS = {
         "sdk.validateOperationBatch(plan)"
     ),
     "cutagent.action.bulk.clip_color_set": (
-        "sdk.executeOperationBatch(client.workflows, sdk.defineSelectedClipBatch(selection, start, batchOptions), workflowOptions)"
+        "client.projects.current().then(project => project.timelines.current())"
+        ".then(timeline => timeline.items.setColor(changes, options))"
     ),
     "cutagent.action.bulk.disable": (
-        "sdk.executeOperationBatch(client.workflows, sdk.defineSelectedClipBatch(selection, start, batchOptions), workflowOptions)"
+        "client.projects.current().then(project => project.timelines.current())"
+        ".then(timeline => timeline.items.disable(items, options))"
     ),
     "cutagent.action.bulk.enable": (
-        "sdk.executeOperationBatch(client.workflows, sdk.defineSelectedClipBatch(selection, start, batchOptions), workflowOptions)"
+        "client.projects.current().then(project => project.timelines.current())"
+        ".then(timeline => timeline.items.enable(items, options))"
     ),
     "cutagent.action.bulk.lut_set": (
-        "sdk.executeOperationBatch(client.workflows, sdk.defineSelectedClipBatch(selection, start, batchOptions), workflowOptions)"
+        "sdk.applyColorLut(applications, lutOptions)"
     ),
     "cutagent.action.bulk.property_set": (
-        "sdk.executeOperationBatch(client.workflows, sdk.defineSelectedClipBatch(selection, start, batchOptions), workflowOptions)"
+        "client.projects.current().then(project => project.timelines.current())"
+        ".then(timeline => timeline.items.setProperties(items, options))"
     ),
     "cutagent.action.bulk.select": (
         "sdk.selectTimelineClips(snapshot, predicate, options)"
@@ -196,7 +199,7 @@ _RESIDUAL_SEMANTIC_EQUIVALENTS = {
         "client.projects.current().then(project => project.render.export(request, options))"
     ),
     "cutagent.action.render.start": (
-        "client.projects.current().then(project => project.render.export(request, options))"
+        "client.projects.current().then(project => project.render.queue.start(jobs, options))"
     ),
     "cutagent.action.render.custom_range": (
         "client.projects.current().then(project => project.render.export({...request, range: {kind: 'custom', startFrame, endExclusiveFrame}}, options))"

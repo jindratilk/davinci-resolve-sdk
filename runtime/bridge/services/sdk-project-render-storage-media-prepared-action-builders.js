@@ -5,6 +5,7 @@ import path from "node:path";
 import {
   CUTAGENT_PREPARED_ACTION_CAPABILITY_DIGEST,
   CUTAGENT_PREPARED_ACTION_CONTRACT_DIGEST,
+  CUTAGENT_PREPARED_ACTION_PROTOCOL_VERSION,
 } from "../contracts/generated/sdk-prepared-action.js";
 import {
   sdkMediaPoolCreateBinInputSchema,
@@ -21,7 +22,6 @@ import {
 } from "../contracts/generated/sdk-project-media.js";
 import {SDK_MEDIA_PREPARED_INPUTS} from "../contracts/sdk-media-prepared-inputs.generated.js";
 import {z} from "zod";
-import {resolveSdkPreparedMutationScope, sdkMutationScopeCandidates} from "./sdk-direct-mutation-scope.js";
 
 const ajv = new Ajv2020({allErrors: true, strict: true, strictRequired: false});
 
@@ -34,6 +34,8 @@ export const PROJECT_RENDER_STORAGE_MEDIA_PREPARED_ACTION_IDS = Object.freeze([
   "cutagent.action.render.encoding",
   "cutagent.action.render.mode.set",
   "cutagent.action.render.subtitles",
+  "cutagent.action.render.preset_save",
+  "cutagent.action.render.preset_update",
   "cutagent.action.media.folders.create",
   "cutagent.action.media.folders.delete",
   "cutagent.action.media.metadata",
@@ -59,6 +61,7 @@ export const PROJECT_RENDER_STORAGE_MEDIA_PREPARED_ACTION_IDS = Object.freeze([
   "cutagent.action.project.library.restore",
   "cutagent.action.project.library.switch",
   "cutagent.action.project.open",
+  "cutagent.action.project.preset.export",
   "cutagent.action.project.preset.load",
   "cutagent.action.project.preset.save",
   "cutagent.action.project.restore",
@@ -81,8 +84,8 @@ export const PROJECT_PRODUCTION_PREPARED_ACTION_IDS = Object.freeze([
   )),
 ]);
 
-if (PROJECT_PRODUCTION_PREPARED_ACTION_IDS.length !== 65
-  || new Set(PROJECT_PRODUCTION_PREPARED_ACTION_IDS).size !== 65) {
+if (PROJECT_PRODUCTION_PREPARED_ACTION_IDS.length !== 66
+  || new Set(PROJECT_PRODUCTION_PREPARED_ACTION_IDS).size !== 66) {
   throw new Error("Project/Media production prepared-action selection is not exact and unique.");
 }
 
@@ -93,6 +96,7 @@ if (PROJECT_PRODUCTION_PREPARED_ACTION_IDS.length !== 65
  */
 export const PROJECT_NAMESPACE_SIGNED_EXECUTION_ACTION_IDS = Object.freeze([
   "cutagent.action.project.import",
+  "cutagent.action.project.preset.export",
   "cutagent.action.project.preset.load",
   "cutagent.action.project.preset.save",
   "cutagent.action.project.restore",
@@ -165,10 +169,10 @@ const EXPECTED_PROJECT_MEDIA_SIGNED_EXECUTION_ACTION_ID_SET = new Set([
   ...PROJECT_NAMESPACE_SIGNED_EXECUTION_ACTION_IDS,
   ...MEDIA_PENDING_PREPARED_ACTION_IDS.filter((actionId) => actionId !== "cutagent.action.media.create_timeline"),
 ]);
-if (PROJECT_MEDIA_SIGNED_EXECUTION_ACTION_IDS.length !== 49
-  || new Set(PROJECT_MEDIA_SIGNED_EXECUTION_ACTION_IDS).size !== 49
+if (PROJECT_MEDIA_SIGNED_EXECUTION_ACTION_IDS.length !== 50
+  || new Set(PROJECT_MEDIA_SIGNED_EXECUTION_ACTION_IDS).size !== 50
   || PROJECT_MEDIA_SIGNED_EXECUTION_ACTION_IDS.some((actionId) => !PROJECT_PRODUCTION_PREPARED_ACTION_IDS.includes(actionId))
-  || EXPECTED_PROJECT_MEDIA_SIGNED_EXECUTION_ACTION_ID_SET.size !== 49
+  || EXPECTED_PROJECT_MEDIA_SIGNED_EXECUTION_ACTION_ID_SET.size !== 50
   || PROJECT_MEDIA_SIGNED_EXECUTION_ACTION_IDS.some((actionId) => !EXPECTED_PROJECT_MEDIA_SIGNED_EXECUTION_ACTION_ID_SET.has(actionId))
   || PROJECT_MEDIA_SIGNED_EXECUTION_ACTION_IDS.includes("cutagent.action.project.settings_set")
   || PROJECT_NAMESPACE_REMAINING_DEBT_ACTION_IDS.some((actionId) => PROJECT_MEDIA_SIGNED_EXECUTION_ACTION_IDS.includes(actionId))
@@ -181,9 +185,23 @@ export const RENDER_PRODUCTION_PREPARED_ACTION_IDS = Object.freeze([
   "cutagent.action.render.encoding",
   "cutagent.action.render.mode.set",
   "cutagent.action.render.subtitles",
+  "cutagent.action.render.preset_save",
+  "cutagent.action.render.preset_update",
 ]);
 
 const BASE_INPUT_SCHEMAS = {
+  "cutagent.action.render.preset_update": z.object({
+    presetName: z.string().min(1)
+      .refine((name) => [...name].length <= 1024, {
+        message: "Render preset update name exceeds 1,024 Unicode characters.",
+      })
+      .refine((name) => name === name.trim(), {
+        message: "Render preset update requires an exact name without surrounding whitespace.",
+      }),
+  }).strict(),
+  "cutagent.action.render.preset_save": z.object({
+    presetName: z.string().trim().min(1).max(1024),
+  }).strict(),
   "cutagent.action.project.rename": z.object({
     name: z.string().min(1).max(1024),
   }).strict(),
@@ -207,6 +225,10 @@ const BASE_INPUT_SCHEMAS = {
       z.object({kind: z.literal("get"), clipName: z.string().min(1), key: z.string().min(1)}).strict(),
       z.object({kind: z.literal("set"), clipName: z.string().min(1), key: z.string().min(1), value: z.string()}).strict(),
     ])}).strict(),
+  ]),
+  "cutagent.action.media.move": z.union([
+    z.object({name: z.string().min(1), target: z.string().min(1)}).strict(),
+    z.object({moves: z.array(z.object({name: z.string().min(1), target: z.string().min(1)}).strict()).min(1).max(1000)}).strict(),
   ]),
   "cutagent.action.media.property_set": z.object({name: z.string().min(1), key: z.string().min(1), value: z.string()}).strict(),
   "cutagent.action.media.third_party_metadata.set": z.object({clip: z.string().min(1), key: z.string().min(1), value: z.string()}).strict(),
@@ -236,6 +258,7 @@ const BASE_INPUT_SCHEMAS = {
   "cutagent.action.project.library.restore": z.union([sdkProjectLibraryRestoreInputSchema, z.object({sourceArtifactId: z.string().regex(/^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$/), libraryName: z.string().min(1).max(1024), directoryPath: z.string().min(1).max(4096)}).strict()]),
   "cutagent.action.project.library.switch": z.union([sdkProjectLibraryOpenInputSchema, z.object({libraryName: z.string().min(1).max(1024), libraryKind: z.literal("disk").optional()}).strict()]),
   "cutagent.action.project.open": z.union([sdkProjectOpenInputSchema, z.object({name: z.string().min(1).max(1024)}).strict()]),
+  "cutagent.action.project.preset.export": z.object({name: z.string().min(1).max(1024), destinationArtifactId: z.string().regex(/^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$/)}).strict(),
   "cutagent.action.project.preset.load": z.object({name: z.string().min(1).max(1024)}).strict(),
   "cutagent.action.project.preset.save": z.object({name: z.string().min(1).max(1024)}).strict(),
   "cutagent.action.project.restore": z.union([sdkProjectRestoreInputSchema, z.object({sourceArtifactId: z.string().regex(/^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$/), name: z.string().min(1).max(1024)}).strict()]),
@@ -295,30 +318,6 @@ const INPUT_SCHEMAS = Object.freeze({
     ))])];
   })),
 });
-
-function exactProjectScope(mutationPolicyGate, accountFingerprint, directScope = null) {
-  const scopes = sdkMutationScopeCandidates(mutationPolicyGate, accountFingerprint, directScope).filter((scope) => (
-    scope?.binding?.level === "project"
-    && typeof scope.binding.projectLibraryId === "string"
-    && typeof scope.binding.projectId === "string"
-    && typeof scope.binding.projectRevision === "string"
-  )) ?? [];
-  if (scopes.length !== 1) {
-    throw new Error("Prepared project/render mutation requires one exact project scope.");
-  }
-  return scopes[0];
-}
-
-function exactProjectLibraryScope(mutationPolicyGate, accountFingerprint, directScope = null) {
-  const scopes = sdkMutationScopeCandidates(mutationPolicyGate, accountFingerprint, directScope).filter((scope) => (
-    scope?.binding?.level === "account/project-library"
-    && typeof scope.binding.projectLibraryId === "string"
-  )) ?? [];
-  if (scopes.length !== 1) {
-    throw new Error("Prepared project-open mutation requires one exact project-library scope.");
-  }
-  return scopes[0];
-}
 
 function inputSchema(actionId) {
   return INPUT_SCHEMAS[actionId];
@@ -514,7 +513,7 @@ function projectTargetNames(actionId, input, value) {
   if (actionId.startsWith("cutagent.action.project.cloud.")) {
     return [input.name].filter(Boolean);
   }
-  if (["cutagent.action.project.close", "cutagent.action.project.save", "cutagent.action.project.preset.load", "cutagent.action.project.preset.save"].includes(actionId)) {
+  if (["cutagent.action.project.close", "cutagent.action.project.save", "cutagent.action.project.preset.export", "cutagent.action.project.preset.load", "cutagent.action.project.preset.save"].includes(actionId)) {
     return [value.project.name];
   }
   return [];
@@ -523,6 +522,7 @@ function projectTargetNames(actionId, input, value) {
 const PROJECT_ARTIFACT_REQUESTS = Object.freeze({
   "cutagent.action.project.archive": {field: "destinationArtifactId", mode: "destination_directory"},
   "cutagent.action.project.export": {field: "destinationArtifactId", mode: "destination_file", extension: "drp"},
+  "cutagent.action.project.preset.export": {field: "destinationArtifactId", mode: "destination_output_file", extension: "preset"},
   "cutagent.action.project.library.backup": {field: "destinationArtifactId", mode: "destination_output_directory"},
   "cutagent.action.project.library.restore": {field: "sourceArtifactId", mode: "source_directory", singleDirectoryName: "backup"},
   "cutagent.action.project.restore": {field: "sourceArtifactId", mode: "source_directory", singleDirectorySuffix: ".dra"},
@@ -571,6 +571,11 @@ async function captureProjectArtifact(artifactService, actionId, input, context)
       throw new Error(`Prepared Project action requires directory-output publication custody: ${actionId}`);
     }
     captured = await artifactService.reservePrivateOutputDirectory({artifactId, operationId: context.operationId, accountFingerprint: context.accountFingerprint});
+  } else if (request.mode === "destination_output_file") {
+    if (typeof artifactService.reservePrivateOutputArtifact !== "function") {
+      throw new Error(`Prepared Project action requires file-output publication custody: ${actionId}`);
+    }
+    captured = await artifactService.reservePrivateOutputArtifact({artifactId, operationId: context.operationId, accountFingerprint: context.accountFingerprint, extension: request.extension});
   } else if (request.mode === "destination_directory") {
     captured = await artifactService.reservePrivateManagedDirectory({artifactId, operationId: context.operationId, accountFingerprint: context.accountFingerprint});
   } else if (request.mode === "destination_file") {
@@ -685,6 +690,16 @@ function exactFolderBinding(snapshot, actionId, input) {
 
 function sha256(value) { return crypto.createHash("sha256").update(value).digest("hex"); }
 
+function renderPresetUpdateTarget(presetName, projectRevision) {
+  const nameDigest = sha256(presetName);
+  const revisionDigest = sha256(`render_preset\0${presetName}\0${projectRevision}`);
+  return Object.freeze({
+    kind: "runtime_setting",
+    stableId: `render_preset_${nameDigest.slice(0, 32)}`,
+    revision: `revision_${revisionDigest}`,
+  });
+}
+
 function logicalFolder(rows, rawPath) {
   const roots = rows.filter((row) => row.parentCoordinate === null);
   if (roots.length !== 1) throw new Error("Prepared Media Pool root folder is ambiguous.");
@@ -766,12 +781,15 @@ function genericMediaBinding(snapshot, actionId, input, context, dependencies) {
   const folderRows = exactFolderRows(snapshot);
   const semanticRelink = actionId === "cutagent.action.media.relink" && typeof input.assetId === "string";
   const semanticSync = actionId === "cutagent.action.media.sync_audio" && typeof input.videoAssetId === "string";
-  if ((semanticRelink || semanticSync) && input.precondition !== snapshot.revision) {
+  const semanticDelete = actionId === "cutagent.action.media.delete" && Array.isArray(input.assetIds);
+  if ((semanticRelink || semanticSync || semanticDelete) && input.precondition !== snapshot.revision) {
     throw new Error("Prepared Media Pool input revision is stale.");
   }
   const semanticAssetIds = semanticRelink ? [input.assetId]
-    : semanticSync ? [input.videoAssetId, ...input.audioAssetIds] : [];
-  const assetNames = [input.name, input.clipName, input.clip, input.old, input.left, input.right, ...(input.clips ?? [])]
+    : semanticSync ? [input.videoAssetId, ...input.audioAssetIds]
+      : semanticDelete ? input.assetIds : [];
+  const mediaMoves = actionId === "cutagent.action.media.move" && Array.isArray(input.moves) ? input.moves : [];
+  const assetNames = [input.name, input.clipName, input.clip, input.old, input.left, input.right, ...(input.clips ?? []), ...mediaMoves.map((move) => move?.name)]
     .filter((value) => typeof value === "string" && value);
   const assets = [];
   for (const id of semanticAssetIds) {
@@ -791,6 +809,7 @@ function genericMediaBinding(snapshot, actionId, input, context, dependencies) {
   const folderValues = [];
   if (typeof input.folder === "string" && input.folder) folderValues.push(input.folder);
   if (typeof input.target === "string" && input.target) folderValues.push(input.target);
+  for (const move of mediaMoves) if (typeof move?.target === "string" && move.target) folderValues.push(move.target);
   if (typeof input.targetPath === "string" && input.targetPath) folderValues.push(input.targetPath);
   if (typeof input.path === "string" && actionId.includes("folders.")) folderValues.push(input.path);
   if (actionId.endsWith("folders.root")) {
@@ -831,7 +850,7 @@ function genericMediaBinding(snapshot, actionId, input, context, dependencies) {
       clips: assets.map((asset) => asset.name),
       mode: input.method,
       retainEmbeddedAudio: input.appendTracks,
-    } : structuredClone(input);
+    } : semanticDelete ? {name: assets.map((asset) => asset.name)} : structuredClone(input);
   const artifacts = {};
   const outputField = actionId.endsWith("folder.export_drb") || actionId.endsWith("metadata.export") ? "file"
     : actionId.endsWith("transcode") ? "outputPath" : null;
@@ -918,7 +937,7 @@ function exactTargets(actionId, input, binding) {
   return selected.map((row) => ({stableId: row.jobId, revision: row.revision}));
 }
 
-function builder(actionId, mutationPolicyGate, requestBindingAuthority) {
+function builder(actionId, requestBindingAuthority) {
   return Object.freeze({
     inputSchema: inputSchema(actionId),
     mutationBinding: Object.freeze({
@@ -926,7 +945,6 @@ function builder(actionId, mutationPolicyGate, requestBindingAuthority) {
       referencedPayloadDigests: Object.freeze([]),
     }),
     async buildRequest({context, input}) {
-      const scope = exactProjectScope(mutationPolicyGate, context.accountFingerprint);
       if (typeof requestBindingAuthority?.capture !== "function") {
         throw new Error("Prepared project/render mutation requires carrier-owned identity capture.");
       }
@@ -936,18 +954,17 @@ function builder(actionId, mutationPolicyGate, requestBindingAuthority) {
         requestId: context.requestId,
         operationId: context.operationId,
         executionId: context.executionId,
-        scope: structuredClone(scope),
         input: structuredClone(input),
       });
-      if (binding?.projectLibraryId !== scope.binding.projectLibraryId
+      if (typeof binding?.projectLibraryId !== "string"
         || typeof binding?.projectLibraryRevision !== "string"
-        || binding?.projectId !== scope.binding.projectId
-        || binding?.projectRevision !== scope.binding.projectRevision) {
-        throw new Error("Prepared project/render live identity capture drifted from the exact scope.");
+        || typeof binding?.projectId !== "string"
+        || typeof binding?.projectRevision !== "string") {
+        throw new Error("Prepared project/render live identity capture is incomplete.");
       }
       const targets = exactTargets(actionId, input, binding);
       return {
-        protocolVersion: 1,
+        protocolVersion: CUTAGENT_PREPARED_ACTION_PROTOCOL_VERSION,
         actionId,
         actionContractVersion: 1,
         input,
@@ -975,21 +992,18 @@ function builder(actionId, mutationPolicyGate, requestBindingAuthority) {
 }
 
 export function buildProjectRenderStorageMediaPreparedActionBuilders({
-  mutationPolicyGate,
   requestBindingAuthority,
 } = {}) {
   return Object.freeze(Object.fromEntries(
     PROJECT_RENDER_STORAGE_MEDIA_PREPARED_ACTION_IDS.map((actionId) => [
       actionId,
-      builder(actionId, mutationPolicyGate, requestBindingAuthority),
+      builder(actionId, requestBindingAuthority),
     ]),
   ));
 }
 
 /** Production contribution for project mutations with exact private native identity custody. */
 export function createProjectPreparedActionBuilderContributions({
-  mutationPolicyGate,
-  directMutationPolicyAuthority,
   liveInspectionService,
   artifactService,
   projectLibraryDestinationService,
@@ -1032,19 +1046,6 @@ export function createProjectPreparedActionBuilderContributions({
           || typeof value?.projectRevision?.revision !== "string"
           || typeof privateIdentity?.nativeProjectId !== "string" || !privateIdentity.nativeProjectId))) {
         throw new Error("Prepared project mutation live identity is incomplete.");
-      }
-      const minimumBinding = projectOpen ? "account/project-library" : "project";
-      const directScope = await resolveSdkPreparedMutationScope({
-        directMutationPolicyAuthority, mutationPolicyGate, context, minimumBinding,
-        binding: {projectLibraryId: privateIdentity?.projectLibraryId, projectId: value?.project?.id, projectRevision: value?.projectRevision?.revision},
-      });
-      const scope = projectOpen
-        ? exactProjectLibraryScope(mutationPolicyGate, context.accountFingerprint, directScope)
-        : exactProjectScope(mutationPolicyGate, context.accountFingerprint, directScope);
-      if (privateIdentity?.projectLibraryId !== scope.binding.projectLibraryId
-        || (!projectOpen && (value?.project?.id !== scope.binding.projectId
-          || value?.projectRevision?.revision !== scope.binding.projectRevision))) {
-        throw new Error("Prepared project mutation live identity drifted from the exact scope.");
       }
       let targetId = value?.project?.id ?? null;
       let targetRevision = value?.projectRevision?.revision ?? null;
@@ -1228,8 +1229,6 @@ export function createProjectPreparedActionBuilderContributions({
 
 /** Production contribution for render-setting mutations with exact project custody. */
 export function createRenderPreparedActionBuilderContributions({
-  mutationPolicyGate,
-  directMutationPolicyAuthority,
   liveInspectionService,
 } = {}) {
   if (typeof liveInspectionService?.readWithMutationGuard !== "function") {
@@ -1238,7 +1237,7 @@ export function createRenderPreparedActionBuilderContributions({
   return Object.freeze(Object.fromEntries(RENDER_PRODUCTION_PREPARED_ACTION_IDS.map((actionId) => [actionId, Object.freeze({
     inputSchema: inputSchema(actionId),
     mutationBinding: Object.freeze({minimumBinding: "project", referencedPayloadDigests: Object.freeze([])}),
-    async captureRequestBinding({context}) {
+    async captureRequestBinding({context, input}) {
       const inspected = await liveInspectionService.readWithMutationGuard({operation: "project.context"});
       const value = inspected?.value;
       const privateIdentity = inspected?.privateExecutionIdentity;
@@ -1247,31 +1246,26 @@ export function createRenderPreparedActionBuilderContributions({
         || typeof value?.projectRevision?.revision !== "string") {
         throw new Error("Prepared render mutation live identity is incomplete.");
       }
-      const directScope = await resolveSdkPreparedMutationScope({
-        directMutationPolicyAuthority, mutationPolicyGate, context, minimumBinding: "project",
-        binding: {projectLibraryId: privateIdentity?.projectLibraryId, projectId: value?.project?.id, projectRevision: value?.projectRevision?.revision},
-      });
-      const scope = exactProjectScope(mutationPolicyGate, context.accountFingerprint, directScope);
-      if (value?.project?.id !== scope.binding.projectId
-        || value?.projectRevision?.revision !== scope.binding.projectRevision
-        || privateIdentity?.projectLibraryId !== scope.binding.projectLibraryId
-        || typeof inspected?.mutationGuard !== "string"
+      if (typeof inspected?.mutationGuard !== "string"
         || typeof privateIdentity?.nativeProjectId !== "string" || !privateIdentity.nativeProjectId
         || !nativeProjectLibrary || typeof nativeProjectLibrary !== "object") {
         throw new Error("Prepared render mutation live identity drifted from the exact scope.");
       }
+      const targets = actionId === "cutagent.action.render.preset_update"
+        ? [renderPresetUpdateTarget(input.presetName, value.projectRevision.revision)]
+        : [{kind: "project", stableId: value.project.id, revision: value.projectRevision.revision}];
       return {
         identities: {
           projectLibraryId: privateIdentity.projectLibraryId,
           projectId: value.project.id,
           timelineId: null,
-          targetIds: [value.project.id],
+          targetIds: targets.map((target) => target.stableId),
         },
         revisions: {
           projectLibrary: inspected.mutationGuard,
           project: value.projectRevision.revision,
           timeline: null,
-          targets: {[value.project.id]: value.projectRevision.revision},
+          targets: Object.fromEntries(targets.map((target) => [target.stableId, target.revision])),
         },
         privateContext: {project: {
           nativeProjectId: privateIdentity.nativeProjectId,

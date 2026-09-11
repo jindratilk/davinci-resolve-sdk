@@ -199,6 +199,7 @@ def require_exact_sdk_transition_selection(
     *,
     selected: dict[str, object],
     expected: object | None = None,
+    _live_by_type: dict[str, list[LiveItemRef]] | None = None,
 ) -> dict[str, LiveItemRef | None]:
     """Revalidate one signed transition seam and its selected native items."""
 
@@ -233,7 +234,7 @@ def require_exact_sdk_transition_selection(
     if any(not isinstance(item, dict) for item in raw_targets):
         raise ValidationError("SDK transition target custody is malformed.")
 
-    live_by_type = {
+    live_by_type = _live_by_type or {
         track_type: _read_live_items(conn, track_type=track_type)
         for track_type in ("video", "audio")
     }
@@ -341,6 +342,59 @@ def require_exact_sdk_transition_selection(
         "video": selected_video if isinstance(selected_video, LiveItemRef) else None,
         "audio": selected_audio if isinstance(selected_audio, LiveItemRef) else None,
     }
+
+
+def require_exact_sdk_transition_batch_selection(
+    conn,
+    *,
+    plans: list[dict[str, object]],
+    expected: object | None = None,
+) -> list[dict[str, LiveItemRef | None]]:
+    """Revalidate every signed transition seam with one shared live-item read."""
+
+    if expected is None:
+        raw = os.getenv("CUTAGENT_CLI_SDK_TRANSITION_BATCH_TARGETS")
+        if not raw:
+            if os.getenv("CUTAGENT_SDK_TIMELINE_GUARD"):
+                raise ValidationError(
+                    "SDK transition batch execution omitted exact native target custody."
+                )
+            return [
+                {
+                    "video": plan.get("video_item")
+                    if isinstance(plan.get("video_item"), LiveItemRef)
+                    else None,
+                    "audio": plan.get("audio_item")
+                    if isinstance(plan.get("audio_item"), LiveItemRef)
+                    else None,
+                }
+                for plan in plans
+            ]
+        try:
+            expected = json.loads(raw)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(
+                "SDK transition batch target custody is malformed."
+            ) from exc
+    if (
+        not isinstance(expected, list)
+        or not expected
+        or len(expected) != len(plans)
+    ):
+        raise ValidationError("SDK transition batch target custody is malformed.")
+    live_by_type = {
+        track_type: _read_live_items(conn, track_type=track_type)
+        for track_type in ("video", "audio")
+    }
+    return [
+        require_exact_sdk_transition_selection(
+            conn,
+            selected={"video": plan.get("video_item"), "audio": plan.get("audio_item")},
+            expected=expected[index],
+            _live_by_type=live_by_type,
+        )
+        for index, plan in enumerate(plans)
+    ]
 
 
 def _ensure_unique(items: list[LiveItemRef], *, reason: str, details: dict[str, object]) -> LiveItemRef:

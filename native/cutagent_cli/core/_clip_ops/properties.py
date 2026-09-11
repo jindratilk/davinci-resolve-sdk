@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Any, Optional
 
 from ...errors import APICallFailed, ValidationError
@@ -385,6 +386,34 @@ def _apply_transform_properties(item, props: dict[str, Any]) -> list[str]:
     return failed
 
 
+def _mismatched_transform_properties(item, props: dict[str, Any]) -> list[str]:
+    """Read the changed Inspector section once and return values that did not stick."""
+
+    try:
+        actual = item.GetProperty()
+    except Exception:
+        return sorted(props)
+    if not isinstance(actual, dict):
+        return sorted(props)
+    mismatched = []
+    for key, expected in props.items():
+        value = actual.get(key)
+        if isinstance(expected, bool):
+            matches = value is expected
+        elif isinstance(expected, (int, float)) and not isinstance(expected, bool):
+            matches = (
+                isinstance(value, (int, float))
+                and not isinstance(value, bool)
+                and math.isfinite(float(value))
+                and math.isclose(float(value), float(expected), rel_tol=0.0, abs_tol=1e-6)
+            )
+        else:
+            matches = value == expected
+        if not matches:
+            mismatched.append(key)
+    return sorted(mismatched)
+
+
 def _item_display_name(item) -> str:
     try:
         return str(item.GetName() or "")
@@ -496,6 +525,12 @@ def set_clip_transform(
             "DaVinci Resolve rejected one or more clip transform properties.",
             details={"failed_properties": sorted(failed), "applied_properties": applied},
         )
+    mismatched = _mismatched_transform_properties(item, props)
+    if mismatched:
+        raise APICallFailed(
+            "DaVinci Resolve clip transform readback did not match the requested values.",
+            details={"mismatched_properties": mismatched},
+        )
 
 
 def set_clip_transform_batch(conn, entries: list[dict[str, Any]], *, ops_module) -> dict[str, Any]:
@@ -578,6 +613,8 @@ def set_clip_transform_batch(conn, entries: list[dict[str, Any]], *, ops_module)
         item = entry["item"]
         props = entry["properties"]
         failed = _apply_transform_properties(item, props)
+        if not failed:
+            failed = _mismatched_transform_properties(item, props)
         if failed:
             failure = {
                 "index": index,

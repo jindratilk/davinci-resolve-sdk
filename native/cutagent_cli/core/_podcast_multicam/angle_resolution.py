@@ -6,8 +6,9 @@ import re
 from typing import Any
 
 from ...errors import ValidationError
-from ...utils.timecode import seconds_to_frames, timecode_to_seconds
+from ...utils.timecode import timecode_to_seconds
 from .. import media_pool
+from ..timeline_source_range import _source_fps, _source_total_frames
 
 
 def _is_temp_bin_folder_path(folder_path: str | None, *, temp_bin_prefix: str) -> bool:
@@ -283,14 +284,8 @@ def _resolve_angle_source_specs(
             continue
 
         source_to_angle[source_path] = label
-        clip_fps = float(getattr(conn, "fps", 24.0) or 24.0)
-        duration_frames: int | None = None
-        duration_raw = str(props.get("Duration") or "").strip()
-        if duration_raw:
-            try:
-                duration_frames = seconds_to_frames(timecode_to_seconds(duration_raw, clip_fps), clip_fps)
-            except Exception:
-                duration_frames = None
+        clip_fps = _source_fps(props, float(getattr(conn, "fps", 24.0) or 24.0))
+        duration_frames = _source_total_frames(props, clip_fps)
         resolved.append(
             resolved_angle_clip_cls(
                 label=label,

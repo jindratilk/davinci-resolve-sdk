@@ -137,7 +137,7 @@ class DesktopChannel implements CarrierChannel {
       }
       : request.payload;
     const serialized = JSON.stringify(body);
-    const maximumRequestBytes = request.method === "operation"
+    const maximumRequestBytes = request.method === "operation" || request.method === "read"
       ? CUTAGENT_SDK_OPERATION_REQUEST_MAX_BYTES
       : MAX_REQUEST_BYTES;
     if (Buffer.byteLength(serialized, "utf8") > maximumRequestBytes) {

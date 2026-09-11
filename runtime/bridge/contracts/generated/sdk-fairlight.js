@@ -27,6 +27,8 @@ const fairlightBoundClipSchema = fairlightBindingSchema.extend({ target: fairlig
 const fairlightBoundTrackSchema = fairlightBindingSchema.extend({ target: fairlightTrackTargetSchema }).strict();
 export const sdkFairlightClipGainInputSchema = fairlightBoundClipSchema.extend({ kind: z.literal("clip_gain"), gainDb: z.number().finite().min(-160).max(60) }).strict();
 export const sdkFairlightClipPanInputSchema = fairlightBoundClipSchema.extend({ kind: z.literal("clip_pan"), pan: z.number().finite().min(-1).max(1) }).strict();
+export const sdkFairlightFadeCurveStateSchema = z.object({ controlPoint: z.object({ x: z.number().finite(), y: z.number().finite() }).strict().nullable() }).strict();
+export const sdkFairlightClipFadeCurveInputSchema = fairlightBoundClipSchema.extend({ kind: z.literal("clip_fade_curve"), direction: z.enum(["in", "out"]), curve: sdkFairlightFadeCurveStateSchema }).strict();
 export const sdkFairlightClipFadeInputSchema = fairlightBoundClipSchema.extend({ kind: z.literal("clip_fade"), direction: z.enum(["in", "out"]), durationFrames: z.number().int().min(0).max(10_000_000) }).strict();
 export const sdkFairlightTrackMixInputSchema = fairlightBoundTrackSchema.extend({
     kind: z.literal("track_mix"),
@@ -86,6 +88,7 @@ const fairlightPlanChangeSchema = z.discriminatedUnion("kind", [
     sdkFairlightClipGainInputSchema,
     sdkFairlightClipPanInputSchema,
     sdkFairlightClipFadeInputSchema,
+    sdkFairlightClipFadeCurveInputSchema,
     sdkFairlightTrackMixInputSchema,
     sdkFairlightRouteInputSchema,
     sdkFairlightEqInputSchema,
@@ -120,7 +123,8 @@ const fairlightSyncPositionsSchema = z.array(fairlightSyncPositionSchema).min(2)
 const fairlightSemanticChangeSchema = z.discriminatedUnion("kind", [
     z.object({ kind: z.literal("clip_gain"), beforeDb: z.number().finite().min(-160).max(60).nullable(), afterDb: z.number().finite().min(-160).max(60).nullable() }).strict(),
     z.object({ kind: z.literal("clip_pan"), before: z.number().finite().min(-1).max(1).nullable(), after: z.number().finite().min(-1).max(1).nullable() }).strict(),
-    z.object({ kind: z.literal("clip_fade"), direction: z.enum(["in", "out"]), beforeFrames: z.number().int().min(0).nullable(), afterFrames: z.number().int().min(0).nullable() }).strict(),
+    z.object({ kind: z.literal("clip_fade_curve"), direction: z.enum(["in", "out"]), before: sdkFairlightFadeCurveStateSchema, after: sdkFairlightFadeCurveStateSchema }).strict(),
+    z.object({ kind: z.literal("clip_fade"), direction: z.enum(["in", "out"]), beforeFrames: z.number().finite().min(0).nullable(), afterFrames: z.number().finite().min(0).nullable() }).strict(),
     z.object({ kind: z.literal("track_mix"), before: fairlightMixStateSchema.nullable(), after: fairlightMixStateSchema.nullable() }).strict(),
     z.object({ kind: z.literal("routing"), before: fairlightBusStateSchema.nullable(), after: fairlightBusStateSchema.nullable() }).strict(),
     z.object({ kind: z.literal("eq"), before: fairlightEqStateSchema.nullable(), after: fairlightEqStateSchema.nullable() }).strict(),
@@ -182,7 +186,7 @@ const fairlightStepResultSchema = z.object({
     auditionEvidenceId: fairlightEvidenceIdSchema.nullable(),
 }).strict().superRefine((step, context) => {
     const expectedTargets = {
-        clip_gain: ["clip"], clip_pan: ["clip"], clip_fade: ["clip"], eq: ["clip"], effect: ["clip"],
+        clip_gain: ["clip"], clip_pan: ["clip"], clip_fade: ["clip"], clip_fade_curve: ["clip"], eq: ["clip"], effect: ["clip"],
         track_mix: ["track"], dynamics: ["track"], routing: ["track"], synchronization: ["clips"], loudness: ["track", "bus"],
     };
     if (!expectedTargets[step.change.kind].includes(step.target.kind)) {
@@ -338,7 +342,7 @@ export const sdkFairlightSemanticResultSchema = z.object({
     if (hasFailedProof && result.recovery.state !== "manual_recovery_required") {
         context.addIssue({ code: "custom", path: ["recovery"], message: "Known failed Fairlight proof requires manual recovery" });
     }
-    if (result.outcome === "succeeded" && (affectedCount === 0 || changedSteps.length !== result.steps.length || result.steps.some((step) => step.outcome !== "succeeded")
+    if (result.outcome === "succeeded" && (affectedCount === 0 || changedSteps.length === 0 || result.steps.some((step) => step.outcome !== "succeeded" && step.outcome !== "no_change")
         || result.evidence.outcome !== "passed" || result.evidence.structuralReadback !== "passed" || protectedState.status !== "passed")) {
         context.addIssue({ code: "custom", path: ["evidence"], message: "Successful Fairlight results require passed structural verification" });
     }
@@ -367,6 +371,8 @@ function fairlightRequestedStateMatches(change, requested, outcome) {
         return (observed === "after" ? change.afterDb : change.beforeDb) === requested.gainDb;
     if (change.kind === "clip_pan" && requested.kind === "clip_pan")
         return (observed === "after" ? change.after : change.before) === requested.pan;
+    if (change.kind === "clip_fade_curve" && requested.kind === "clip_fade_curve")
+        return change.direction === requested.direction && JSON.stringify(change[observed]) === JSON.stringify(requested.curve);
     if (change.kind === "clip_fade" && requested.kind === "clip_fade")
         return change.direction === requested.direction && (observed === "after" ? change.afterFrames : change.beforeFrames) === requested.durationFrames;
     if (change.kind === "track_mix" && requested.kind === "track_mix")

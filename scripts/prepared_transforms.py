@@ -20,12 +20,6 @@ def transform(path, text):
         start = text.index('  if (typeof authorizationService?.authorizePreparedAction')
         end = text.index('\n\n  async function execute', start)
         text=text[:start]+text[end:]
-        start=text.index('      if (typeof mutationPolicyGate.issuePreparedActionAttestation')
-        end=text.index('      decisionDigest =',start)
-        text=text[:start]+'''      policyAttestation = JSON.stringify(Object.fromEntries([
-        "accountDigest", "impactDigest", "executionDigest", "projectDigest", "timelineDigest", "targetsDigest", "preStateDigest", "receiptDigest",
-      ].map(key => [key, prepared.authorizationBinding[key]])));
-'''+text[end:]
         start=text.index('    const authorization = await authorizationService.authorizePreparedAction(')
         end=text.index('    await admitOperation',start)
         text=text[:start]+'''    authService.assertCurrent(authenticated);
@@ -46,7 +40,6 @@ def transform(path, text):
   const hostEntry = {sha256: sha256(fs.readFileSync(executablePath))};
   const runtimeEntry = {sha256: sha256(fs.readFileSync(path.join(runtimeRoot, "cutagent")))};
   const desktopArtifactDigest = manifestDigest;
-  const policyPublicJwk = {};
 '''+text[end:]
         start=text.index('      if (!authenticated?.accessToken')
         end=text.index('      const issuedAt',start)

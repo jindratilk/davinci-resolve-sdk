@@ -3,7 +3,7 @@ import {mkdtemp,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {randomUUID,createHash} from 'node:crypto';
-import {CutAgent,frames,timelineRecordOffset} from 'davinci-resolve-sdk';
+import {CutAgent,frames,timelineRecordOffset} from 'cutagent';
 import {startNativeLocalRuntime} from '../runtime/index.mjs';
 const [transport,projectName,timelineName]=process.argv.slice(2);
 if(!['studio_external','embedded_free'].includes(transport)||!projectName||!timelineName)throw new Error('Exact project and timeline required.');

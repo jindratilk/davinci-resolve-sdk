@@ -8,7 +8,7 @@ from typing import Any
 from cutagent_cli.errors import APICallFailed, ValidationError
 from cutagent_cli.output import set_verification_status
 from cutagent_cli.utils.timecode import parse_time_input, seconds_to_frames
-from cutagent_cli.core import clip_effects_db, db_session, db_timeline_rows
+from cutagent_cli.core import clip_effects_db, db_session, db_timeline_rows, native_clip_audio
 
 _facade: ModuleType
 
@@ -105,6 +105,7 @@ def inspect_sdk_fairlight_plan_clip_state(conn) -> dict[str, Any]:
         cursor = connection.cursor()
         sequence = _fetch_timeline_sequence(cursor, timeline_name)
         audio_track_ids = _fetch_audio_track_ids(cursor, sequence=sequence)
+        from ..audio_fade_curve import observe_curve
         clips: list[dict[str, Any]] = []
         for track_index, track_id in enumerate(audio_track_ids, start=1):
             for row in _fetch_audio_items_for_track(cursor, track_id=track_id):
@@ -133,7 +134,20 @@ def inspect_sdk_fairlight_plan_clip_state(conn) -> dict[str, Any]:
                     "fade_in_frames": clip_effects_db.find_audio_fade_in_frames(effect_filters),
                     "fade_out_frames": clip_effects_db.find_audio_fade_out_frames(effect_filters),
                     "effect_plugin_ids": effect_plugin_ids,
+                    "fade_in_curve": observe_curve(effect_filters, "in"),
+                    "fade_out_curve": observe_curve(effect_filters, "out"),
                 })
+        if native_clip_audio.available(conn):
+            by_id = {row['item_id']: row for row in clips}
+            for index in range(1, int(conn.timeline.GetTrackCount('audio')) + 1):
+                for item in conn.timeline.GetItemListInTrack('audio', index) or []:
+                    row = by_id.get(str(item.GetUniqueId()))
+                    if row is None:
+                        raise APICallFailed('Live audio item is missing from the persisted identity map.')
+                    props = native_clip_audio._read(item, 'GetProperties', ('AudioVolume', 'AudioPan'))
+                    fades = native_clip_audio._read(item, 'GetFades', ('FadeIn', 'FadeOut'), fades=True)
+                    row.update(gain_db=props['AudioVolume'], pan=props['AudioPan'],
+                               fade_in_frames=fades['FadeIn'], fade_out_frames=fades['FadeOut'])
         return {"status": "available", "clips": clips}
     finally:
         connection.close()
@@ -371,6 +385,10 @@ def apply_audio_gain_batch(
 ) -> dict[str, Any]:
     """Apply a DB-backed audio gain payload to audio items selected by id or record bounds."""
     validated_gain = clip_effects_db.validate_audio_gain_db(gain_db)
+    if native_clip_audio.available(conn, gain_db=validated_gain):
+        preview = preview_audio_gain_batch(conn, gain_db=validated_gain, selectors=selectors,
+                                           allow_empty=allow_empty, allow_multiple=allow_multiple)
+        return native_clip_audio.apply_batch_preview(conn, preview, property_key='AudioVolume', value=validated_gain)
     timeline_name = _timeline_name(conn)
     if not timeline_name:
         raise APICallFailed("No active timeline is available for Fairlight audio gain batch.")
@@ -387,6 +405,148 @@ def apply_audio_gain_batch(
             timeline_start=_timeline_start_frame(conn),
         ),
         verifier=_verify_audio_gain_batch(expected_gain_db=validated_gain),
+        allow_project_name_inference=True,
+    )
+    result["db_session_route"] = result.get("route")
+    result["route"] = "db_workaround_audio_gain_batch"
+    return result
+
+
+def apply_audio_gain_entries(
+    conn,
+    *,
+    entries: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Apply exact per-item gains in one native batch or one Disk DB session."""
+    if not isinstance(entries, list) or not 1 <= len(entries) <= 128:
+        raise ValidationError("Fairlight audio gain entries must contain 1 to 128 items.")
+    normalized_entries: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict) or set(entry) != {"item_id", "gain_db"}:
+            raise ValidationError(
+                "Each Fairlight audio gain entry must contain item_id and gain_db.",
+                details={"index": index},
+                recoverability="not_applicable",
+            )
+        item_id = entry.get("item_id")
+        if not isinstance(item_id, str) or not item_id or item_id in seen:
+            raise ValidationError(
+                "Fairlight audio gain entries require distinct non-empty item identities.",
+                details={"index": index, "item_id": item_id},
+                recoverability="not_applicable",
+            )
+        seen.add(item_id)
+        normalized_entries.append({
+            "item_id": item_id,
+            "gain_db": clip_effects_db.validate_audio_gain_db(entry.get("gain_db")),
+        })
+
+    timeline_name = _timeline_name(conn)
+    if not timeline_name:
+        raise APICallFailed("No active timeline is available for Fairlight audio gain batch.")
+    selectors = normalize_audio_gain_batch_selectors(
+        conn, [{"item_id": entry["item_id"]} for entry in normalized_entries]
+    )
+    gain_by_item_id = {entry["item_id"]: entry["gain_db"] for entry in normalized_entries}
+    timeline_start = _timeline_start_frame(conn)
+
+    def resolve_targets(cursor: sqlite3.Cursor) -> tuple[list[dict[str, Any]], list[dict[str, Any]], str]:
+        targets, selector_results, sequence, _audio_track_ids = _resolve_audio_gain_batch_targets(
+            cursor,
+            timeline_name=timeline_name,
+            selectors=selectors,
+            allow_empty=False,
+            allow_multiple=False,
+            gain_db=normalized_entries[0]["gain_db"],
+            timeline_start=timeline_start,
+        )
+        for target in targets:
+            target["resulting_gain_db"] = gain_by_item_id[target["item_id"]]
+        return targets, selector_results, sequence
+
+    def writer(connection: sqlite3.Connection, cursor: sqlite3.Cursor, session: db_session.DiskDbMutationSession) -> dict[str, Any]:
+        targets, selector_results, sequence = resolve_targets(cursor)
+        for target in targets:
+            row = cursor.execute(
+                "SELECT EffectFiltersBA, FieldsBlob FROM Sm2TiItem WHERE Sm2TiItem_id = ?",
+                (target["item_id"],),
+            ).fetchone()
+            write = clip_effects_db.merge_audio_effect_chains(
+                existing_effect_filters=row["EffectFiltersBA"] if row else None,
+                existing_fields_blob=row["FieldsBlob"] if row else None,
+                gain_db=target["resulting_gain_db"],
+            )
+            updates: dict[str, object] = {"EffectFiltersBA": write.effect_filters}
+            if write.fields_blob is not None:
+                updates["FieldsBlob"] = write.fields_blob
+            db_timeline_rows.update_row(cursor, "Sm2TiItem", "Sm2TiItem_id", target["item_id"], updates)
+        return {
+            "action": "fairlight.audio_gain.batch",
+            "changed": bool(targets),
+            "timeline_name": timeline_name,
+            "timeline_sequence": sequence,
+            "target_count": len(targets),
+            "updated_count": len(targets),
+            "updated_items": targets,
+            "selector_results": selector_results,
+        }
+
+    def verifier(_conn, mutation_result: dict[str, Any], session: db_session.DiskDbMutationSession) -> dict[str, Any]:
+        connection = sqlite3.connect(session.project_db_path, timeout=5.0)
+        connection.row_factory = sqlite3.Row
+        checks: list[dict[str, Any]] = []
+        try:
+            cursor = connection.cursor()
+            for item in mutation_result.get("updated_items") or []:
+                item_id = item["item_id"]
+                expected = item["resulting_gain_db"]
+                row = cursor.execute(
+                    "SELECT EffectFiltersBA FROM Sm2TiItem WHERE Sm2TiItem_id = ?", (item_id,)
+                ).fetchone()
+                actual = clip_effects_db.find_audio_gain_db(row["EffectFiltersBA"] if row else None)
+                checks.append({
+                    "name": f"audio_gain_{item_id}",
+                    "ok": actual is not None and math.isclose(float(actual), float(expected), abs_tol=1e-6),
+                    "item_id": item_id,
+                    "expected_gain_db": float(expected),
+                    "actual_gain_db": actual,
+                })
+        finally:
+            connection.close()
+        return {"status": "verified" if all(check["ok"] for check in checks) else "failed", "checks": checks}
+
+    if native_clip_audio.available(
+        conn, gain_db=max(entry["gain_db"] for entry in normalized_entries)
+    ):
+        current_database = db_session.resolve_current_disk_project_db(conn)
+        connection = sqlite3.connect(str(current_database["project_db_path"]), timeout=5.0)
+        connection.row_factory = sqlite3.Row
+        try:
+            targets, selector_results, sequence = resolve_targets(connection.cursor())
+        finally:
+            connection.close()
+        preview = {
+            "action": "fairlight.audio_gain.batch",
+            "changed": False,
+            "dry_run": True,
+            "timeline_name": timeline_name,
+            "timeline_sequence": sequence,
+            "target_count": len(targets),
+            "updated_count": 0,
+            "updated_items": targets,
+            "selector_results": selector_results,
+            "verification": {"status": "not_requested", "checks": []},
+        }
+        return native_clip_audio.apply_batch_preview(
+            conn, preview, property_key="AudioVolume", value=None
+        )
+
+    result = db_session.execute_sqlite_disk_db_mutation(
+        conn,
+        context="Fairlight per-item audio gain batch",
+        writer=writer,
+        verifier=verifier,
         allow_project_name_inference=True,
     )
     result["db_session_route"] = result.get("route")
@@ -413,14 +573,55 @@ def _audio_pan_item_payload(
     }
 
 
+def _audio_pan_entries(
+    conn,
+    selectors: list[dict[str, Any]],
+    *,
+    default_pan: float | None,
+) -> list[tuple[AudioGainBatchSelector, float]]:
+    normalized = normalize_audio_gain_batch_selectors(
+        conn, selectors, operation_label="audio-pan"
+    )
+    entries: list[tuple[AudioGainBatchSelector, float]] = []
+    for index, selector in enumerate(normalized):
+        raw = selector.raw or {}
+        specified = [
+            raw[key]
+            for key in ("value", "pan", "pan_value")
+            if raw.get(key) is not None
+        ]
+        if len(specified) > 1:
+            raise ValidationError(
+                "Audio-pan batch entry specifies the pan value more than once.",
+                details={"index": index, "selector": raw},
+                recoverability="not_applicable",
+            )
+        requested = specified[0] if specified else default_pan
+        if requested is None:
+            raise ValidationError(
+                "Each audio-pan batch entry requires a value when no default is supplied.",
+                details={"index": index, "selector": raw},
+                recoverability="not_applicable",
+            )
+        try:
+            value = clip_effects_db.validate_audio_pan_value(requested)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(
+                "Audio-pan batch values must be finite numbers.",
+                details={"index": index, "value": requested},
+                recoverability="not_applicable",
+            ) from exc
+        entries.append((selector, value))
+    return entries
+
+
 def _resolve_audio_pan_batch_targets(
     cursor: sqlite3.Cursor,
     *,
     timeline_name: str,
-    selectors: list[AudioGainBatchSelector],
+    entries: list[tuple[AudioGainBatchSelector, float]],
     allow_empty: bool,
     allow_multiple: bool,
-    pan_value: float,
     timeline_start: int,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], str, list[str]]:
     sequence = _fetch_timeline_sequence(cursor, timeline_name)
@@ -434,7 +635,7 @@ def _resolve_audio_pan_batch_targets(
 
     targets_by_id: dict[str, dict[str, Any]] = {}
     selector_results: list[dict[str, Any]] = []
-    for selector_index, selector in enumerate(selectors):
+    for selector_index, (selector, pan_value) in enumerate(entries):
         matches: list[dict[str, Any]] = []
         if selector.kind == "item_id":
             item = _fetch_audio_item_by_id(cursor, item_id=str(selector.item_id or ""), audio_track_ids=audio_track_ids)
@@ -489,27 +690,40 @@ def _resolve_audio_pan_batch_targets(
             {
                 "selector_index": selector_index,
                 "selector": selector.raw,
+                "pan": float(pan_value),
                 "match_count": len(matches),
                 "item_ids": [str(row.get("Sm2TiItem_id") or "") for row in matches],
             }
         )
         for row in matches:
             item_id = str(row.get("Sm2TiItem_id") or "")
-            if item_id and item_id not in targets_by_id:
-                targets_by_id[item_id] = row
+            if not item_id:
+                continue
+            existing = targets_by_id.get(item_id)
+            if existing is not None and not math.isclose(
+                existing["resulting_pan"], pan_value, rel_tol=0.0, abs_tol=1e-9
+            ):
+                raise ValidationError(
+                    "Audio-pan selectors assign conflicting values to one audio item.",
+                    details={"item_id": item_id},
+                    recoverability="not_applicable",
+                )
+            if existing is None:
+                targets_by_id[item_id] = _audio_pan_item_payload(
+                    cursor,
+                    row,
+                    audio_track_ids=audio_track_ids,
+                    resulting_pan=pan_value,
+                )
 
-    targets = [
-        _audio_pan_item_payload(cursor, row, audio_track_ids=audio_track_ids, resulting_pan=pan_value)
-        for row in targets_by_id.values()
-    ]
+    targets = list(targets_by_id.values())
     return targets, selector_results, sequence, audio_track_ids
 
 
 def _audio_pan_batch_writer(
     *,
     timeline_name: str,
-    selectors: list[AudioGainBatchSelector],
-    pan_value: float,
+    entries: list[tuple[AudioGainBatchSelector, float]],
     allow_empty: bool,
     allow_multiple: bool,
     timeline_start: int,
@@ -518,10 +732,9 @@ def _audio_pan_batch_writer(
         targets, selector_results, sequence, _audio_track_ids = _resolve_audio_pan_batch_targets(
             cursor,
             timeline_name=timeline_name,
-            selectors=selectors,
+            entries=entries,
             allow_empty=allow_empty,
             allow_multiple=allow_multiple,
-            pan_value=pan_value,
             timeline_start=timeline_start,
         )
         for target in targets:
@@ -532,7 +745,7 @@ def _audio_pan_batch_writer(
             write = clip_effects_db.merge_audio_effect_chains(
                 existing_effect_filters=row["EffectFiltersBA"] if row else None,
                 existing_fields_blob=row["FieldsBlob"] if row else None,
-                pan_value=pan_value,
+                pan_value=target["resulting_pan"],
             )
             updates: dict[str, object] = {"EffectFiltersBA": write.effect_filters}
             if write.fields_blob is not None:
@@ -543,7 +756,10 @@ def _audio_pan_batch_writer(
             "changed": bool(targets),
             "timeline_name": timeline_name,
             "timeline_sequence": sequence,
-            "pan": float(pan_value),
+            "pan": float(entries[0][1]) if entries and all(
+                math.isclose(value, entries[0][1], rel_tol=0.0, abs_tol=1e-9)
+                for _selector, value in entries
+            ) else None,
             "target_count": len(targets),
             "updated_count": len(targets),
             "updated_items": targets,
@@ -553,7 +769,7 @@ def _audio_pan_batch_writer(
     return _writer
 
 
-def _verify_audio_pan_batch(*, expected_pan: float):
+def _verify_audio_pan_batch():
     def _verifier(conn, mutation_result: dict[str, Any], session: db_session.DiskDbMutationSession) -> dict[str, Any]:
         connection = sqlite3.connect(session.project_db_path, timeout=5.0)
         connection.row_factory = sqlite3.Row
@@ -562,6 +778,7 @@ def _verify_audio_pan_batch(*, expected_pan: float):
             cursor = connection.cursor()
             for item in mutation_result.get("updated_items") or []:
                 item_id = str(item.get("item_id") or "")
+                expected_pan = item.get("resulting_pan")
                 row = cursor.execute(
                     "SELECT EffectFiltersBA FROM Sm2TiItem WHERE Sm2TiItem_id = ?",
                     (item_id,),
@@ -590,17 +807,19 @@ def _verify_audio_pan_batch(*, expected_pan: float):
 def preview_audio_pan_batch(
     conn,
     *,
-    pan_value: float,
+    pan_value: float | None,
     selectors: list[dict[str, Any]],
     allow_empty: bool = False,
     allow_multiple: bool = False,
 ) -> dict[str, Any]:
     """Resolve a batch audio-pan selector set without mutating the project DB."""
-    validated_pan = clip_effects_db.validate_audio_pan_value(pan_value)
+    validated_pan = (
+        None if pan_value is None else clip_effects_db.validate_audio_pan_value(pan_value)
+    )
     timeline_name = _timeline_name(conn)
     if not timeline_name:
         raise APICallFailed("No active timeline is available for Fairlight audio pan batch.")
-    normalized = normalize_audio_gain_batch_selectors(conn, selectors, operation_label="audio-pan")
+    entries = _audio_pan_entries(conn, selectors, default_pan=validated_pan)
     current_database = db_session.resolve_current_disk_project_db(conn)
     db_path = str(current_database["project_db_path"])
     connection = sqlite3.connect(db_path, timeout=5.0)
@@ -610,10 +829,9 @@ def preview_audio_pan_batch(
         targets, selector_results, sequence, _audio_track_ids = _resolve_audio_pan_batch_targets(
             cursor,
             timeline_name=timeline_name,
-            selectors=normalized,
+            entries=entries,
             allow_empty=allow_empty,
             allow_multiple=allow_multiple,
-            pan_value=validated_pan,
             timeline_start=_timeline_start_frame(conn),
         )
     finally:
@@ -624,7 +842,7 @@ def preview_audio_pan_batch(
         "dry_run": True,
         "timeline_name": timeline_name,
         "timeline_sequence": sequence,
-        "pan": float(validated_pan),
+        "pan": float(validated_pan) if validated_pan is not None else None,
         "target_count": len(targets),
         "updated_count": 0,
         "updated_items": targets,
@@ -636,29 +854,34 @@ def preview_audio_pan_batch(
 def apply_audio_pan_batch(
     conn,
     *,
-    pan_value: float,
+    pan_value: float | None,
     selectors: list[dict[str, Any]],
     allow_empty: bool = False,
     allow_multiple: bool = False,
 ) -> dict[str, Any]:
     """Apply a DB-backed audio pan payload to audio items selected by id or record bounds."""
-    validated_pan = clip_effects_db.validate_audio_pan_value(pan_value)
+    validated_pan = (
+        None if pan_value is None else clip_effects_db.validate_audio_pan_value(pan_value)
+    )
+    if native_clip_audio.available(conn):
+        preview = preview_audio_pan_batch(conn, pan_value=validated_pan, selectors=selectors,
+                                          allow_empty=allow_empty, allow_multiple=allow_multiple)
+        return native_clip_audio.apply_batch_preview(conn, preview, property_key='AudioPan', value=validated_pan)
     timeline_name = _timeline_name(conn)
     if not timeline_name:
         raise APICallFailed("No active timeline is available for Fairlight audio pan batch.")
-    normalized = normalize_audio_gain_batch_selectors(conn, selectors, operation_label="audio-pan")
+    entries = _audio_pan_entries(conn, selectors, default_pan=validated_pan)
     return db_session.execute_sqlite_disk_db_mutation(
         conn,
         context="Fairlight batch audio pan",
         writer=_audio_pan_batch_writer(
             timeline_name=timeline_name,
-            selectors=normalized,
-            pan_value=validated_pan,
+            entries=entries,
             allow_empty=allow_empty,
             allow_multiple=allow_multiple,
             timeline_start=_timeline_start_frame(conn),
         ),
-        verifier=_verify_audio_pan_batch(expected_pan=validated_pan),
+        verifier=_verify_audio_pan_batch(),
         allow_project_name_inference=True,
     )
 
@@ -736,6 +959,9 @@ def normalize_audio_fade_batch_selectors(
     """Normalize audio fade batch entries while allowing item_id metadata from source-offset results."""
     operation_label = _fade_operation_label(edge)
     normalized: list[dict[str, Any]] = []
+    explicit_pair_item_ids: set[str] = set()
+    saw_explicit_pair = False
+    saw_ordinary_selector = False
     for index, raw_entry in enumerate(entries):
         if not isinstance(raw_entry, dict):
             raise ValidationError(
@@ -745,6 +971,47 @@ def normalize_audio_fade_batch_selectors(
             )
         raw = dict(raw_entry)
         requested_fade_frames = _fade_duration_frames_for_entry(conn, raw, default_duration=default_duration, index=index, edge=edge)
+        left_item_id = str(_first_present(raw, "left_item_id", "leftItemId") or "").strip()
+        right_item_id = str(_first_present(raw, "right_item_id", "rightItemId") or "").strip()
+        if left_item_id or right_item_id:
+            if edge != "crossfade" or not left_item_id or not right_item_id:
+                raise ValidationError(
+                    "Explicit crossfade pairs require both left_item_id and right_item_id.",
+                    details={"index": index, "entry": raw},
+                    recoverability="not_applicable",
+                )
+            if left_item_id == right_item_id or {left_item_id, right_item_id} & explicit_pair_item_ids:
+                raise ValidationError(
+                    "Explicit crossfade pairs require distinct audio item ids.",
+                    details={"index": index, "left_item_id": left_item_id, "right_item_id": right_item_id},
+                    recoverability="not_applicable",
+                )
+            if saw_ordinary_selector:
+                raise ValidationError(
+                    "Do not mix explicit crossfade pairs with ordinary crossfade selectors.",
+                    details={"index": index},
+                    recoverability="not_applicable",
+                )
+            saw_explicit_pair = True
+            explicit_pair_item_ids.update((left_item_id, right_item_id))
+            for role, item_id in (("left", left_item_id), ("right", right_item_id)):
+                selector = AudioGainBatchSelector(kind="item_id", item_id=item_id, raw=raw)
+                normalized.append({
+                    "selector": selector,
+                    "requested_fade_frames": requested_fade_frames,
+                    "raw": raw,
+                    "explicit_pair_index": index,
+                    "explicit_pair_role": role,
+                })
+            continue
+
+        if saw_explicit_pair:
+            raise ValidationError(
+                "Do not mix explicit crossfade pairs with ordinary crossfade selectors.",
+                details={"index": index},
+                recoverability="not_applicable",
+            )
+        saw_ordinary_selector = True
         item_id = str(_first_present(raw, "item_id", "itemId", "Sm2TiItem_id") or "").strip()
         if item_id:
             selector = AudioGainBatchSelector(kind="item_id", item_id=item_id, raw=raw)
@@ -892,7 +1159,13 @@ def _resolve_audio_fade_batch_targets(
             item = _fetch_audio_item_by_id(cursor, item_id=item_id, audio_track_ids=audio_track_ids)
             matches = [item] if item is not None else []
             if item is None:
-                skipped_items.append({"item_id": item_id, "reason": "row_missing"})
+                skipped = {"item_id": item_id, "reason": "row_missing"}
+                if "explicit_pair_index" in entry:
+                    skipped.update({
+                        "explicit_pair_index": int(entry["explicit_pair_index"]),
+                        "explicit_pair_role": str(entry["explicit_pair_role"]),
+                    })
+                skipped_items.append(skipped)
         else:
             track_index = int(selector.track_index or 0)
             if track_index < 1 or track_index > len(audio_track_ids):
@@ -940,6 +1213,9 @@ def _resolve_audio_fade_batch_targets(
                 audio_track_ids=audio_track_ids,
                 requested_fade_frames=int(entry["requested_fade_frames"]),
             )
+            if "explicit_pair_index" in entry:
+                targets_by_id[item_id]["explicit_pair_index"] = int(entry["explicit_pair_index"])
+                targets_by_id[item_id]["explicit_pair_role"] = str(entry["explicit_pair_role"])
 
     targets = list(targets_by_id.values())
     if not targets and not allow_empty:
@@ -1245,6 +1521,87 @@ def _plan_audio_crossfade_batch(
     clamp_half_clip: bool,
     initial_skipped_items: list[dict[str, Any]] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    missing_explicit = [
+        item for item in (initial_skipped_items or [])
+        if "explicit_pair_index" in item
+    ]
+    if missing_explicit:
+        raise ValidationError(
+            "An explicit crossfade pair no longer resolves both audio items.",
+            details={"missing_items": missing_explicit},
+            recoverability="not_applicable",
+        )
+    explicit_targets = [target for target in targets if "explicit_pair_index" in target]
+    if explicit_targets:
+        by_pair: dict[int, dict[str, dict[str, Any]]] = {}
+        for target in explicit_targets:
+            pair_index = int(target["explicit_pair_index"])
+            role = str(target.get("explicit_pair_role") or "")
+            if role not in {"left", "right"} or role in by_pair.setdefault(pair_index, {}):
+                raise ValidationError(
+                    "Explicit crossfade pair binding is invalid.",
+                    details={"pair_index": pair_index, "role": role},
+                    recoverability="not_applicable",
+                )
+            by_pair[pair_index][role] = target
+
+        updates_by_id: dict[str, dict[str, Any]] = {}
+        crossfade_pairs: list[dict[str, Any]] = []
+        for pair_index, pair in sorted(by_pair.items()):
+            if set(pair) != {"left", "right"}:
+                raise ValidationError(
+                    "An explicit crossfade pair no longer resolves both audio items.",
+                    details={"pair_index": pair_index, "resolved_roles": sorted(pair)},
+                    recoverability="not_applicable",
+                )
+            left, right = pair["left"], pair["right"]
+            left_end = int(left["start"]) + int(left["duration_frames"])
+            if int(left.get("track_index") or 0) != int(right.get("track_index") or 0) or left_end != int(right["start"]):
+                raise ValidationError(
+                    "Explicit crossfade pairs must remain adjacent on the same audio track.",
+                    details={
+                        "pair_index": pair_index,
+                        "left_item_id": str(left["item_id"]),
+                        "right_item_id": str(right["item_id"]),
+                    },
+                    recoverability="not_applicable",
+                )
+            if int(left["requested_fade_frames"]) != int(right["requested_fade_frames"]):
+                raise ValidationError(
+                    "Both sides of an explicit crossfade pair must use one duration.",
+                    details={"pair_index": pair_index},
+                    recoverability="not_applicable",
+                )
+            left_frames = _crossfade_edge_frames(left, clamp_half_clip=clamp_half_clip)
+            right_frames = _crossfade_edge_frames(right, clamp_half_clip=clamp_half_clip)
+            if left_frames <= 0 or right_frames <= 0:
+                raise ValidationError(
+                    "Explicit crossfade pair clips are too short for a fade.",
+                    details={"pair_index": pair_index},
+                    recoverability="not_applicable",
+                )
+            left_update = updates_by_id.setdefault(str(left["item_id"]), _crossfade_base_payload(left))
+            right_update = updates_by_id.setdefault(str(right["item_id"]), _crossfade_base_payload(right))
+            left_update["fade_out_frames"] = int(left_frames)
+            right_update["fade_in_frames"] = int(right_frames)
+            crossfade_pairs.append({
+                "track_index": int(left.get("track_index") or 0),
+                "left_item_id": str(left["item_id"]),
+                "right_item_id": str(right["item_id"]),
+                "left_clip_name": str(left.get("clip_name") or ""),
+                "right_clip_name": str(right.get("clip_name") or ""),
+                "edit_frame": int(left_end),
+                "left_fade_out_frames": int(left_frames),
+                "right_fade_in_frames": int(right_frames),
+                "requested_left_frames": int(left["requested_fade_frames"]),
+                "requested_right_frames": int(right["requested_fade_frames"]),
+            })
+        return (
+            sorted(updates_by_id.values(), key=lambda item: (int(item["start"]), int(item.get("track_index") or 0), str(item["item_id"]))),
+            list(initial_skipped_items or []),
+            crossfade_pairs,
+        )
+
     updates_by_id: dict[str, dict[str, Any]] = {}
     crossfade_pairs: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = list(initial_skipped_items or [])
@@ -1485,6 +1842,15 @@ def apply_audio_crossfade_batch(
     allow_empty: bool = False,
 ) -> dict[str, Any]:
     """Apply DB-backed crossfade payloads at adjacent audio edit points selected by id or record bounds."""
+    if native_clip_audio.available(conn):
+        preview = preview_audio_crossfade_batch(
+            conn,
+            entries=entries,
+            duration=duration,
+            clamp_half_clip=clamp_half_clip,
+            allow_empty=allow_empty,
+        )
+        return native_clip_audio.apply_batch_preview(conn, preview, edge="crossfade")
     timeline_name = _timeline_name(conn)
     if not timeline_name:
         raise APICallFailed("No active timeline is available for Fairlight crossfade batch.")
@@ -1655,6 +2021,12 @@ def _apply_audio_fade_batch(
     allow_empty: bool = False,
 ) -> dict[str, Any]:
     """Apply DB-backed audio fade payloads to audio items selected by id or record bounds."""
+    if gain_db is None and native_clip_audio.available(conn):
+        preview = _preview_audio_fade_batch(conn, entries=entries, duration=duration, edge=edge,
+            skip_first_segment=skip_first_segment, skip_last_segment=skip_last_segment,
+            skip_adjacent_same_track=skip_adjacent_same_track, clamp_half_clip=clamp_half_clip,
+            gain_db=None, allow_empty=allow_empty)
+        return native_clip_audio.apply_batch_preview(conn, preview, edge=edge)
     operation_label = "fade-out" if edge == "end" else "fade-in"
     timeline_name = _timeline_name(conn)
     if not timeline_name:

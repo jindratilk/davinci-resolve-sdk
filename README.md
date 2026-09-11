@@ -1,87 +1,172 @@
-# DaVinci Resolve SDK
+# Turn code into DaVinci Resolve timelines.
 
-This source preview retains the **complete existing `davinci-resolve-sdk` interface** and existing SDK HTTP/action routes. Local bootstrap and session ownership work without a CutAgent account, subscription, desktop installation, cloud issuer or development bypass. The distribution is explicitly `standalone_local`.
+CutAgent SDK is a TypeScript SDK and local CutAgent CLI for DaVinci Resolve 20+ Studio and DaVinci Resolve 20+ Free. This source preview runs local editing workflows without a CutAgent account, subscription, or desktop app.
 
-The native composition now reuses the existing Python runtime, bridge execution wrappers, guarded live inspection and native factories for markers, timeline edits/structure/move/blade, project/media, color, multicam, storage, render, captions, Fusion graphs and typed reads. Start it with `startNativeLocalRuntime({stateDirectory, transport})` from `runtime/index.mjs`. The original prepared-action host and production builder selections now join these owners, for 639 registered native actions; its complete Python registry initializes 502 prepared descriptors. The original workflow and checkpoint owners are composed too. Unsupported operations fail closed. This is **not a complete standalone release**, and source tests are not native DaVinci Resolve validation.
+Source: https://github.com/jindratilk/davinci-resolve-sdk. The local package is named `cutagent`; it is not published to npm. Build and install it from this repository.
 
-## Source verification
+## What is included
 
-Use Node.js 22.12+ (22.x) or 24.x and Python 3.12 (the locked NumPy/SciPy dependencies require 3.12+):
+- The complete extracted TypeScript authoring surface, including root, actions, schemas, protocol, and preview entry points.
+- Local editing with durable operations, exact project and timeline checks, verification, and recovery.
+- CutAgent CLI source for the extracted DaVinci Resolve command surface.
+- The Studio external scripting transport.
+- The independent Free embedded Lua/file-spool transport.
+- Locked Node.js and Python dependency inputs and an inventoried third-party notice set.
+
+Agent skills and creative knowledge are outside this candidate. Setup does not install or rewrite agent skill content.
+
+## Requirements
+
+- macOS 13 or later for the currently qualified local setup.
+- Node.js 22.12+ on the Node 22 line, or Node.js 24.x.
+- Python 3.12.
+- DaVinci Resolve 20+ Studio or DaVinci Resolve 20+ Free.
+- DaVinci Resolve Studio: external scripting set to Local.
+- DaVinci Resolve Free: the included script installed and activated from `Workspace > Scripts > CutAgentSDK`.
+- FFmpeg and FFprobe on `PATH` for workflows that inspect or render media.
+
+Windows source is present, but this candidate rejects Windows setup until same-user ACL validation and live Windows qualification are complete.
+
+## Build and install from source
+
+Build and pack locally:
 
 ```sh
 npm ci --ignore-scripts
 npm run build
-python3.12 -m venv .venv
-.venv/bin/python -m pip install -r native/requirements.lock.txt
 npm test
 npm run test:types
 npm run verify:source
-.venv/bin/python -m unittest discover -s test -p 'test_*.py' -v
+npm pack --json
 ```
 
-The Node tests use the actual full SDK, private discovery and HTTP routes with a clearly simulated native owner. Python tests use the existing native connection/inspection logic with a simulated native adapter. Neither test suite touches a real project.
-
-For an explicitly requested real read smoke, with DaVinci Resolve running:
+Install the resulting tarball in a clean consumer project:
 
 ```sh
-node examples/local-inspect.mjs studio_external
+npm install /absolute/path/to/cutagent-3.0.0.tgz
+npx cutagent setup
 ```
 
-`embedded_free` selects the existing embedded transport, including the newly extracted Free Lua spool implementation. The standalone broker uses its own script, auth/spool directory and port; embedded mutations use the broker’s private local capability plus an exact, expiring, one-use command/native-call context; the Free setup has source/process evidence, and real standalone Free marker acceptance has passed. The example only reads the current project and cleans up its private runtime afterwards. A real read-only Studio smoke passed through the full SDK/local HTTP/native inspection chain. That read-only smoke performed no mutation. The later full-runtime Studio marker smoke described below also passed.
-
-## Boundaries
-
-The original complete SDK root/action/schema/protocol/preview exports remain available. The extraction build includes their generated declarations. Existing project identity projection, session token checks, response parsing, deadlines, mutation/operation authority code and ownership invalidation remain in the route closure. The original durable operation repository and authority now start with the local runtime, retain idempotency across restarts, and reconcile interrupted records. Their ownership derives from the private installation identity, without an account or token. Native executors plug into the existing action registry; uncomposed actions fail closed. Mutation authorities are not fabricated when no native owner is supplied.
-
-The local principal is owned by the current process/user and invalidated by generation changes. The inherited private `accountFingerprint` field holds a local ownership fingerprint; no account object or fake paid entitlement is created. Bootstrap requires a private same-user discovery file, unpredictable capability, exact route and one-use runtime bootstrap. Browser origins and non-loopback hosts are denied. Windows ACL validation remains unimplemented and startup rejects Windows explicitly.
-
-`EXTRACTION_INVENTORY.json` and `native/SOURCE_INVENTORY.json` bind exact selected upstream files and their transformations. The extractors take a source path explicitly, so runtime/build/test execution does not depend on the monorepo. Re-extraction is maintainer work and overwrites only inventoried source files; it does not overwrite local composition code.
-
-The source verifier checks exact paths and hashes. Defensive schema expressions containing words such as `sqlite` are valid source and do not trigger the old binary-only exporter rule. It still excludes unrelated app/cloud/private-documentation families and private keys. This source policy is local to this authorized open-source candidate; the original product's release policy was not weakened.
-
-The ignored `rejected-sdk-export/` is evidence from the earlier failed upstream exporter and is not part of this candidate. The source preview is public at [jindratilk/davinci-resolve-sdk](https://github.com/jindratilk/davinci-resolve-sdk). No registry release or bundled installer is activated. See [PROVENANCE.md](PROVENANCE.md) for licensing scope and remaining notices, and [extraction-plan.md](extraction-plan.md) for the dependency analysis; the latter records the initial plan and its initial licensing/admission alternatives, not the implemented session authority.
-
-Free broker setup (run only when the target Free environment is assigned):
+`setup` installs CutAgent SDK under `~/.local/share/cutagent-sdk` and creates `~/.local/bin/cutagent`. It preserves an existing command from the CutAgent desktop app or another installation. Choose a separate folder when both are installed:
 
 ```sh
-.venv/bin/python native/free_broker.py install
-.venv/bin/python native/free_broker.py serve
+npx cutagent setup --bin-dir "$HOME/.local/cutagent-sdk-bin"
 ```
 
-Then run `Workspace > Scripts > DaVinciResolveSDK` inside DaVinci Resolve Free. The standalone namespace does not overwrite `CutAgent.lua` or `CutAgent.scriptlib`, focus CutAgent, or use the commercial broker port/state. Process tests proved auth enforcement, spool acknowledgement before execution, stale-response rejection and bounded shutdown. Subsequent real Free source acceptance also passed; see the retained acceptance evidence.
-
-The full native source entrypoint imports successfully and reports its version. Native factory composition and local process/argument custody have source tests; a real Studio marker create/readback/delete smoke passed on 2026-09-08 through the full SDK, local HTTP runtime and native prepared/direct owners. Both operation verifiers passed, and final track/clip/audio and original marker hashes matched the pre-test snapshot. Hosted generation/transcription services remain outside the standalone native runtime scope.
-
-Hosted transcript creation and voice-catalog lookup are excluded from the standalone action registry, so they fail before native dispatch. Native Fairlight voice-isolation controls retain their native scope.
-
-Prepared actions use the existing bounded protocol over private local pipes. Opaque process-owned handles and exact local policy bindings replace commercial signed receipts and redemption; the original request/target checks, native execution, verification/recovery and durable idempotency remain. The inherited private protocol retains some historical field names, but the runtime creates no account or subscription object. Source tests include stale target and local ownership rejection and one-use verified execution with an explicitly simulated descriptor. The combined composition passed the Studio marker smoke; broader native domains remain pending.
-
-The full native implementation also requires locally available FFmpeg/FFprobe for media workflows. The candidate does not redistribute DaVinci Resolve binaries or third-party Windows LuaSocket libraries.
-
-## Guarded native marker acceptance
-
-Run only on an assigned project/timeline, with exclusive mutation ownership:
+For DaVinci Resolve Free, install the independent embedded script during setup:
 
 ```sh
-node examples/native-marker-smoke.mjs studio_external 'Exact project name' 'Exact timeline name'
+npx cutagent setup --free
 ```
 
-For the independently running Free broker, use `embedded_free` instead. The script checks both names and native identities, creates one uniquely named marker, reads it back, deletes only that marker, and compares the original markers and all track/clip/audio state. It retains a private `smoke-report.json` in the printed temporary directory. It never switches projects or timelines. Free marker acceptance passed; the precise tested-tree boundary is recorded in docs/FREE_21_1_ACCEPTANCE_2026-09-08.json.
+No setup command opens a browser, signs in, uploads media, or contacts CutAgent Cloud. Package dependency installation may contact the configured npm and Python package indexes.
 
-The package name is a candidate pending registry availability and release review. Existing exported class names remain for API compatibility; applications may import `CutAgent as DaVinciResolve` from `davinci-resolve-sdk`. Internal historical protocol fields are implementation details, not account requirements.
+## Import the SDK
 
-Clean installed-package import/type verification is available with `node scripts/smoke-packed-consumer.mjs` after the build. It packs locally, installs into a new temporary consumer directory, verifies all public subpaths and rejects unsupported deep imports. It performs no native connection. See [RELEASE_STATUS.md](RELEASE_STATUS.md) for exact acceptance and release gates.
+```ts
+import {
+  CutAgent,
+  frames,
+  idempotencyKey,
+} from "cutagent";
+import { ActionIds } from "cutagent/actions";
+import { ProjectIdSchema } from "cutagent/schemas";
+```
 
-## Run the companion runtime
-
-After source setup, keep this process running:
+Start the local runtime in a separate terminal:
 
 ```sh
-node examples/start-runtime.mjs studio_external /absolute/path/to/private-state
+cutagent runtime start --transport studio_external
 ```
 
-The runtime creates or validates the private state directory and prints its discovery-file path. In the consuming process, set `CUTAGENT_SDK_DISCOVERY_FILE` to that path before calling the SDK connection method. This retained technical environment name is a local discovery contract and does not connect to a commercial service. Use SIGINT/SIGTERM for graceful operation drain and shutdown. For Free, start and activate the independent broker/script first, then pass `embedded_free`.
+For DaVinci Resolve Free:
 
-Studio and Free marker create/readback/delete have passed through the standalone runtime. This is a source preview, not blanket validation of every composed native method. The evidence names exact public source commits for both editions; later trim fixes have focused source regression coverage.
+```sh
+cutagent runtime start --transport embedded_free
+```
 
-Exact public commit `fb4ad93` passed the guarded Studio marker create/readback/delete cycle, including final state restoration; see [Studio evidence](docs/STUDIO_PUBLIC_SOURCE_ACCEPTANCE_2026-09-08.json). Exact public commit `172232a` passed the unchanged Free marker example after clean standalone script activation, including marker deletion and final state restoration; [Free evidence](docs/FREE_21_1_ACCEPTANCE_2026-09-08.json) retains the successful result and earlier blocked attempts. No runtime patch or timeout override was needed.
+The command prints the connection file used by `CutAgent.connect()`. If the client runs outside the same shell environment, set `CUTAGENT_SDK_DISCOVERY_FILE` to that absolute path.
+
+```ts
+import { CutAgent } from "cutagent";
+
+const client = await CutAgent.connect();
+const project = await client.projects.current();
+const timeline = await project.timelines.current();
+
+console.log({
+  project: project.name,
+  timeline: timeline.name,
+  revision: timeline.revision,
+});
+
+await client.close();
+```
+
+Direct CutAgent CLI commands use the same canonical executable:
+
+```sh
+cutagent --json status
+cutagent --json timeline list
+cutagent --json capabilities
+```
+
+Read each JSON envelope through `ok`, `data`, `error`, and `meta`. For mutations, preserve exact project/timeline identity, use the inspected revision, and verify the returned terminal operation.
+
+## Features in the CutAgent desktop app
+
+AI transcription, AI voice selection/generation, and `video generate` are available in the CutAgent desktop app. In CutAgent SDK, these commands return `HOSTED_SERVICE_REQUIRES_CUTAGENT_APP` with the link `https://cutagent.ai`. They do not connect to a service, upload files, check an account, start billing, or open a browser.
+
+Native transcription and transcription reads exposed by the installed DaVinci Resolve edition remain local capabilities. Native Fairlight voice isolation also remains available where DaVinci Resolve reports it.
+
+The CutAgent desktop app continues to provide these features. This candidate does not change them.
+
+## Update, status, and uninstall
+
+Inspect the managed installation:
+
+```sh
+cutagent status --json
+```
+
+Updates are deliberate. Install the reviewed newer npm artifact, then rerun setup:
+
+```sh
+npm install cutagent@<reviewed-version>
+npx cutagent setup
+```
+
+`cutagent update` prints this instruction and performs no network request or automatic replacement.
+
+Remove managed executable and versioned runtime files:
+
+```sh
+cutagent uninstall
+```
+
+Uninstall removes only files recorded as belonging to this standalone setup. Runtime state is retained for recovery. The command does not remove DaVinci Resolve, user projects, media, FFmpeg, Python, Node.js, or CutAgent app files.
+
+## Supported and qualified combinations
+
+| Platform | Edition | Source/runtime state | Native evidence |
+| --- | --- | --- | --- |
+| macOS arm64 | DaVinci Resolve Studio 21.1 | Enabled | Historical marker baseline passed at commit fb4ad93; current candidate native revalidation awaits the exclusive native lane |
+| macOS arm64 | DaVinci Resolve Free 21.1 | Enabled through independent embedded broker | Historical marker baseline passed at commit 172232a; current candidate remote revalidation is pending |
+| macOS arm64 | DaVinci Resolve 20+ | Intended by compatibility contract | Full domain matrix remains pending |
+| Windows x64 | DaVinci Resolve Studio / Free | Setup blocked | ACL, packaging, and live native qualification remain pending |
+
+The retained Studio and Free records are historical marker baselines from the exact commits named above. They do not qualify the current candidate head, broader native domains, every DaVinci Resolve 20/21 point release, signed installers, notarization, or Windows.
+
+## Security and project safety
+
+CutAgent keeps local connection state private to your OS account, accepts each setup connection once, checks the exact project and timeline before editing, and verifies native changes. The package contains no development bypass and local editing does not require an account or subscription.
+
+DaVinci Resolve database mutations still require native reopen and GUI/render truth. A matching SQLite readback alone is not accepted as success.
+
+## License and provenance
+
+First-party source in this candidate is offered under GNU AGPL v3 only. No custom script exception is included. Third-party components keep their own licenses and notices under [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES/README.md).
+
+Earlier published SDK source was offered under MIT. This candidate preserves that historical grant and does not claim to revoke or retroactively replace rights already received under MIT. [PROVENANCE.md](PROVENANCE.md) records the extraction boundary and license history.
+
+DaVinci Resolve is a product of Blackmagic Design Pty Ltd. CutAgent SDK is independent software and does not include or redistribute DaVinci Resolve.

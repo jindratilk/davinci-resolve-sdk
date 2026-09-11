@@ -6,6 +6,9 @@ import {
 } from "./sdk-project-render-storage-media-prepared-action-builders.js";
 
 const CLIP_TEXT_PRODUCTION_ACTION_IDS = Object.freeze([
+  "cutagent.action.bulk.disable",
+  "cutagent.action.bulk.enable",
+  "cutagent.action.bulk.property_set",
   "cutagent.action.clip.audio_eq", "cutagent.action.clip.audio_gain",
   "cutagent.action.clip.audio_normalize", "cutagent.action.clip.audio_pan",
   "cutagent.action.clip.audio_pitch", "cutagent.action.clip.burnin.load",
@@ -39,6 +42,7 @@ const CLIP_TEXT_PRODUCTION_ACTION_IDS = Object.freeze([
   "cutagent.action.edit.scene_detect", "cutagent.action.edit.slide_selected",
   "cutagent.action.edit.slip_selected", "cutagent.action.edit.social_crop",
   "cutagent.action.edit.split", "cutagent.action.edit.transition.add",
+  "cutagent.action.edit.transition.batch",
   "cutagent.action.text.insert_preset", "cutagent.action.text.insert_template",
   "cutagent.action.text.insert_template_batch", "cutagent.action.text.update",
 ]);
@@ -50,18 +54,19 @@ const TIMELINE_READ_PRODUCTION_ACTION_IDS = Object.freeze([
   "cutagent.action.timeline.mark.get",
   "cutagent.action.timeline.marker.list", "cutagent.action.timeline.media_pool_item",
   "cutagent.action.timeline.node_graph.inspect", "cutagent.action.timeline.playhead.get",
-  "cutagent.action.timeline.settings", "cutagent.action.timeline.summarize",
+  "cutagent.action.timeline.settings", "cutagent.action.timeline.output_blanking.get", "cutagent.action.timeline.summarize",
   "cutagent.action.timeline.track.items", "cutagent.action.timeline.track.list",
   "cutagent.action.timeline.track.subtype", "cutagent.action.timeline.voice_isolation.get",
 ]);
 
 const TIMELINE_ORDINARY_PRODUCTION_ACTION_IDS = Object.freeze([
+  "cutagent.action.timeline.clip_color.batch",
   "cutagent.action.timeline.create", "cutagent.action.timeline.delete",
   "cutagent.action.timeline.dolby.analyze", "cutagent.action.timeline.duplicate",
   "cutagent.action.timeline.fairlight_preset.apply", "cutagent.action.timeline.import",
   "cutagent.action.timeline.mark.clear", "cutagent.action.timeline.mark.set",
   "cutagent.action.timeline.playhead.set", "cutagent.action.timeline.rename",
-  "cutagent.action.timeline.set_start_tc", "cutagent.action.timeline.settings_set",
+  "cutagent.action.timeline.set_start_tc", "cutagent.action.timeline.settings_set", "cutagent.action.timeline.output_blanking.set",
   "cutagent.action.timeline.start_tc", "cutagent.action.timeline.switch",
 ]);
 
@@ -78,8 +83,8 @@ export const EDITORIAL_PROJECT_PRODUCTION_PREPARED_ACTION_IDS = Object.freeze([
   ...PROJECT_PRODUCTION_PREPARED_ACTION_IDS,
 ]);
 
-if (EDITORIAL_PROJECT_PRODUCTION_PREPARED_ACTION_IDS.length !== 164
-  || new Set(EDITORIAL_PROJECT_PRODUCTION_PREPARED_ACTION_IDS).size !== 164) {
+if (EDITORIAL_PROJECT_PRODUCTION_PREPARED_ACTION_IDS.length !== 172
+  || new Set(EDITORIAL_PROJECT_PRODUCTION_PREPARED_ACTION_IDS).size !== 172) {
   throw new Error("Editorial/project production action selection is not exact and unique.");
 }
 

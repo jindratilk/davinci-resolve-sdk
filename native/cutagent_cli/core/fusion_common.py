@@ -115,7 +115,7 @@ def tool_name(tool: Any, fallback: str | None = None) -> str:
             attrs = getter() or {}
         except Exception:
             attrs = {}
-        for key in ("TOOLS_Name", "TOOLS_ID", "TOOL_Name"):
+        for key in ("TOOLST_Name", "TOOLS_Name", "TOOLS_ID", "TOOL_Name"):
             value = attrs.get(key)
             if isinstance(value, str) and value.strip():
                 return value.strip()
@@ -196,6 +196,7 @@ def set_tool_input_multi(tool: Any, input_name: str, value: Any, current_time: i
     return attempts
 
 
+
 def set_item_property_multi(item: Any, property_names: list[str] | tuple[str, ...], value: Any) -> list[dict[str, Any]]:
     attempts: list[dict[str, Any]] = []
     setter = getattr(item, "SetProperty", None)
@@ -226,4 +227,3 @@ def set_item_property_multi(item: Any, property_names: list[str] | tuple[str, ..
                 }
             )
     return attempts
-

@@ -7,12 +7,12 @@ import {
   sdkRenderExportResultSchema,
   sdkRenderExportInputSchema,
 } from "../contracts/generated/sdk-operations.js";
-import {resolveSdkDirectMutationScope, sdkMutationScopeCandidates} from "./sdk-direct-mutation-scope.js";
 import { resolveAttachmentFfprobePath } from "../../local/native-tools.mjs";
 import {
   assertCanonicalPrivateDirectory,
   ensureCanonicalPrivateDirectory,
 } from "./private-storage.js";
+import { createSdkRenderQueueStartAction } from "./sdk-render-queue-start-action.js";
 
 const execFileAsync = promisify(execFile);
 const ACTION_ID = "cutagent.action.render.export";
@@ -63,7 +63,6 @@ function evidence(modality, summary, digest = undefined, artifactId = undefined)
 const PUBLIC_FAILURE_MESSAGE = Object.freeze({
   CAPABILITY_UNAVAILABLE: "The requested render format and codec are unavailable in the current environment.",
   STALE_REVISION: "The exact render timeline changed before the authorized step could run.",
-  EDIT_CONSTRAINT_VIOLATION: "The render operation is outside its current editing constraints.",
   VERIFICATION_FAILED: "The completed render artifact did not pass independent verification.",
   RECOVERY_FAILED: "The interrupted render could not be reconciled to one exact completed native job.",
   CANCELLED: "The render operation stopped after a confirmed cancellation request.",
@@ -78,9 +77,8 @@ function exactFailureCode(error) {
 function operationFailure(code, context, possibleMutation, usage, readbackRequired = possibleMutation !== "none", causeCode = undefined) {
   const kind = code === "CAPABILITY_UNAVAILABLE" ? "capability_unavailable"
     : code === "STALE_REVISION" ? "stale_revision"
-    : code === "EDIT_CONSTRAINT_VIOLATION" ? "edit_constraint_violation"
-      : code === "VERIFICATION_FAILED" ? "verification_failed"
-        : code === "RECOVERY_FAILED" ? "recovery_failed" : "operation_failed";
+    : code === "VERIFICATION_FAILED" ? "verification_failed"
+      : code === "RECOVERY_FAILED" ? "recovery_failed" : "operation_failed";
   return {
     kind,
     code,
@@ -149,41 +147,6 @@ function stableTimelineState(snapshot) {
 
 function canonicalDigest(value) {
   return `sha256:${crypto.createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex")}`;
-}
-
-function exactScope(gate, accountFingerprint, input, directScope = null) {
-  const scopes = sdkMutationScopeCandidates(gate, accountFingerprint, directScope).filter((scope) => (
-    scope.binding.level === "project+timeline"
-    && scope.binding.projectId === input.projectId
-    && scope.binding.timelineId === input.timelineId
-    && scope.binding.timelineRevision === input.timelineRevision
-    && (scope.constraints.allowedOperations.length === 0 || scope.constraints.allowedOperations.includes("render.export"))
-  ));
-  if (scopes.length !== 1) {
-    const error = new Error("Exactly one current editing-constraint scope must bind this render operation.");
-    error.code = "EDIT_CONSTRAINT_VIOLATION";
-    throw error;
-  }
-  return scopes[0];
-}
-
-function policyContext(scope, context, input) {
-  return {
-    requestId: context.requestId,
-    operationId: context.operationId,
-    executionId: context.executionId,
-    scopeId: scope.scopeId,
-    scopeRevision: scope.revision,
-    projectLibraryId: scope.binding.projectLibraryId,
-    projectId: input.projectId,
-    timelineId: input.timelineId,
-    projectRevision: scope.binding.projectRevision,
-    timelineRevision: input.timelineRevision,
-    resolvedTargets: [{ kind: "timeline", stableId: input.timelineId, revision: input.timelineRevision }],
-    closedComposition: true,
-    executableStableTargetPrecondition: true,
-    semanticOperation: "render.export",
-  };
 }
 
 function jobRows(response) {
@@ -464,10 +427,8 @@ function modeIsSingle(response) {
 export function createSdkRenderActionDefinitions({
   toolExecutionService,
   liveInspectionService,
-  mutationPolicyGate,
   managedRenderRoot,
   artifactService,
-  directMutationPolicyAuthority = null,
   probeMedia = probeFile,
   hashArtifact = sha256File,
   wait = sleep,
@@ -477,14 +438,12 @@ export function createSdkRenderActionDefinitions({
     || typeof liveInspectionService?.readWithMutationGuard !== "function"
     || typeof liveInspectionService?.read !== "function"
     || typeof liveInspectionService?.resolveRenderJobBinding !== "function"
-    || typeof mutationPolicyGate?.listScopes !== "function"
-    || typeof mutationPolicyGate?.bindVerifiedProtectedTargets !== "function"
-    || typeof mutationPolicyGate?.assertProtectedStateEvidence !== "function"
+    || typeof liveInspectionService?.resolveRenderJobSelections !== "function"
     || typeof artifactService?.register !== "function"
     || typeof managedRenderRoot !== "string" || !path.isAbsolute(managedRenderRoot)
     || typeof probeMedia !== "function" || typeof hashArtifact !== "function" || typeof wait !== "function"
     || (beforeNativeDispatch !== null && typeof beforeNativeDispatch !== "function")) {
-    throw new TypeError("SDK render actions require CutAgent CLI, live inspection, mutation policy, and an absolute managed render root.");
+    throw new TypeError("SDK render actions require CutAgent CLI, live inspection, and an absolute managed render root.");
   }
   const root = fs.realpathSync(ensureCanonicalPrivateDirectory(managedRenderRoot, {
     label: "Managed render root",
@@ -567,34 +526,19 @@ export function createSdkRenderActionDefinitions({
   const withPolicy = async (args, state, { allowStopped = false, onAuthorized = null } = {}) => {
     if (!allowStopped) assertRunning(state);
     assertOperationDirectory(state);
-    const scope = state.scope ?? exactScope(mutationPolicyGate, state.context.accountFingerprint, state.input);
-    state.scope = scope;
-    const release = mutationPolicyGate.bindVerifiedProtectedTargets({
-      accountFingerprint: state.context.accountFingerprint,
-      executionId: state.context.executionId,
-      scopeId: scope.scopeId,
-      scopeRevision: scope.revision,
-      timelineRevision: state.input.timelineRevision,
+    const response = await run(args, {
+      mutationGuard: state.mutationGuard,
+      onAuthorization() {
+        if (!state.executionStartedReported) {
+          state.context.reportExecutionStarted?.();
+          state.executionStartedReported = true;
+        }
+        onAuthorized?.();
+      },
     });
-    let authorization = null;
-    try {
-      const response = await run(args, {
-        policyContext: policyContext(scope, state.context, state.input),
-        mutationGuard: state.mutationGuard,
-        onAuthorization(value) {
-          authorization = value;
-          if (!state.executionStartedReported) {
-            state.context.reportExecutionStarted?.();
-            state.executionStartedReported = true;
-          }
-          onAuthorized?.();
-        },
-      });
-      assertOperationDirectory(state);
-      if (!allowStopped) assertRunning(state);
-      if (authorization?.policyDecision) state.authorizations.push(authorization);
-      return response;
-    } finally { release(); }
+    assertOperationDirectory(state);
+    if (!allowStopped) assertRunning(state);
+    return response;
   };
   const findExactJob = async (directory, filename) => exactJob(jobRows(await run(["render", "jobs"])), directory, filename);
   const awaitTerminal = async (state) => {
@@ -683,9 +627,6 @@ export function createSdkRenderActionDefinitions({
     });
     assertOperationDirectory(state);
     if (!verified.report.protectedStatePreserved) throw Object.assign(new Error("Protected timeline state changed during rendering."), { verification: verified.report });
-    for (const authorization of state.authorizations) {
-      mutationPolicyGate.assertProtectedStateEvidence(authorization.policyDecision.decisionId, verified.report);
-    }
     assertOperationDirectory(state);
     const registered = artifactService.register({
       artifactId: verified.artifact.artifactId,
@@ -759,7 +700,7 @@ export function createSdkRenderActionDefinitions({
     const settled = deferred();
     const state = {
       context, input, directory, filename, phase: "waiting_for_ownership", jobId: null,
-      authorizations: [], scope: null, before: null, mutationGuard: null,
+      before: null, mutationGuard: null,
       stopRequested: false, cancelRequestedAt: null, settled: settled.promise, directoryIdentity: null,
       cancellationInProgress: false, cancellationProof: null,
       cancellationConfirmed: false,
@@ -778,8 +719,6 @@ export function createSdkRenderActionDefinitions({
         assertRunning(state);
         state.before = inspected.value;
         state.mutationGuard = inspected.mutationGuard;
-        const directScope = await resolveSdkDirectMutationScope({directMutationPolicyAuthority, context, liveInspectionService, level: "project+timeline", projectId: input.projectId, timelineId: input.timelineId, timelineRevision: input.timelineRevision});
-        state.scope = exactScope(mutationPolicyGate, context.accountFingerprint, input, directScope);
         const discovery = await liveInspectionService.read({ operation: "render.discovery", projectId: input.projectId }, { deadlineAtMs: Date.now() + 30_000 });
         if (!discoverySupports(discovery, input)) {
           const unavailable = new Error("The requested render format and codec pair is unavailable.");
@@ -789,7 +728,7 @@ export function createSdkRenderActionDefinitions({
       } catch (error) {
         if (error instanceof RenderStopRequested) throw error;
         const exactCode = exactFailureCode(error);
-        const code = ["EDIT_CONSTRAINT_VIOLATION", "STALE_REVISION", "CAPABILITY_UNAVAILABLE"].includes(exactCode) ? exactCode : "OPERATION_FAILED";
+        const code = ["STALE_REVISION", "CAPABILITY_UNAVAILABLE"].includes(exactCode) ? exactCode : "OPERATION_FAILED";
         return { status: "failed", possibleMutation: "none", usage: "not_reserved", failure: operationFailure(code, context, "none", "not_reserved", false, exactCode) };
       }
       assertRunning(state);
@@ -979,7 +918,6 @@ export function createSdkRenderActionDefinitions({
       state.cancellationInProgress = false;
     };
     try {
-      state.scope = state.scope ?? exactScope(mutationPolicyGate, context.accountFingerprint, input);
       await withPolicy([
         "render", "cancel", "--job", state.jobId, "--delete-queued", "--require-exclusive-job",
       ], state);
@@ -1002,7 +940,7 @@ export function createSdkRenderActionDefinitions({
     const { directory, filename } = coordinates(context, input);
     const state = {
       context: { ...context, reportProgress() {}, isCancellationRequested() { return false; } },
-      input, directory, filename, phase: "reconciling", jobId: null, authorizations: [], scope: null,
+      input, directory, filename, phase: "reconciling", jobId: null,
       before: null, mutationGuard: null, stopRequested: false, directoryIdentity: null,
     };
     let releaseOwnership = null;
@@ -1039,5 +977,11 @@ export function createSdkRenderActionDefinitions({
       cancel,
       reconcile,
     },
+    "cutagent.action.render.start": createSdkRenderQueueStartAction({
+      liveInspectionService,
+      run,
+      acquireOwnership,
+      wait,
+    }),
   });
 }

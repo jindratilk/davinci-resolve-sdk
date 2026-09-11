@@ -1,9 +1,7 @@
 """Production activation and classification truth for visual SDK actions.
 
-This module is compiled only into the proprietary CutAgent CLI runtime.  It
-keeps the visual packet partition reviewable without projecting command
-lowering, native routes, filesystem paths, or recovery implementation into the
-public TypeScript package.
+This runtime module keeps the visual packet partition reviewable. Runtime
+implementation details remain separate from the public TypeScript API.
 """
 
 from __future__ import annotations
@@ -27,6 +25,7 @@ from .color_prepared_action import (
 # need a second prepared-action route.
 VISUAL_EXISTING_TYPED_READ_ACTION_IDS = frozenset(
     {
+        "cutagent.action.dctl.validate_source",
         "cutagent.action.fusion.preview",
         "cutagent.action.fusion.template.list",
         "cutagent.action.page.current",
@@ -76,6 +75,7 @@ VISUAL_ARTIFACT_CUSTODY_PENDING_ACTION_IDS = frozenset(
         "cutagent.action.fusion.generate",
         "cutagent.action.fusion.image.set",
         "cutagent.action.fusion.insert_setting",
+        "cutagent.action.fusion.insert_settings.batch",
         "cutagent.action.fusion.setting.inspect",
         "cutagent.action.fusion.setting.summary",
         "cutagent.action.fusion.setting.validate",
@@ -195,10 +195,6 @@ VISUAL_HIGH_LEVEL_EQUIVALENT_ACTION_REASONS = MappingProxyType(
             for action_id, reason in FUSION_PACKET_DELEGATED.items()
             if action_id != "cutagent.action.fusion.apply"
         },
-        "cutagent.action.fusion.image.batch": "compose_typed_fusion_graph_operations",
-        "cutagent.action.fusion.insert_settings.batch": "compose_typed_fusion_graph_operations",
-        "cutagent.action.fusion.nested_text.batch": "compose_typed_fusion_graph_operations",
-        "cutagent.action.fusion.text.batch": "compose_typed_fusion_graph_operations",
     }
 )
 
@@ -302,22 +298,22 @@ def visual_color_prepared_action_contribution_packet() -> Any:
 
 
 if (
-    len(VISUAL_OWNED_ACTION_IDS) != 251
-    or len(VISUAL_SUPPORTED_PREPARED_ACTION_IDS) != 237
+    len(VISUAL_OWNED_ACTION_IDS) != 253
+    or len(VISUAL_SUPPORTED_PREPARED_ACTION_IDS) != 242
     or len(VISUAL_RESIDUAL_SUPPORTED_ACTION_IDS) != 0
-    or len(VISUAL_ARTIFACT_CUSTODY_PENDING_ACTION_IDS) != 25
+    or len(VISUAL_ARTIFACT_CUSTODY_PENDING_ACTION_IDS) != 26
     or len(VISUAL_COLOR_ARTIFACT_CUSTODY_PENDING_ACTION_IDS) != 18
     or len(VISUAL_COLOR_ARTIFACT_CUSTODY_ACTION_IDS) != 17
     or len(VISUAL_COLOR_EXACT_SELECTOR_PENDING_ACTION_IDS) != 31
     or len(VISUAL_COLOR_VERSION_SELECTOR_PENDING_ACTION_IDS) != 0
     or len(VISUAL_COLOR_EXACT_READ_ACTION_IDS) != 18
     or len(VISUAL_COLOR_SAFE_PREPARED_ACTION_IDS) != 147
-    or len(VISUAL_PRODUCTION_CALLABLE_ACTION_IDS) != 231
-    or len(VISUAL_PACKET_CALLABLE_ACTION_IDS) != 228
+    or len(VISUAL_PRODUCTION_CALLABLE_ACTION_IDS) != 236
+    or len(VISUAL_PACKET_CALLABLE_ACTION_IDS) != 233
     or len(VISUAL_SDK_ACTIVATION_PENDING_ACTION_REASONS) != 0
-    or len(VISUAL_EXISTING_TYPED_READ_ACTION_IDS) != 3
+    or len(VISUAL_EXISTING_TYPED_READ_ACTION_IDS) != 4
     or len(VISUAL_EXISTING_SEMANTIC_ACTION_IDS) != 6
-    or len(VISUAL_HIGH_LEVEL_EQUIVALENT_ACTION_REASONS) != 4
+    or len(VISUAL_HIGH_LEVEL_EQUIVALENT_ACTION_REASONS) != 0
     or len(VISUAL_UNSATISFIED_HIGH_LEVEL_EQUIVALENT_ACTION_IDS) != 0
     or len(VISUAL_EXISTING_PREPARED_ACTION_IDS) != 3
     or len(VISUAL_UNAVAILABLE_ACTION_REASONS) != 7

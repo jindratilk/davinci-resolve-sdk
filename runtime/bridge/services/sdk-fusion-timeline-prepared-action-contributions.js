@@ -13,11 +13,11 @@ export const FUSION_PREPARED_ACTION_IDS = Object.freeze([
   "cutagent.action.dctl.apply", "cutagent.action.fusion.comp.current", "cutagent.action.fusion.comp.delete",
   "cutagent.action.fusion.comp.range", "cutagent.action.fusion.comp.rename", "cutagent.action.fusion.effect.blur",
   "cutagent.action.fusion.effect.color_correct", "cutagent.action.fusion.effect.glow", "cutagent.action.fusion.effect.sharpen",
-  "cutagent.action.fusion.effect.transform", "cutagent.action.fusion.generate", "cutagent.action.fusion.image.set",
-  "cutagent.action.fusion.insert_setting", "cutagent.action.fusion.keyer.chroma", "cutagent.action.fusion.keyframe.add",
+  "cutagent.action.fusion.effect.transform", "cutagent.action.fusion.generate", "cutagent.action.fusion.image.batch", "cutagent.action.fusion.image.set",
+  "cutagent.action.fusion.insert_setting", "cutagent.action.fusion.insert_settings.batch", "cutagent.action.fusion.keyer.chroma", "cutagent.action.fusion.keyframe.add",
   "cutagent.action.fusion.keyframe.clear", "cutagent.action.fusion.keyframe.delete", "cutagent.action.fusion.keyframe.list",
   "cutagent.action.fusion.keyframe.set", "cutagent.action.fusion.mask.ellipse", "cutagent.action.fusion.mask.polygon",
-  "cutagent.action.fusion.mask.rectangle", "cutagent.action.fusion.nested_text.update", "cutagent.action.fusion.node.add",
+  "cutagent.action.fusion.mask.rectangle", "cutagent.action.fusion.nested_text.batch", "cutagent.action.fusion.nested_text.update", "cutagent.action.fusion.node.add",
   "cutagent.action.fusion.node.connect", "cutagent.action.fusion.node.delete", "cutagent.action.fusion.node.disconnect",
   "cutagent.action.fusion.setting.center_to_polypath", "cutagent.action.fusion.setting.inspect",
   "cutagent.action.fusion.setting.polypath_to_center", "cutagent.action.fusion.setting.summary",
@@ -27,10 +27,10 @@ export const FUSION_PREPARED_ACTION_IDS = Object.freeze([
   "cutagent.action.fusion.template.install", "cutagent.action.fusion.template.package_drfx",
   "cutagent.action.fusion.template.scaffold", "cutagent.action.fusion.template.show",
   "cutagent.action.fusion.template.uninstall", "cutagent.action.fusion.template.validate",
-  "cutagent.action.fusion.text.set", "cutagent.action.fusion.tool.active", "cutagent.action.fusion.tool.add",
+  "cutagent.action.fusion.text.batch", "cutagent.action.fusion.text.set", "cutagent.action.fusion.tool.active", "cutagent.action.fusion.tool.add",
   "cutagent.action.fusion.tool.attrs", "cutagent.action.fusion.tool.connect", "cutagent.action.fusion.tool.delete",
   "cutagent.action.fusion.tool.disconnect", "cutagent.action.fusion.tool.get", "cutagent.action.fusion.tool.inputs",
-  "cutagent.action.fusion.tool.list", "cutagent.action.fusion.tool.outputs", "cutagent.action.fusion.tool.set",
+  "cutagent.action.fusion.tool.list", "cutagent.action.fusion.tool.registry", "cutagent.action.fusion.tool.outputs", "cutagent.action.fusion.tool.set",
   "cutagent.action.fusion.tracker.add", "cutagent.action.lut.convert", "cutagent.action.lut.generate.identity",
   "cutagent.action.lut.inspect", "cutagent.action.lut.install", "cutagent.action.lut.list",
   "cutagent.action.lut.remove", "cutagent.action.lut.validate", "cutagent.action.lut_refresh",
@@ -43,15 +43,15 @@ export const FUSION_UNAVAILABLE_ACTION_IDS = Object.freeze([
 ]);
 
 export const TIMELINE_VERSION_PREPARED_ACTION_IDS = Object.freeze([
-  "cutagent.action.timeline.clip_markers.list", "cutagent.action.timeline.current_item",
+  "cutagent.action.timeline.clip_color.batch", "cutagent.action.timeline.clip_markers.list", "cutagent.action.timeline.current_item",
   "cutagent.action.timeline.create", "cutagent.action.timeline.delete", "cutagent.action.timeline.dolby.analyze",
   "cutagent.action.timeline.duration", "cutagent.action.timeline.info", "cutagent.action.timeline.item_at",
   "cutagent.action.timeline.duplicate", "cutagent.action.timeline.fairlight_preset.apply", "cutagent.action.timeline.import",
   "cutagent.action.timeline.list", "cutagent.action.timeline.mark.get", "cutagent.action.timeline.marker.list",
   "cutagent.action.timeline.mark.clear", "cutagent.action.timeline.mark.set", "cutagent.action.timeline.playhead.set",
   "cutagent.action.timeline.media_pool_item", "cutagent.action.timeline.node_graph.inspect",
-  "cutagent.action.timeline.playhead.get", "cutagent.action.timeline.settings", "cutagent.action.timeline.summarize",
-  "cutagent.action.timeline.rename", "cutagent.action.timeline.set_start_tc", "cutagent.action.timeline.settings_set",
+  "cutagent.action.timeline.playhead.get", "cutagent.action.timeline.settings", "cutagent.action.timeline.output_blanking.get", "cutagent.action.timeline.summarize",
+  "cutagent.action.timeline.rename", "cutagent.action.timeline.set_start_tc", "cutagent.action.timeline.settings_set", "cutagent.action.timeline.output_blanking.set",
   "cutagent.action.timeline.start_tc", "cutagent.action.timeline.switch",
   "cutagent.action.timeline.track.items", "cutagent.action.timeline.track.list",
   "cutagent.action.timeline.track.subtype", "cutagent.action.timeline.voice_isolation.get",
@@ -106,17 +106,16 @@ const UNBOUND_FILESYSTEM_ACTION_IDS = new Set([
 ]);
 export const FUSION_ARTIFACT_BACKED_ACTION_IDS = Object.freeze(
   FUSION_PREPARED_ACTION_IDS.filter((actionId) => UNBOUND_FILESYSTEM_ACTION_IDS.has(actionId)
-    || Object.keys(SDK_FUSION_TIMELINE_PREPARED_INPUTS[actionId]?.properties ?? {})
-      .some((field) => ARTIFACT_INPUT_FIELDS.has(field))),
+    || schemaContainsArtifactField(SDK_FUSION_TIMELINE_PREPARED_INPUTS[actionId])),
 );
 const DESTINATION_FIELDS = new Set(["destinationArtifactId"]);
 const DIRECTORY_FIELDS = new Set(["directoryArtifactId"]);
 const VERSION_ACTIONS = new Set(["cutagent.action.version.create", "cutagent.action.version.prune", "cutagent.action.version.restore"]);
 const TIMELINE_ORDINARY_MUTATION_ACTIONS = new Set([
-  "cutagent.action.timeline.create", "cutagent.action.timeline.delete", "cutagent.action.timeline.dolby.analyze",
+  "cutagent.action.timeline.clip_color.batch", "cutagent.action.timeline.create", "cutagent.action.timeline.delete", "cutagent.action.timeline.dolby.analyze",
   "cutagent.action.timeline.duplicate", "cutagent.action.timeline.fairlight_preset.apply", "cutagent.action.timeline.import",
   "cutagent.action.timeline.mark.clear", "cutagent.action.timeline.mark.set", "cutagent.action.timeline.playhead.set",
-  "cutagent.action.timeline.rename", "cutagent.action.timeline.set_start_tc", "cutagent.action.timeline.settings_set",
+  "cutagent.action.timeline.rename", "cutagent.action.timeline.set_start_tc", "cutagent.action.timeline.settings_set", "cutagent.action.timeline.output_blanking.set",
   "cutagent.action.timeline.start_tc", "cutagent.action.timeline.switch",
 ]);
 const TIMELINE_PROJECT_MUTATION_ACTIONS = new Set([
@@ -132,7 +131,7 @@ const READ_ACTIONS = new Set([
   "cutagent.action.fusion.setting.polypath_to_center", "cutagent.action.fusion.setting.summary",
   "cutagent.action.fusion.template.assets.list", "cutagent.action.fusion.template.show",
   "cutagent.action.fusion.template.validate", "cutagent.action.fusion.tool.attrs",
-  "cutagent.action.fusion.tool.get", "cutagent.action.fusion.tool.inputs", "cutagent.action.fusion.tool.list",
+  "cutagent.action.fusion.tool.get", "cutagent.action.fusion.tool.inputs", "cutagent.action.fusion.tool.list", "cutagent.action.fusion.tool.registry",
   "cutagent.action.fusion.tool.outputs", "cutagent.action.lut.convert", "cutagent.action.lut.inspect",
   "cutagent.action.lut.list", "cutagent.action.lut.validate",
   ...TIMELINE_VERSION_PREPARED_ACTION_IDS.filter((id) => !VERSION_ACTIONS.has(id)
@@ -301,8 +300,13 @@ function exactTimelineTopology(actionId, input, inspected) {
   } else if (actionId === "cutagent.action.timeline.fusion_clip.create") {
     targets = clips(input.timelineItemIds, true).map(({track: owner, clip}) => ({kind: "clip", stableId: clip.id, publicId: clip.id, trackType: owner.type, trackIndex: owner.index}));
   } else if (actionId === "cutagent.action.timeline.items.set_duration") {
-    if (typeof input.timelineItemId !== "string") throw new Error("Prepared duration mutation requires timelineItemId.");
-    targets = clips([input.timelineItemId], true).map(({track: owner, clip}) => ({kind: "clip", stableId: clip.id, publicId: clip.id, trackType: owner.type, trackIndex: owner.index}));
+    const ids = Array.isArray(input.updates)
+      ? input.updates.map((update) => update.timelineItemId)
+      : [input.timelineItemId];
+    if (!ids.length || ids.some((id) => typeof id !== "string") || new Set(ids).size !== ids.length) {
+      throw new Error("Prepared duration mutation requires unique timelineItemId values.");
+    }
+    targets = clips(ids, true).map(({track: owner, clip}) => ({kind: "clip", stableId: clip.id, publicId: clip.id, trackType: owner.type, trackIndex: owner.index}));
   } else if (actionId === "cutagent.action.timeline.layer.ensure_media") {
     const selected = track("video", input.trackIndex);
     mediaIds = [input.mediaPoolItemId];
@@ -390,14 +394,40 @@ async function liveTimeline(liveInspectionService, input) {
   return inspected;
 }
 
-function artifactRequests(input) {
-  return ARTIFACT_FIELDS.flatMap((field) => typeof input[field] === "string"
-    ? [{artifactId: input[field], field, mode: DESTINATION_FIELDS.has(field) ? "destination" : DIRECTORY_FIELDS.has(field) ? "directory" : "existing"}]
-    : []);
+function schemaContainsArtifactField(schema) {
+  if (!schema || typeof schema !== "object") return false;
+  if (Object.keys(schema.properties ?? {}).some((field) => ARTIFACT_INPUT_FIELDS.has(field))) return true;
+  return Object.values(schema.properties ?? {}).some(schemaContainsArtifactField)
+    || (schema.items ? schemaContainsArtifactField(schema.items) : false)
+    || (schema.oneOf ?? []).some(schemaContainsArtifactField);
+}
+
+function artifactRequests(actionId, input) {
+  const requests = [];
+  const visit = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== "object") return;
+    for (const [field, child] of Object.entries(value)) {
+      if (ARTIFACT_INPUT_FIELDS.has(field) && typeof child === "string") {
+        requests.push({artifactId: child, field, mode: DESTINATION_FIELDS.has(field) ? "destination" : DIRECTORY_FIELDS.has(field) ? "directory" : "existing"});
+      } else {
+        visit(child);
+      }
+    }
+  };
+  visit(input);
+  if (actionId === "cutagent.action.fusion.template.apply"
+    && /^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$/.test(input.template)) {
+    requests.push({artifactId: input.template, field: "template", mode: "existing"});
+  }
+  return [...new Map(requests.map((request) => [`${request.mode}:${request.artifactId}`, request])).values()];
 }
 
 async function captureArtifacts(artifactService, {actionId, input, context, secretDir}) {
-  const requests = artifactRequests(input);
+  const requests = artifactRequests(actionId, input);
   const needsPrivateStore = UNBOUND_FILESYSTEM_ACTION_IDS.has(actionId)
     || [
       "cutagent.action.fusion.template.assets.add",
@@ -644,11 +674,15 @@ async function captureTimeline(actionId, input, context, dependencies) {
       });
     }
   }
-  const requestedItemIds = actionId === "cutagent.action.timeline.dolby.analyze" ? input.timelineItemIds : null;
+  const requestedItemIds = actionId === "cutagent.action.timeline.dolby.analyze"
+    ? input.timelineItemIds
+    : actionId === "cutagent.action.timeline.clip_color.batch"
+      ? input.updates.map((update) => update.timelineItemId)
+      : null;
   if (requestedItemIds) {
     const nativeBindings = new Map(timelineRead.privateTimelineItemNativeIdByPublicId ?? []);
     if (requestedItemIds.some((id) => !nativeBindings.has(id))) {
-      throw new Error("Dolby analysis lost an exact Timeline item identity.");
+      throw new Error("Timeline mutation lost an exact Timeline item identity.");
     }
     binding.identities.targetIds = [...requestedItemIds];
     binding.revisions.targets = Object.fromEntries(requestedItemIds.map((id) => [id, timelineRead.value.revision]));
@@ -685,7 +719,41 @@ async function captureFusion(actionId, input, context, dependencies) {
   let targetRevisions = {...artifacts.targetRevisions};
   const targetKinds = Object.fromEntries(targetIds.map((id) => [id, "media"]));
   const nativeBindings = timelineRead ? Object.fromEntries(timelineRead.privateTimelineItemNativeIdByPublicId ?? []) : {};
-  if (input.timelineItemId && input.compositionIndex) {
+  if (actionId === "cutagent.action.fusion.image.batch") {
+    const items = Array.isArray(input.items) ? input.items : [];
+    const referencesByItemId = await dependencies.liveInspectionService.readFusionCompositionTargets(items.map((item) => ({
+      operation: "fusion.compositions", projectId: input.projectId, timelineId: input.timelineId,
+      timelineItemId: item.timelineItemId, expectedRevision: input.revision,
+    })));
+    for (const item of items) {
+      const references = referencesByItemId.get(item.timelineItemId);
+      const reference = references?.find((row) => row.index === item.compositionIndex);
+      if (!reference || reference.revision !== item.compositionRevision) {
+        throw new Error("Prepared action exact Fusion image composition is stale or unavailable.");
+      }
+      const id = `${item.timelineItemId}:fusion:${item.compositionIndex}`;
+      if (targetKinds[id]) throw new Error("Prepared Fusion image targets must be unique.");
+      targetIds.push(id);
+      targetRevisions[id] = reference.revision;
+      targetKinds[id] = "fusion_composition";
+    }
+  } else if (actionId === "cutagent.action.fusion.text.batch") {
+    const referencesByItemId = await dependencies.liveInspectionService.readFusionCompositionTargets(input.updates.map((update) => ({
+      operation: "fusion.compositions", projectId: input.projectId, timelineId: input.timelineId,
+      timelineItemId: update.timelineItemId, expectedRevision: input.revision,
+    })));
+    for (const update of input.updates) {
+      const references = referencesByItemId.get(update.timelineItemId);
+      const reference = references?.find((row) => row.index === update.compositionIndex);
+      if (!reference || reference.revision !== update.compositionRevision) {
+        throw new Error("Prepared action exact Fusion text composition is stale or unavailable.");
+      }
+      const id = `${update.timelineItemId}:fusion:${update.compositionIndex}`;
+      targetIds.unshift(id);
+      targetRevisions[id] = reference.revision;
+      targetKinds[id] = "fusion_composition";
+    }
+  } else if (input.timelineItemId && input.compositionIndex) {
     const references = await dependencies.liveInspectionService.read({
       operation: "fusion.compositions", projectId: input.projectId, timelineId: input.timelineId,
       timelineItemId: input.timelineItemId, expectedRevision: input.revision ?? null,

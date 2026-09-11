@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   sdkFairlightClipFadeInputSchema,
+  sdkFairlightClipFadeCurveInputSchema,
   sdkFairlightClipGainInputSchema,
   sdkFairlightClipPanInputSchema,
   sdkFairlightDynamicsInputSchema,
@@ -44,7 +45,7 @@ import type { ClipSnapshot, TimelineSnapshot } from "./object-model.js";
 export type FairlightActionId = "cutagent.action.sdk.fairlight.plan.apply";
 
 /** Stable semantic kinds composed inside one Fairlight plan. @beta */
-export type FairlightChangeKind = "clip_gain" | "clip_pan" | "clip_fade" | "track_mix" | "routing" | "eq" | "dynamics" | "effect" | "synchronization" | "loudness";
+export type FairlightChangeKind = "clip_gain" | "clip_pan" | "clip_fade" | "clip_fade_curve" | "track_mix" | "routing" | "eq" | "dynamics" | "effect" | "synchronization" | "loudness";
 
 /** One EQ band with explicit units and bounded Fairlight semantics. @beta */
 export interface FairlightEqBand {
@@ -89,6 +90,10 @@ export type FairlightObserved<T> =
 
 /** Immutable clip processing state observed at the snapshot revision. @beta */
 export interface FairlightClipState {
+  /** Native curve control points; null means the default linear envelope. */
+  readonly fadeInCurve: FairlightObserved<Readonly<{controlPoint: Readonly<{x: number; y: number}> | null}>>;
+  /** Independent fade-out native curve control point. */
+  readonly fadeOutCurve: FairlightObserved<Readonly<{controlPoint: Readonly<{x: number; y: number}> | null}>>;
   /** Absolute clip gain when current readback is supported. */
   readonly gainDb: FairlightObserved<number>;
   /** Normalized clip pan when current readback is supported. */
@@ -121,6 +126,7 @@ export interface FairlightTrackState {
 export type FairlightSemanticChange =
   | Readonly<{ kind: "clip_gain"; beforeDb: number | null; afterDb: number | null }>
   | Readonly<{ kind: "clip_pan"; before: number | null; after: number | null }>
+  | Readonly<{ kind: "clip_fade_curve"; direction: "in" | "out"; before: Readonly<{controlPoint: Readonly<{x: number; y: number}> | null}>; after: Readonly<{controlPoint: Readonly<{x: number; y: number}> | null}> }>
   | Readonly<{ kind: "clip_fade"; direction: "in" | "out"; beforeFrames: number | null; afterFrames: number | null }>
   | Readonly<{ kind: "track_mix"; before: Readonly<{ levelDb: number; pan: number }> | null; after: Readonly<{ levelDb: number; pan: number }> | null }>
   | Readonly<{ kind: "routing"; before: Readonly<{ busName: string; busKind: "main" | "bus" }> | null; after: Readonly<{ busName: string; busKind: "main" | "bus" }> | null }>
@@ -134,6 +140,7 @@ export type FairlightSemanticChange =
 export type FairlightRequestedChange =
   | Readonly<{ kind: "clip_gain"; gainDb: number }>
   | Readonly<{ kind: "clip_pan"; pan: number }>
+  | Readonly<{ kind: "clip_fade_curve"; direction: "in" | "out"; curve: Readonly<{controlPoint: Readonly<{x: number; y: number}> | null}> }>
   | Readonly<{ kind: "clip_fade"; direction: "in" | "out"; durationFrames: number }>
   | Readonly<{ kind: "track_mix"; levelDb: number; pan: number }>
   | Readonly<{ kind: "routing"; destination: Readonly<{ busName: string; busKind: "main" | "bus" }> }>
@@ -201,6 +208,8 @@ export interface FairlightClip {
   fadeIn(duration: FrameDuration): FairlightImpactPreview;
   /** Preview a frame-domain fade-out duration. */
   fadeOut(duration: FrameDuration): FairlightImpactPreview;
+  /** Set an independent native fade control point, or null to reset to linear. Does not change duration. */
+  fadeCurve(direction: "in" | "out", controlPoint: Readonly<{x: number; y: number}> | null): FairlightImpactPreview;
   /** Preview the complete bounded EQ state for this clip. */
   eq(input: { readonly enabled: boolean; readonly bands: readonly FairlightEqBand[] }): FairlightImpactPreview;
   /** Preview adding one exact runtime plug-in and optional preset. */
@@ -495,6 +504,8 @@ export type FairlightSnapshotReadback = Readonly<
         pan: FairlightNumericReadback;
         fadeInFrames: FairlightNumericReadback;
         fadeOutFrames: FairlightNumericReadback;
+    fadeInCurve?: FairlightClipState["fadeInCurve"] | undefined;
+    fadeOutCurve?: FairlightClipState["fadeOutCurve"] | undefined;
       }>[];
       buses: Readonly<
         | { status: "available"; buses: readonly Readonly<{ name: string; kind: "main" | "bus" }>[] }
@@ -526,6 +537,7 @@ function deepFreeze<T>(value: T): T {
 function requestedChange(kind: FairlightChangeKind, input: Record<string, unknown>): FairlightRequestedChange {
   if (kind === "clip_gain") return deepFreeze({ kind, gainDb: input.gainDb as number });
   if (kind === "clip_pan") return deepFreeze({ kind, pan: input.pan as number });
+  if (kind === "clip_fade_curve") return deepFreeze({ kind, direction: input.direction as "in" | "out", curve: input.curve as {controlPoint: {x: number; y: number} | null} });
   if (kind === "clip_fade") return deepFreeze({ kind, direction: input.direction as "in" | "out", durationFrames: input.durationFrames as number });
   if (kind === "track_mix") return deepFreeze({ kind, levelDb: input.levelDb as number, pan: input.pan as number });
   if (kind === "routing") {
@@ -601,6 +613,8 @@ function exactClip(
     pan: FairlightNumericReadback;
     fadeInFrames: FairlightNumericReadback;
     fadeOutFrames: FairlightNumericReadback;
+    fadeInCurve?: FairlightClipState["fadeInCurve"] | undefined;
+    fadeOutCurve?: FairlightClipState["fadeOutCurve"] | undefined;
   }> | undefined,
   unavailableReason: "readback_unavailable" | "not_exposed_by_runtime",
 ): FairlightClip {
@@ -624,6 +638,8 @@ function exactClip(
       pan: observedNumber(readback?.pan, unavailableReason),
       fadeInFrames: observedNumber(readback?.fadeInFrames, unavailableReason),
       fadeOutFrames: observedNumber(readback?.fadeOutFrames, unavailableReason),
+      fadeInCurve: readback?.fadeInCurve ?? unavailable(unavailableReason),
+      fadeOutCurve: readback?.fadeOutCurve ?? unavailable(unavailableReason),
       eq: unavailable<Readonly<{ enabled: boolean; bands: readonly FairlightEqBand[] }>>(unavailableReason),
       effects: unavailable<readonly Readonly<{ pluginId: string; presetId: string | null }>[]>(unavailableReason),
     }),
@@ -636,6 +652,11 @@ function exactClip(
       const exactTarget = target();
       const input = sdkFairlightClipPanInputSchema.parse({ ...binding(provenance), kind: "clip_pan", target: exactTarget, pan });
       return preview(provenance, "clip_pan", exactTarget, input, `Set ${raw.name} pan to ${pan}.`);
+    },
+    fadeCurve(direction, controlPoint) {
+      const exactTarget = target();
+      const input = sdkFairlightClipFadeCurveInputSchema.parse({...binding(provenance), kind: "clip_fade_curve", direction, target: exactTarget, curve: {controlPoint}});
+      return preview(provenance, "clip_fade_curve", exactTarget, input, `Shape ${raw.name} fade ${direction}.`);
     },
     fadeIn(duration) { return fade("in", duration); },
     fadeOut(duration) { return fade("out", duration); },
@@ -673,6 +694,8 @@ function exactTrack(
     pan: FairlightNumericReadback;
     fadeInFrames: FairlightNumericReadback;
     fadeOutFrames: FairlightNumericReadback;
+    fadeInCurve?: FairlightClipState["fadeInCurve"] | undefined;
+    fadeOutCurve?: FairlightClipState["fadeOutCurve"] | undefined;
   }>[],
   unavailableReason: "readback_unavailable" | "not_exposed_by_runtime",
 ): FairlightTrack {
@@ -827,6 +850,7 @@ function fairlightRequestedEffectMatches(
   const observed = outcome === "succeeded" ? "after" : "before";
   if (change.kind === "clip_gain" && requested.kind === "clip_gain") return (observed === "after" ? change.afterDb : change.beforeDb) === requested.gainDb;
   if (change.kind === "clip_pan" && requested.kind === "clip_pan") return (observed === "after" ? change.after : change.before) === requested.pan;
+  if (change.kind === "clip_fade_curve" && requested.kind === "clip_fade_curve") return change.direction === requested.direction && JSON.stringify(change[observed]) === JSON.stringify(requested.curve);
   if (change.kind === "clip_fade" && requested.kind === "clip_fade") return change.direction === requested.direction && (observed === "after" ? change.afterFrames : change.beforeFrames) === requested.durationFrames;
   if (change.kind === "track_mix" && requested.kind === "track_mix") return JSON.stringify(observed === "after" ? change.after : change.before) === JSON.stringify({ levelDb: requested.levelDb, pan: requested.pan });
   if (change.kind === "routing" && requested.kind === "routing") return JSON.stringify(observed === "after" ? change.after : change.before) === JSON.stringify({ busName: requested.destination.busName, busKind: requested.destination.busKind });

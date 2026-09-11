@@ -273,6 +273,112 @@ def read_color_grade(
     return state
 
 
+def read_color_topology_evidence(proto: bytes) -> dict[str, Any]:
+    """Inspect persisted containers without claiming arbitrary graph completeness."""
+    root = _get_submessage(proto, 1)
+    containers = _root_color_node_containers(proto)
+    mixer_types = [
+        value
+        for container in containers
+        if (value := _get_first_varint_field(container, 8)) in {68, 90}
+    ]
+    if not mixer_types:
+        kind = "serial"
+    elif mixer_types == [68]:
+        kind = "parallel"
+    elif mixer_types == [90]:
+        kind = "layer"
+    else:
+        kind = "unknown"
+    container_rows = [
+        {
+            "position": position,
+            "sha256": hashlib.sha256(container).hexdigest(),
+            "graph_id": _get_first_varint_field(container, 1),
+            "node_index": _get_first_varint_field(container, 2),
+            "x": _get_first_varint_field(container, 4),
+            "y": _get_first_varint_field(container, 5),
+            "node_type": _get_first_varint_field(container, 8),
+        }
+        for position, container in enumerate(containers, 1)
+    ]
+    edges = sorted(
+        _root_graph_edges(root or b""),
+        key=lambda edge: json.dumps(edge, sort_keys=True, separators=(",", ":")),
+    )
+    render_state: dict[str, Any] = {"field9_matches": False, "field10_matches": False, "field12_present": False}
+    exact = False
+    if root is not None and kind == "serial" and containers:
+        graph_ids = [row["graph_id"] for row in container_rows]
+        expected_render = _build_serial_render_graph_fields(final_graph_id=int(graph_ids[-1] or 0), tick=0)
+        render_state = {
+            "field9_matches": _get_first_length_delimited_field(root, 9) is not None if len(containers) == 1 else _get_first_length_delimited_field(root, 9) == _get_first_length_delimited_field(expected_render, 9),
+            "field10_matches": _get_first_length_delimited_field(root, 10) is not None if len(containers) == 1 else _get_first_length_delimited_field(root, 10) == _get_first_length_delimited_field(expected_render, 10),
+            "field12_present": _get_first_varint_field(root, 12) is not None,
+        }
+        expected_edges = [
+            {"1": int(source), "3": int(target), "5": 64, "6": 64, "7": slot}
+            for slot, (source, target) in enumerate(zip(graph_ids, graph_ids[1:]), 1)
+            if source is not None and target is not None
+        ]
+        exact = (
+            all(
+                row["graph_id"] == row["node_index"]
+                and row["node_type"] == 44
+                and row["x"] == 190 + max(0, int(row["node_index"] or 1) - 1) * 328
+                and row["y"] == 180
+                for row in container_rows
+            )
+            and [row["node_index"] for row in container_rows] == list(range(1, len(containers) + 1))
+            and edges == expected_edges
+            and all(render_state.values())
+        )
+    elif root is not None and kind in {"parallel", "layer"} and len(container_rows) == 3:
+        primary, mixer, branch = container_rows
+        canonical_containers = (
+            primary["graph_id"] == 1 and primary["node_index"] == 1 and primary["node_type"] == 44
+            and primary["x"] == 190 and primary["y"] == 180
+            and mixer["graph_id"] == 3 and mixer["node_index"] == 3 and mixer["node_type"] == (68 if kind == "parallel" else 90)
+            and mixer["x"] == 518 and mixer["y"] == 180
+            and branch["graph_id"] == 4 and branch["node_index"] == 2 and branch["node_type"] == 44
+            and branch["x"] == 190 and branch["y"] == 416
+        )
+        if kind == "layer" and primary["graph_id"] is not None:
+            render_state = _read_layer_mixer_render_graph_state(
+                root,
+                primary_graph_id=int(primary["graph_id"]),
+                branch_graph_id=4,
+                mixer_graph_id=3,
+            )
+            expected_edges = [
+                {"1": int(primary["graph_id"]), "3": 3, "5": 64, "6": 64, "7": 2},
+                {"1": 4, "3": 3, "4": 1, "5": 64, "6": 64, "7": 3},
+            ]
+            exact = canonical_containers and edges == expected_edges and bool(render_state.get("field9_matches") and render_state.get("field10_matches") and render_state.get("field12_present"))
+        else:
+            render_state = {
+                "field9_matches": _get_first_length_delimited_field(root, 9) is not None,
+                "field10_matches": _get_first_length_delimited_field(root, 10) is not None,
+                "field12_present": _get_first_varint_field(root, 12) is not None,
+            }
+            exact = canonical_containers and edges == [] and all(render_state.values())
+    field9 = _get_first_length_delimited_field(root, 9) if root is not None else None
+    field10 = _get_first_length_delimited_field(root, 10) if root is not None else None
+    render_state["field9_sha256"] = hashlib.sha256(field9).hexdigest() if field9 is not None else None
+    render_state["field10_sha256"] = hashlib.sha256(field10).hexdigest() if field10 is not None else None
+    structure = {"containers": container_rows, "edges": edges, "render": render_state}
+    structure_sha256 = hashlib.sha256(
+        json.dumps(structure, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return {
+        "kind": kind,
+        "node_count": len(containers),
+        "exact": exact,
+        "structure_sha256": structure_sha256,
+        **structure,
+    }
+
+
 def read_color_grade_for_clip(
     conn: Any,
     *,
@@ -312,108 +418,7 @@ def read_color_grade_for_clip(
         "readback": state.to_dict(),
     }
     if include_private_topology:
-        root = _get_submessage(state.proto_data or b"", 1)
-        containers = _root_color_node_containers(state.proto_data or b"")
-        mixer_types = [
-            value
-            for container in containers
-            if (value := _get_first_varint_field(container, 8)) in {68, 90}
-        ]
-        if not mixer_types:
-            kind = "serial"
-        elif mixer_types == [68]:
-            kind = "parallel"
-        elif mixer_types == [90]:
-            kind = "layer"
-        else:
-            kind = "unknown"
-        container_rows = [
-            {
-                "position": position,
-                "sha256": hashlib.sha256(container).hexdigest(),
-                "graph_id": _get_first_varint_field(container, 1),
-                "node_index": _get_first_varint_field(container, 2),
-                "x": _get_first_varint_field(container, 4),
-                "y": _get_first_varint_field(container, 5),
-                "node_type": _get_first_varint_field(container, 8),
-            }
-            for position, container in enumerate(containers, 1)
-        ]
-        edges = sorted(
-            _root_graph_edges(root or b""),
-            key=lambda edge: json.dumps(edge, sort_keys=True, separators=(",", ":")),
-        )
-        render_state: dict[str, Any] = {"field9_matches": False, "field10_matches": False, "field12_present": False}
-        exact = False
-        if root is not None and kind == "serial" and containers:
-            graph_ids = [row["graph_id"] for row in container_rows]
-            expected_render = _build_serial_render_graph_fields(final_graph_id=int(graph_ids[-1] or 0), tick=0)
-            render_state = {
-                "field9_matches": _get_first_length_delimited_field(root, 9) is not None if len(containers) == 1 else _get_first_length_delimited_field(root, 9) == _get_first_length_delimited_field(expected_render, 9),
-                "field10_matches": _get_first_length_delimited_field(root, 10) is not None if len(containers) == 1 else _get_first_length_delimited_field(root, 10) == _get_first_length_delimited_field(expected_render, 10),
-                "field12_present": _get_first_varint_field(root, 12) is not None,
-            }
-            expected_edges = [
-                {"1": int(source), "3": int(target), "5": 64, "6": 64, "7": slot}
-                for slot, (source, target) in enumerate(zip(graph_ids, graph_ids[1:]), 1)
-                if source is not None and target is not None
-            ]
-            exact = (
-                all(
-                    row["graph_id"] == row["node_index"]
-                    and row["node_type"] == 44
-                    and row["x"] == 190 + max(0, int(row["node_index"] or 1) - 1) * 328
-                    and row["y"] == 180
-                    for row in container_rows
-                )
-                and [row["node_index"] for row in container_rows] == list(range(1, len(containers) + 1))
-                and edges == expected_edges
-                and all(render_state.values())
-            )
-        elif root is not None and kind in {"parallel", "layer"} and len(container_rows) == 3:
-            primary, mixer, branch = container_rows
-            canonical_containers = (
-                primary["graph_id"] == 1 and primary["node_index"] == 1 and primary["node_type"] == 44
-                and primary["x"] == 190 and primary["y"] == 180
-                and mixer["graph_id"] == 3 and mixer["node_index"] == 3 and mixer["node_type"] == (68 if kind == "parallel" else 90)
-                and mixer["x"] == 518 and mixer["y"] == 180
-                and branch["graph_id"] == 4 and branch["node_index"] == 2 and branch["node_type"] == 44
-                and branch["x"] == 190 and branch["y"] == 416
-            )
-            if kind == "layer" and primary["graph_id"] is not None:
-                render_state = _read_layer_mixer_render_graph_state(
-                    root,
-                    primary_graph_id=int(primary["graph_id"]),
-                    branch_graph_id=4,
-                    mixer_graph_id=3,
-                )
-                expected_edges = [
-                    {"1": int(primary["graph_id"]), "3": 3, "5": 64, "6": 64, "7": 2},
-                    {"1": 4, "3": 3, "4": 1, "5": 64, "6": 64, "7": 3},
-                ]
-                exact = canonical_containers and edges == expected_edges and bool(render_state.get("field9_matches") and render_state.get("field10_matches") and render_state.get("field12_present"))
-            else:
-                render_state = {
-                    "field9_matches": _get_first_length_delimited_field(root, 9) is not None,
-                    "field10_matches": _get_first_length_delimited_field(root, 10) is not None,
-                    "field12_present": _get_first_varint_field(root, 12) is not None,
-                }
-                exact = canonical_containers and edges == [] and all(render_state.values())
-        field9 = _get_first_length_delimited_field(root, 9) if root is not None else None
-        field10 = _get_first_length_delimited_field(root, 10) if root is not None else None
-        render_state["field9_sha256"] = hashlib.sha256(field9).hexdigest() if field9 is not None else None
-        render_state["field10_sha256"] = hashlib.sha256(field10).hexdigest() if field10 is not None else None
-        structure = {"containers": container_rows, "edges": edges, "render": render_state}
-        structure_sha256 = hashlib.sha256(
-            json.dumps(structure, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        ).hexdigest()
-        result["topology_state"] = {
-            "kind": kind,
-            "node_count": len(containers),
-            "exact": exact,
-            "structure_sha256": structure_sha256,
-            **structure,
-        }
+        result["topology_state"] = read_color_topology_evidence(state.proto_data or b"")
         from .. import resolvefx_db
 
         result["resolvefx_by_node"] = {
@@ -421,7 +426,7 @@ def read_color_grade_for_clip(
                 state.proto_data or b"",
                 node_index=index,
             ).get("plugin_id")
-            for index in range(1, len(containers) + 1)
+            for index in range(1, result["topology_state"]["node_count"] + 1)
         }
     return result
 

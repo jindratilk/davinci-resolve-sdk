@@ -65,10 +65,10 @@ class ResolveNotRunning(CLIError):
 
 class ResolveScriptingUnavailable(CLIError):
     message = (
-        "DaVinci Resolve is running, but no scripting transport is connected. "
+        "DaVinci Resolve is running, but CutAgent SDK is not connected. "
         "For DaVinci Resolve Studio, enable Preferences > System > General > "
         "External scripting using Local, restart DaVinci Resolve, then retry. "
-        "For DaVinci Resolve Free, run Workspace > Scripts > CutAgent."
+        "For DaVinci Resolve Free, run Workspace > Scripts > CutAgentSDK."
     )
     code = "RESOLVE_SCRIPTING_UNAVAILABLE"
     recoverability = "manual"
@@ -76,35 +76,35 @@ class ResolveScriptingUnavailable(CLIError):
 
 
 class EmbeddedBridgeNotRunning(CLIError):
-    message = "CutAgent embedded bridge is not running. Open DaVinci Resolve, then run Workspace > Scripts > CutAgent."
+    message = "CutAgent SDK is not connected to DaVinci Resolve Free. In DaVinci Resolve, run Workspace > Scripts > CutAgentSDK."
     code = "EMBEDDED_BRIDGE_NOT_RUNNING"
     recoverability = "manual"
     exit_code = 3
 
 
 class EmbeddedBridgeOutdated(CLIError):
-    message = "CutAgent.lua is out of date. Reinstall the embedded DaVinci Resolve script."
+    message = "CutAgentSDK.lua is out of date. Run `cutagent embedded install` again."
     code = "EMBEDDED_BRIDGE_OUTDATED"
     recoverability = "manual"
     exit_code = 3
 
 
 class EmbeddedBridgeTimeout(CLIError):
-    message = "Timed out waiting for CutAgent.lua."
+    message = "CutAgent SDK did not receive a response from DaVinci Resolve Free in time."
     code = "EMBEDDED_BRIDGE_TIMEOUT"
     recoverability = "manual"
     exit_code = 4
 
 
 class EmbeddedBridgeAuthFailed(CLIError):
-    message = "Embedded bridge authentication failed."
+    message = "CutAgent SDK could not verify the connection to DaVinci Resolve Free."
     code = "EMBEDDED_BRIDGE_AUTH_FAILED"
     recoverability = "manual"
     exit_code = 2
 
 
 class EmbeddedBridgePolicyDenied(CLIError):
-    message = "Embedded bridge request was blocked by policy."
+    message = "CutAgent SDK did not run this edit because its safety checks did not pass."
     code = "EMBEDDED_BRIDGE_POLICY_DENIED"
     recoverability = "not_applicable"
     exit_code = 2
@@ -349,27 +349,35 @@ class AuthorizationError(CLIError):
             self.code = code
 
 
+class HostedServiceRequiresCutAgentApp(AuthorizationError):
+    message = "This feature is available in the CutAgent desktop app. Explore plans: https://cutagent.ai."
+    code = "HOSTED_SERVICE_REQUIRES_CUTAGENT_APP"
+    recoverability = "manual"
+    exit_code = 4
+    suggested_fix = "Explore the CutAgent desktop app at https://cutagent.ai."
+
+
 class AuthRequired(AuthorizationError):
-    message = "DaVinci Resolve command authorization is required."
+    message = "CutAgent SDK could not verify this command."
     code = "AUTH_REQUIRED"
-    suggested_fix = "Open the CutAgent app and sign in to use CutAgent CLI."
+    suggested_fix = "Run the command again using the installed cutagent command."
 
 
 class AuthTokenExpired(AuthorizationError):
-    message = "DaVinci Resolve command authorization token has expired."
+    message = "CutAgent SDK could not verify this command because it took too long."
     code = "AUTH_TOKEN_EXPIRED"
-    suggested_fix = "Retry the command to request fresh authorization."
+    suggested_fix = "Run the command again using the installed cutagent command."
 
 
 class AuthTokenCommandMismatch(AuthorizationError):
-    message = "DaVinci Resolve command authorization token does not match this command."
+    message = "CutAgent SDK could not verify this command."
     code = "AUTH_TOKEN_COMMAND_MISMATCH"
 
 
 class SubscriptionRequired(AuthorizationError):
-    message = "An active CutAgent subscription is required to run CutAgent CLI commands."
+    message = "This feature is available in the CutAgent desktop app. Explore plans: https://cutagent.ai."
     code = "SUBSCRIPTION_REQUIRED"
-    suggested_fix = "Your CutAgent plan is inactive. Renew your subscription in the CutAgent app to use CutAgent CLI."
+    suggested_fix = "Explore the CutAgent desktop app at https://cutagent.ai."
 
 
 class CapabilityNegotiationFailed(CLIError):

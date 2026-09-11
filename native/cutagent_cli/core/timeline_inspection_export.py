@@ -29,6 +29,7 @@ from . import (
     keyframe_db,
     keyframe_ops,
     nested_media_db,
+    native_channel_mapping,
     retime_curve_readback,
     sdk_live_inspection,
     timeline_ops,
@@ -186,6 +187,30 @@ class _PersistedItemReader:
             self.connection.close()
             self.connection = None
 
+    def timeline_output(self, identity: str) -> dict[str, Any]:
+        """Read exact sequence output fields, not inferred bus identities."""
+        if self.connection is None or not identity:
+            raise LookupError("Exact timeline identity is unavailable.")
+        rows = self.connection.execute(
+            "SELECT s.OutputAudioGain, s.NumOutputAudioChannels "
+            "FROM Sm2Timeline t JOIN Sm2Sequence s ON s.Sm2Sequence_id = t.Sequence "
+            "WHERE t.Sm2Timeline_id = ? AND s.Sm2Timeline_id = t.Sm2Timeline_id",
+            (identity,),
+        ).fetchall()
+        if len(rows) != 1:
+            raise LookupError("Persisted timeline output identity is unavailable or ambiguous.")
+        gain, channels = rows[0]
+        if isinstance(gain, bool) or not isinstance(gain, (int, float)) or not math.isfinite(gain):
+            raise ValueError("Persisted timeline output gain is unavailable.")
+        if isinstance(channels, bool) or not isinstance(channels, int) or channels < 0:
+            raise ValueError("Persisted timeline output channel count is unavailable.")
+        return {
+            "gainDb": gain,
+            "channelCount": channels,
+            "source": "identity-bound Sm2Sequence output fields",
+            "busRoutingProven": False,
+        }
+
     def row(
         self,
         *,
@@ -310,10 +335,11 @@ def _persisted_item_classification(
     except Exception:
         return None
     pretty_type = row.get("PrettyType")
-    if pretty_type != "Fusion Title":
+    kind = {"Fusion Title": "fusion_title", "Fusion Composition": "fusion_composition"}.get(pretty_type)
+    if kind is None:
         return None
     return {
-        "kind": "fusion_title",
+        "kind": kind,
         "prettyType": pretty_type,
         "source": "exact persisted item identity",
     }
@@ -583,12 +609,34 @@ def _fusion(collector: _Collector, item: Any, path: str) -> list[dict[str, Any]]
             attrs = comp.GetAttrs() if comp is not None else None
             if comp is None or not isinstance(attrs, dict):
                 raise ValueError
-            graph = sdk_live_inspection._fusion_graph_evidence(comp, None)
+            try:
+                graph = sdk_live_inspection._fusion_graph_evidence(comp, None)
+            except Exception:
+                graph = None
+                collector.missing("fusion", f"{path}.fusion.compositions[{index - 1}].graph",
+                                  "call_failed", "Fusion composition graph readback")
+            # CopySettings returns a native settings table, unlike Copy which
+            # changes the system clipboard. Pass every tool explicitly so user
+            # selection cannot accidentally limit the inspected composition.
+            native_settings = None
+            try:
+                tools = comp.GetToolList(False)
+                if not isinstance(tools, dict):
+                    raise ValueError("invalid Fusion tool list")
+            except Exception:
+                collector.missing("fusion", f"{path}.fusion.compositions[{index - 1}].nativeSettings",
+                                  "call_failed", "GetToolList")
+            else:
+                native_settings = collector.call(
+                    "fusion", f"{path}.fusion.compositions[{index - 1}].nativeSettings",
+                    comp, "CopySettings", tools,
+                )
             rows.append({
                 "index": index,
                 "name": str(attrs.get("COMPS_Name") or attrs.get("COMPN_Name") or f"Composition {index}"),
                 "graph": graph,
-                "graphDigest": sdk_live_inspection.fusion_graph_digest(graph),
+                "nativeSettings": native_settings,
+                "graphDigest": sdk_live_inspection.fusion_graph_digest(graph) if graph is not None else None,
             })
             collector.available("fusion")
         except Exception:
@@ -596,26 +644,12 @@ def _fusion(collector: _Collector, item: Any, path: str) -> list[dict[str, Any]]
     return rows
 
 
-def _color(
-    collector: _Collector,
-    item: Any,
-    path: str,
-    primary_readback: dict[str, Any] | None,
-    resolvefx_readback: dict[str, Any] | None,
-) -> dict[str, Any]:
-    graph = None
-    graph_getter = getattr(item, "GetNodeGraph", None)
-    if callable(graph_getter):
-        try:
-            graph = graph_getter()
-        except Exception:
-            collector.missing("color", f"{path}.color.nodeGraph", "call_failed", "GetNodeGraph")
-    node_source = graph if graph is not None else item
-    node_count = collector.call("color", f"{path}.color.nodeCount", node_source, "GetNumNodes")
+def _color_nodes(collector, node_source, color_path, primary_readback):
+    node_count = collector.call("color", f"{color_path}.nodeCount", node_source, "GetNumNodes")
     nodes = []
     if isinstance(node_count, int) and 0 <= node_count <= 4096:
         for index in range(1, node_count + 1):
-            node_path = f"{path}.color.nodes[{index - 1}]"
+            node_path = f"{color_path}.nodes[{index - 1}]"
             primary_controls = None
             if isinstance(primary_readback, dict) and primary_readback.get("status") == "available":
                 primary_controls = (primary_readback.get("primaryControlsByNode") or {}).get(str(index), {})
@@ -647,16 +681,121 @@ def _color(
                     effects = effect_names
                 except Exception:
                     collector.missing("color", f"{node_path}.effects", "invalid_or_unserializable_value", "GetToolsInNode")
+            enabled_map = (primary_readback or {}).get("nodeEnabledByNode") or {}
+            persisted_enabled = enabled_map.get(str(index))
+            if isinstance(persisted_enabled, bool):
+                enabled = persisted_enabled
+                enabled_source = "persisted_active_grade"
+                collector.available("color")
+            else:
+                enabled = collector.call("color", f"{node_path}.enabled", node_source, "GetNodeEnabled", index)
+                enabled_source = "native_api" if isinstance(enabled, bool) else None
             nodes.append({
                 "index": index,
                 "label": collector.call("color", f"{node_path}.label", node_source, "GetNodeLabel", index),
-                "enabled": collector.call("color", f"{node_path}.enabled", node_source, "GetNodeEnabled", index),
+                "enabled": enabled,
+                "enabledSource": enabled_source,
                 "lut": collector.call("color", f"{node_path}.lut", node_source, "GetLUT", index),
+                "cacheMode": collector.call("color", f"{node_path}.cacheMode", node_source, "GetNodeCacheMode", index),
                 "effects": effects,
                 "primaryControls": primary_controls,
             })
     elif node_count is not None:
-        collector.missing("color", f"{path}.color.nodes", "invalid_value", "GetNumNodes")
+        collector.missing("color", f"{color_path}.nodes", "invalid_value", "GetNumNodes")
+    return node_count, nodes
+
+
+def _native_color_graph(collector, owner, method, path):
+    getter = getattr(owner, method, None)
+    if not callable(getter):
+        collector.missing("color", path, "method_unavailable", method)
+        return None
+    try:
+        graph = getter()
+    except Exception:
+        collector.missing("color", path, "call_failed", method)
+        return None
+    if graph is None:
+        collector.missing("color", path, "node_graph_unavailable", method)
+        return None
+    count, nodes = _color_nodes(collector, graph, path, None)
+    return {"nodeCount": count, "nodes": nodes}
+
+
+def _color(
+    collector: _Collector,
+    item: Any,
+    path: str,
+    primary_readback: dict[str, Any] | None,
+    resolvefx_readback: dict[str, Any] | None,
+    *, project: Any = None,
+) -> dict[str, Any]:
+    cache_path = f"{path}.color.outputCacheEnabled"
+    cache_getter = getattr(item, "GetIsColorOutputCacheEnabled", None)
+    output_cache_enabled = None
+    if not callable(cache_getter):
+        collector.missing(
+            "color", cache_path, "method_unavailable", "GetIsColorOutputCacheEnabled",
+        )
+    else:
+        try:
+            cache_value = cache_getter()
+        except Exception:
+            collector.missing(
+                "color", cache_path, "call_failed", "GetIsColorOutputCacheEnabled",
+            )
+        else:
+            # Studio 21.1 returns integer 0/1 despite the bool stub annotation.
+            # Match the native cache owner without coercing arbitrary values.
+            if isinstance(cache_value, bool) or (
+                type(cache_value) is int and cache_value in (0, 1)
+            ):
+                output_cache_enabled = bool(cache_value)
+                collector.available("color")
+            else:
+                collector.missing(
+                    "color", cache_path,
+                    "readback_unavailable" if cache_value is None else "invalid_value",
+                    "GetIsColorOutputCacheEnabled",
+                )
+    graph = None
+    graph_getter = getattr(item, "GetNodeGraph", None)
+    if callable(graph_getter):
+        try:
+            graph = graph_getter()
+        except Exception:
+            collector.missing("color", f"{path}.color.nodeGraph", "call_failed", "GetNodeGraph")
+    node_source = graph if graph is not None else item
+    node_count, nodes = _color_nodes(collector, node_source, f"{path}.color", primary_readback)
+    collector.missing(
+        "color", f"{path}.color.connectivity",
+        "complete_color_graph_connectivity_not_decoded",
+        "persisted container and encoded edge evidence is partial",
+    )
+    layer_count = None
+    layers = [{"index": 1, "nodeCount": node_count, "nodes": nodes}]
+    if project is not None:
+        raw_count = collector.call("color", f"{path}.color.layerCount", project, "GetSetting", "nodeStackLayers")
+        if isinstance(raw_count, str) and raw_count.isdecimal():
+            layer_count = int(raw_count)
+        elif isinstance(raw_count, int) and not isinstance(raw_count, bool):
+            layer_count = raw_count
+        if layer_count is None or not 1 <= layer_count <= 64:
+            layer_count = None
+            collector.missing("color", f"{path}.color.layerCount", "invalid_or_unavailable_layer_count", "GetSetting(nodeStackLayers)")
+        else:
+            for layer in range(2, layer_count + 1):
+                layer_path = f"{path}.color.layers[{layer - 1}]"
+                try:
+                    layer_graph = graph_getter(layer) if callable(graph_getter) else None
+                except Exception:
+                    layer_graph = None
+                if layer_graph is None:
+                    collector.missing("color", layer_path, "node_graph_unavailable", "GetNodeGraph(layer)")
+                    layers.append({"index": layer, "nodeCount": None, "nodes": None})
+                    continue
+                count, layer_nodes = _color_nodes(collector, layer_graph, layer_path, None)
+                layers.append({"index": layer, "nodeCount": count, "nodes": layer_nodes})
     native_group = None
     getter = getattr(item, "GetColorGroup", None)
     if not callable(getter):
@@ -667,8 +806,13 @@ def _color(
         except Exception:
             collector.missing("color", f"{path}.color.groupName", "call_failed", "GetColorGroup")
     group_name = None
+    group_graphs = None
     if native_group not in (None, False):
         group_name = collector.call("color", f"{path}.color.groupName", native_group, "GetName")
+        group_graphs = {
+            "preClip": _native_color_graph(collector, native_group, "GetPreClipNodeGraph", f"{path}.color.groupGraphs.preClip"),
+            "postClip": _native_color_graph(collector, native_group, "GetPostClipNodeGraph", f"{path}.color.groupGraphs.postClip"),
+        }
     elif callable(getter):
         collector.available("color")
     local_versions = collector.call("color", f"{path}.color.versions.local", item, "GetVersionNameList", 0)
@@ -700,11 +844,16 @@ def _color(
             "exact persisted ResolveFX readback",
         )
     return {
+        "outputCacheEnabled": output_cache_enabled,
         "nodeCount": node_count,
         "nodes": nodes,
+        "layerCount": layer_count,
+        "layers": layers,
+        "persistedTopologyEvidence": (primary_readback or {}).get("topologyEvidence"),
         "versions": {"local": local_versions, "remote": remote_versions},
         "currentVersion": current_version,
         "groupName": group_name,
+        "groupGraphs": group_graphs,
         "resolveFx": resolvefx,
     }
 
@@ -772,9 +921,18 @@ def _item_row(
     record_duration = collector.call("items", f"{path}.record.duration", item, "GetDuration")
     media, media_details = _media_pool_details(collector, item, path)
     item_properties = collector.call(
-        "properties", f"{path}.properties", item, "GetProperty",
+        "properties", f"{path}.properties", item, getattr(collector, "item_properties_method", "GetProperty"),
         empty_is_available=False,
     )
+    native_211 = getattr(collector, "item_properties_method", "GetProperty") == "GetProperties"
+    native_fades = None
+    native_speed = None
+    if native_211:
+        fades = collector.call("fades", f"{path}.fades", item, "GetFades", empty_is_available=False)
+        native_fades = fades
+        native_speed = collector.call("retime", f"{path}.retime.nativeSpeed", item, "GetSpeed")
+        if isinstance(item_properties, dict) and isinstance(fades, dict):
+            item_properties = {**item_properties, **{key: fades[key] for key in ("FadeIn", "FadeOut") if key in fades}}
     media_type = None
     if isinstance(media_details.get("properties"), dict):
         media_type = media_details["properties"].get("Type")
@@ -799,7 +957,7 @@ def _item_row(
         nesting_kind = "none"
         collector.available("nesting")
         collector.available("multicam")
-    elif persisted_classification and persisted_classification["kind"] == "fusion_title":
+    elif persisted_classification and persisted_classification["kind"] in {"fusion_title", "fusion_composition"}:
         nesting_kind = "none"
         collector.available("nesting")
         collector.available("multicam")
@@ -819,16 +977,16 @@ def _item_row(
         )
     retime = {
         "speedChange": _covered_mapping_value(
-            collector, "retime", f"{path}.retime.speedChange", item_properties,
-            "Speed Change", reason="property_not_returned",
+            collector, "retime", f"{path}.retime.speedChange", native_speed if native_211 else item_properties,
+            "Percentage" if native_211 else "Speed Change", reason="property_not_returned",
         ),
         "retimeProcess": _covered_mapping_value(
             collector, "retime", f"{path}.retime.retimeProcess", item_properties,
-            "Retime Process", reason="property_not_returned",
+            "RetimeProcess" if native_211 else "Retime Process", reason="property_not_returned",
         ),
         "motionEstimation": _covered_mapping_value(
             collector, "retime", f"{path}.retime.motionEstimation", item_properties,
-            "Motion Estimation", reason="property_not_returned",
+            "MotionEstimation" if native_211 else "Motion Estimation", reason="property_not_returned",
         ),
         "scaling": _covered_mapping_value(
             collector, "retime", f"{path}.retime.scaling", item_properties,
@@ -856,13 +1014,24 @@ def _item_row(
             )
         ),
     }
+    if native_211:
+        retime["nativeSpeed"] = native_speed
     if identity:
         collector.available("items")
     else:
         collector.missing("items", f"{path}.identity", "readback_unavailable", "GetUniqueId")
     video_fade_details = None
     if track_type == "video":
-        if isinstance(video_fade, dict) and video_fade.get("status") == "available":
+        if isinstance(native_fades, dict) and all(key in native_fades for key in ("FadeIn", "FadeOut")):
+            video_fade_details = {
+                "fadeInFrames": native_fades["FadeIn"],
+                "fadeOutFrames": native_fades["FadeOut"],
+                "source": "TimelineItem.GetFades",
+                "curve": None,
+            }
+            if any(native_fades[key] != 0 for key in ("FadeIn", "FadeOut")):
+                collector.missing("fades", f"{path}.fades.video.curve", "curve_shape_readback_unavailable")
+        elif isinstance(video_fade, dict) and video_fade.get("status") == "available":
             video_fade_details = {
                 "fadeInFrames": video_fade.get("fadeInFrames"),
                 "fadeOutFrames": video_fade.get("fadeOutFrames"),
@@ -919,8 +1088,15 @@ def _item_row(
                 collector.missing("items", f"{path}.linkedItemIdentities", "invalid_value", "GetLinkedItems")
         except Exception:
             collector.missing("items", f"{path}.linkedItemIdentities", "call_failed", "GetLinkedItems")
+    native_state = {}
+    if native_211:
+        for key, method in (("type", "GetType"), ("outputBlanking", "GetOutputBlanking"),
+                            ("useTimelineForOutputBlanking", "GetUseTimelineForOutputBlanking"),
+                            ("sourceAudioChannelMapping", "GetSourceAudioChannelMapping")):
+            native_state[key] = collector.call("items", f"{path}.native.{key}", item, method)
     return {
         "identity": identity,
+        "native": native_state,
         "name": item_name,
         "record": {
             "start": record_start,
@@ -958,13 +1134,14 @@ def _item_row(
             "source": "Project.db EffectFiltersBA sha256" if revision_evidence else None,
         },
         "markers": collector.call("items", f"{path}.markers", item, "GetMarkers"),
-        "flags": collector.call("items", f"{path}.flags", item, "GetFlags"),
+        "flags": collector.call("items", f"{path}.flags", item, "GetFlagList" if native_211 else "GetFlags"),
         "clipColor": collector.call("items", f"{path}.clipColor", item, "GetClipColor"),
         "takes": _takes(collector, item, path),
         "linkedItemIdentities": linked_identities,
         "mediaPoolItem": media_details,
         "fades": {
-            "audio": None,
+            "audio": ({"fadeInFrames": native_fades["FadeIn"], "fadeOutFrames": native_fades["FadeOut"], "source": "TimelineItem.GetFades"}
+                      if track_type == "audio" and isinstance(native_fades, dict) and all(key in native_fades for key in ("FadeIn", "FadeOut")) else None),
             "video": video_fade_details,
         },
         "keyframes": _keyframes(
@@ -979,7 +1156,7 @@ def _item_row(
         ),
         "fusion": _fusion(collector, item, path),
         "color": _color(
-            collector, item, path, color_primary, color_resolvefx,
+            collector, item, path, color_primary, color_resolvefx, project=conn.project,
         ) if track_type == "video" else None,
         "fairlight": None,
         "retime": retime,
@@ -1000,10 +1177,67 @@ def _item_row(
     }
 
 
+def _semantic_source_channel_mapping(
+    collector: _Collector, item: dict[str, Any], path: str,
+) -> dict[str, Any] | None:
+    raw = (item.get("native") or {}).get("sourceAudioChannelMapping")
+    if raw is None:
+        collector.missing(
+            "fairlight", path, "readback_unavailable",
+            "TimelineItem.GetSourceAudioChannelMapping",
+        )
+        return None
+    try:
+        parsed = native_channel_mapping.parse_timeline_mapping(raw)
+        bounded = _bounded_json(parsed)
+    except (APICallFailed, TypeError, ValueError):
+        collector.missing(
+            "fairlight", path, "invalid_native_mapping",
+            "TimelineItem.GetSourceAudioChannelMapping",
+        )
+        return None
+    collector.available("fairlight")
+    return bounded
+
+
+def _attach_track_voice_isolation(
+    collector: _Collector, conn: Any, fairlight: dict[str, Any],
+) -> None:
+    for row in fairlight.get("tracks", []):
+        if not isinstance(row, dict):
+            continue
+        index = row.get("track_index")
+        path = f"tracks.audio[{index}].fairlight.voiceIsolation"
+        try:
+            state = timeline_ops.get_timeline_voice_isolation(conn, int(index))
+            enabled = state.get("isEnabled")
+            amount = state.get("amount")
+            if (
+                not isinstance(enabled, bool)
+                or not isinstance(amount, int)
+                or isinstance(amount, bool)
+                or not 0 <= amount <= 100
+            ):
+                raise ValueError
+        except Exception:
+            row["voiceIsolation"] = None
+            collector.missing(
+                "fairlight", path, "readback_unavailable",
+                "Timeline.GetVoiceIsolationState",
+            )
+            continue
+        row["voiceIsolation"] = {
+            "isEnabled": enabled,
+            "amount": amount,
+            "source": "Timeline.GetVoiceIsolationState",
+        }
+        collector.available("fairlight")
+
+
 def _attach_fairlight(collector: _Collector, tracks: list[dict[str, Any]], fairlight: Any) -> None:
     if not isinstance(fairlight, dict):
         collector.missing("fairlight", "fairlight", "readback_unavailable")
-        return
+        fairlight = {}
     for key, value in fairlight.items():
         if isinstance(value, dict) and value.get("status") == "unavailable":
             collector.missing(
@@ -1024,18 +1258,83 @@ def _attach_fairlight(collector: _Collector, tracks: list[dict[str, Any]], fairl
             collector.missing("fairlight", f"tracks.audio[{track['index']}].fairlight", "readback_unavailable")
         else:
             collector.available("fairlight")
+            for key in ("level_db", "pan"):
+                control = track["fairlight"].get(key)
+                if not isinstance(control, dict) or control.get("status") != "available":
+                    collector.missing(
+                        "fairlight", f"tracks.audio[{track['index']}].fairlight.{key}",
+                        str(control.get("reason") or "readback_unavailable") if isinstance(control, dict) else "readback_unavailable",
+                    )
+                else:
+                    collector.available("fairlight")
         for item_index, item in enumerate(track["items"]):
-            item["fairlight"] = clip_rows.get(item.get("identity"))
+            saved = clip_rows.get(item.get("identity"))
+            item["fairlight"] = dict(saved) if saved is not None else None
+            # Live Inspector values are authoritative over the saved project.
+            # Both native and persisted pan use the documented -100..100 scale.
+            properties = item.get("properties") or {}
+            for target, native, enabled in (("gain_db", "AudioVolume", "AudioVolumeEnabled"),
+                                             ("pan", "AudioPan", "AudioPanEnabled")):
+                value = properties.get(native)
+                if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value):
+                    if item["fairlight"] is None:
+                        item["fairlight"] = {"item_id": item.get("identity")}
+                    item["fairlight"][target] = value
+                    item["fairlight"].setdefault("controlSources", {})[target] = "TimelineItem.GetProperties"
+                    if isinstance(properties.get(enabled), bool):
+                        item["fairlight"][target + "_enabled"] = properties[enabled]
+            mapping_path = f"tracks.audio[{track['index']}].items[{item_index}].fairlight.sourceChannelMapping"
+            source_channel_mapping = _semantic_source_channel_mapping(
+                collector, item, mapping_path,
+            )
+            if source_channel_mapping is not None and item["fairlight"] is None:
+                item["fairlight"] = {"item_id": item.get("identity")}
             if item["fairlight"] is None:
-                collector.missing("fades", f"tracks.audio[{track['index']}].items[{item_index}].fades.audio", "readback_unavailable")
+                item["fairlight"] = {"item_id": item.get("identity")}
+                item["fairlight"]["sourceChannelMapping"] = None
+                if item["fades"]["audio"] is None:
+                    collector.missing("fades", f"tracks.audio[{track['index']}].items[{item_index}].fades.audio", "readback_unavailable")
                 collector.missing("fairlight", f"tracks.audio[{track['index']}].items[{item_index}].fairlight", "readback_unavailable")
             else:
-                item["fades"]["audio"] = {
-                    "fadeInFrames": item["fairlight"].get("fade_in_frames"),
-                    "fadeOutFrames": item["fairlight"].get("fade_out_frames"),
-                }
+                item["fairlight"]["sourceChannelMapping"] = source_channel_mapping
+                for key in ("gain_db", "pan", "effect_plugin_ids"):
+                    if item["fairlight"].get(key) is None:
+                        collector.missing(
+                            "fairlight", f"tracks.audio[{track['index']}].items[{item_index}].fairlight.{key}",
+                            "persisted_control_not_decoded",
+                        )
+                if item["fades"]["audio"] is None:
+                    item["fades"]["audio"] = {
+                        "fadeInFrames": item["fairlight"].get("fade_in_frames"),
+                        "fadeOutFrames": item["fairlight"].get("fade_out_frames"),
+                    }
                 collector.available("fades")
                 collector.available("fairlight")
+
+
+def _audio_fade_coverage(collector: _Collector, tracks: list[dict[str, Any]]) -> None:
+    """Account for audio fade semantics even when Fairlight readback fails."""
+    reported_paths = {row["path"] for row in collector.unreadable}
+    for track in tracks:
+        if track["type"] != "audio":
+            continue
+        for item_index, item in enumerate(track["items"]):
+            path = f"tracks.audio[{track['index']}].items[{item_index}].fades.audio"
+            fades = item["fades"]["audio"]
+            if fades is None:
+                if path not in reported_paths:
+                    collector.missing("fades", path, "readback_unavailable")
+                continue
+            for key in ("fadeInFrames", "fadeOutFrames"):
+                value = fades.get(key)
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+                    fades[key] = None
+                    collector.missing("fades", f"{path}.{key}", "readback_unavailable" if value is None else "invalid_value")
+            state = item.get("fairlight") or {}
+            fades["curve"] = {"in": state.get("fade_in_curve"), "out": state.get("fade_out_curve")}
+            for edge, duration in (("in", "fadeInFrames"), ("out", "fadeOutFrames")):
+                if fades["curve"][edge] is None and (fades.get(duration) is None or fades[duration] > 0):
+                    collector.missing("fades", f"{path}.curve.{edge}", "curve_shape_readback_unavailable")
 
 
 def _transitions(collector: _Collector, conn: Any, timeline_name: str) -> list[dict[str, Any]] | None:
@@ -1150,7 +1449,21 @@ def _track_rows(
 
 
 def build_timeline_inspection(conn: Any) -> dict[str, Any]:
+    from .resolve_api_version import at_least
+    from .output_blanking import _preserve_render_context
+
+    if at_least(conn, 21, 1):
+        # Detailed inspection reads native blanking directly on every item.
+        # Keep one verified render checkpoint for the complete read operation.
+        with _preserve_render_context(conn):
+            return _build_timeline_inspection(conn)
+    return _build_timeline_inspection(conn)
+
+
+def _build_timeline_inspection(conn: Any) -> dict[str, Any]:
     collector = _Collector()
+    from .resolve_api_version import at_least
+    collector.item_properties_method = "GetProperties" if at_least(conn, 21, 1) else "GetProperty"
     timeline = conn.timeline
     project = conn.project
     timeline_identity = _item_identity(timeline)
@@ -1177,7 +1490,8 @@ def build_timeline_inspection(conn: Any) -> dict[str, Any]:
         )
     video_fades_by_id: dict[str, dict[str, Any]] = {}
     try:
-        video_fade_rows = video_fade_readback.list_video_fade_handles(conn).get("items") or []
+        video_fade_rows = ([] if collector.item_properties_method == "GetProperties" else
+                           video_fade_readback.list_video_fade_handles(conn).get("items") or [])
         video_fades_by_id = {
             str(row["itemId"]): row
             for row in video_fade_rows
@@ -1247,6 +1561,14 @@ def build_timeline_inspection(conn: Any) -> dict[str, Any]:
         timeline_resolution = keyframe_db._timeline_resolution(conn)
     except Exception:
         pass
+    timeline_output = None
+    try:
+        if persisted is None:
+            raise LookupError("Persisted reader unavailable")
+        timeline_output = persisted.timeline_output(timeline_identity)
+        collector.available("fairlight")
+    except Exception:
+        collector.missing("fairlight", "fairlight.timelineOutput", "exact_persisted_output_unavailable", "identity-bound sequence output readback")
     try:
         tracks = _track_rows(
             collector, conn, persisted, video_fades_by_id, color_primary_by_id,
@@ -1266,6 +1588,8 @@ def build_timeline_inspection(conn: Any) -> dict[str, Any]:
         fairlight = None
         collector.missing("fairlight", "fairlight", "call_failed", "CutAgent Fairlight readback")
     if isinstance(fairlight, dict):
+        _attach_track_voice_isolation(collector, conn, fairlight)
+        fairlight["timelineOutput"] = timeline_output
         # The verified read model below covers track controls and exact clip
         # carriers. It does not currently bind automation or routing topology,
         # so those requested domains must remain explicit gaps.
@@ -1301,6 +1625,7 @@ def build_timeline_inspection(conn: Any) -> dict[str, Any]:
                 "CutAgent Fairlight readback",
             )
     _attach_fairlight(collector, tracks, fairlight)
+    _audio_fade_coverage(collector, tracks)
     project_row = {
         "identity": project_identity,
         "name": project_name,
@@ -1314,7 +1639,10 @@ def build_timeline_inspection(conn: Any) -> dict[str, Any]:
         "currentTimecode": collector.call("timeline", "timeline.currentTimecode", timeline, "GetCurrentTimecode"),
         "settings": settings,
         "markers": markers,
+        "colorGraph": _native_color_graph(collector, timeline, "GetNodeGraph", "timeline.colorGraph"),
     }
+    if collector.item_properties_method == "GetProperties":
+        timeline_row["outputBlanking"] = collector.call("timeline", "timeline.outputBlanking", timeline, "GetOutputBlanking")
     revision_payload = _bounded_json({
         "projectIdentity": project_identity,
         "timelineIdentity": timeline_identity,

@@ -616,7 +616,14 @@ function createTimeline(runtime: ObjectModelRuntime, generation: number, raw: { 
     markers: createMarkers(runtime, generation, readSnapshot),
     edit,
     managed: createManagedTimeline(runtime, projectId, id),
-    items: createTimelineItems(runtime, generation, readSnapshot),
+    items: createTimelineItems(runtime, generation, readSnapshot, (clip) => {
+      const origin = clipSnapshotOrigins.get(clip);
+      return origin?.runtime === runtime
+        && origin.generation === generation
+        && origin.timelineFacade === timelineFacade
+        && origin.projectId === projectId
+        && origin.timelineId === id;
+    }),
     color: createColor(runtime, generation, async (nodeStackLayerIndex, options = {}) => {
         const response = await runtime.readAtGeneration(generation, { operation: "color.current", projectId: wireProjectId, timelineId: wireId, nodeStackLayerIndex }, options);
         if (response.operation !== "color.current") throw invalidResponse("CutAgent runtime returned the wrong semantic Color read result.", RequestIdSchema.parse(response.requestId));

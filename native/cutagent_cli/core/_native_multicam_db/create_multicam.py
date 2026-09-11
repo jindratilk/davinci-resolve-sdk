@@ -73,6 +73,10 @@ def _default_source_templates(
     ops_module,
 ):
     dynamic_media_timemap = ops_module._encode_media_timemap_ba(multicam_duration_frames, multicam_fps)
+    dynamic_frame_rate = ops_module._encode_rate_blob(
+        multicam_fps,
+        reference.frame_rate or reference.sequence_frame_rate,
+    )
     return ops_module.SourceTemplates(
         video_track=ops_module.TrackTemplate(subtype=0, fields_blob=ops_module._VIDEO_TRACK_FIELDS_BLOB),
         audio_track=ops_module.TrackTemplate(subtype=257, fields_blob=ops_module._AUDIO_TRACK_FIELDS_BLOB),
@@ -81,7 +85,7 @@ def _default_source_templates(
             media_file_path=source_row.source_path,
             media_timemap_ba=dynamic_media_timemap,
             preconform_media_extents=ops_module._VIDEO_PRECONFORM_MEDIA_EXTENTS,
-            media_frame_rate=reference.frame_rate or reference.sequence_frame_rate,
+            media_frame_rate=dynamic_frame_rate,
             virtual_audio_track_ba=None,
             fields_blob=ops_module._VIDEO_ITEM_FIELDS_BLOB,
             in_value=None,
@@ -94,7 +98,7 @@ def _default_source_templates(
             media_file_path=source_row.source_path,
             media_timemap_ba=dynamic_media_timemap,
             preconform_media_extents=None,
-            media_frame_rate=reference.frame_rate or reference.sequence_frame_rate,
+            media_frame_rate=dynamic_frame_rate,
             virtual_audio_track_ba=ops_module._AUDIO_VIRTUAL_AUDIO_TRACK_BA,
             fields_blob=ops_module._AUDIO_ITEM_FIELDS_BLOB,
             in_value=None,
@@ -623,7 +627,15 @@ def create_multicam_clip(
             )
         else:
             multicam_duration_frames = int(derived_duration_frames)
-        sequence_fps = ops_module._decode_rate_blob(reference.sequence_frame_rate) or multicam_fps
+        sequence_fps = multicam_fps
+        sequence_frame_rate = ops_module._encode_rate_blob(
+            multicam_fps,
+            reference.sequence_frame_rate or reference.frame_rate,
+        )
+        media_frame_rate = ops_module._encode_rate_blob(
+            multicam_fps,
+            reference.frame_rate or reference.sequence_frame_rate,
+        )
         sequence_media_extents = ops_module._encode_sequence_media_extents(
             multicam_start_frame,
             multicam_duration_frames,
@@ -678,7 +690,7 @@ def create_multicam_clip(
                 folder_id,
                 reference.cur_playhead_position,
                 reference.audio_source if preserve_legacy_audio_shape else "AUDIO_SOURCE_EMBEDDED",
-                reference.frame_rate,
+                media_frame_rate,
                 reference.slate_tc,
                 reference.video_metadata,
                 folder_id,
@@ -707,7 +719,7 @@ def create_multicam_clip(
                 multicam_media_id,
                 multicam_media_id,
                 1 if preserve_legacy_audio_shape else int(audio_mode_plan["audio_output_channel_count"]),
-                reference.sequence_frame_rate,
+                sequence_frame_rate,
                 reference.sequence_resolution,
                 sequence_media_extents,
                 reference.sequence_render_cache,
@@ -789,7 +801,6 @@ def create_multicam_clip(
                     angle_timing,
                     item_start_frame=multicam_start_frame + int(item_timing["record_start_frame"]),
                     item_duration_frames=int(item_timing["duration_frames"]),
-                    media_timemap_duration_frames=int(item_timing["duration_frames"]),
                     sequence_extents_duration_frames=multicam_duration_frames,
                     source_in_frame=int(item_timing["source_in_frame"]),
                 )

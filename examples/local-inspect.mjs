@@ -1,7 +1,7 @@
 import {mkdtemp, chmod, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join, resolve} from 'node:path';
-import {CutAgent} from 'davinci-resolve-sdk';
+import {CutAgent} from 'cutagent';
 import {startLocalRuntime} from '../runtime/index.mjs';
 import {createNativeInspectionOwner} from '../runtime/local/native-inspection.mjs';
 const transport=process.argv[2];

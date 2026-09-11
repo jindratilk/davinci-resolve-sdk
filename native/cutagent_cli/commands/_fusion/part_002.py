@@ -197,6 +197,7 @@ def _run_image_set_entry(conn: Any, entry: dict[str, Any]) -> dict[str, Any]:
             position_x=entry.get("position_x"),
             position_y=entry.get("position_y"),
         ),
+        composition_index=int(entry["composition_index"]) if entry.get("composition_index") is not None else None,
     )
     return {
         "clip": _media_pool_item_name(item) or _normalize_optional_string(entry.get("clip")) or None,
@@ -370,8 +371,25 @@ def image_batch(
 def _run_text_set_entry(item: Any, entry: dict[str, Any]) -> dict[str, Any]:
     has_text_update = "text" in entry
     if has_text_update:
-        data = fusion_text_ops.set_text_on_item(
-            item,
+        composition_index = entry.get("composition_index")
+        comp = None
+        if composition_index is not None:
+            try:
+                composition_index = int(composition_index)
+            except (TypeError, ValueError) as exc:
+                raise ValidationError("Fusion composition index must be an integer.") from exc
+            if composition_index < 1:
+                raise ValidationError("Fusion composition index must be 1 or greater.")
+            comp = item.GetFusionCompByIndex(composition_index)
+            if comp is None:
+                raise APICallFailed(
+                    "Exact Fusion composition was not found for text update.",
+                    details={"composition_index": composition_index},
+                )
+        setter = fusion_text_ops.set_text_on_comp if comp is not None else fusion_text_ops.set_text_on_item
+        positional = (item, comp) if comp is not None else (item,)
+        data = setter(
+            *positional,
             text=str(entry.get("text") or ""),
             role=_normalize_optional_string(entry.get("role")),
             explicit_tool=_normalize_optional_string(entry.get("tool")),
@@ -382,6 +400,7 @@ def _run_text_set_entry(item: Any, entry: dict[str, Any]) -> dict[str, Any]:
             bold_style=str(entry.get("bold_style") or "ExtraBold"),
             styled=entry.get("styled"),
             cls_tool_candidates=_list_option(entry.get("cls_tool_candidates")),
+            require_exact_target=bool(entry.get("exact_target", False)),
         )
     else:
         data = {
@@ -664,6 +683,52 @@ def _nested_update_entry(
         result["restored_original_timeline"] = restored
 
 
+def _run_nested_text_batch(
+    conn: Any,
+    entries: list[dict[str, Any]],
+    *,
+    dry_run: bool,
+) -> dict[str, Any]:
+    """Execute reviewed nested-text entries through one live Resolve connection."""
+    results = []
+    success_count = 0
+    for index, raw_entry in enumerate(entries):
+        entry = raw_entry
+        if entry.get("preset") == "legacy-explanation":
+            entry = {
+                **entry,
+                "header_uppercase": True,
+                "header_double_spaces": True,
+                "header_clip": entry.get("header_clip") or fusion_text_ops.HEADER_DEFAULT_NAME,
+                "body_clip": entry.get("body_clip") or fusion_text_ops.BODY_DEFAULT_NAME,
+            }
+        try:
+            result = _nested_update_entry(conn, entry, dry_run=dry_run)
+            results.append({"index": index, "ok": True, **result})
+            success_count += 1
+        except Exception as exc:
+            results.append({
+                "index": index,
+                "ok": False,
+                "selector": _selector_payload(
+                    clip_name=_normalize_optional_string(entry.get("clip")),
+                    track=entry.get("track"),
+                    record_frame=entry.get("record_frame"),
+                ),
+                "error": _exception_payload(exc),
+            })
+    return {
+        "changed": any(
+            (row.get("header_updated") or row.get("body_updated"))
+            for row in results if row.get("ok")
+        ),
+        "result_count": len(results),
+        "success_count": success_count,
+        "failure_count": len(results) - success_count,
+        "results": results,
+    }
+
+
 @nested_text_app.command("update")
 @handle_errors
 def nested_text_update(
@@ -740,32 +805,16 @@ def nested_text_batch(
     enforce_mutation_policy("fusion.mutation", intended_engine="api_native", mutating=not is_dry_run())
     entries = _load_batch_entries(batch)
     conn = get_connection(require_timeline=True)
-    results = []
-    success_count = 0
-    for index, entry in enumerate(entries):
-        if entry.get("preset") == "legacy-explanation":
-            entry = {
-                **entry,
-                "header_uppercase": True,
-                "header_double_spaces": True,
-                "header_clip": entry.get("header_clip") or fusion_text_ops.HEADER_DEFAULT_NAME,
-                "body_clip": entry.get("body_clip") or fusion_text_ops.BODY_DEFAULT_NAME,
-            }
-        try:
-            result = _nested_update_entry(conn, entry, dry_run=is_dry_run())
-            results.append({"index": index, "ok": True, **result})
-            success_count += 1
-        except Exception as exc:
-            results.append({"index": index, "ok": False, "selector": _selector_payload(clip_name=_normalize_optional_string(entry.get("clip")), track=entry.get("track"), record_frame=entry.get("record_frame")), "error": _exception_payload(exc)})
+    batch_result = _run_nested_text_batch(conn, entries, dry_run=is_dry_run())
     payload = mutation_payload(
         action="fusion.nested_text.batch",
         target={"kind": "timeline", "name": _timeline_name(getattr(conn, "timeline", None)) or "current"},
-        changed=any((row.get("header_updated") or row.get("body_updated")) for row in results if row.get("ok")),
+        changed=batch_result["changed"],
         batch_path=batch,
-        result_count=len(results),
-        success_count=success_count,
-        failure_count=len(results) - success_count,
-        results=results,
+        result_count=batch_result["result_count"],
+        success_count=batch_result["success_count"],
+        failure_count=batch_result["failure_count"],
+        results=batch_result["results"],
     )
     if is_dry_run():
         payload["dry_run"] = True
@@ -792,6 +841,19 @@ def tool_list(
         title="Fusion Tools",
         quiet_key="name"
     )
+
+
+@tool_app.command("registry")
+@handle_errors
+def tool_registry(
+    query: Optional[str] = typer.Option(None, "--query", "-q", help="Filter by creation ID, name, or category"),
+    category: Optional[str] = typer.Option(None, "--category", help="Filter by registry category"),
+    limit: int = typer.Option(1024, "--limit", min=1, max=2048, help="Maximum tools to return"),
+):
+    """List available Fusion tool creation IDs from the live registry."""
+    conn = get_connection(require_timeline=False)
+    api = fusion_api.get_fusion_api(conn)
+    output(api.list_registered_tools(query=query, category=category, limit=limit), title="Fusion Tool Registry")
 
 
 @tool_app.command("add")

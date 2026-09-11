@@ -27,7 +27,13 @@ import {
   SDK_OPERATION_RESULT_COLLECTION_MAX_ITEMS,
   sdkOperationResultCollectionDigest,
 } from "../services/sdk-operation-result-collections.js";
-import { sdkPreparedActionTerminalSchema, sdkPrepareActionRequestSchema } from "../contracts/generated/sdk-prepared-action.js";
+import {
+  CUTAGENT_PREPARED_ACTION_PROTOCOL_VERSION,
+  sdkPreparedActionTerminalSchema,
+  sdkPrepareActionRequestSchema,
+} from "../contracts/generated/sdk-prepared-action.js";
+
+import { readLegacySdkPublicFailure } from "../services/sdk-legacy-public-failure.js";
 
 const STATE_VERSION = 1;
 const PREPARED_TERMINAL_RESERVE_BYTES = 8 * 1024 * 1024;
@@ -54,6 +60,17 @@ function installationAuthority() {
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function parseStoredPreparedActionRequest(value) {
+  if (isPlainObject(value) && value.protocolVersion === 1
+    && CUTAGENT_PREPARED_ACTION_PROTOCOL_VERSION !== 1) {
+    return sdkPrepareActionRequestSchema.parse({
+      ...value,
+      protocolVersion: CUTAGENT_PREPARED_ACTION_PROTOCOL_VERSION,
+    });
+  }
+  return sdkPrepareActionRequestSchema.parse(value);
 }
 
 function resultPageReferences(value, output = new Map()) {
@@ -144,8 +161,10 @@ function validatePrivateRecord(record, operationId, authority) {
       throw new Error(`SDK prepared-action terminal does not match its durable operation: ${operationId}`);
     }
   }
+  let normalizedPreparedActionRequest;
   if (record.private.preparedActionRequest !== undefined) {
-    const request = sdkPrepareActionRequestSchema.parse(record.private.preparedActionRequest);
+    const request = parseStoredPreparedActionRequest(record.private.preparedActionRequest);
+    normalizedPreparedActionRequest = request;
     if (request.operationId !== operationId || request.executionId !== snapshot.executionId
       || request.requestId !== snapshot.requestId || request.actionId !== snapshot.actionId) {
       throw new Error(`SDK prepared-action request does not match its durable operation: ${operationId}`);
@@ -161,7 +180,11 @@ function validatePrivateRecord(record, operationId, authority) {
     throw new Error(`SDK operation normalized input digest does not match its record: ${operationId}`);
   }
   validateResultCollections(record, snapshot, operationId);
-  return { public: snapshot, private: structuredClone(record.private) };
+  const privateRecord = structuredClone(record.private);
+  if (normalizedPreparedActionRequest) {
+    privateRecord.preparedActionRequest = normalizedPreparedActionRequest;
+  }
+  return { public: snapshot, private: privateRecord };
 }
 
 function validateReservation(reservation, key, authority) {
@@ -373,6 +396,18 @@ function assertStatusTransition(previous, next) {
   }
 }
 
+function withoutIntermediateProgress(snapshot) {
+  const {
+    status: _status,
+    sequence: _sequence,
+    updatedAt: _updatedAt,
+    progress: _progress,
+    waitingFor: _waitingFor,
+    ...durableTruth
+  } = snapshot;
+  return durableTruth;
+}
+
 function loadState(filePath) {
   if (!fs.existsSync(filePath)) {
     return {
@@ -397,7 +432,9 @@ function loadState(filePath) {
   }
   const operations = Object.fromEntries(Object.entries(raw.operations).map(([operationId, record]) => [
     operationId,
-    validatePrivateRecord(record, operationId, raw.installationAuthority),
+    validatePrivateRecord(record?.public?.failure ? {
+      ...record, public: { ...record.public, failure: readLegacySdkPublicFailure(record.public.failure) },
+    } : record, operationId, raw.installationAuthority),
   ]));
   const idempotency = Object.fromEntries(Object.entries(raw.idempotency).map(([key, reservation]) => {
     const validated = validateReservation(reservation, key, raw.installationAuthority);
@@ -722,7 +759,7 @@ export function createSdkOperationRepo({ storageDir }) {
       commit({...state, operations: {...state.operations, [operationId]: retained}});
       return structuredClone(state.operations[operationId]);
     },
-    transition(operationId, expectedSequence, updater) {
+    transition(operationId, expectedSequence, updater, {durable = true} = {}) {
       const existing = state.operations[operationId];
       if (!existing) return null;
       if (existing.public.sequence !== expectedSequence) return false;
@@ -731,7 +768,12 @@ export function createSdkOperationRepo({ storageDir }) {
       }
       const nextValue = updater(structuredClone(existing));
       if (!nextValue) return false;
-      const validated = validatePrivateRecord(nextValue, operationId, state.installationAuthority);
+      const validated = durable
+        ? validatePrivateRecord(nextValue, operationId, state.installationAuthority)
+        : {
+            public: sdkOperationSnapshotSchema.parse(nextValue.public),
+            private: existing.private,
+          };
       if (validated.public.sequence !== expectedSequence + 1) {
         throw new Error("SDK operation transition must advance authority sequence exactly once.");
       }
@@ -762,6 +804,18 @@ export function createSdkOperationRepo({ storageDir }) {
         operations: {...state.operations, [operationId]: validated},
         idempotency,
       };
+      if (!durable) {
+        if (!["running", "waiting"].includes(existing.public.status)
+          || !["running", "waiting"].includes(validated.public.status)
+          || "retentionExpiresAt" in validated.public
+          || JSON.stringify(withoutIntermediateProgress(validated.public))
+            !== JSON.stringify(withoutIntermediateProgress(existing.public))
+          || idempotency !== state.idempotency) {
+          throw new Error("Only intermediate SDK operation progress may be non-durable.");
+        }
+        state = draft;
+        return structuredClone(validated);
+      }
       try {
         commit(draft);
       } catch (error) {

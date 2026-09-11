@@ -29,6 +29,7 @@ from ..private_sdk_descriptors.timeline_version_prepared_action import (
 FUSION_ARTIFACT_BACKED_ACTION_IDS = frozenset({
     "cutagent.action.dctl.apply", "cutagent.action.fusion.generate",
     "cutagent.action.fusion.image.set", "cutagent.action.fusion.insert_setting",
+    "cutagent.action.fusion.insert_settings.batch",
     "cutagent.action.fusion.setting.inspect", "cutagent.action.fusion.setting.summary",
     "cutagent.action.fusion.setting.validate", "cutagent.action.fusion.template.assets.add",
     "cutagent.action.fusion.template.assets.list", "cutagent.action.fusion.template.apply",
@@ -144,7 +145,6 @@ class ProductionFusionPreparedActionRuntime(FusionPreparedActionRuntime):
             **context,
             **bindings,
             "privateManagedArtifacts": normalized_managed,
-            **({"mutationPolicy": mutation_base} if isinstance(mutation_base, Mapping) else {}),
             "_fusionArtifactCustody": self._custody,
         }
 
@@ -348,8 +348,8 @@ def fusion_timeline_production_contribution_packet() -> Any:
         for action_id in TIMELINE_VERSION_CALLABLE_ACTION_IDS
     }
     descriptors = {**fusion, **timeline}
-    expected_fusion = 64
-    if len(fusion) != expected_fusion or len(timeline) != 57 or len(descriptors) != expected_fusion + 57:
+    expected_fusion = 69
+    if len(fusion) != expected_fusion or len(timeline) != 60 or len(descriptors) != expected_fusion + 60:
         raise ValueError("Fusion/Timeline production packet activation gate drifted.")
     return PreparedActionContributionPacket(
         owner="fusion-timeline-version",

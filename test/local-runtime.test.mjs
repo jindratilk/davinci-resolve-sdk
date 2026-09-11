@@ -4,6 +4,7 @@ import {mkdtemp, chmod, rm, readFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
+import {z} from 'zod';
 import * as sdk from '../sdk/dist/index.js';
 import {startLocalRuntime} from '../runtime/index.mjs';
 import {createLocalPrincipalAuthority} from '../runtime/local/principal.mjs';
@@ -45,6 +46,107 @@ test('original full SDK connects and routes project inspection without commercia
   assert.equal(typeof client.operations.reattach, 'function');
   assert.equal(typeof client.actions.start, 'function');
   await client.close();
+});
+
+test('local runtime starts retention only after readiness and stops its scheduler on shutdown', async t => {
+  let scheduled = null;
+  let cleared = null;
+  let unrefCount = 0;
+  let releaseReadiness;
+  const readiness = new Promise(resolve => { releaseReadiness = resolve; });
+  const starting = fixture(t, {
+    sdkOperationReady: readiness,
+    operationRetentionLifecycleOptions: {
+      sweepIntervalMs: 1_234,
+      scheduleInterval(callback, interval) {
+        scheduled = {callback, interval, unref() { unrefCount += 1; }};
+        return scheduled;
+      },
+      clearScheduledInterval(timer) { cleared = timer; },
+    },
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(scheduled, null);
+  releaseReadiness();
+  const runtime = await starting;
+  assert.equal(scheduled.interval, 1_234);
+  assert.equal(unrefCount, 1);
+
+  await runtime.close();
+  assert.equal(cleared, scheduled);
+});
+
+test('default retention reporting excludes cleanup secrets and raw paths', async t => {
+  const privateMessage = 'cleanup failed for /private/editor/project bearer-secret-value';
+  let cleanupCalls = 0;
+  let scheduled = null;
+  const runtime = await fixture(t, {
+    sdkOperationAuthority: {
+      installationAuthority: 'sdk_installation_retention_reporting_test',
+      cleanup() {
+        cleanupCalls += 1;
+        if (cleanupCalls > 1) throw Object.assign(new Error(privateMessage), {code: 'SDK_OPERATION_AUTHORITY_UNAVAILABLE'});
+      },
+    },
+    operationRetentionLifecycleOptions: {
+      scheduleInterval(callback) {
+        scheduled = {callback, unref() {}};
+        return scheduled;
+      },
+      clearScheduledInterval() {},
+    },
+  });
+  assert.equal(cleanupCalls, 1);
+  const output = [];
+  const original = console.error;
+  console.error = value => output.push(String(value));
+  try {
+    scheduled.callback();
+  } finally {
+    console.error = original;
+  }
+  assert.equal(cleanupCalls, 2);
+  assert.deepEqual(output, [
+    '[cutagent-sdk-runtime] Durable SDK operation retention cleanup failed. (SDK_OPERATION_AUTHORITY_UNAVAILABLE)',
+  ]);
+  assert.equal(JSON.stringify(output).includes(privateMessage), false);
+  assert.equal(JSON.stringify(output).includes('/private/editor/project'), false);
+  await runtime.close();
+});
+
+test('retention failure reaches the existing private diagnostic callback in bounded form', async t => {
+  let cleanupCalls = 0;
+  let scheduled = null;
+  const diagnostics = [];
+  const runtime = await fixture(t, {
+    sdkOperationAuthority: {
+      installationAuthority: 'sdk_installation_retention_callback_test',
+      cleanup() {
+        cleanupCalls += 1;
+        if (cleanupCalls > 1) throw Object.assign(new Error('secret /private/runtime/state'), {code: 'BAD code with spaces'});
+      },
+    },
+    onExecutorError(diagnostic) {
+      diagnostics.push(diagnostic);
+      throw new Error('diagnostic consumer failure');
+    },
+    operationRetentionLifecycleOptions: {
+      scheduleInterval(callback) {
+        scheduled = {callback, unref() {}};
+        return scheduled;
+      },
+      clearScheduledInterval() {},
+    },
+  });
+  assert.doesNotThrow(() => scheduled.callback());
+  assert.deepEqual(diagnostics, [{
+    phase: 'retention.cleanup',
+    errorClass: 'Error',
+    errorCode: null,
+    message: 'Durable SDK operation retention cleanup failed.',
+  }]);
+  assert.equal(JSON.stringify(diagnostics).includes('/private/runtime/state'), false);
+  await runtime.close();
 });
 
 test('full SDK export names match the original public package', async () => {
@@ -104,6 +206,80 @@ test('no implicit fake native implementation and no unsafe shared state director
   await assert.rejects(startLocalRuntime({stateDirectory:directory}), /mode 0700/);
 });
 
+test('executor diagnostics require an internal callback', async () => {
+  await assert.rejects(
+    startLocalRuntime({onExecutorError: {}}),
+    error => error instanceof TypeError && error.message === 'Executor diagnostics must be a callback.',
+  );
+});
+
+test('executor failures reach private diagnostics without leaking into the public terminal', async t => {
+  const actionId = 'cutagent.action.audio.duck';
+  const privateMessage = 'native failure at /private/editor/source.wav bearer-secret-value';
+  const privateReason = 'native stderr contained private fixture identity';
+  const diagnostics = [];
+  await fixture(t, {
+    sdkActions: {[actionId]: {
+      inputSchema: z.object({
+        inputPath: z.string(),
+        speechTrackIndex: z.number().int(),
+        musicTrackIndex: z.number().int(),
+      }).strict(),
+      resultSchema: z.object({changed: z.boolean()}).strict(),
+      idempotency: 'required',
+      async execute() {
+        throw Object.assign(new Error(privateMessage), {
+          code: 'NATIVE_PRIVATE_FAILURE',
+          hostPhase: 'after_native_dispatch',
+          privateReason,
+        });
+      },
+    }},
+    onExecutorError(diagnostic) {
+      diagnostics.push(diagnostic);
+      throw new Error('diagnostic sink failure must not alter operation truth');
+    },
+  });
+  const client = await sdk.CutAgent.connect();
+
+  const operation = await client.actions.start(actionId, {
+    inputPath: '/session/audio/source.wav',
+    speechTrackIndex: 1,
+    musicTrackIndex: 2,
+  }, {idempotencyKey: 'idempotency_executor_error_1234'});
+  const terminal = await operation.wait();
+
+  assert.equal(terminal.status, 'failed');
+  const publicTerminal = JSON.stringify(terminal);
+  for (const privateValue of [privateMessage, privateReason, 'NATIVE_PRIVATE_FAILURE', 'after_native_dispatch']) {
+    assert.equal(publicTerminal.includes(privateValue), false);
+  }
+  assert.equal(diagnostics.length, 1);
+  assert.deepEqual(
+    {
+      phase: diagnostics[0].phase,
+      actionId: diagnostics[0].actionId,
+      errorClass: diagnostics[0].errorClass,
+      message: diagnostics[0].message,
+      errorCode: diagnostics[0].errorCode,
+      hostPhase: diagnostics[0].hostPhase,
+      reason: diagnostics[0].reason,
+    },
+    {
+      phase: 'definition.execute',
+      actionId,
+      errorClass: 'Error',
+      message: privateMessage,
+      errorCode: 'NATIVE_PRIVATE_FAILURE',
+      hostPhase: 'after_native_dispatch',
+      reason: privateReason,
+    },
+  );
+  assert.match(diagnostics[0].operationId, /^operation_/);
+  assert.match(diagnostics[0].executionId, /^execution_/);
+  await client.close();
+});
+
 test('existing native-to-public projector rejects changed project identity', async t => {
   await fixture(t, {liveInspectionService:null, identityNamespace:'standalone-local-test',
     resolveService:{async readSdkLiveInspection() {
@@ -116,7 +292,8 @@ test('existing native-to-public projector rejects changed project identity', asy
 });
 
 test('native owner exposes existing inspection seam and rejects mutations before spawn', async () => {
-  const {createNativeInspectionOwner}=await import('../runtime/local/native-inspection.mjs');
+  const {createNativeInspectionOwner,resolveNativeInspectionPython}=await import('../runtime/local/native-inspection.mjs');
+  assert.equal(resolveNativeInspectionPython(), join(process.cwd(), '.venv/bin/python'));
   const owner=createNativeInspectionOwner({python:'/not-a-python-executable',transport:'studio_external'});
   const identity=owner.nativeIdentityProbe();
   assert.match(identity.executableDigest,/^[a-f0-9]{64}$/);

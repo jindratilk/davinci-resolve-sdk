@@ -96,6 +96,7 @@ export const CUTAGENT_SDK_FAIRLIGHT_RAW_AUDIO_TRACK_ACTION_IDS = Object.freeze(C
 // current-timeline audio clip, matching the public command contract, while the
 // native timeline-item identity remains private.
 export const CUTAGENT_SDK_FAIRLIGHT_RAW_AUDIO_CLIP_ACTION_BINDINGS = [
+    { actionId: "cutagent.action.fairlight.channel_map.set", selectorKey: "clipName", required: true },
     { actionId: "cutagent.action.fairlight.ai.voice_isolation", selectorKey: "clip", defaultFirstAudioClip: true },
     { actionId: "cutagent.action.fairlight.eq.set", selectorKey: "clip", defaultFirstAudioClip: true },
     { actionId: "cutagent.action.fairlight.item_source.patch", selectorKey: "itemId", required: true, idOnly: true, exactRecordRangeChecks: true },

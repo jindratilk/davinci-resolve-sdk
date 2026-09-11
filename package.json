@@ -1,18 +1,65 @@
 {
-  "name": "davinci-resolve-sdk-standalone-candidate",
-  "version": "0.0.0",
+  "name": "cutagent",
+  "version": "3.0.0",
+  "description": "CutAgent SDK and local CutAgent CLI runtime for DaVinci Resolve",
   "private": true,
   "type": "module",
-  "workspaces": [
-    "sdk"
-  ],
   "scripts": {
-    "build": "npm run build --workspace davinci-resolve-sdk",
+    "build": "npm --prefix sdk run build",
     "test": "node --test test/*.test.mjs",
     "test:types": "tsc --noEmit --module NodeNext --moduleResolution NodeNext --target ES2023 --strict test/type-smoke.ts",
-    "verify:source": "node scripts/verify-source.mjs"
+    "verify:source": "node scripts/verify-source.mjs",
+    "test:pack": "node scripts/smoke-packed-consumer.mjs",
+    "prepack": "npm run build"
   },
+  "bin": {
+    "cutagent": "bin/cutagent.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./sdk/.types/index.d.ts",
+      "import": "./sdk/dist/index.js"
+    },
+    "./actions": {
+      "types": "./sdk/.types/actions.d.ts",
+      "import": "./sdk/dist/actions.js"
+    },
+    "./schemas": {
+      "types": "./sdk/.types/schemas/index.d.ts",
+      "import": "./sdk/dist/schemas.js"
+    },
+    "./protocol": {
+      "types": "./sdk/.types/protocol/index.d.ts",
+      "import": "./sdk/dist/protocol.js"
+    },
+    "./preview/v0.1": {
+      "types": "./sdk/.types/preview/v0.1.d.ts",
+      "import": "./sdk/dist/preview-v0.1.js"
+    },
+    "./compatibility.json": "./sdk/compatibility.json",
+    "./compatibility.schema.json": "./sdk/compatibility.schema.json",
+    "./package.json": "./package.json"
+  },
+  "main": "./sdk/dist/index.js",
+  "types": "./sdk/.types/index.d.ts",
+  "files": [
+    "bin/",
+    "native/",
+    "!native/**/__pycache__/**",
+    "!native/**/*.pyc",
+    "runtime/",
+    "sdk/dist/",
+    "sdk/.types/",
+    "sdk/compatibility.json",
+    "sdk/compatibility.schema.json",
+    "THIRD_PARTY_NOTICES/",
+    "README.md",
+    "RELEASE_STATUS.md",
+    "PROVENANCE.md",
+    "LICENSE"
+  ],
   "dependencies": {
+    "ajv": "8.18.0",
     "express": "5.2.1",
     "zod": "4.4.3"
   },
@@ -21,7 +68,7 @@
     "typescript": "5.9.3",
     "@types/node": "24.13.3"
   },
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "engines": {
     "node": ">=22.12.0 <23 || >=24.0.0 <25"
   }

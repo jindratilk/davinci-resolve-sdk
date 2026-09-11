@@ -969,8 +969,6 @@ def _version_prune_impact(
         "requestId",
         "operationId",
         "executionId",
-        "scopeId",
-        "scopeRevision",
         "projectLibraryId",
         "projectId",
         "timelineId",
@@ -1585,6 +1583,7 @@ _TIMELINE_VERSION_MUTATION_CALLABLE_ACTION_IDS: tuple[str, ...] = (
     "cutagent.action.timeline.voice_isolation.set",
 )
 _TIMELINE_ORDINARY_MUTATION_CALLABLE_ACTION_IDS: tuple[str, ...] = (
+    "cutagent.action.timeline.clip_color.batch",
     "cutagent.action.timeline.create",
     "cutagent.action.timeline.delete",
     "cutagent.action.timeline.duplicate",
@@ -1596,6 +1595,7 @@ _TIMELINE_ORDINARY_MUTATION_CALLABLE_ACTION_IDS: tuple[str, ...] = (
     "cutagent.action.timeline.rename",
     "cutagent.action.timeline.set_start_tc",
     "cutagent.action.timeline.settings_set",
+    "cutagent.action.timeline.output_blanking.set",
     "cutagent.action.timeline.start_tc",
     "cutagent.action.timeline.switch",
     "cutagent.action.timeline.dolby.analyze",

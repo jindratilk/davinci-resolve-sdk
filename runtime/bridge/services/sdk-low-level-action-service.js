@@ -32,7 +32,6 @@ const PUBLIC_FAILURES = Object.freeze({
   TARGET_NOT_FOUND: ["TARGET_NOT_FOUND", "target_not_found", ["inspect_state"]],
   AMBIGUOUS_TARGET: ["AMBIGUOUS_TARGET", "ambiguous_target", ["inspect_state"]],
   STALE_REVISION: ["STALE_REVISION", "stale_revision", ["inspect_state"]],
-  EDIT_CONSTRAINT_VIOLATION: ["EDIT_CONSTRAINT_VIOLATION", "edit_constraint_violation", ["inspect_state"]],
   USAGE_EXHAUSTED: ["USAGE_EXHAUSTED", "usage_exhausted", ["contact_support"]],
   REQUEST_TOO_LARGE: ["REQUEST_TOO_LARGE", "request_too_large", ["contact_support"]],
   OUTPUT_LIMIT_REACHED: ["OUTPUT_LIMIT_REACHED", "output_limit_reached", ["contact_support"]],
@@ -142,7 +141,7 @@ function readFailure(error) {
     };
   }
   const [code, kind, recovery] = known;
-  const preExecution = new Set(["AUTHENTICATION_REQUIRED", "SUBSCRIPTION_REQUIRED", "CAPABILITY_UNAVAILABLE", "EDIT_CONSTRAINT_VIOLATION", "USAGE_EXHAUSTED", "REQUEST_TOO_LARGE"]).has(code);
+  const preExecution = new Set(["AUTHENTICATION_REQUIRED", "SUBSCRIPTION_REQUIRED", "CAPABILITY_UNAVAILABLE", "USAGE_EXHAUSTED", "REQUEST_TOO_LARGE"]).has(code);
   return {
     kind, code,
     message: `The typed CutAgent CLI read failed with ${code}.`,
@@ -285,14 +284,6 @@ export function createSdkLowLevelActions({ resolveService, liveInspectionService
       try {
         const executionOptions = {
           carrier: "sdk",
-          policyContext: {
-            requestId: context.requestId, operationId: context.operationId, executionId: context.executionId,
-            typedLowLevelActionId: binding.actionId,
-            ...(typeof input.projectId === "string" ? { projectId: input.projectId } : {}),
-            ...(typeof input.timelineId === "string" ? { timelineId: input.timelineId } : {}),
-            ...(typeof input.revision === "string" ? { timelineRevision: input.revision } : {}),
-            resolvedTargets: [], closedComposition: false, executableStableTargetPrecondition: false,
-          },
         };
         if (binding.actionId === "cutagent.action.audio.voice_list") {
           executionOptions.issueBrokerEnvironment = ({ authorization, args }) => issueCutAgentCliBrokerEnvironment({

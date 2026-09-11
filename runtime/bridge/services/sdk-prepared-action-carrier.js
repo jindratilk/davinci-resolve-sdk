@@ -5,6 +5,7 @@ import {CUTAGENT_PREPARED_ACTION_ACTION_METADATA} from "../contracts/sdk-prepare
 import {
   CUTAGENT_PREPARED_ACTION_CAPABILITY_DIGEST,
   CUTAGENT_PREPARED_ACTION_CONTRACT_DIGEST,
+  CUTAGENT_PREPARED_ACTION_PROTOCOL_VERSION,
   sdkPreparedActionIdentitiesSchema,
   sdkPreparedActionRevisionsSchema,
 } from "../contracts/generated/sdk-prepared-action.js";
@@ -52,7 +53,7 @@ export function buildProductionSdkPreparedActionBuilders({contributions = {}, ca
     }
     const metadata = CUTAGENT_PREPARED_ACTION_ACTION_METADATA[actionId];
     if (metadata.operationClass === "mutation" && !contribution.mutationBinding) {
-      throw new TypeError(`Prepared mutation contribution omitted its Mutation Policy binding: ${actionId}`);
+      throw new TypeError(`Prepared mutation contribution omitted its target binding: ${actionId}`);
     }
     if (metadata.operationClass === "read" && contribution.mutationBinding) {
       throw new TypeError(`Prepared read contribution cannot declare mutation impact: ${actionId}`);
@@ -87,7 +88,7 @@ export function buildProductionSdkPreparedActionBuilders({contributions = {}, ca
           throw new TypeError(`Prepared-action private binding has no carrier custody: ${actionId}`);
         }
         return {
-          protocolVersion: 1,
+          protocolVersion: CUTAGENT_PREPARED_ACTION_PROTOCOL_VERSION,
           actionId,
           actionContractVersion: metadata.version,
           input,
@@ -113,15 +114,12 @@ export function buildProductionSdkPreparedActionBuilders({contributions = {}, ca
 export function createSdkPreparedActionCarrier({
   builders = null,
   runtimeClientFactory = null,
-  mutationPolicyGate = null,
   authorizationService = null,
   authService = null,
-  refreshProtectedTargets = null,
   builderContributions = {},
   capturePrivateRuntimeBinding = null,
   releasePrivateRuntimeBinding = null,
   resolveLiveTargets = null,
-  directMutationPolicyAuthority = null,
 } = {}) {
   builders ??= runtimeClientFactory
     ? buildProductionSdkPreparedActionBuilders({contributions: builderContributions, capturePrivateRuntimeBinding, releasePrivateRuntimeBinding})
@@ -149,7 +147,6 @@ export function createSdkPreparedActionCarrier({
       entry = Promise.resolve().then(() => runtimeClientFactory({
         ...binding,
         advertisedActionIds: expectedAdvertisedActionIds,
-        assertProtectedState: (payload) => coordinator.assertProtectedState(payload),
         ...(typeof resolveLiveTargets === "function" ? {resolveLiveTargets} : {}),
       })).then((runtime) => {
         if (!Array.isArray(runtime?.advertisedActionIds)
@@ -217,7 +214,6 @@ export function createSdkPreparedActionCarrier({
         throw error;
       }
     },
-    acceptPolicy(payload) { return receiptRuntime(payload, "acceptPolicy"); },
     admit(payload) { return receiptRuntime(payload, "admit"); },
     execute(payload) { return receiptRuntime(payload, "execute"); },
     revoke(payload) { return receiptRuntime(payload, "revoke"); },
@@ -237,17 +233,14 @@ export function createSdkPreparedActionCarrier({
     .filter(([actionId]) => CUTAGENT_PREPARED_ACTION_ACTION_METADATA[actionId]?.operationClass === "mutation")
     .map(([actionId, builder]) => [actionId, builder.mutationBinding]));
   const mutationBaseAuthority = Object.keys(mutationRegistrations).length
-    ? createSdkPreparedActionMutationBaseAuthority({
-        resolveScope: directMutationPolicyAuthority?.resolveScope,
+      ? createSdkPreparedActionMutationBaseAuthority({
         registrations: mutationRegistrations,
       })
     : null;
   coordinator = createSdkPreparedActionCoordinator({
     signedRuntimeClient,
-    mutationPolicyGate,
     authorizationService,
     authService,
-    refreshProtectedTargets,
     mutationBaseAuthority,
   });
   const actions = createSdkPreparedActionOperationDefinitions({builders, coordinator});

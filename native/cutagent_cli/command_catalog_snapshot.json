@@ -2677,7 +2677,7 @@
       "function_name": "clip_audio_gain",
       "docs_topic": "clip",
       "help_text": null,
-      "doc": "Set linked audio gain via archive-backed EffectFiltersBA payload.",
+      "doc": "Set clip audio gain natively on 21.1; retain the Disk DB route for older runtimes and gain above +30 dB.",
       "parameters": [
         {
           "python_name": "name",
@@ -2710,8 +2710,15 @@
       ],
       "capability_id": "clip.audio_gain",
       "capability_status": "supported",
-      "engine": "db_workaround",
-      "capability_caveats": null,
+      "engine": "api_native",
+      "capability_caveats": {
+        "native_since": "21.1",
+        "native_range_db": [
+          -100,
+          30
+        ],
+        "fallback": "Disk DB for older runtimes or gain above +30 dB; no fallback after a native mutation attempt."
+      },
       "legacy": false,
       "keywords": []
     },
@@ -2722,7 +2729,7 @@
       "function_name": "clip_audio_normalize",
       "docs_topic": "clip",
       "help_text": null,
-      "doc": "Normalize linked audio clip peak level through DaVinci Resolve render analysis + DB-backed gain write.",
+      "doc": "Normalize linked audio peak level natively on 21.1; preserve the older-runtime route.",
       "parameters": [
         {
           "python_name": "name",
@@ -2755,8 +2762,12 @@
       ],
       "capability_id": "clip.audio_normalize",
       "capability_status": "supported",
-      "engine": "db_workaround",
-      "capability_caveats": null,
+      "engine": "api_native",
+      "capability_caveats": {
+        "native_since": "21.1",
+        "native_scope": "Sample Peak Program via NormalizeAudioLevel with clip gain readback",
+        "fallback": "Render analysis and Disk DB on older runtimes only; native readback does not claim a separately measured output peak."
+      },
       "legacy": false,
       "keywords": []
     },
@@ -2767,7 +2778,7 @@
       "function_name": "clip_audio_pan",
       "docs_topic": "clip",
       "help_text": null,
-      "doc": "Set linked audio pan via archive-backed EffectFiltersBA payload.",
+      "doc": "Set clip audio pan natively on 21.1, with the Disk DB route on older runtimes.",
       "parameters": [
         {
           "python_name": "name",
@@ -2800,8 +2811,11 @@
       ],
       "capability_id": "clip.audio_pan",
       "capability_status": "supported",
-      "engine": "db_workaround",
-      "capability_caveats": null,
+      "engine": "api_native",
+      "capability_caveats": {
+        "native_since": "21.1",
+        "fallback": "Disk DB on older runtimes only."
+      },
       "legacy": false,
       "keywords": []
     },
@@ -2812,7 +2826,7 @@
       "function_name": "clip_audio_pitch",
       "docs_topic": "clip",
       "help_text": null,
-      "doc": "Set linked audio pitch via archive-backed EffectFiltersBA payload.",
+      "doc": "Set clip audio pitch natively on 21.1, with the Disk DB route on older runtimes.",
       "parameters": [
         {
           "python_name": "name",
@@ -2855,8 +2869,11 @@
       ],
       "capability_id": "clip.audio_pitch",
       "capability_status": "supported",
-      "engine": "db_workaround",
-      "capability_caveats": null,
+      "engine": "api_native",
+      "capability_caveats": {
+        "native_since": "21.1",
+        "fallback": "Disk DB on older runtimes only."
+      },
       "legacy": false,
       "keywords": []
     },
@@ -3270,7 +3287,7 @@
       "function_name": "clip_fade_in",
       "docs_topic": "clip",
       "help_text": null,
-      "doc": "Apply archive-backed fade payloads to linked video/audio rows.",
+      "doc": "Set exact video/audio fader durations natively on 21.1, with the Disk DB route on older runtimes.",
       "parameters": [
         {
           "python_name": "name",
@@ -3343,8 +3360,11 @@
       ],
       "capability_id": "clip.fade_in",
       "capability_status": "supported",
-      "engine": "db_workaround",
-      "capability_caveats": null,
+      "engine": "api_native",
+      "capability_caveats": {
+        "native_since": "21.1",
+        "fallback": "Disk DB on older runtimes only; native duration must fit each exact item."
+      },
       "legacy": false,
       "keywords": []
     },
@@ -3938,7 +3958,7 @@
       "function_name": "fusion_tools",
       "docs_topic": "clip",
       "help_text": null,
-      "doc": "List tools in a Fusion composition.",
+      "doc": "List tools and their addressable native names in a Fusion composition.",
       "parameters": [
         {
           "python_name": "index",
@@ -16656,6 +16676,65 @@
       "keywords": []
     },
     {
+      "path": "dctl encrypt",
+      "command_id": "dctl.encrypt",
+      "source_file": "cutagent_cli/commands/dctl.py",
+      "function_name": "encrypt",
+      "docs_topic": "developer-sdk",
+      "help_text": null,
+      "doc": "Encrypt a DCTL into an artifact with DaVinci Resolve Studio 21.1+.",
+      "parameters": [
+        {
+          "python_name": "input_path",
+          "kind": "argument",
+          "cli_names": [],
+          "help_text": "Source .dctl file path",
+          "default": "typer.Argument(..., help='Source .dctl file path')",
+          "annotation": "str"
+        },
+        {
+          "python_name": "output_path",
+          "kind": "argument",
+          "cli_names": [],
+          "help_text": "Exact output .dctle file path",
+          "default": "typer.Argument(..., help='Exact output .dctle file path')",
+          "annotation": "str"
+        },
+        {
+          "python_name": "expiry",
+          "kind": "option",
+          "cli_names": [
+            "--expiry"
+          ],
+          "help_text": "Optional ISO 8601 expiry date or datetime",
+          "default": "typer.Option(None, '--expiry', help='Optional ISO 8601 expiry date or datetime')",
+          "annotation": "Optional[str]"
+        },
+        {
+          "python_name": "overwrite",
+          "kind": "option",
+          "cli_names": [
+            "--overwrite"
+          ],
+          "help_text": "Replace an existing output artifact",
+          "default": "typer.Option(False, '--overwrite', help='Replace an existing output artifact')",
+          "annotation": "bool"
+        }
+      ],
+      "capability_id": "dctl.encrypt",
+      "capability_status": "supported",
+      "engine": "api_native",
+      "capability_caveats": {
+        "native_since": "21.1",
+        "edition": "Studio",
+        "scope": "explicit source .dctl path to exact output .dctle path",
+        "overwrite": "existing output is rejected unless --overwrite is explicit",
+        "verification": "non-empty output artifact size and SHA-256 readback"
+      },
+      "legacy": false,
+      "keywords": []
+    },
+    {
       "path": "dctl install",
       "command_id": "dctl.install",
       "source_file": "cutagent_cli/commands/dctl.py",
@@ -16784,6 +16863,31 @@
           "cli_names": [],
           "help_text": ".dctl path",
           "default": "typer.Argument(..., help='.dctl path')",
+          "annotation": "str"
+        }
+      ],
+      "capability_id": null,
+      "capability_status": null,
+      "engine": null,
+      "capability_caveats": null,
+      "legacy": false,
+      "keywords": []
+    },
+    {
+      "path": "dctl validate-source",
+      "command_id": "dctl.validate_source",
+      "source_file": "cutagent_cli/commands/dctl.py",
+      "function_name": "validate_source",
+      "docs_topic": "developer-sdk",
+      "help_text": null,
+      "doc": "Get native DCTL diagnostics from DaVinci Resolve Studio 21.1+. Does not install or apply the source.",
+      "parameters": [
+        {
+          "python_name": "source",
+          "kind": "argument",
+          "cli_names": [],
+          "help_text": "DCTL source text, up to 65536 UTF-8 bytes",
+          "default": "typer.Argument(..., help='DCTL source text, up to 65536 UTF-8 bytes')",
           "annotation": "str"
         }
       ],
@@ -18612,7 +18716,7 @@
       "function_name": "transition_add",
       "docs_topic": "timeline",
       "help_text": null,
-      "doc": "Add an archive-backed transition through the Disk DB route.",
+      "doc": "Add native item-edge transitions on 21.1, preserving the Disk DB fallback.",
       "parameters": [
         {
           "python_name": "transition_type",
@@ -18673,8 +18777,12 @@
       ],
       "capability_id": "edit.transitions_native",
       "capability_status": "supported",
-      "engine": "db_workaround",
-      "capability_caveats": null,
+      "engine": "api_native",
+      "capability_caveats": {
+        "native_since": "21.1",
+        "native_scope": "single_command_item_edge_transitions",
+        "fallback": "Disk DB for older runtimes, interior seam splitting, Smooth Cut preparation and transition batches."
+      },
       "legacy": false,
       "keywords": []
     },
@@ -18809,8 +18917,12 @@
       ],
       "capability_id": "edit.transitions_native",
       "capability_status": "supported",
-      "engine": "db_workaround",
-      "capability_caveats": null,
+      "engine": "api_native",
+      "capability_caveats": {
+        "native_since": "21.1",
+        "native_scope": "single_command_item_edge_transitions",
+        "fallback": "Disk DB for older runtimes, interior seam splitting, Smooth Cut preparation and transition batches."
+      },
       "legacy": false,
       "keywords": []
     },
@@ -20420,9 +20532,11 @@
       ],
       "capability_id": "fairlight.channel_mapping_write",
       "capability_status": "partial",
-      "engine": "db_workaround",
+      "engine": "api_native",
       "capability_caveats": {
-        "native_scope": "timeline_item_stereo_virtual_audio_track_subset",
+        "native_scope": "timeline_item_stereo_source_channel_mapping",
+        "native_since": "21.1",
+        "fallback": "Disk DB on older runtimes only; no retry after a native mutation attempt.",
         "available_read_route": "fairlight channel-map clip|media",
         "supported_subset": [
           "timeline_item_track_1_stereo_channel_idx_restore_[1,2]",
@@ -22816,6 +22930,73 @@
         "roundtrip rx",
         "audio editor round trip"
       ]
+    },
+    {
+      "path": "fairlight fade-curve",
+      "command_id": "fairlight.fade_curve",
+      "source_file": "cutagent_cli/commands/fairlight.py",
+      "function_name": "fade_curve",
+      "docs_topic": "audio",
+      "help_text": null,
+      "doc": "Read or edit an audio fade curve without changing either fade duration.",
+      "parameters": [
+        {
+          "python_name": "item_id",
+          "kind": "option",
+          "cli_names": [
+            "--item-id"
+          ],
+          "help_text": "Exact audio timeline item ID",
+          "default": "typer.Option(..., '--item-id', help='Exact audio timeline item ID')",
+          "annotation": "str"
+        },
+        {
+          "python_name": "direction",
+          "kind": "option",
+          "cli_names": [
+            "--direction"
+          ],
+          "help_text": "in or out",
+          "default": "typer.Option(..., '--direction', help='in or out')",
+          "annotation": "str"
+        },
+        {
+          "python_name": "x",
+          "kind": "option",
+          "cli_names": [
+            "--x"
+          ],
+          "help_text": "Native curve control-point X",
+          "default": "typer.Option(None, '--x', help='Native curve control-point X')",
+          "annotation": "float | None"
+        },
+        {
+          "python_name": "y",
+          "kind": "option",
+          "cli_names": [
+            "--y"
+          ],
+          "help_text": "Native curve control-point Y",
+          "default": "typer.Option(None, '--y', help='Native curve control-point Y')",
+          "annotation": "float | None"
+        },
+        {
+          "python_name": "linear",
+          "kind": "option",
+          "cli_names": [
+            "--linear"
+          ],
+          "help_text": "Reset this fade to a linear envelope",
+          "default": "typer.Option(False, '--linear', help='Reset this fade to a linear envelope')",
+          "annotation": "bool"
+        }
+      ],
+      "capability_id": "fairlight.fade_out_batch",
+      "capability_status": "supported",
+      "engine": "db_workaround",
+      "capability_caveats": null,
+      "legacy": false,
+      "keywords": []
     },
     {
       "path": "fairlight fade-in batch",
@@ -29910,6 +30091,54 @@
       "keywords": []
     },
     {
+      "path": "fusion tool registry",
+      "command_id": "fusion.tool.registry",
+      "source_file": "cutagent_cli/commands/fusion.py",
+      "function_name": "tool_registry",
+      "docs_topic": "fusion",
+      "help_text": null,
+      "doc": "List available Fusion tool creation IDs from the live registry.",
+      "parameters": [
+        {
+          "python_name": "query",
+          "kind": "option",
+          "cli_names": [
+            "--query",
+            "-q"
+          ],
+          "help_text": "Filter by creation ID, name, or category",
+          "default": "typer.Option(None, '--query', '-q', help='Filter by creation ID, name, or category')",
+          "annotation": "Optional[str]"
+        },
+        {
+          "python_name": "category",
+          "kind": "option",
+          "cli_names": [
+            "--category"
+          ],
+          "help_text": "Filter by registry category",
+          "default": "typer.Option(None, '--category', help='Filter by registry category')",
+          "annotation": "Optional[str]"
+        },
+        {
+          "python_name": "limit",
+          "kind": "option",
+          "cli_names": [
+            "--limit"
+          ],
+          "help_text": "Maximum tools to return",
+          "default": "typer.Option(1024, '--limit', min=1, max=2048, help='Maximum tools to return')",
+          "annotation": "int"
+        }
+      ],
+      "capability_id": "fusion.tool_list_get_set",
+      "capability_status": "supported",
+      "engine": "fusion_native",
+      "capability_caveats": null,
+      "legacy": false,
+      "keywords": []
+    },
+    {
       "path": "fusion tool set",
       "command_id": "fusion.tool.set",
       "source_file": "cutagent_cli/commands/fusion.py",
@@ -30813,15 +31042,15 @@
       "function_name": "delete_clip",
       "docs_topic": "media",
       "help_text": null,
-      "doc": "Delete a clip from the Media Pool.",
+      "doc": "Delete one or more clips from the Media Pool in one native operation.",
       "parameters": [
         {
           "python_name": "name",
           "kind": "argument",
           "cli_names": [],
-          "help_text": "Clip name",
-          "default": "typer.Argument(..., help='Clip name')",
-          "annotation": "str"
+          "help_text": "One or more clip names",
+          "default": "typer.Argument(..., help='One or more clip names')",
+          "annotation": "list[str]"
         },
         {
           "python_name": "force",
@@ -31828,23 +32057,33 @@
       "function_name": "move_clip",
       "docs_topic": "media",
       "help_text": null,
-      "doc": "Move a clip to a different folder.",
+      "doc": "Move one clip or a JSON array of clips to Media Pool folders.",
       "parameters": [
         {
           "python_name": "name",
           "kind": "argument",
           "cli_names": [],
           "help_text": "Clip name",
-          "default": "typer.Argument(..., help='Clip name')",
-          "annotation": "str"
+          "default": "typer.Argument(None, help='Clip name')",
+          "annotation": "Optional[str]"
         },
         {
           "python_name": "target",
           "kind": "argument",
           "cli_names": [],
           "help_text": "Target folder path",
-          "default": "typer.Argument(..., help='Target folder path')",
-          "annotation": "str"
+          "default": "typer.Argument(None, help='Target folder path')",
+          "annotation": "Optional[str]"
+        },
+        {
+          "python_name": "moves",
+          "kind": "option",
+          "cli_names": [
+            "--moves"
+          ],
+          "help_text": "JSON array of {name, target} move items",
+          "default": "typer.Option(None, '--moves', help='JSON array of {name, target} move items')",
+          "annotation": "Optional[str]"
         }
       ],
       "capability_id": "media.clip_management",
@@ -32619,6 +32858,44 @@
           "help_text": "Language code.",
           "default": "typer.Option(None, '--language', '-l', help='Language code.')",
           "annotation": "Optional[str]"
+        }
+      ],
+      "capability_id": null,
+      "capability_status": null,
+      "engine": null,
+      "capability_caveats": null,
+      "legacy": false,
+      "keywords": []
+    },
+    {
+      "path": "media transcription",
+      "command_id": "media.transcription",
+      "source_file": "cutagent_cli/commands/media.py",
+      "function_name": "get_transcription_cmd",
+      "docs_topic": "media",
+      "help_text": null,
+      "doc": "Read existing DaVinci Resolve transcription for one Media Pool clip.",
+      "parameters": [
+        {
+          "python_name": "clip",
+          "kind": "option",
+          "cli_names": [
+            "--clip",
+            "-c"
+          ],
+          "help_text": "Clip name whose persisted transcription should be read.",
+          "default": "typer.Option(..., '--clip', '-c', help='Clip name whose persisted transcription should be read.')",
+          "annotation": "str"
+        },
+        {
+          "python_name": "use_nested_clip_transcription",
+          "kind": "option",
+          "cli_names": [
+            "--use-nested-clip-transcription"
+          ],
+          "help_text": "Use nested-clip transcription when DaVinci Resolve exposes it.",
+          "default": "typer.Option(False, '--use-nested-clip-transcription', help='Use nested-clip transcription when DaVinci Resolve exposes it.')",
+          "annotation": "bool"
         }
       ],
       "capability_id": null,
@@ -34507,7 +34784,7 @@
       "function_name": "source_grade_cdl",
       "docs_topic": "timeline",
       "help_text": null,
-      "doc": "Apply a remote/source CDL to one exact video source nested in a multicam angle.",
+      "doc": "Validate a nested multicam source CDL target; mutation is currently unavailable.",
       "parameters": [
         {
           "python_name": "angle_number",
@@ -34621,9 +34898,14 @@
         }
       ],
       "capability_id": "multicam.source.grade_cdl",
-      "capability_status": "supported",
-      "engine": "api_native",
-      "capability_caveats": null,
+      "capability_status": "unsupported",
+      "engine": "not_available",
+      "capability_caveats": {
+        "reason": "multicam_source_grade_target_not_addressable",
+        "required_target": "exact_nested_multicam_timeline_item",
+        "rejected_route": "temporary_timeline_remote_version",
+        "verification": "A setter and readback on a disposable timeline instance do not prove mutation of the nested multicam source item."
+      },
       "legacy": false,
       "keywords": []
     },
@@ -36841,6 +37123,110 @@
       "keywords": []
     },
     {
+      "path": "project preset delete",
+      "command_id": "project.preset.delete",
+      "source_file": "cutagent_cli/commands/project.py",
+      "function_name": "preset_delete",
+      "docs_topic": "project",
+      "help_text": null,
+      "doc": "Delete one exact project-settings preset with a private recovery backup.",
+      "parameters": [
+        {
+          "python_name": "name",
+          "kind": "argument",
+          "cli_names": [],
+          "help_text": "Exact preset name",
+          "default": "typer.Argument(..., help='Exact preset name')",
+          "annotation": "str"
+        },
+        {
+          "python_name": "force",
+          "kind": "option",
+          "cli_names": [
+            "--force",
+            "-f"
+          ],
+          "help_text": "Confirm deletion",
+          "default": "typer.Option(False, '--force', '-f', help='Confirm deletion')",
+          "annotation": "bool"
+        }
+      ],
+      "capability_id": "project.preset_delete",
+      "capability_status": "supported",
+      "engine": "api_native",
+      "capability_caveats": null,
+      "legacy": false,
+      "keywords": []
+    },
+    {
+      "path": "project preset export",
+      "command_id": "project.preset.export",
+      "source_file": "cutagent_cli/commands/project.py",
+      "function_name": "preset_export",
+      "docs_topic": "project",
+      "help_text": null,
+      "doc": "Export one project-settings preset without replacing a file.",
+      "parameters": [
+        {
+          "python_name": "name",
+          "kind": "argument",
+          "cli_names": [],
+          "help_text": "Exact preset name",
+          "default": "typer.Argument(..., help='Exact preset name')",
+          "annotation": "str"
+        },
+        {
+          "python_name": "path",
+          "kind": "argument",
+          "cli_names": [],
+          "help_text": "New export file path",
+          "default": "typer.Argument(..., help='New export file path')",
+          "annotation": "str"
+        }
+      ],
+      "capability_id": "project.preset_import_export",
+      "capability_status": "supported",
+      "engine": "api_native",
+      "capability_caveats": null,
+      "legacy": false,
+      "keywords": []
+    },
+    {
+      "path": "project preset import",
+      "command_id": "project.preset.import",
+      "source_file": "cutagent_cli/commands/project.py",
+      "function_name": "preset_import",
+      "docs_topic": "project",
+      "help_text": null,
+      "doc": "Import one project-settings preset under an explicit new name.",
+      "parameters": [
+        {
+          "python_name": "path",
+          "kind": "argument",
+          "cli_names": [],
+          "help_text": "Project preset file path",
+          "default": "typer.Argument(..., help='Project preset file path')",
+          "annotation": "str"
+        },
+        {
+          "python_name": "name",
+          "kind": "option",
+          "cli_names": [
+            "--name"
+          ],
+          "help_text": "Exact new preset name",
+          "default": "typer.Option(..., '--name', help='Exact new preset name')",
+          "annotation": "str"
+        }
+      ],
+      "capability_id": "project.preset_import_export",
+      "capability_status": "supported",
+      "engine": "api_native",
+      "capability_caveats": null,
+      "legacy": false,
+      "keywords": []
+    },
+    {
       "path": "project preset list",
       "command_id": "project.preset.list",
       "source_file": "cutagent_cli/commands/project.py",
@@ -37481,7 +37867,7 @@
       "function_name": "codecs",
       "docs_topic": "render",
       "help_text": null,
-      "doc": "List available codecs for a format.",
+      "doc": "List available video or audio codecs for a format.",
       "parameters": [
         {
           "python_name": "format_name",
@@ -37489,6 +37875,16 @@
           "cli_names": [],
           "help_text": "Format name (e.g., mp4, QuickTime)",
           "default": "typer.Argument(..., help='Format name (e.g., mp4, QuickTime)')",
+          "annotation": "str"
+        },
+        {
+          "python_name": "media",
+          "kind": "option",
+          "cli_names": [
+            "--media"
+          ],
+          "help_text": "Codec inventory: video or audio.",
+          "default": "typer.Option('video', '--media', help='Codec inventory: video or audio.')",
           "annotation": "str"
         }
       ],
@@ -37793,8 +38189,19 @@
       "function_name": "formats",
       "docs_topic": "render",
       "help_text": null,
-      "doc": "List available render formats.",
-      "parameters": [],
+      "doc": "List available video or audio render formats.",
+      "parameters": [
+        {
+          "python_name": "media",
+          "kind": "option",
+          "cli_names": [
+            "--media"
+          ],
+          "help_text": "Format inventory: video or audio.",
+          "default": "typer.Option('video', '--media', help='Format inventory: video or audio.')",
+          "annotation": "str"
+        }
+      ],
       "capability_id": "render.formats",
       "capability_status": "supported",
       "engine": "api_native",
@@ -37994,6 +38401,31 @@
         "create custom render preset",
         "custom render preset"
       ]
+    },
+    {
+      "path": "render preset-update",
+      "command_id": "render.preset_update",
+      "source_file": "cutagent_cli/commands/render.py",
+      "function_name": "preset_update",
+      "docs_topic": "render",
+      "help_text": null,
+      "doc": "Replace an existing preset with current render settings and verify its exported content.",
+      "parameters": [
+        {
+          "python_name": "name",
+          "kind": "argument",
+          "cli_names": [],
+          "help_text": "Exact existing render preset name",
+          "default": "typer.Argument(..., help='Exact existing render preset name')",
+          "annotation": "str"
+        }
+      ],
+      "capability_id": "render.preset_save",
+      "capability_status": "supported",
+      "engine": "api_native",
+      "capability_caveats": null,
+      "legacy": false,
+      "keywords": []
     },
     {
       "path": "render presets",
@@ -39003,6 +39435,221 @@
       "capability_status": null,
       "engine": null,
       "capability_caveats": null,
+      "legacy": false,
+      "keywords": []
+    },
+    {
+      "path": "system keyboard-preset current",
+      "command_id": "system.keyboard_preset.current",
+      "source_file": "cutagent_cli/commands/system.py",
+      "function_name": "keyboard_preset_current",
+      "docs_topic": "orchestration",
+      "help_text": null,
+      "doc": "Get the currently active keyboard preset.",
+      "parameters": [],
+      "capability_id": "system.keyboard_preset_read",
+      "capability_status": "supported",
+      "engine": "api_native",
+      "capability_caveats": {
+        "native_since": "21.1",
+        "scope": "keyboard preset catalog and current preset name only",
+        "methods": [
+          "GetKeyboardPresetList",
+          "GetCurrentKeyboardPreset"
+        ]
+      },
+      "legacy": false,
+      "keywords": []
+    },
+    {
+      "path": "system keyboard-preset delete",
+      "command_id": "system.keyboard_preset.delete",
+      "source_file": "cutagent_cli/commands/system.py",
+      "function_name": "keyboard_preset_delete",
+      "docs_topic": "orchestration",
+      "help_text": null,
+      "doc": "Delete one inactive keyboard preset.",
+      "parameters": [
+        {
+          "python_name": "name",
+          "kind": "argument",
+          "cli_names": [],
+          "help_text": "Exact preset name",
+          "default": "typer.Argument(..., help='Exact preset name')",
+          "annotation": "str"
+        },
+        {
+          "python_name": "force",
+          "kind": "option",
+          "cli_names": [
+            "--force",
+            "-f"
+          ],
+          "help_text": "Confirm deletion",
+          "default": "typer.Option(False, '--force', '-f', help='Confirm deletion')",
+          "annotation": "bool"
+        }
+      ],
+      "capability_id": "system.keyboard_preset_management",
+      "capability_status": "supported",
+      "engine": "api_native",
+      "capability_caveats": {
+        "native_since": "21.1",
+        "scope": "exact keyboard preset load, inactive delete, import and no-overwrite export",
+        "methods": [
+          "LoadKeyboardPreset",
+          "DeleteKeyboardPreset",
+          "ImportKeyboardPreset",
+          "ExportKeyboardPreset"
+        ],
+        "sdk_activation": "pending_reviewed_managed_artifact_and_global_state_custody"
+      },
+      "legacy": false,
+      "keywords": []
+    },
+    {
+      "path": "system keyboard-preset export",
+      "command_id": "system.keyboard_preset.export",
+      "source_file": "cutagent_cli/commands/system.py",
+      "function_name": "keyboard_preset_export",
+      "docs_topic": "orchestration",
+      "help_text": null,
+      "doc": "Export one keyboard preset without replacing a file.",
+      "parameters": [
+        {
+          "python_name": "name",
+          "kind": "argument",
+          "cli_names": [],
+          "help_text": "Exact preset name",
+          "default": "typer.Argument(..., help='Exact preset name')",
+          "annotation": "str"
+        },
+        {
+          "python_name": "path",
+          "kind": "argument",
+          "cli_names": [],
+          "help_text": "New export file path",
+          "default": "typer.Argument(..., help='New export file path')",
+          "annotation": "str"
+        }
+      ],
+      "capability_id": "system.keyboard_preset_management",
+      "capability_status": "supported",
+      "engine": "api_native",
+      "capability_caveats": {
+        "native_since": "21.1",
+        "scope": "exact keyboard preset load, inactive delete, import and no-overwrite export",
+        "methods": [
+          "LoadKeyboardPreset",
+          "DeleteKeyboardPreset",
+          "ImportKeyboardPreset",
+          "ExportKeyboardPreset"
+        ],
+        "sdk_activation": "pending_reviewed_managed_artifact_and_global_state_custody"
+      },
+      "legacy": false,
+      "keywords": []
+    },
+    {
+      "path": "system keyboard-preset import",
+      "command_id": "system.keyboard_preset.import",
+      "source_file": "cutagent_cli/commands/system.py",
+      "function_name": "keyboard_preset_import",
+      "docs_topic": "orchestration",
+      "help_text": null,
+      "doc": "Import a keyboard preset from one local file.",
+      "parameters": [
+        {
+          "python_name": "path",
+          "kind": "argument",
+          "cli_names": [],
+          "help_text": "Keyboard preset file path",
+          "default": "typer.Argument(..., help='Keyboard preset file path')",
+          "annotation": "str"
+        },
+        {
+          "python_name": "name",
+          "kind": "option",
+          "cli_names": [
+            "--name"
+          ],
+          "help_text": "Exact imported preset name",
+          "default": "typer.Option(None, '--name', help='Exact imported preset name')",
+          "annotation": "str | None"
+        }
+      ],
+      "capability_id": "system.keyboard_preset_management",
+      "capability_status": "supported",
+      "engine": "api_native",
+      "capability_caveats": {
+        "native_since": "21.1",
+        "scope": "exact keyboard preset load, inactive delete, import and no-overwrite export",
+        "methods": [
+          "LoadKeyboardPreset",
+          "DeleteKeyboardPreset",
+          "ImportKeyboardPreset",
+          "ExportKeyboardPreset"
+        ],
+        "sdk_activation": "pending_reviewed_managed_artifact_and_global_state_custody"
+      },
+      "legacy": false,
+      "keywords": []
+    },
+    {
+      "path": "system keyboard-preset list",
+      "command_id": "system.keyboard_preset.list",
+      "source_file": "cutagent_cli/commands/system.py",
+      "function_name": "keyboard_preset_list",
+      "docs_topic": "orchestration",
+      "help_text": null,
+      "doc": "List available keyboard presets.",
+      "parameters": [],
+      "capability_id": "system.keyboard_preset_read",
+      "capability_status": "supported",
+      "engine": "api_native",
+      "capability_caveats": {
+        "native_since": "21.1",
+        "scope": "keyboard preset catalog and current preset name only",
+        "methods": [
+          "GetKeyboardPresetList",
+          "GetCurrentKeyboardPreset"
+        ]
+      },
+      "legacy": false,
+      "keywords": []
+    },
+    {
+      "path": "system keyboard-preset load",
+      "command_id": "system.keyboard_preset.load",
+      "source_file": "cutagent_cli/commands/system.py",
+      "function_name": "keyboard_preset_load",
+      "docs_topic": "orchestration",
+      "help_text": null,
+      "doc": "Load an exact keyboard preset.",
+      "parameters": [
+        {
+          "python_name": "name",
+          "kind": "argument",
+          "cli_names": [],
+          "help_text": "Exact preset name",
+          "default": "typer.Argument(..., help='Exact preset name')",
+          "annotation": "str"
+        }
+      ],
+      "capability_id": "system.keyboard_preset_management",
+      "capability_status": "supported",
+      "engine": "api_native",
+      "capability_caveats": {
+        "native_since": "21.1",
+        "scope": "exact keyboard preset load, inactive delete, import and no-overwrite export",
+        "methods": [
+          "LoadKeyboardPreset",
+          "DeleteKeyboardPreset",
+          "ImportKeyboardPreset",
+          "ExportKeyboardPreset"
+        ],
+        "sdk_activation": "pending_reviewed_managed_artifact_and_global_state_custody"
+      },
       "legacy": false,
       "keywords": []
     },
@@ -41880,7 +42527,7 @@
       "function_name": "marker_update",
       "docs_topic": "timeline",
       "help_text": null,
-      "doc": "Update one exact marker with rollback on replacement failure.",
+      "doc": "Update one marker or a JSON list in one connected execution.",
       "parameters": [
         {
           "python_name": "frame",
@@ -41888,9 +42535,9 @@
           "cli_names": [
             "--frame"
           ],
-          "help_text": "Exact timeline or record frame of the marker to update",
-          "default": "typer.Option(..., help='Exact timeline or record frame of the marker to update')",
-          "annotation": "int"
+          "help_text": "Exact timeline or record frame of one marker to update",
+          "default": "typer.Option(None, help='Exact timeline or record frame of one marker to update')",
+          "annotation": "Optional[int]"
         },
         {
           "python_name": "position",
@@ -41941,6 +42588,16 @@
           "help_text": "Optional new duration in frames",
           "default": "typer.Option(None, help='Optional new duration in frames')",
           "annotation": "Optional[int]"
+        },
+        {
+          "python_name": "updates_json",
+          "kind": "option",
+          "cli_names": [
+            "--updates-json"
+          ],
+          "help_text": "Inline JSON array of exact marker updates",
+          "default": "typer.Option(None, '--updates-json', help='Inline JSON array of exact marker updates')",
+          "annotation": "Optional[str]"
         }
       ],
       "capability_id": "timeline.marker_crud",
@@ -41976,6 +42633,110 @@
       "doc": "Inspect the current timeline node graph when available.",
       "parameters": [],
       "capability_id": "color.node_graph_ops",
+      "capability_status": "supported",
+      "engine": "api_native",
+      "capability_caveats": null,
+      "legacy": false,
+      "keywords": []
+    },
+    {
+      "path": "timeline output-blanking get",
+      "command_id": "timeline.output_blanking.get",
+      "source_file": "cutagent_cli/commands/timeline.py",
+      "function_name": "blanking_get",
+      "docs_topic": "timeline",
+      "help_text": null,
+      "doc": "Read output blanking and clip inheritance without modifying the timeline.",
+      "parameters": [
+        {
+          "python_name": "item_id",
+          "kind": "option",
+          "cli_names": [
+            "--item-id"
+          ],
+          "help_text": "Exact video timeline item ID; omit for timeline blanking",
+          "default": "typer.Option(None, '--item-id', help='Exact video timeline item ID; omit for timeline blanking')",
+          "annotation": "str | None"
+        }
+      ],
+      "capability_id": "timeline.output_blanking",
+      "capability_status": "supported",
+      "engine": "api_native",
+      "capability_caveats": null,
+      "legacy": false,
+      "keywords": []
+    },
+    {
+      "path": "timeline output-blanking set",
+      "command_id": "timeline.output_blanking.set",
+      "source_file": "cutagent_cli/commands/timeline.py",
+      "function_name": "blanking_set",
+      "docs_topic": "timeline",
+      "help_text": null,
+      "doc": "Set all four pixel edges, or explicitly select clip inheritance.",
+      "parameters": [
+        {
+          "python_name": "top",
+          "kind": "option",
+          "cli_names": [
+            "--top"
+          ],
+          "help_text": "Top blanking in pixels",
+          "default": "typer.Option(None, min=0, help='Top blanking in pixels')",
+          "annotation": "int | None"
+        },
+        {
+          "python_name": "bottom",
+          "kind": "option",
+          "cli_names": [
+            "--bottom"
+          ],
+          "help_text": "Bottom blanking in pixels",
+          "default": "typer.Option(None, min=0, help='Bottom blanking in pixels')",
+          "annotation": "int | None"
+        },
+        {
+          "python_name": "left",
+          "kind": "option",
+          "cli_names": [
+            "--left"
+          ],
+          "help_text": "Left blanking in pixels",
+          "default": "typer.Option(None, min=0, help='Left blanking in pixels')",
+          "annotation": "int | None"
+        },
+        {
+          "python_name": "right",
+          "kind": "option",
+          "cli_names": [
+            "--right"
+          ],
+          "help_text": "Right blanking in pixels",
+          "default": "typer.Option(None, min=0, help='Right blanking in pixels')",
+          "annotation": "int | None"
+        },
+        {
+          "python_name": "item_id",
+          "kind": "option",
+          "cli_names": [
+            "--item-id"
+          ],
+          "help_text": "Exact video timeline item ID; omit for timeline blanking",
+          "default": "typer.Option(None, '--item-id', help='Exact video timeline item ID; omit for timeline blanking')",
+          "annotation": "str | None"
+        },
+        {
+          "python_name": "use_timeline",
+          "kind": "option",
+          "cli_names": [
+            "--use-timeline/--use-clip"
+          ],
+          "help_text": "Use timeline blanking or the stored clip override; mutually exclusive with edge values",
+          "default": "typer.Option(None, '--use-timeline/--use-clip', help='Use timeline blanking or the stored clip override; mutually exclusive with edge values')",
+          "annotation": "bool | None"
+        }
+      ],
+      "capability_id": "timeline.output_blanking",
       "capability_status": "supported",
       "engine": "api_native",
       "capability_caveats": null,
@@ -43725,6 +44486,73 @@
       "capability_id": "version.checkpoint",
       "capability_status": "supported",
       "engine": "db_workaround",
+      "capability_caveats": null,
+      "legacy": false,
+      "keywords": []
+    },
+    {
+      "path": "video generate",
+      "command_id": "video.generate",
+      "source_file": "cutagent_cli/commands/video.py",
+      "function_name": "generate",
+      "docs_topic": "orchestration",
+      "help_text": null,
+      "doc": "Generate a video and return its downloaded file and artifact in the active chat.",
+      "parameters": [
+        {
+          "python_name": "prompt",
+          "kind": "option",
+          "cli_names": [
+            "--prompt"
+          ],
+          "help_text": "Describe the video to generate",
+          "default": "typer.Option(..., '--prompt', help='Describe the video to generate')",
+          "annotation": "str"
+        },
+        {
+          "python_name": "resolution",
+          "kind": "option",
+          "cli_names": [
+            "--resolution"
+          ],
+          "help_text": "720P or 1080P",
+          "default": "typer.Option('720P', '--resolution', help='720P or 1080P')",
+          "annotation": "str"
+        },
+        {
+          "python_name": "ratio",
+          "kind": "option",
+          "cli_names": [
+            "--ratio"
+          ],
+          "help_text": "Video aspect ratio",
+          "default": "typer.Option('16:9', '--ratio', help='Video aspect ratio')",
+          "annotation": "str"
+        },
+        {
+          "python_name": "duration",
+          "kind": "option",
+          "cli_names": [
+            "--duration"
+          ],
+          "help_text": "Duration in seconds",
+          "default": "typer.Option(5, '--duration', min=3, max=15, help='Duration in seconds')",
+          "annotation": "int"
+        },
+        {
+          "python_name": "seed",
+          "kind": "option",
+          "cli_names": [
+            "--seed"
+          ],
+          "help_text": "Optional generation seed",
+          "default": "typer.Option(None, '--seed', min=0, max=2147483647, help='Optional generation seed')",
+          "annotation": "Optional[int]"
+        }
+      ],
+      "capability_id": "video.generation",
+      "capability_status": "supported",
+      "engine": "hosted_api",
       "capability_caveats": null,
       "legacy": false,
       "keywords": []

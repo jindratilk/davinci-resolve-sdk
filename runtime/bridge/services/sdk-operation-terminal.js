@@ -144,14 +144,18 @@ function semanticResultStatus(result, normalizedInput) {
   return status;
 }
 
-function postTimelineRevision(result) {
+export function sdkOperationPostTimelineRevision(result) {
   const candidate = result?.timelineRevision
     ?? result?.payload?.revision?.after
     ?? result?.payload?.revision?.observedAfter
     ?? result?.verification?.revision
     ?? result?.payload?.verification?.revision;
   const parsed = sdkRevisionSchema.safeParse(candidate);
-  return parsed.success ? parsed.data : null;
+  if (parsed.success) return parsed.data;
+  if (!Array.isArray(result?.results) || result.results.length === 0) return null;
+  const revisions = result.results.map((entry) => sdkRevisionSchema.safeParse(entry?.timelineRevision));
+  if (revisions.some((revision) => !revision.success)) return null;
+  return revisions.every((revision) => revision.data === revisions[0].data) ? revisions[0].data : null;
 }
 
 function explicitPostTimelineRevision(value) {
@@ -220,7 +224,7 @@ export function createSdkOperationTerminal({
       let resultCollections;
       try {
         terminalRevision = explicitPostTimelineRevision(outcome.postTimelineRevision)
-          ?? postTimelineRevision(outcome.result);
+          ?? sdkOperationPostTimelineRevision(outcome.result);
         if (Object.hasOwn(outcome, "result")) {
           const internalResult = canonicalSdkOperationInput(definition.resultSchema.parse(outcome.result));
           const projected = projectSdkOperationResultCollections(
@@ -286,7 +290,7 @@ export function createSdkOperationTerminal({
       }
       verification = sdkVerificationReportSchema.parse(outcome.verification);
       const semanticStatus = semanticResultStatus(result, record.private.normalizedInput);
-      const timelineRevision = postTimelineRevision(result);
+      const timelineRevision = sdkOperationPostTimelineRevision(result);
       if (isFairlight) {
         const expectedProtectedState = result.evidence.protectedState.status === "passed"
           ? true
@@ -416,7 +420,7 @@ export function createSdkOperationTerminal({
       reportNormalizationError(record, error);
       return genericExecutionFailure(record);
     }
-    const timelineRevision = postTimelineRevision(result);
+    const timelineRevision = sdkOperationPostTimelineRevision(result);
     const mediaMutationStatus = result?.actionId?.startsWith("cutagent.action.media.")
       && typeof result?.payload?.changed === "boolean"
       ? result?.payload?.status

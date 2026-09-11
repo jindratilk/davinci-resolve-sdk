@@ -450,7 +450,7 @@ class StudioExternalAdapter:
                             "Enable Preferences > System > General > External scripting using Local, "
                             "then restart DaVinci Resolve."
                         ),
-                        "free_recovery": "Run Workspace > Scripts > CutAgent.",
+                        "free_recovery": "Run Workspace > Scripts > CutAgentSDK.",
                     }
                 )
             raise ResolveNotRunning()
@@ -509,6 +509,14 @@ _EMBEDDED_OBJECT_LIST_METHODS = {
     "ImportMedia",
 }
 
+# Lua tables do not retain an empty array-versus-object distinction through
+# JSON. Normalize only methods whose native contract is a mapping; non-empty
+# mapping responses remain unchanged.
+_EMBEDDED_MAPPING_METHODS = {
+    "GetMetadata",
+    "GetThirdPartyMetadata",
+}
+
 
 class EmbeddedFreeAdapter:
     transport = ResolveTransport.EMBEDDED_FREE
@@ -564,6 +572,8 @@ class EmbeddedFreeAdapter:
         deserialized = self._deserialize_result(result)
         if method in _EMBEDDED_OBJECT_LIST_METHODS and isinstance(deserialized, dict):
             return list(deserialized.values())
+        if method in _EMBEDDED_MAPPING_METHODS and deserialized == []:
+            return {}
         return deserialized
 
     def status(self) -> dict[str, Any]:

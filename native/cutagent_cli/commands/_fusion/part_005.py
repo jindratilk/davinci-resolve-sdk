@@ -181,7 +181,12 @@ def insert_setting(
 
     duration_frames = _parse_positive_duration_frames(duration, conn.fps)
     try:
-        playhead_timecode = timeline_ops.set_playhead(conn, at)
+        playhead_reference = at
+        if record_frame is not None:
+            timeline_start = int(conn.timeline.GetStartFrame() or getattr(conn, "start_frame", 0) or 0)
+            relative_frame = int(record_frame) - timeline_start if int(record_frame) >= timeline_start else int(record_frame)
+            playhead_reference = f"{relative_frame}f"
+        playhead_timecode = timeline_ops.set_playhead(conn, playhead_reference)
         if normalized_holder_kind == "textplus":
             inserter = require_api_method(
                 conn.timeline,

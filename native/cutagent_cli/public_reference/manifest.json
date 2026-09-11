@@ -1,5 +1,5 @@
 {
-  "command_count": 811,
+  "command_count": 829,
   "corpus": "cutagent-cli-public-reference",
   "files": [
     {
@@ -1091,6 +1091,10 @@
       "sha256": "a234bac42228184366398a86f62e36c50dac7fe11a15aaafaaeb3728922a2e62"
     },
     {
+      "path": "cards/dctl--encrypt.md",
+      "sha256": "78c3e5dd6c90be03d9cd4c085810a35d363e92bb9b6bea939d1b3008beed73cc"
+    },
+    {
       "path": "cards/dctl--install.md",
       "sha256": "9ba0ebf606623e6788b573eb97e3c9ecec8ab23bb64d8ca84829fe1a0c607f10"
     },
@@ -1105,6 +1109,10 @@
     {
       "path": "cards/dctl--validate.md",
       "sha256": "43ddd73e88f20bece27f4c34bb7e53b0b65e86b41618c2c76789ffe1af3389bb"
+    },
+    {
+      "path": "cards/dctl--validate_source.md",
+      "sha256": "c6cef85917dbe53bb838a2b85ea5395efe9d403de824d234c87c6879cba5e924"
     },
     {
       "path": "cards/developer--capability--audit.md",
@@ -1292,11 +1300,11 @@
     },
     {
       "path": "cards/fairlight--automation--list.md",
-      "sha256": "656ad6d4e542ef018e52455506bf6834edb1bbf6960db8b2cfd1ea2a7ab74d07"
+      "sha256": "3c499cb3b7148244f9d400a4af0fca5e54188be71ace20bcdaab3f81bc1247a6"
     },
     {
       "path": "cards/fairlight--automation--write.md",
-      "sha256": "bbdc23a5ab784e17cc9e4a12a759bf6c0e2d551b3e431f90b0f6bbb0829615a3"
+      "sha256": "dd12ac6fd49ee828de9e97dd44736048b2748dd3a1aad0df7d297bbeeed35644"
     },
     {
       "path": "cards/fairlight--bounce--mix_to_track.md",
@@ -1473,6 +1481,10 @@
     {
       "path": "cards/fairlight--external_process--run.md",
       "sha256": "050be8269fcd243a360afadcea14482b2047d112fb6cc3143b1986d98b275984"
+    },
+    {
+      "path": "cards/fairlight--fade_curve.md",
+      "sha256": "bd5cc085ac204c1e4d9834544efd3c93d8bf068883d6aec4bd853fa2401ee1ad"
     },
     {
       "path": "cards/fairlight--fade_in--batch.md",
@@ -2039,6 +2051,10 @@
       "sha256": "51ab70691d869433bfea9d2609091c53bce88390effa15007e05b58e6416a496"
     },
     {
+      "path": "cards/fusion--tool--registry.md",
+      "sha256": "226c034f14aee97aecbd689bdd88eedd41853b72c6ad7ef8226a32693827b56f"
+    },
+    {
       "path": "cards/fusion--tool--set.md",
       "sha256": "60ec5b788d2553f98366d0eada736fc8ae90930741decfc2877094156b40d07d"
     },
@@ -2327,6 +2343,10 @@
       "sha256": "9927d7afb2df8d961bacc2cc289670b094537aaa2094bf6833df7f9f67fb0993"
     },
     {
+      "path": "cards/media--transcription.md",
+      "sha256": "a084d906203f5fb775485839ebc78f5406d488751591e3348c457296b7500d73"
+    },
+    {
       "path": "cards/media--unlink.md",
       "sha256": "b9799237b3b8f00c3da9266f105923110f02b09529107c527a40d6e8d1536713"
     },
@@ -2400,7 +2420,7 @@
     },
     {
       "path": "cards/multicam--source--grade_cdl.md",
-      "sha256": "17b2be7afb6c31d5260cd93b379da81bc0ca66e5a5ac111221bb3af4b940f5e1"
+      "sha256": "37e617bf2e1cc0af4f26702da26bf951090a8e2164b34ac3c99843eb885dbaac"
     },
     {
       "path": "cards/multicam--source--move.md",
@@ -2591,6 +2611,18 @@
       "sha256": "8121a81fb0b55678480e2e68837932d2e93c18ec0e3250594f101a842464b393"
     },
     {
+      "path": "cards/project--preset--delete.md",
+      "sha256": "b6f09c745fd43b91cd7e5a45c96513c01a2c0a8d783ad3c944cab90d238e0c10"
+    },
+    {
+      "path": "cards/project--preset--export.md",
+      "sha256": "46310c9e839f42d3224305118c530eca5d61b0a7d8458a89f16beb984001722b"
+    },
+    {
+      "path": "cards/project--preset--import.md",
+      "sha256": "fcd8a042e68c56213456ae0763b051d53abbea3103361bb2e122779515a9fc9a"
+    },
+    {
       "path": "cards/project--preset--list.md",
       "sha256": "01f0faf667ac67ec267142f0356e0212f295722721fac6c22a8b638c73c815f4"
     },
@@ -2664,7 +2696,7 @@
     },
     {
       "path": "cards/render--codecs.md",
-      "sha256": "f6d1ddb6dac90be791f87c294a12fb9544bf4857c6415a51b6f6f82aca91b4f5"
+      "sha256": "61e13fe359f7537f460bb42ae3a5bc7218c58bff563c0aa6372d244029b24e87"
     },
     {
       "path": "cards/render--custom_range.md",
@@ -2688,7 +2720,7 @@
     },
     {
       "path": "cards/render--formats.md",
-      "sha256": "08599dbf48a9a26eb17921dfacb052e947f7681f3769bd3dfa369dd60fdaf189"
+      "sha256": "f24fef43bdc074c705ffb7480179d10c620d218f4c87c0a836929e87ae67536f"
     },
     {
       "path": "cards/render--import_preset.md",
@@ -2720,7 +2752,11 @@
     },
     {
       "path": "cards/render--preset_save.md",
-      "sha256": "0a91f8fcf20aa5a5a061cdcb58fb64c6050629485c8b449547113531619efcf5"
+      "sha256": "f309c7304b23582b129ad01e89ca8de45d57af362ec2146e8fb65cad9d2ecbc0"
+    },
+    {
+      "path": "cards/render--preset_update.md",
+      "sha256": "17b874ffbda773fd8927a8259ad12f09181da6d05b5fbff6acefb7dfcfe8595d"
     },
     {
       "path": "cards/render--presets.md",
@@ -2837,6 +2873,30 @@
     {
       "path": "cards/storage--volumes.md",
       "sha256": "2ad9ec7a426809f1bc456a424572baaff62acfa3c5467a65a947ac752cfdec12"
+    },
+    {
+      "path": "cards/system--keyboard_preset--current.md",
+      "sha256": "8b13a7112aad97d84f71bc4326a1406e68159e0459a1e730d6a293e7d08bd41e"
+    },
+    {
+      "path": "cards/system--keyboard_preset--delete.md",
+      "sha256": "ac75e2104d72a41e33123f9dffa36646ab774a87ab7a84138b41985d96c53255"
+    },
+    {
+      "path": "cards/system--keyboard_preset--export.md",
+      "sha256": "6da6d5a5d9ef6b0e08576bb596232b8603e15554d004bddab36a63856b90aa2a"
+    },
+    {
+      "path": "cards/system--keyboard_preset--import.md",
+      "sha256": "aa1c5367e19e31531fd91853bef5bef98a98b0927775dd8c9361a5460fc241e8"
+    },
+    {
+      "path": "cards/system--keyboard_preset--list.md",
+      "sha256": "915ddc6f98c945e7336f52176fc2088f90c800d53fac68a362a9bda5e8701776"
+    },
+    {
+      "path": "cards/system--keyboard_preset--load.md",
+      "sha256": "f6ea7164d985b75fcad902d721a88e9e553d0a08f9208615b2d2cde35920e011"
     },
     {
       "path": "cards/system--keyframe_mode--get.md",
@@ -3024,7 +3084,7 @@
     },
     {
       "path": "cards/timeline--marker--delete.md",
-      "sha256": "59519a38fa9e90713d1733dd3d01e3d1acd954c95ccbe9fdfda569a816836f71"
+      "sha256": "6f82f6075c2e1c90d664777180c4a45f941b564858fe969bd543aea953ff91f8"
     },
     {
       "path": "cards/timeline--marker--list.md",
@@ -3041,6 +3101,14 @@
     {
       "path": "cards/timeline--node_graph--inspect.md",
       "sha256": "245691cd18da33768754ee7087dbc9d0bab440da1f279131a819b5dcde6f8138"
+    },
+    {
+      "path": "cards/timeline--output_blanking--get.md",
+      "sha256": "c65930c6fd7c5504a5cf66c97483b3d15442780715dc64cc3a5ecfc69befa452"
+    },
+    {
+      "path": "cards/timeline--output_blanking--set.md",
+      "sha256": "9f95a2dda4d4a1fa0ae46e32ad760a674d766814294490af6a62f1169838b006"
     },
     {
       "path": "cards/timeline--overlay_stack--insert.md",
@@ -3203,6 +3271,10 @@
       "sha256": "2075f8a129215732394ff1aeb2708a4c78aa4eb268885f4ed62566728d88e88a"
     },
     {
+      "path": "cards/video--generate.md",
+      "sha256": "5a24009e15c6139845df53e2adedc423de1ce6e13d5c819ab40714c42502f27a"
+    },
+    {
       "path": "cards/workflow--callback--script--create.md",
       "sha256": "4dccf3820a3aca4128a3961b9f4da5287f3cd020349027c81b15a97dc40c47d0"
     },
@@ -3248,7 +3320,7 @@
     },
     {
       "path": "catalog-context.md",
-      "sha256": "5c9521cc1eaf15f0362eb90d829248fdd5f8b1ca0e1d4d63af2f273347ad835a"
+      "sha256": "039e35a5ae0c515b20bc79dd6cd3deccd95f981bbe77606d9d57b7729e9476ff"
     },
     {
       "path": "fusion-registry.json",

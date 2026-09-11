@@ -16,13 +16,14 @@ test('existing full native prepared registry initializes through owned local pip
   try {
     client=await createSdkPreparedActionRuntimeClient({
       executablePath:resolve(import.meta.dirname,'../native/framed_prepared_host'),
-      initialization:{runtimeContext:{localPrincipal:{fingerprint:'source-test'}},policyPublicJwk:{},custodyDatabasePath:join(directory,'custody.sqlite3')},
+      initialization:{runtimeContext:{localPrincipal:{fingerprint:'source-test'}},custodyDatabasePath:join(directory,'custody.sqlite3')},
       redeemAuthorization:async()=>{throw new Error('Commercial redemption must not run.');},
       assertProtectedState:async()=>false,
     });
-    assert.equal(client.advertisedActionIds.length,502);
+    assert.equal(client.advertisedActionIds.length,517);
     assert.equal(client.hasAction('cutagent.action.timeline.marker.add'),true);
     assert.equal(client.hasAction('cutagent.action.clip.speed_ramp'),true);
+    for (const id of ['cutagent.action.render.preset_save','cutagent.action.render.preset_update','cutagent.action.fusion.tool.registry','cutagent.action.timeline.output_blanking.get','cutagent.action.timeline.output_blanking.set']) assert.equal(client.hasAction(id),true);
   } finally {await client?.close();}
 });
 

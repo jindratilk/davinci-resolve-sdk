@@ -77,6 +77,8 @@ def _rewrite_multicam_segments_db(
     audio_angle_override: str | None = None,
     multicam_media_id: str | None = None,
     timeline_native_id: str | None = None,
+    preserved_item_positions: list[dict[str, Any]] | None = None,
+    final_start_delta: int = 0,
     ops_module,
 ) -> dict[str, Any]:
     switch_scope = _normalize_multicam_switch_scope(switch_scope)
@@ -180,6 +182,42 @@ def _rewrite_multicam_segments_db(
     try:
         cursor = connection.cursor()
         cursor.execute("BEGIN")
+        target_track_types = ({0} if write_video else set()) | ({1} if write_audio else set())
+        preserved_rows = cursor.execute(
+            """
+            SELECT item.Sm2TiItem_id, track.Type, item.Start, item.Duration
+            FROM Sm2SequenceContainer_Sm2TiTrack track_rel
+            JOIN Sm2TiTrack track ON track.Sm2TiTrack_id = track_rel.DbAssociate
+            JOIN Sm2TiItem_Sm2TiTrack item_rel
+              ON item_rel.DbOwner = track.Sm2TiTrack_id AND item_rel.DbPropertyName = 'Items'
+            JOIN Sm2TiItem item ON item.Sm2TiItem_id = item_rel.DbAssociate
+            WHERE track_rel.DbOwner = ?
+            ORDER BY track.Type, track.Sm2TiTrack_id, item_rel.DbIndex, item.Sm2TiItem_id
+            """,
+            (track_state["sequence_container_id"],),
+        ).fetchall()
+        preserved_items_before = [
+            {"item_id": str(item_id), "track_type": int(track_type), "start": int(start), "duration": int(duration)}
+            for item_id, track_type, start, duration in preserved_rows
+            if int(track_type) not in target_track_types
+        ]
+        if preserved_item_positions is not None:
+            expected = {str(row["item_id"]): row for row in preserved_item_positions}
+            actual = {str(row["item_id"]): row for row in preserved_items_before}
+            if set(actual) != set(expected) or any(
+                int(actual[item_id]["duration"]) != int(expected[item_id]["duration"])
+                or int(actual[item_id]["track_type"]) != int(expected[item_id]["track_type"])
+                for item_id in expected.keys() & actual.keys()
+            ):
+                raise APICallFailed(
+                    "Preserved timeline items changed before the final multicam start-timecode restore.",
+                    details={"expected": list(expected.values()), "actual": list(actual.values())},
+                )
+            for item_id, original in expected.items():
+                cursor.execute(
+                    "UPDATE Sm2TiItem SET Start = ? WHERE Sm2TiItem_id = ?",
+                    (str(int(original["start"]) - int(final_start_delta)), item_id),
+                )
         removed_video_items: list[str] = []
         removed_audio_items: list[str] = []
         if write_video and not patch_existing_video_items:
@@ -551,5 +589,6 @@ def _rewrite_multicam_segments_db(
         "removed_audio_item_count": len(removed_audio_items),
         "video_items": written_video_items,
         "audio_items": written_audio_items,
+        "preserved_items_before": preserved_items_before,
         "template_fixture_version": fixture.fixture_version,
     }

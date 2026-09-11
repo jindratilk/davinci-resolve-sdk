@@ -124,7 +124,11 @@ class TimelineMarkerAddExecutionAuthority:
                 os.environ["CUTAGENT_SDK_MARKER_GUARD"] = previous_guard
         if self._private_timeline_inspector is not None:
             identities = context["exactRequestBinding"]["identities"]
-            inspected_after = self._private_timeline_inspector({"projectId": identities["projectId"], "timelineId": identities["timelineId"]})
+            inspected_after = self._private_timeline_inspector({
+                "phase": "verify",
+                "projectId": identities["projectId"],
+                "timelineId": identities["timelineId"],
+            })
             after = inspected_after["snapshot"]
             normalized = True
         else:

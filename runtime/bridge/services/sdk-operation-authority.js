@@ -20,7 +20,6 @@ import {
   sdkOperationInputDigest,
 } from "./sdk-operation-input.js";
 import { createSdkOperationTerminal } from "./sdk-operation-terminal.js";
-import { MutationPolicyError } from "./mutation-policy/mutation-policy-gate.js";
 import { getSdkOwnerSession, runWithSdkOwnerSession } from "./sdk-owner-session-context.js";
 
 export const DEFAULT_SDK_RESULT_RETENTION_MS = 24 * 60 * 60 * 1000;
@@ -113,6 +112,7 @@ export function createSdkOperationAuthority({
   }
   const definitions = new Map(Object.entries(actions));
   const dispatches = new Set();
+  const executionControllers = new Map();
   let authorityFailure = null;
 
   function withOwnerSession(ownerSessionId, ownerRuntimeRequired, operation) {
@@ -235,19 +235,19 @@ export function createSdkOperationAuthority({
     return record;
   }
 
-  function activeTransition(operationId, update) {
+  function activeTransition(operationId, update, options) {
     for (let attempts = 0; attempts < 8; attempts += 1) {
       const record = repo.getOperation(operationId);
       if (!record || TERMINAL.has(record.public.status)) return record;
       const next = update(record);
       if (!next) return record;
-      const transitioned = repo.transition(operationId, record.public.sequence, () => next);
+      const transitioned = repo.transition(operationId, record.public.sequence, () => next, options);
       if (transitioned !== false) return transitioned;
     }
     throw new Error("SDK operation transition contention exceeded its bound.");
   }
 
-  async function dispatch(operationId, definition) {
+  async function dispatch(operationId, definition, executionController) {
     let record = activeTransition(operationId, (current) => {
       if (current.public.status !== "queued") return null;
       return {
@@ -273,6 +273,7 @@ export function createSdkOperationAuthority({
       accountFingerprint: record.private.accountFingerprint,
       sdkSessionId: record.private.sdkSessionId ?? null,
       idempotencyKey: record.public.idempotency?.key ?? null,
+      signal: executionController.signal,
       reportProgress(progress, { waitingFor = null } = {}) {
         const parsedProgress = sdkOperationProgressSchema.parse(progress);
         return activeTransition(operationId, (current) => {
@@ -302,7 +303,7 @@ export function createSdkOperationAuthority({
               usage: current.public.usage,
             }),
           };
-        })?.public ?? null;
+        }, {durable: false})?.public ?? null;
       },
       reportExecutionStarted() {
         return activeTransition(operationId, (current) => {
@@ -349,15 +350,7 @@ export function createSdkOperationAuthority({
       const current = repo.getOperation(operationId) ?? record;
       if (TERMINAL.has(current.public.status)) return;
       reportExecutorError(current, "definition.execute", error);
-      outcome = error instanceof MutationPolicyError
-        && current.public.possibleMutation === "none"
-        ? {
-            status: "failed",
-            possibleMutation: "none",
-            usage: "not_reserved",
-            failure: error.failure,
-          }
-        : genericExecutionFailure(current);
+      outcome = genericExecutionFailure(current);
     }
     record = repo.getOperation(operationId) ?? record;
     if (TERMINAL.has(record.public.status)) return;
@@ -381,11 +374,18 @@ export function createSdkOperationAuthority({
   }
 
   function trackDispatch(operationId, definition) {
+    const executionController = new AbortController();
+    executionControllers.set(operationId, executionController);
     const task = Promise.resolve()
-      .then(() => dispatch(operationId, definition))
+      .then(() => dispatch(operationId, definition, executionController))
       .catch((error) => { throw failAuthority(error); });
     dispatches.add(task);
-    void task.finally(() => dispatches.delete(task)).catch(() => {});
+    void task.finally(() => {
+      dispatches.delete(task);
+      if (executionControllers.get(operationId) === executionController) {
+        executionControllers.delete(operationId);
+      }
+    }).catch(() => {});
   }
 
   async function reconcileRecord(record) {
@@ -622,6 +622,10 @@ export function createSdkOperationAuthority({
       }));
       record = transitioned && transitioned !== false ? transitioned : requireOwned(operationId, accountFingerprint, { ownerSessionId });
       if (record.public.status !== "cancellation_requested") return record.public;
+      const executionController = executionControllers.get(record.public.operationId);
+      if (executionController && !executionController.signal.aborted) {
+        executionController.abort(new DOMException("The SDK operation was cancelled.", "AbortError"));
+      }
       if (beforeCancellation.status === "queued") {
         return transitionTerminal(record, {
           status: "cancelled",
@@ -737,7 +741,14 @@ export function createSdkOperationAuthority({
       assertAuthorityAvailable();
       for (const record of repo.listActive()) await reconcileRecord(record);
     },
-    cleanup() { repo.cleanup(now()); },
+    cleanup() {
+      assertAuthorityAvailable();
+      try {
+        repo.cleanup(now());
+      } catch (error) {
+        throw failAuthority(error);
+      }
+    },
     async waitForIdle() {
       await Promise.allSettled([...dispatches]);
       assertAuthorityAvailable();

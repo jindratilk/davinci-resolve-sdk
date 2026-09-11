@@ -216,11 +216,11 @@ def _public_error_envelope_enabled() -> bool:
 
 # Remediation hints surfaced to humans and agents alongside error envelopes.
 _SUGGESTED_FIXES_BY_CODE: dict[str, str] = {
-    "AUTH_REQUIRED": "Open the CutAgent app and sign in to use CutAgent CLI.",
-    "SUBSCRIPTION_REQUIRED": "Your CutAgent plan is inactive. Renew your subscription in the CutAgent app to use CutAgent CLI.",
-    "AUTH_TOKEN_EXPIRED": "Retry the command to request fresh authorization.",
-    "AUTH_TOKEN_INVALID": "Retry the command. If the problem persists, restart the CutAgent app.",
-    "AUTH_TOKEN_COMMAND_MISMATCH": "Retry the command. If the problem persists, restart the CutAgent app.",
+    "AUTH_REQUIRED": "Run the command again using the installed cutagent command.",
+    "SUBSCRIPTION_REQUIRED": "Explore the CutAgent desktop app at https://cutagent.ai.",
+    "AUTH_TOKEN_EXPIRED": "Run the command again using the installed cutagent command.",
+    "AUTH_TOKEN_INVALID": "Run the command again using the installed cutagent command.",
+    "AUTH_TOKEN_COMMAND_MISMATCH": "Run the command again using the installed cutagent command.",
     "EDIT_CONSTRAINT_VIOLATION": (
         "Review user-owned editing constraints and select an exact permitted stable target "
         "before trying again."
@@ -228,7 +228,7 @@ _SUGGESTED_FIXES_BY_CODE: dict[str, str] = {
     "RESOLVE_NOT_RUNNING": "Start DaVinci Resolve, then retry the command.",
     "RESOLVE_SCRIPTING_UNAVAILABLE": (
         "Enable local external scripting in DaVinci Resolve Studio and restart it, "
-        "or run Workspace > Scripts > CutAgent in DaVinci Resolve Free."
+        "or run Workspace > Scripts > CutAgentSDK in DaVinci Resolve Free."
     ),
 }
 

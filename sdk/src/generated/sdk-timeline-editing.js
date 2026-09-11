@@ -42,10 +42,10 @@ const trimIntent = z.object({
     clipName: z.string().min(1).max(4096),
     trackIndex: z.number().int().min(1).max(4096),
     currentRecordRange: sdkTimelineRecordRangeSchema,
-    headFrames: z.number().int().min(0).max(2_147_483_647),
-    tailFrames: z.number().int().min(0).max(2_147_483_647),
+    headFrames: z.number().int().min(-2_147_483_647).max(2_147_483_647),
+    tailFrames: z.number().int().min(-2_147_483_647).max(2_147_483_647),
     linkedAudio: z.enum(["preserve", "exclude"]),
-}).strict().refine((intent) => intent.headFrames > 0 || intent.tailFrames > 0, { message: "Trim intent must change at least one edge" });
+}).strict().refine((intent) => intent.headFrames !== 0 || intent.tailFrames !== 0, { message: "Trim intent must change at least one edge" });
 const removeIntent = z.object({
     action: z.literal("remove"),
     projectId: sdkProjectIdSchema,

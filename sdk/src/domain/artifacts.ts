@@ -1,6 +1,4 @@
-import { createHash } from "node:crypto";
-import { open, unlink } from "node:fs/promises";
-import path from "node:path";
+import { copyVerifiedArtifact } from "./artifact-copy.js";
 import type { CarrierReadRequest, CarrierReadSuccess } from "../core/carrier-session.js";
 import type { ConnectionControlOptions } from "../core/public-client-types.js";
 import { sdkArtifactIdSchema } from "../generated/sdk-identities.js";
@@ -105,42 +103,10 @@ export function createArtifacts(runtime: ArtifactRuntime): Artifacts {
         sha256: receipt.sha256,
         readContent({ offset, length, ...options }) { return readChunk(offset, length, options); },
         async copyTo(destinationPath, options = {}) {
-          if (typeof destinationPath !== "string" || !path.isAbsolute(destinationPath)) {
-            throw new TypeError("Artifact destinationPath must be absolute.");
-          }
-          let handle;
-          let created = false;
-          try {
-            handle = await open(destinationPath, "wx+", 0o600);
-            created = true;
-            const hash = createHash("sha256");
-            let offset = 0;
-            while (offset < receipt.byteCount) {
-              const bytes = await readChunk(offset, Math.min(1024 * 1024, receipt.byteCount - offset), options);
-              if (bytes.length < 1 || offset + bytes.length > receipt.byteCount) throw invalidResponse("Managed artifact content ended inconsistently.");
-              let written = 0;
-              while (written < bytes.length) {
-                const result = await handle.write(bytes, written, bytes.length - written, offset + written);
-                if (!Number.isInteger(result.bytesWritten) || result.bytesWritten < 1) {
-                  throw invalidResponse("Managed artifact destination stopped before a verified chunk was written.");
-                }
-                written += result.bytesWritten;
-              }
-              hash.update(bytes);
-              offset += bytes.length;
-            }
-            await handle.sync();
-            if ((await handle.stat()).size !== receipt.byteCount || `sha256:${hash.digest("hex")}` !== receipt.canonicalSha256) {
-              throw invalidResponse("Copied managed artifact did not match its verified receipt.");
-            }
-          } catch (error) {
-            await handle?.close().catch(() => {});
-            handle = undefined;
-            if (created) await unlink(destinationPath).catch(() => {});
-            throw error;
-          } finally {
-            await handle?.close();
-          }
+          await copyVerifiedArtifact({
+            destinationPath, sizeBytes: receipt.byteCount, sha256: receipt.canonicalSha256,
+            readChunk: (offset, length) => readChunk(offset, length, options), invalidResponse,
+          });
         },
       };
       Object.setPrototypeOf(artifact, null);

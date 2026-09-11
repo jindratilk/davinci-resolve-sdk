@@ -28,7 +28,7 @@ from ..output import (
 )
 from ..policy import enforce_mutation_policy
 from ..core import batch_utils, media_pool, media_template_extract, timeline_ops
-from ..core.sdk_live_inspection import require_media_pool_mutation_guard
+from ..core.sdk_live_inspection import media_pool_native_id, require_media_pool_mutation_guard
 
 
 class _MediaTyperGroup(TyperGroup):
@@ -636,6 +636,70 @@ def _require_sdk_exact_import_file(path: str, expected_identity: str | None = No
     return canonical_path
 
 
+def _sdk_import_files(path: str) -> list[str]:
+    manifest_path = os.environ.get("CUTAGENT_SDK_MEDIA_IMPORT_FILES_FILE")
+    try:
+        carrier = Path(manifest_path)
+        carrier_info = carrier.lstat()
+        if (not carrier.is_absolute() or not stat.S_ISREG(carrier_info.st_mode)
+                or carrier_info.st_size < 1 or carrier_info.st_size > 8 * 1024 * 1024):
+            raise ValueError("invalid import manifest carrier")
+        manifest = carrier.read_text(encoding="utf-8")
+        entries = json.loads(manifest)
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        entries = None
+    if not isinstance(entries, list) or not entries or len(entries) > 256:
+        raise CapabilityNegotiationFailed(
+            "SDK Media Pool import requires a bounded exact-file manifest.",
+            details={"capability_id": "media.import", "reason": "sdk_media_import_manifest_invalid"},
+        )
+    files: list[str] = []
+    for entry in entries:
+        if not isinstance(entry, dict) or set(entry) != {"path", "identity"} or not isinstance(entry["path"], str):
+            raise CapabilityNegotiationFailed(
+                "SDK Media Pool import requires a bounded exact-file manifest.",
+                details={"capability_id": "media.import", "reason": "sdk_media_import_manifest_invalid"},
+            )
+        files.append(_require_sdk_exact_import_file(entry["path"], json.dumps(entry["identity"])))
+    if files[0] != os.path.realpath(os.path.abspath(os.path.expanduser(path))) or len(set(files)) != len(files):
+        raise CapabilityNegotiationFailed(
+            "SDK Media Pool import manifest does not match distinct requested files.",
+            details={"capability_id": "media.import", "reason": "sdk_media_import_manifest_mismatch"},
+        )
+    return files
+
+
+def _sdk_import_destination(media_pool_api):
+    try:
+        destination = json.loads(os.environ["CUTAGENT_SDK_MEDIA_IMPORT_DESTINATION"])
+        coordinate = destination["coordinate"]
+        native_id = destination["nativeId"]
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        destination = coordinate = native_id = None
+    if (not isinstance(coordinate, list) or not coordinate or coordinate[0] != 0
+            or len(coordinate) > 257 or any(not isinstance(item, int) or isinstance(item, bool) or item < 0 for item in coordinate)
+            or (native_id is not None and (not isinstance(native_id, str) or not native_id))
+            or (native_id is None and coordinate != [0])):
+        raise CapabilityNegotiationFailed(
+            "SDK Media Pool import destination identity is invalid.",
+            details={"capability_id": "media.import", "reason": "sdk_media_import_destination_invalid"},
+        )
+    folder = media_pool_api.GetRootFolder()
+    for ordinal in coordinate[1:]:
+        children = list(folder.GetSubFolderList() or []) if folder else []
+        children = [pair[1] for pair in sorted(
+            enumerate(children),
+            key=lambda pair: (str(pair[1].GetName()).casefold(), pair[0]),
+        )]
+        folder = children[ordinal] if ordinal < len(children) else None
+    if folder is None or (native_id is not None and media_pool_native_id(folder, folder=True) != native_id):
+        raise CapabilityNegotiationFailed(
+            "SDK Media Pool import destination changed after inspection.",
+            details={"capability_id": "media.import", "reason": "sdk_media_import_destination_changed"},
+        )
+    return folder
+
+
 def _validate_existing_media_path(path: str, *, label: str) -> tuple[str, str]:
     candidate = Path(path).expanduser()
     if not candidate.exists():
@@ -805,31 +869,46 @@ def import_media(
     # and return immediately from this fail-closed precondition.
     timeline_ops.require_sdk_marker_mutation_guard(conn)
     require_media_pool_mutation_guard(conn)
+    import_paths: str | list[str] = import_path
     if os.environ.get("CUTAGENT_SDK_MEDIA_IMPORT_ROOT") == "1":
-        expected_file_identity = os.environ.get("CUTAGENT_SDK_MEDIA_IMPORT_FILE_IDENTITY")
-        if not expected_file_identity:
-            raise CapabilityNegotiationFailed(
-                "SDK Media Pool import requires an inspected exact-file identity.",
-                details={"capability_id": "media.import", "reason": "sdk_media_import_file_identity_required"},
-            )
-        import_path = _require_sdk_exact_import_file(
-            import_path,
-            expected_file_identity,
-        )
-        root = conn.media_pool.GetRootFolder()
+        import_paths = _sdk_import_files(import_path)
+        destination = _sdk_import_destination(conn.media_pool)
         current = conn.media_pool.GetCurrentFolder()
-        root_id = getattr(root, "GetUniqueId", lambda: None)() if root else None
-        current_id = getattr(current, "GetUniqueId", lambda: None)() if current else None
-        if not root or not current or (root is not current and (not root_id or root_id != current_id)):
+        setter = getattr(conn.media_pool, "SetCurrentFolder", None)
+        if current is None or not callable(setter):
             raise CapabilityNegotiationFailed(
-                "SDK root import requires the Media Pool root to be the current folder; CutAgent will not change UI selection implicitly.",
-                details={"capability_id": "media.import", "reason": "sdk_media_pool_root_not_current"},
+                "SDK Media Pool import requires readable and restorable current-folder state.",
+                details={"capability_id": "media.import", "reason": "sdk_media_pool_folder_state_unavailable"},
             )
-    count = media_pool.import_media(conn, import_path)
+        current_id = media_pool_native_id(current, folder=True)
+        destination_id = media_pool_native_id(destination, folder=True)
+        same_folder = current is destination or bool(
+            current_id and destination_id and current_id == destination_id
+        )
+        changed_folder = not same_folder
+        if changed_folder and setter(destination) is not True:
+            raise APICallFailed(
+                "Failed to select the exact SDK Media Pool import destination.",
+                details={"api_method": "SetCurrentFolder", "phase": "select_destination"},
+            )
+        import_error = None
+        try:
+            count = media_pool.import_media(conn, import_paths)
+        except BaseException as error:
+            import_error = error
+            raise
+        finally:
+            if changed_folder and setter(current) is not True and import_error is None:
+                raise APICallFailed(
+                    "Imported media but failed to restore the previous Media Pool folder.",
+                    details={"api_method": "SetCurrentFolder", "phase": "restore_previous"},
+                )
+    else:
+        count = media_pool.import_media(conn, import_paths)
     output(
         mutation_payload(
             action="media.import",
-            target={"kind": path_kind, "path": import_path},
+            target={"kind": "files" if isinstance(import_paths, list) and len(import_paths) > 1 else path_kind, "path": import_path},
             imported_count=count,
             message=f"Imported {count} item(s).",
         )
@@ -839,33 +918,43 @@ def import_media(
 @app.command("delete")
 @handle_errors
 def delete_clip(
-    name: str = typer.Argument(..., help="Clip name"),
+    name: list[str] = typer.Argument(..., help="One or more clip names"),
     force: bool = typer.Option(False, "--force", "-f"),
 ):
-    """Delete a clip from the Media Pool."""
+    """Delete one or more clips from the Media Pool in one native operation."""
+    names = [name] if isinstance(name, str) else list(name)
     enforce_mutation_policy(
         "media.clip_management",
         intended_engine="api_native",
         mutating=not is_dry_run(),
     )
     if is_dry_run():
-        dry_run_message(f"Would delete clip: {name}")
+        output(
+            mutation_payload(
+                action="media.delete",
+                changed=False,
+                targets=[{"kind": "clip", "name": item} for item in names],
+                message=f"Would delete {len(names)} Media Pool clip(s).",
+            )
+        )
         return
     require_force_for_machine_mode(
         force=force,
         action="media.delete",
         target_kind="clip",
-        target_name=name,
-        prompt=f"Delete clip '{name}'?",
+        target_name=", ".join(names),
+        prompt=f"Delete {len(names)} Media Pool clip(s)?",
     )
 
     conn = get_connection(require_project=True)
-    media_pool.delete_clip(conn, name)
+    results = media_pool.delete_clips(conn, names)
     output(
         mutation_payload(
             action="media.delete",
-            target={"kind": "clip", "name": name},
-            message=f"Deleted clip: {name}",
+            targets=[{"kind": "clip", "name": item} for item in names],
+            results=results,
+            deleted_count=len(results),
+            message=f"Deleted {len(results)} Media Pool clip(s).",
         )
     )
 
@@ -873,13 +962,24 @@ def delete_clip(
 @app.command("move")
 @handle_errors
 def move_clip(
-    name: str = typer.Argument(..., help="Clip name"),
-    target: str = typer.Argument(..., help="Target folder path"),
+    name: Optional[str] = typer.Argument(None, help="Clip name"),
+    target: Optional[str] = typer.Argument(None, help="Target folder path"),
+    moves: Optional[str] = typer.Option(None, "--moves", help="JSON array of {name, target} move items"),
 ):
-    """Move a clip to a different folder."""
-    target = target.strip()
-    if not target:
-        raise ValidationError("Target folder path is required.")
+    """Move one clip or a JSON array of clips to Media Pool folders."""
+    if isinstance(moves, typer.models.OptionInfo):
+        moves = None
+    if moves is not None:
+        if name is not None or target is not None:
+            raise ValidationError("Use either name/target or --moves, not both.")
+        try:
+            move_items = json.loads(moves) if isinstance(moves, str) else list(moves)
+        except json.JSONDecodeError as exc:
+            raise ValidationError("--moves must be a valid JSON array.") from exc
+    else:
+        if not isinstance(name, str) or not name.strip() or not isinstance(target, str) or not target.strip():
+            raise ValidationError("Clip name and target folder path are required.")
+        move_items = [{"name": name, "target": target}]
 
     enforce_mutation_policy(
         "media.clip_management",
@@ -887,25 +987,53 @@ def move_clip(
         mutating=not is_dry_run(),
     )
     conn = get_connection(require_project=True)
-    move_context = media_pool.validate_clip_move(conn, name, target)
     if is_dry_run():
+        move_contexts = media_pool.validate_clip_moves(conn, move_items)
+        details = (
+            {
+                "target": {"kind": "clip", "name": move_contexts[0]["name"], "folder": move_contexts[0].get("source_folder")},
+                "destination": {"kind": "folder", "path": move_contexts[0].get("destination_folder")},
+            }
+            if len(move_contexts) == 1
+            else {
+                "targets": [{"kind": "clip", "name": row["name"], "folder": row.get("source_folder")} for row in move_contexts],
+                "destinations": [{"kind": "folder", "path": row.get("destination_folder")} for row in move_contexts],
+            }
+        )
         output(
             mutation_payload(
                 action="media.move",
                 changed=False,
-                target={"kind": "clip", "name": name, "folder": move_context.get("source_folder")},
-                destination={"kind": "folder", "path": move_context.get("destination_folder")},
-                message=f"Would move '{name}' to '{move_context.get('destination_folder')}'.",
+                **details,
+                message=(
+                    f"Would move '{move_contexts[0]['name']}' to '{move_contexts[0]['destination_folder']}'."
+                    if len(move_contexts) == 1 else f"Would move {len(move_contexts)} Media Pool item(s)."
+                ),
             )
         )
         return
-    media_pool.move_clip(conn, name, target)
+    result = media_pool.move_clips(conn, move_items)
+    details = (
+        {
+            "target": {"kind": "clip", "name": result["items"][0]["name"], "folder": result["items"][0]["source"]},
+            "destination": {"kind": "folder", "path": result["items"][0]["target"]},
+        }
+        if len(result["items"]) == 1
+        else {
+            "targets": [{"kind": "clip", "name": row["name"], "folder": row["source"]} for row in result["items"]],
+            "destinations": [{"kind": "folder", "path": row["target"]} for row in result["items"]],
+        }
+    )
     output(
         mutation_payload(
             action="media.move",
-            target={"kind": "clip", "name": name, "folder": move_context.get("source_folder")},
-            destination={"kind": "folder", "path": move_context.get("destination_folder")},
-            message=f"Moved '{name}' to '{move_context.get('destination_folder')}'.",
+            changed=result["changed_count"] > 0,
+            **details,
+            moved_count=result["changed_count"],
+            message=(
+                f"Moved '{result['items'][0]['name']}' to '{result['items'][0]['target']}'."
+                if len(result["items"]) == 1 else f"Moved {result['changed_count']} Media Pool item(s)."
+            ),
         )
     )
 

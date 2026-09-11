@@ -44,8 +44,6 @@ export type HighLevelWorkflowEquivalentActionId =
   | "cutagent.action.bulk.lut_set"
   | "cutagent.action.bulk.property_set"
   | "cutagent.action.bulk.select"
-  | "cutagent.action.edit.transition.batch"
-  | "cutagent.action.timeline.clip_color.batch"
   | "cutagent.action.timeline.frame_export.batch"
   | "cutagent.action.timeline.layout.free_stack"
   | "cutagent.action.timeline.marker.batch"
@@ -88,18 +86,16 @@ export const HIGH_LEVEL_WORKFLOW_EQUIVALENTS: Readonly<Record<HighLevelWorkflowE
   "cutagent.action.auto_edit.silence_cut": equivalent("cutagent.action.auto_edit.silence_cut", ["planSilenceRetention", "defineManagedTimeline", "ManagedTimeline.preview", "ManagedTimeline.apply"], "checkpoint_workflow", "timeline_snapshot"),
   "cutagent.action.batch.run": equivalent("cutagent.action.batch.run", ["defineOperationBatch", "executeOperationBatch"], "checkpoint_workflow", "project_and_timeline_revision"),
   "cutagent.action.batch.validate": equivalent("cutagent.action.batch.validate", ["defineOperationBatch", "validateOperationBatch"], "read", "project_and_timeline_revision"),
-  "cutagent.action.bulk.clip_color_set": equivalent("cutagent.action.bulk.clip_color_set", ["selectTimelineClips", "defineSelectedClipBatch", "executeOperationBatch"], "checkpoint_workflow", "timeline_snapshot"),
-  "cutagent.action.bulk.disable": equivalent("cutagent.action.bulk.disable", ["selectTimelineClips", "defineSelectedClipBatch", "executeOperationBatch"], "checkpoint_workflow", "timeline_snapshot"),
-  "cutagent.action.bulk.enable": equivalent("cutagent.action.bulk.enable", ["selectTimelineClips", "defineSelectedClipBatch", "executeOperationBatch"], "checkpoint_workflow", "timeline_snapshot"),
-  "cutagent.action.bulk.lut_set": equivalent("cutagent.action.bulk.lut_set", ["selectTimelineClips", "defineSelectedClipBatch", "executeOperationBatch"], "checkpoint_workflow", "timeline_snapshot"),
-  "cutagent.action.bulk.property_set": equivalent("cutagent.action.bulk.property_set", ["selectTimelineClips", "defineSelectedClipBatch", "executeOperationBatch"], "checkpoint_workflow", "timeline_snapshot"),
+  "cutagent.action.bulk.clip_color_set": equivalent("cutagent.action.bulk.clip_color_set", ["selectTimelineClips", "Timeline.items.setColor"], "durable_operation", "timeline_snapshot"),
+  "cutagent.action.bulk.disable": equivalent("cutagent.action.bulk.disable", ["Timeline.items.disable"], "durable_operation", "timeline_snapshot"),
+  "cutagent.action.bulk.enable": equivalent("cutagent.action.bulk.enable", ["Timeline.items.enable"], "durable_operation", "timeline_snapshot"),
+  "cutagent.action.bulk.lut_set": equivalent("cutagent.action.bulk.lut_set", ["applyColorLut", "Actions.invoke"], "durable_operation", "timeline_snapshot"),
+  "cutagent.action.bulk.property_set": equivalent("cutagent.action.bulk.property_set", ["Timeline.items.setProperties"], "durable_operation", "timeline_snapshot"),
   "cutagent.action.bulk.select": equivalent("cutagent.action.bulk.select", ["selectTimelineClips"], "read", "timeline_snapshot"),
-  "cutagent.action.edit.transition.batch": equivalent("cutagent.action.edit.transition.batch", ["defineOperationBatch", "executeOperationBatch", "Actions.invoke", "ActionIds.edit.transition.add"], "checkpoint_workflow", "timeline_snapshot"),
-  "cutagent.action.timeline.clip_color.batch": equivalent("cutagent.action.timeline.clip_color.batch", ["defineOperationBatch", "executeOperationBatch", "Actions.invoke", "ActionIds.clip.color"], "checkpoint_workflow", "timeline_snapshot"),
-  "cutagent.action.timeline.frame_export.batch": equivalent("cutagent.action.timeline.frame_export.batch", ["defineOperationBatch", "executeOperationBatch", "Actions.invoke", "ActionIds.timeline.frame_export"], "checkpoint_workflow", "timeline_snapshot"),
-  "cutagent.action.timeline.layout.free_stack": equivalent("cutagent.action.timeline.layout.free_stack", ["defineOperationBatch", "executeOperationBatch", "Timeline.items.previewMove", "Timeline.items.move"], "checkpoint_workflow", "timeline_snapshot"),
-  "cutagent.action.timeline.marker.batch": equivalent("cutagent.action.timeline.marker.batch", ["defineOperationBatch", "executeOperationBatch", "Timeline.markers.previewCreate", "Timeline.markers.create"], "checkpoint_workflow", "timeline_snapshot"),
-  "cutagent.action.timeline.overlay_stack.insert": equivalent("cutagent.action.timeline.overlay_stack.insert", ["defineOperationBatch", "executeOperationBatch", "Timeline.edit.previewInsert", "Timeline.edit.insert", "Timeline.items.previewMove", "Timeline.items.move"], "checkpoint_workflow", "timeline_snapshot"),
+  "cutagent.action.timeline.frame_export.batch": equivalent("cutagent.action.timeline.frame_export.batch", ["Actions.invoke", "ActionIds.timeline.frame_export"], "durable_operation", "timeline_snapshot"),
+  "cutagent.action.timeline.layout.free_stack": equivalent("cutagent.action.timeline.layout.free_stack", ["Timeline.items.previewMove", "Timeline.items.move"], "durable_operation", "timeline_snapshot"),
+  "cutagent.action.timeline.marker.batch": equivalent("cutagent.action.timeline.marker.batch", ["Timeline.markers.previewCreate", "Timeline.markers.create"], "durable_operation", "timeline_snapshot"),
+  "cutagent.action.timeline.overlay_stack.insert": equivalent("cutagent.action.timeline.overlay_stack.insert", ["Timeline.edit.previewInsert", "Timeline.edit.insert"], "durable_operation", "timeline_snapshot"),
 });
 
 /** One typed durable operation in an ordinary TypeScript batch. @beta */
@@ -108,7 +104,14 @@ export interface OperationBatchStep {
   readonly start: (idempotencyKey: IdempotencyKey) => Promise<WorkflowOperationHandle>;
 }
 
-/** Immutable serial execution plan. The callbacks remain ordinary TypeScript and are never serialized. @beta */
+/**
+ * Immutable checkpoint-backed serial recovery plan.
+ *
+ * This plan does not coalesce callbacks or turn repeated single-item SDK calls
+ * into a native plural operation. Use a domain method that accepts all target
+ * items inside one step when shared native execution is required.
+ * @beta
+ */
 export interface OperationBatch {
   readonly steps: readonly OperationBatchStep[];
   /** Checkpoint-backed batches fail closed. Continue-on-error is expressed as separate workflows. */
@@ -159,7 +162,16 @@ export function validateOperationBatch(input: OperationBatch): OperationBatchVal
   });
 }
 
-/** Execute a typed batch through the existing checkpoint, policy, durable-operation, and verification authority. @beta */
+/**
+ * Execute typed steps serially through the existing checkpoint, policy,
+ * durable-operation, and verification authority.
+ *
+ * This helper owns ordering, Stop, and recovery truth—not performance
+ * batching. A step may start an existing plural domain operation, but multiple
+ * callbacks are deliberately not merged because their targets and parameters
+ * are opaque at this boundary.
+ * @beta
+ */
 export async function executeOperationBatch(
   workflows: Workflows,
   planInput: OperationBatch,
@@ -219,7 +231,14 @@ export function selectTimelineClips(
   });
 }
 
-/** Build one durable operation step per selected identity without exposing command strings. @beta */
+/**
+ * Build one serial durable operation step per selected identity without
+ * exposing command strings.
+ *
+ * Prefer a domain method that accepts the complete selection when one exists;
+ * this fallback preserves checkpoint recovery but does not share native setup.
+ * @beta
+ */
 export function defineSelectedClipBatch<TResult, TAction extends PublicActionId>(
   selection: TimelineClipSelection,
   start: (item: SelectedTimelineClip, idempotencyKey: IdempotencyKey) => Promise<OperationHandle<TResult, TAction>>,

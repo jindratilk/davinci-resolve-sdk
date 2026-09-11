@@ -1,8 +1,5 @@
 import {readFileSync} from 'node:fs';
 import {join} from 'node:path';
-import {createConstraintScopeRepo} from '../bridge/repos/constraint-scope-repo.js';
-import {createMutationPolicyGate} from '../bridge/services/mutation-policy/mutation-policy-gate.js';
-import {createSdkDirectMutationPolicyAuthority} from '../bridge/services/sdk-direct-mutation-policy-authority.js';
 import {createCutAgentCliAuthorizationService} from '../bridge/services/cutagent-cli-authorization.js';
 import {createResolveService} from '../bridge/services/resolve-service.js';
 import {createSdkLiveInspectionService} from '../bridge/services/sdk-live-inspection-service.js';
@@ -27,9 +24,10 @@ import {createSdkProjectMediaActions} from '../bridge/services/sdk-project-media
 import {createSdkStorageActions} from '../bridge/services/sdk-storage-action-service.js';
 import {createSdkInventoryActions} from '../bridge/services/sdk-inventory-action-service.js';
 import {createSdkLowLevelActions} from '../bridge/services/sdk-low-level-action-service.js';
+import {createDesktopAppServiceActions} from './desktop-app-service-actions.mjs';
 
-/** Existing native factories share their original policy, wrappers and projections. */
-export function composeLocalNativeActions({stateDirectory, transport, authService, sdkRuntimeService, identityNamespace}) {
+/** Existing native factories share their original wrappers and projections. */
+export function composeLocalNativeActions({stateDirectory, transport, authService, identityNamespace}) {
   configureLocalCliRuntime({transport});
   const embeddedFree = transport === 'embedded_free';
   const settingsService = {
@@ -39,10 +37,7 @@ export function composeLocalNativeActions({stateDirectory, transport, authServic
       managed_workspace_root: stateDirectory,
     }}),
   };
-  const repo = createConstraintScopeRepo({storageDir: join(stateDirectory, 'constraints')});
-  const mutationPolicyGate = createMutationPolicyGate({repo, signedExecutionScopeAvailable: true});
-  const directMutationPolicyAuthority = createSdkDirectMutationPolicyAuthority({sdkRuntimeService, mutationPolicyGate});
-  const cutAgentCliAuthorizationService = createCutAgentCliAuthorizationService({settingsService, authService, mutationPolicyGate});
+  const cutAgentCliAuthorizationService = createCutAgentCliAuthorizationService({settingsService, authService});
   const resolveService = createResolveService({settingsService, cutAgentCliAuthorizationService});
   // Free's serialized Lua spool can take longer than the external Studio
   // transport to collect a complete Timeline snapshot. Keep each protected
@@ -55,7 +50,7 @@ export function composeLocalNativeActions({stateDirectory, transport, authServic
   });
   const artifactService = createSdkArtifactService({storageDir: join(stateDirectory, 'artifacts'), managedRenderRoot: join(stateDirectory, 'renders')});
   const colorAssetService = createColorAssetService({storageDir: join(stateDirectory, 'color-assets'), settingsService, authService});
-  const dependencies = {resolveService, liveInspectionService, mutationPolicyGate, directMutationPolicyAuthority,
+  const dependencies = {resolveService, liveInspectionService,
     artifactService, colorAssetService, storageDir: join(stateDirectory, 'storage-recovery')};
   const toolExecutionService = {executeCutAgentCliCommand({args}, options = {}) {
     for (const guard of [options.mutationGuard, options.sdkTimelineGuard]) {
@@ -83,15 +78,14 @@ export function composeLocalNativeActions({stateDirectory, transport, authServic
     {owner: 'project-media-action', actions: createSdkProjectMediaActions(dependencies)},
     {owner: 'storage-action', actions: createSdkStorageActions(dependencies)},
     {owner: 'inventory-action', actions: createSdkInventoryActions(dependencies)},
+    {owner: 'desktop-app-services', actions: createDesktopAppServiceActions()},
     {owner: 'low-level-action', actions: createSdkLowLevelActions({...dependencies, excludedActionIds: ['cutagent.action.audio.voice_list']})},
   ]);
   return Object.freeze({actions, resolveService, liveInspectionService, sdkArtifactService: artifactService,
-    identityNamespace, mutationPolicyGate, directMutationPolicyAuthority,
+    identityNamespace,
     composeWorkflowAuthority(operationAuthority) {
       const checkpointService = createVersionCheckpointService({settingsService,checkpointDir:join(stateDirectory,'checkpoints'),cutAgentCliAuthorizationService});
-      const workflow = createSdkWorkflowAuthority({...dependencies,operationAuthority,checkpointService,storageDir:join(stateDirectory,'workflows')});
-      directMutationPolicyAuthority.bindWorkflowScopeResolver(request => workflow.resolveStepScope(request));
-      return workflow;
+      return createSdkWorkflowAuthority({...dependencies,operationAuthority,checkpointService,storageDir:join(stateDirectory,'workflows')});
     },
     async close() {await prepared.close(); artifactService.stop();}});
 }

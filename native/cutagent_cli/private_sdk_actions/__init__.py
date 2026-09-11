@@ -1,5 +1,5 @@
 """Private prepared-action descriptor contributions.
 
-These modules are compiled into the proprietary CutAgent CLI runtime and are
-never part of the public npm SDK.
+These selected runtime modules are included in the standalone CutAgent SDK
+source distribution under AGPL-3.0-only; see PROVENANCE.md.
 """

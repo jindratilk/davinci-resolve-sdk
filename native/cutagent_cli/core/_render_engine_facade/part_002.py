@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
+
 
 def _validate_render_add_preconditions(
     conn, job_settings: Dict[str, Any]
@@ -750,6 +752,7 @@ def _replay_render_context_from_preset(
     format_setter = _get_callable(project, "SetCurrentRenderFormatAndCodec")
     format_getter = _get_callable(project, "GetCurrentRenderFormatAndCodec")
     mode_setter = _get_callable(project, "SetCurrentRenderMode")
+    mode_getter = _get_callable(project, "GetCurrentRenderMode")
     setter = _get_callable(project, "SetRenderSettings")
     current_format = format_getter() if format_getter is not None else None
     format_already_restored = (
@@ -767,7 +770,17 @@ def _replay_render_context_from_preset(
         raise APICallFailed(
             "DaVinci Resolve did not confirm render format and codec restoration."
         )
-    if mode_setter is None or mode_setter(snapshot["render_mode"]) is not True:
+    try:
+        current_mode = mode_getter() if mode_getter is not None else None
+    except Exception:
+        current_mode = None
+    mode_already_restored = (
+        current_mode in {0, 1} and current_mode == snapshot["render_mode"]
+    )
+    # Reapplying the already active mode can reset custom render dimensions.
+    if not mode_already_restored and (
+        mode_setter is None or mode_setter(snapshot["render_mode"]) is not True
+    ):
         raise APICallFailed("DaVinci Resolve did not confirm render mode restoration.")
     restore_settings = snapshot["restore_settings"]
     if not isinstance(restore_settings, dict):
@@ -809,7 +822,9 @@ def _replay_render_context_from_preset(
         )
 
 
-def _restore_render_context_from_preset(conn, snapshot: Dict[str, Any]) -> None:
+def _restore_render_context_from_preset(
+    conn, snapshot: Dict[str, Any], *, require_deliver_page: bool = True
+) -> None:
     required = {
         "preset_name",
         "preset_directory",
@@ -835,6 +850,7 @@ def _restore_render_context_from_preset(conn, snapshot: Dict[str, Any]) -> None:
         )
     name = str(snapshot["preset_name"])
     directory = Path(str(snapshot["preset_directory"]))
+    selection_breaker_name = f"CutAgent context selection {uuid.uuid4()}"
     verification_name = f"CutAgent context verify {uuid.uuid4()}"
     owned_names = [name]
     failures: list[Dict[str, Any]] = []
@@ -868,12 +884,17 @@ def _restore_render_context_from_preset(conn, snapshot: Dict[str, Any]) -> None:
                     "observed_sha256": hashlib.sha256(retained_canonical).hexdigest(),
                 },
             )
-        with _with_required_page(conn, "deliver"):
-            load_render_preset(conn, name)
-            _replay_render_context_from_preset(
-                conn, snapshot, include_empty_target=True
-            )
-            getattr(conn, "project", None)
+        page_context = (
+            _with_required_page(conn, "deliver")
+            if require_deliver_page
+            else nullcontext()
+        )
+        with page_context:
+            # SaveAsNewRenderPreset selects the captured preset. DaVinci Resolve
+            # can later change current settings without changing that selection,
+            # and loading the already selected preset is then a native no-op.
+            # Select a separately owned preset first so loading the retained
+            # custody preset must replay its complete encoder/settings payload.
             saver = _get_callable(
                 getattr(conn, "project", None), "SaveAsNewRenderPreset"
             )
@@ -881,6 +902,33 @@ def _restore_render_context_from_preset(conn, snapshot: Dict[str, Any]) -> None:
                 raise APICallFailed(
                     "SaveAsNewRenderPreset became unavailable during restoration."
                 )
+            selection_result = saver(selection_breaker_name)
+            observed = _render_preset_catalog_names(conn)
+            if (
+                selection_breaker_name in observed
+                and selection_breaker_name not in snapshot["preset_catalog_before"]
+            ):
+                owned_names.append(selection_breaker_name)
+            if selection_result is not True:
+                raise APICallFailed(
+                    "DaVinci Resolve did not confirm render context selection reset."
+                )
+            if set(observed) - set(before_catalog) != set(owned_names) or set(
+                before_catalog
+            ) - set(observed):
+                raise APICallFailed(
+                    "Render context selection reset changed an ambiguous catalog set.",
+                    details={
+                        "before": before_catalog,
+                        "after": observed,
+                        "owned_names": owned_names,
+                    },
+                )
+            load_render_preset(conn, name)
+            _replay_render_context_from_preset(
+                conn, snapshot, include_empty_target=True
+            )
+            getattr(conn, "project", None)
             save_result = saver(verification_name)
             observed = _render_preset_catalog_names(conn)
             if (
@@ -945,6 +993,30 @@ def _restore_render_context_from_preset(conn, snapshot: Dict[str, Any]) -> None:
         shutil.rmtree(directory, ignore_errors=True)
         if directory.exists():
             failures.append({"phase": "delete_temporary_files", "path": str(directory)})
+    if not failures:
+        observed_snapshot = None
+        try:
+            observed_snapshot = _snapshot_render_context_with_preset(conn)
+            if observed_snapshot["canonical_xml"] != snapshot["canonical_xml"]:
+                raise APICallFailed(
+                    "Render context changed after restoration cleanup.",
+                    details={
+                        "expected_sha256": snapshot["canonical_xml_sha256"],
+                        "observed_sha256": observed_snapshot[
+                            "canonical_xml_sha256"
+                        ],
+                    },
+                )
+        except Exception as exc:
+            failures.append({"phase": "verify_after_cleanup", "error": str(exc)})
+        finally:
+            if observed_snapshot is not None:
+                try:
+                    _discard_render_context_preset_snapshot(conn, observed_snapshot)
+                except Exception as exc:
+                    failures.append(
+                        {"phase": "verify_after_cleanup_release", "error": str(exc)}
+                    )
     if failures:
         raise APICallFailed(
             "DaVinci Resolve render context could not be restored and verified.",
@@ -1063,7 +1135,9 @@ def _verify_render_context_after_checkpoint(conn, expected: Dict[str, Any]) -> N
         raise primary_error
 
 
-def _restore_render_context(conn, snapshot: Dict[str, Any]) -> None:
+def _restore_render_context(
+    conn, snapshot: Dict[str, Any], *, require_deliver_page: bool = True
+) -> None:
     if not isinstance(snapshot, dict):
         raise APICallFailed(
             "DaVinci Resolve render context cannot be restored from an invalid snapshot.",
@@ -1075,7 +1149,9 @@ def _restore_render_context(conn, snapshot: Dict[str, Any]) -> None:
         )
 
     if snapshot.get("custody") == "render_preset_export":
-        _restore_render_context_from_preset(conn, snapshot)
+        _restore_render_context_from_preset(
+            conn, snapshot, require_deliver_page=require_deliver_page
+        )
         return
 
     restore_failures: list[Dict[str, Any]] = []

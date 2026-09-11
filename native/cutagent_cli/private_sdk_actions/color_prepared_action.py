@@ -206,6 +206,73 @@ def _color_policy_effect_targets(
     return [dict(target) for target in targets if target.get("kind") != "artifact"]
 
 
+def _is_plural_lut(value: Any) -> bool:
+    return isinstance(value, Mapping) and isinstance(value.get("items"), list)
+
+
+def _lut_readback_matches_name(readback: Any, requested: Any) -> bool:
+    observed = str(readback or "").strip().replace("\\", "/")
+    expected = str(requested or "").strip().replace("\\", "/")
+    if not observed or not expected:
+        return False
+    return (
+        observed == expected
+        or observed.endswith(f"/{expected}")
+        or ("/" not in observed and observed == os.path.basename(expected))
+    )
+
+
+def _plural_lut_targets(
+    context: Mapping[str, Any], value: Mapping[str, Any]
+) -> list[dict[str, Any]]:
+    project_id = context.get("project", {}).get("projectId")
+    timeline_id = context.get("timeline", {}).get("timelineId")
+    if value.get("projectId") != project_id or value.get("timelineId") != timeline_id:
+        raise InventoryValidationError("Plural LUT request is bound to a different project or timeline")
+    items = value.get("items")
+    if not isinstance(items, list) or not items:
+        raise InventoryValidationError("Plural LUT request has no exact targets")
+    targets: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    exact = context.get("exactRequestBinding")
+    exact_revisions = exact.get("revisions") if isinstance(exact, Mapping) else None
+    signed_target_revisions = (
+        exact_revisions.get("targets") if isinstance(exact_revisions, Mapping) else None
+    )
+    for item in items:
+        if not isinstance(item, Mapping):
+            raise InventoryValidationError("Plural LUT target is invalid")
+        stable_id = item.get("timelineItemId")
+        if not isinstance(stable_id, str) or stable_id in seen:
+            raise InventoryValidationError("Plural LUT targets must have unique stable identities")
+        seen.add(stable_id)
+        binding = _target_binding(context, stable_id, "clip")
+        signed_revision = (
+            signed_target_revisions.get(stable_id)
+            if isinstance(signed_target_revisions, Mapping)
+            else context.get("timeline", {}).get("timelineRevision")
+        )
+        native_id = binding.get("nativeId")
+        track_index = binding.get("trackIndex")
+        if (
+            not isinstance(native_id, str) or not native_id
+            or not isinstance(track_index, int) or isinstance(track_index, bool)
+            or track_index < 1
+            or not isinstance(signed_revision, str) or not signed_revision
+        ):
+            raise InventoryValidationError("Plural LUT target has no exact native binding")
+        targets.append({
+            "kind": "clip",
+            "stableId": stable_id,
+            "revision": signed_revision,
+            "trackType": "video",
+            "trackIndex": track_index,
+            "projectId": project_id,
+            "timelineId": timeline_id,
+        })
+    return targets
+
+
 def _mutable_copy(value: Any) -> Any:
     """Copy carrier-frozen mappings without depending on pickle support."""
 
@@ -441,7 +508,7 @@ def build_production_color_runtime_context(
         required = {
             "contractVersion", "carrier", "minimumBinding", "registryDigest",
             "canonicalRequestDigest", "referencedPayloadDigests", "requestId",
-            "operationId", "executionId", "scopeId", "scopeRevision",
+            "operationId", "executionId",
             "projectLibraryId", "projectId", "projectRevision",
         }
         if (
@@ -466,10 +533,6 @@ def build_production_color_runtime_context(
         ):
             raise InventoryValidationError("Color carrier mutation binding drifted")
         context["mutationBase"] = _mutable_copy(accepted_mutation_base)
-        context["mutationPolicy"] = {
-            key: _mutable_copy(accepted_mutation_base[key])
-            for key in ("registryDigest", "scopeId", "scopeRevision", "projectLibraryId")
-        }
     return context
 
 
@@ -1906,6 +1969,110 @@ class ColorPreparedActionRuntime:
             "privateTargetBinding": deepcopy(dict(derived_binding)) if derived_binding is not None else None,
         }
 
+    def inspect_plural_lut(
+        self, context: Mapping[str, Any], value: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        """Read only the exact requested LUT nodes through one connection."""
+
+        targets = _plural_lut_targets(context, value)
+        conn = get_connection(require_timeline=True, require_project=True)
+        rows: list[dict[str, Any]] = []
+        for item, target in zip(value["items"], targets):
+            binding = _target_binding(context, item["timelineItemId"], "clip")
+            clip_name = str(binding["selector"])
+            node_index = int(item["nodeIndex"])
+            layer_index = int(item["nodeStackLayerIndex"])
+            color_ops.validate_node_index(
+                conn, clip_name, node_index, node_stack_layer_index=layer_index
+            )
+            readback = color_ops.get_lut_info(
+                conn, clip_name, node_index, node_stack_layer_index=layer_index
+            )
+            rows.append({
+                "timelineItemId": target["stableId"],
+                "nativeId": binding["nativeId"],
+                "trackIndex": target["trackIndex"],
+                "nodeStackLayerIndex": layer_index,
+                "nodeIndex": node_index,
+                "lutPath": str(readback.get("lut_path") or ""),
+            })
+        return {"targets": targets, "preState": {"items": rows}}
+
+    def execute_plural_lut(
+        self,
+        context: Mapping[str, Any],
+        value: Mapping[str, Any],
+        prepared: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        """Apply every exact LUT target with one connection and one checkpoint."""
+
+        conn = get_connection(require_timeline=True, require_project=True)
+        execution_id = str(context["executionId"])
+        checkpoint = version_ops.create_checkpoint(
+            conn,
+            label=f"SDK Color LUT recovery {execution_id}",
+            kind="before_prompt",
+            session_id=str(context.get("session", {}).get("sdkSessionId") or "sdk"),
+        )
+        self.checkpoints[execution_id] = str(checkpoint["id"])
+        results: list[dict[str, Any]] = []
+        stopped = False
+        for item in value["items"]:
+            stable_id = str(item["timelineItemId"])
+            if stopped:
+                results.append({
+                    "timelineItemId": stable_id,
+                    "nodeIndex": int(item["nodeIndex"]),
+                    "lutName": str(item["lutName"]),
+                    "status": "skipped",
+                    "readbackLutName": None,
+                    "errorCode": None,
+                })
+                continue
+            binding = _target_binding(context, stable_id, "clip")
+            clip_name = str(binding["selector"])
+            node_index = int(item["nodeIndex"])
+            layer_index = int(item["nodeStackLayerIndex"])
+            write_attempted = False
+            try:
+                color_ops.validate_node_index(
+                    conn, clip_name, node_index, node_stack_layer_index=layer_index
+                )
+                write_attempted = True
+                color_ops.set_lut(
+                    conn, clip_name, node_index, str(item["lutName"]),
+                    node_stack_layer_index=layer_index,
+                )
+                readback = color_ops.get_lut_info(
+                    conn, clip_name, node_index, node_stack_layer_index=layer_index
+                )
+                readback_name = str(readback.get("lut_path") or "")
+                requested_name = str(item["lutName"])
+                if not _lut_readback_matches_name(readback_name, requested_name):
+                    raise InventoryValidationError("LUT application did not return the requested node readback")
+                results.append({
+                    "timelineItemId": stable_id,
+                    "nodeIndex": node_index,
+                    "lutName": requested_name,
+                    "status": "applied",
+                    "readbackLutName": requested_name,
+                    "errorCode": None,
+                })
+            except Exception as exc:
+                if write_attempted:
+                    raise
+                code = getattr(exc, "code", None)
+                results.append({
+                    "timelineItemId": stable_id,
+                    "nodeIndex": node_index,
+                    "lutName": str(item["lutName"]),
+                    "status": "failed",
+                    "readbackLutName": None,
+                    "errorCode": str(code) if isinstance(code, str) and code else "API_CALL_FAILED",
+                })
+                stopped = value["failurePolicy"] == "stop"
+        return {"results": results, "checkpointCreated": True}
+
     def execute(
         self,
         context: Mapping[str, Any],
@@ -2791,6 +2958,46 @@ class ColorPreparedActionDescriptor:
 
     def prepare(self, context: Mapping[str, Any], value: Mapping[str, Any]) -> dict[str, Any]:
         context = self._runtime_context(context)
+        if _is_plural_lut(value):
+            if value.get("revision") != context.get("timeline", {}).get("timelineRevision"):
+                raise InventoryValidationError("Plural LUT request timeline revision is stale")
+            inspected = self.runtime.inspect_plural_lut(context, value)
+            targets = inspected["targets"]
+            minimum = ["readback", "structural"]
+            impact = _merge_carrier_mutation_base(context, {
+                "status": "mutation",
+                "complete": True,
+                "effects": [{
+                    "operation": "color.lut",
+                    "kind": "update",
+                    "trackTypes": ["video"],
+                    "targets": _color_policy_effect_targets(targets),
+                    "placementIntent": "explicit",
+                    "broad": False,
+                    "ambiguous": False,
+                    "complete": True,
+                }],
+                "closedComposition": True,
+                "ambiguous": False,
+                "broad": False,
+                "executableStableTargetPrecondition": True,
+                "verificationPolicy": {
+                    "minimumEvidence": minimum,
+                    "requireProtectedStatePreserved": True,
+                    "protectedTargetEvidence": "every_declared_target",
+                },
+            })
+            return {
+                "targets": targets,
+                "preState": inspected["preState"],
+                "impact": impact,
+                "lowering": {"normalizedInput": deepcopy(dict(value))},
+                "verification": {
+                    "minimumEvidence": minimum,
+                    "protectedState": self.descriptor.protected_state,
+                },
+                "recovery": {"strategy": "authorized_execution_checkpoint_restore"},
+            }
         bound, live = self._bind(context, value)
         artifact_custody = _artifact_custody(self.descriptor, value, context)
         project_id = context.get("project", {}).get("projectId")
@@ -2839,12 +3046,6 @@ class ColorPreparedActionDescriptor:
                 },
                 "recovery": {"strategy": "not_applicable"},
             }
-        policy = context.get("mutationPolicy")
-        if not isinstance(policy, Mapping):
-            raise InventoryValidationError("Color action has no durable Mutation Policy scope")
-        required_policy = ("registryDigest", "scopeId", "scopeRevision", "projectLibraryId")
-        if any(not isinstance(policy.get(field_name), (str, int)) for field_name in required_policy):
-            raise InventoryValidationError("Color Mutation Policy binding is incomplete")
         effect_targets = _color_policy_effect_targets(bound.targets)
         operation_kind = "delete" if self.descriptor.destructive else (
             "create" if any(token in self.descriptor.action_id for token in (".add", ".create", ".import", ".grab")) else "update"
@@ -2903,6 +3104,8 @@ class ColorPreparedActionDescriptor:
         value = prepared.get("lowering", {}).get("normalizedInput")
         if not isinstance(value, Mapping):
             raise InventoryValidationError("Prepared Color input is unavailable")
+        if _is_plural_lut(value):
+            return self.runtime.inspect_plural_lut(context, value)
         rebound, _live = self._bind(context, value)
         return {
             "targets": [
@@ -2918,11 +3121,51 @@ class ColorPreparedActionDescriptor:
 
     def execute(self, context: Mapping[str, Any], prepared: Mapping[str, Any]) -> Mapping[str, Any]:
         context = self._runtime_context(context)
+        value = prepared.get("lowering", {}).get("normalizedInput")
+        if _is_plural_lut(value):
+            return self.runtime.execute_plural_lut(context, value, prepared)
         return self.runtime.execute(context, self.descriptor, prepared)
 
     def verify(self, context: Mapping[str, Any], prepared: Mapping[str, Any], result: Any) -> dict[str, Any]:
         context = self._runtime_context(context)
         value = prepared["lowering"]["normalizedInput"]
+        if _is_plural_lut(value):
+            if not isinstance(result, Mapping) or not isinstance(result.get("results"), list):
+                raise InventoryValidationError("Plural LUT execution returned invalid per-target results")
+            after = self.runtime.inspect_plural_lut(context, value)
+            after_by_id = {
+                row["timelineItemId"]: row for row in after["preState"]["items"]
+            }
+            before_by_id = {
+                row["timelineItemId"]: row for row in prepared["preState"]["items"]
+            }
+            exact = True
+            for row in result["results"]:
+                current = after_by_id.get(row.get("timelineItemId"))
+                if row.get("status") == "applied":
+                    exact = exact and isinstance(current, Mapping) and _lut_readback_matches_name(
+                        current.get("lutPath"), row.get("readbackLutName")
+                    )
+                else:
+                    exact = exact and current == before_by_id.get(row.get("timelineItemId"))
+            complete = len(result["results"]) == len(value["items"])
+            passed = exact and complete
+            return {
+                "outcome": "passed" if passed else "failed",
+                "evidence": [
+                    {
+                        "modality": "readback",
+                        "digest": _kernel_digest("pre-state", after["preState"]),
+                        "summary": "Every requested LUT node was read back through the shared native connection.",
+                    },
+                    {
+                        "modality": "structural",
+                        "digest": _kernel_digest("targets", after["targets"]),
+                        "summary": "The exact requested clip identities remained bound throughout the plural operation.",
+                    },
+                ],
+                "protectedStatePreserved": passed,
+            }
         verification_context = dict(context)
         verification_context["privateColorInspectionPhase"] = "verification"
         after = self.runtime.inspect(verification_context, self.descriptor, value)
@@ -3030,6 +3273,37 @@ class ColorPreparedActionDescriptor:
         return self.runtime.recover(context, self.descriptor, prepared)
 
     def project_result(self, context: Mapping[str, Any], prepared: Mapping[str, Any], result: Any) -> dict[str, Any]:
+        value = prepared.get("lowering", {}).get("normalizedInput")
+        if _is_plural_lut(value):
+            rows = deepcopy(result.get("results")) if isinstance(result, Mapping) else None
+            if not isinstance(rows, list):
+                raise InventoryValidationError("Plural LUT result rows are unavailable")
+            applied = sum(row.get("status") == "applied" for row in rows if isinstance(row, Mapping))
+            status = "completed" if applied == len(rows) else "partial"
+            projection = {
+                "actionId": self.descriptor.action_id,
+                "payload": {
+                    "status": status,
+                    "changed": applied > 0,
+                    "results": rows,
+                    "verification": {
+                        "outcome": "passed",
+                        "evidence": [{
+                            "kind": "structural_readback",
+                            "summary": "Each applied LUT was read back from its exact requested clip and node.",
+                            "artifactId": None,
+                        }],
+                        "protectedState": "preserved",
+                    },
+                    "recovery": {
+                        "state": "not_needed",
+                        "retry": "inspect_state_first" if status == "partial" else "safe",
+                        "guidance": "Inspect only failed or skipped targets before retrying." if status == "partial" else "No recovery is required.",
+                    },
+                },
+            }
+            _reject_private_keys(projection)
+            return self._validated_public_result(projection)
         if not isinstance(result, Mapping):
             raise InventoryValidationError("Color handler returned invalid result custody")
         if self.descriptor.command_id == "page.switch":

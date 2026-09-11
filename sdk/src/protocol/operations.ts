@@ -354,13 +354,21 @@ export interface OperationHandle<TResult, TAction extends PublicActionId = Publi
   readonly operationId: OperationId;
   readonly actionId: TAction;
   readonly ref: OperationRef<TAction, TResult>;
-  /** Latest accepted snapshot. Authority sequence, never timestamp, orders updates. */
+  /**
+   * Latest accepted snapshot. Sequence orders updates while one authority process
+   * remains active. After an authority restart, a correlated immutable terminal
+   * snapshot may have a lower sequence and supersede a nonterminal snapshot.
+   */
   readonly current: OperationSnapshot<TResult, TAction>;
   /** Fetch and validate the current authority state. */
   refresh(options?: ConnectionControlOptions): Promise<OperationSnapshot<TResult, TAction>>;
   /** Wait locally for a terminal state. Abort and timeout stop only this wait. */
   wait(options?: OperationWaitOptions): Promise<TerminalOperationSnapshot<TResult, TAction>>;
-  /** Deliver current state immediately, then monotonic updates until unsubscribe. */
+  /**
+   * Deliver current state immediately, then validated lifecycle updates until
+   * unsubscribe. A correlated immutable terminal recovered after an authority
+   * restart may have a lower sequence than progress observed before the restart.
+   */
   subscribe(
     listener: (snapshot: OperationSnapshot<TResult, TAction>) => void,
     options?: OperationSubscribeOptions,

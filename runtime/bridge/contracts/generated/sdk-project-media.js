@@ -111,6 +111,13 @@ export const sdkMediaPoolRelinkInputSchema = mediaMutationBinding.extend({
     assetId: sdkMediaPoolItemIdSchema,
     path: localPath,
 }).strict();
+export const sdkMediaPoolDeleteInputSchema = mediaMutationBinding.extend({
+    assetIds: z.array(sdkMediaPoolItemIdSchema).min(1).max(1000),
+}).strict().superRefine((input, issue) => {
+    if (new Set(input.assetIds).size !== input.assetIds.length) {
+        issue.addIssue({ code: "custom", path: ["assetIds"], message: "Deleted asset identities must be unique." });
+    }
+});
 export const sdkMediaPoolSyncAudioInputSchema = mediaMutationBinding.extend({
     videoAssetId: sdkMediaPoolItemIdSchema,
     audioAssetIds: z.array(sdkMediaPoolItemIdSchema).min(1).max(64),
@@ -160,6 +167,18 @@ export const sdkMediaPoolRelinkResultSchema = z.object({
     sourceFileName: z.string().min(1).max(4096).refine((value) => value !== "." && value !== ".." && !value.includes("/") && !value.includes("\\"), "Relink source file name must be a basename."),
     revision: sdkRevisionSchema,
 }).strict();
+export const sdkMediaPoolDeleteResultSchema = z.object({
+    projectId: sdkProjectIdSchema,
+    items: z.array(z.object({
+        assetId: sdkMediaPoolItemIdSchema,
+        status: z.literal("deleted"),
+    }).strict()).min(1).max(1000),
+    revision: sdkRevisionSchema,
+}).strict().superRefine((result, issue) => {
+    if (new Set(result.items.map((item) => item.assetId)).size !== result.items.length) {
+        issue.addIssue({ code: "custom", path: ["items"], message: "Delete results must contain unique asset identities." });
+    }
+});
 export const sdkMediaPoolSyncAudioResultSchema = z.object({
     projectId: sdkProjectIdSchema,
     videoAssetId: sdkMediaPoolItemIdSchema,

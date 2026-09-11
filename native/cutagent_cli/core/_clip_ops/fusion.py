@@ -5,6 +5,7 @@ from typing import Any, Optional
 from ...errors import APICallFailed, ValidationError
 from ...policy import require_api_method
 from ...utils.time_ref import parse_source_frame
+from .. import fusion_common
 
 
 def _tool_values(tool_list) -> list[object]:
@@ -988,14 +989,19 @@ def list_fusion_tools(
         return []
 
     rows = []
-    if isinstance(tool_list, dict):
-        for tool_id, tool in tool_list.items():
-            tool_type = tool.GetAttrs().get("TOOLS_RegID", "?") if hasattr(tool, "GetAttrs") else "?"
-            rows.append({"id": tool_id, "name": str(tool_id), "type": tool_type})
-    elif isinstance(tool_list, (list, tuple)):
-        for i, tool in enumerate(tool_list):
-            tool_type = tool.GetAttrs().get("TOOLS_RegID", "?") if hasattr(tool, "GetAttrs") else "?"
-            rows.append({"id": i, "name": str(i), "type": tool_type})
+    for table_key, tool in fusion_common.iter_api_items(tool_list):
+        tool_name = fusion_common.tool_name(
+            tool,
+            fallback=table_key if isinstance(table_key, str) else None,
+        )
+        if tool_name == "Unknown":
+            raise APICallFailed(
+                "Fusion composition returned a tool without an addressable name.",
+                details={"table_key": str(table_key), "required_attribute": "TOOLST_Name"},
+            )
+        attrs = tool.GetAttrs() if hasattr(tool, "GetAttrs") else {}
+        tool_type = attrs.get("TOOLS_RegID", "?") if isinstance(attrs, dict) else "?"
+        rows.append({"id": table_key, "name": tool_name, "type": tool_type})
 
     return rows
 

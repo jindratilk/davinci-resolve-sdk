@@ -3,10 +3,11 @@ import { CUTAGENT_SDK_ACTION_CONTRACT_VERSION, CUTAGENT_SDK_ACTION_INVENTORY_DIG
 import { CUTAGENT_SDK_LOW_LEVEL_READ_ACTION_IDS } from "./sdk-low-level-read-actions.js";
 import { sdkArtifactIdSchema, sdkEvidenceIdSchema, sdkExecutionIdSchema, sdkIdempotencyKeySchema, sdkIncidentIdSchema, sdkMarkerIdSchema, sdkMediaPoolItemIdSchema, sdkMulticamAngleIdSchema, sdkMulticamIdSchema, sdkOperationIdSchema, sdkProjectIdSchema, sdkRequestIdSchema, sdkRevisionSchema, sdkSessionIdSchema, sdkSnapshotRenderJobIdSchema, sdkSnapshotTimelineItemIdSchema, sdkTimelineIdSchema, sdkTimelineItemIdSchema, sdkWorkflowIdSchema, } from "./sdk-identities.js";
 import { sdkTimelineEditImpactSchema, } from "./sdk-timeline-editing.js";
-import { sdkFusionGraphApplyInputSchema } from "./sdk-fusion.js";
+import { sdkFusionGraphApplyInputSchema, sdkFusionImageReplaceInputSchema } from "./sdk-fusion.js";
+import { sdkFusionNestedTextInputSchema, sdkFusionNestedTextResultSchema, } from "./sdk-fusion.js";
 import { sdkFairlightPlanInputSchema, sdkFairlightSemanticResultSchema, } from "./sdk-fairlight.js";
 import { CUTAGENT_SDK_FAIRLIGHT_PREPARED_ACTION_IDS, CUTAGENT_SDK_FAIRLIGHT_CARRIER_OWNED_ACTION_IDS, sdkFairlightPreparedOperationInputSchema, } from "./sdk-fairlight-prepared-actions.js";
-import { sdkMediaPoolCreateBinInputSchema, sdkMediaPoolCreateBinResultSchema, sdkMediaPoolImportInputSchema, sdkMediaPoolImportResultSchema, sdkMediaPoolRelinkInputSchema, sdkMediaPoolRelinkResultSchema, sdkMediaPoolSetMetadataInputSchema, sdkMediaPoolSetMetadataResultSchema, sdkMediaPoolSyncAudioInputSchema, sdkMediaPoolSyncAudioResultSchema, sdkProjectBackupInputSchema, sdkProjectCreateInputSchema, sdkProjectLibraryBackupInputSchema, sdkProjectLibraryCreateInputSchema, sdkProjectLibraryOpenInputSchema, sdkProjectLibraryRestoreInputSchema, sdkProjectOpenInputSchema, sdkProjectRestoreInputSchema, } from "./sdk-project-media.js";
+import { sdkMediaPoolCreateBinInputSchema, sdkMediaPoolCreateBinResultSchema, sdkMediaPoolDeleteInputSchema, sdkMediaPoolDeleteResultSchema, sdkMediaPoolImportInputSchema, sdkMediaPoolImportResultSchema, sdkMediaPoolRelinkInputSchema, sdkMediaPoolRelinkResultSchema, sdkMediaPoolSetMetadataInputSchema, sdkMediaPoolSetMetadataResultSchema, sdkMediaPoolSyncAudioInputSchema, sdkMediaPoolSyncAudioResultSchema, sdkProjectBackupInputSchema, sdkProjectCreateInputSchema, sdkProjectLibraryBackupInputSchema, sdkProjectLibraryCreateInputSchema, sdkProjectLibraryOpenInputSchema, sdkProjectLibraryRestoreInputSchema, sdkProjectOpenInputSchema, sdkProjectRestoreInputSchema, } from "./sdk-project-media.js";
 export { CUTAGENT_SDK_ACTION_CONTRACT_VERSION, CUTAGENT_SDK_ACTION_INVENTORY_DIGEST, CUTAGENT_SDK_PUBLIC_ACTION_IDS, } from "./sdk-operation-actions.js";
 export { CUTAGENT_SDK_LOW_LEVEL_READ_ACTION_IDS } from "./sdk-low-level-read-actions.js";
 export * from "./sdk-fairlight.js";
@@ -38,7 +39,6 @@ export const sdkFailureKindSchema = z.enum([
     "operation_failed",
     "operation_expired",
     "idempotency_conflict",
-    "edit_constraint_violation",
     "target_not_found",
     "ambiguous_target",
     "stale_revision",
@@ -61,7 +61,6 @@ export const sdkPublicErrorCodeSchema = z.enum([
     "TARGET_NOT_FOUND",
     "AMBIGUOUS_TARGET",
     "STALE_REVISION",
-    "EDIT_CONSTRAINT_VIOLATION",
     "USAGE_EXHAUSTED",
     "REQUEST_TOO_LARGE",
     "OUTPUT_LIMIT_REACHED",
@@ -89,7 +88,6 @@ export const SDK_PUBLIC_ERROR_KIND_BY_CODE = Object.freeze({
     TARGET_NOT_FOUND: "target_not_found",
     AMBIGUOUS_TARGET: "ambiguous_target",
     STALE_REVISION: "stale_revision",
-    EDIT_CONSTRAINT_VIOLATION: "edit_constraint_violation",
     USAGE_EXHAUSTED: "usage_exhausted",
     REQUEST_TOO_LARGE: "request_too_large",
     OUTPUT_LIMIT_REACHED: "output_limit_reached",
@@ -155,20 +153,10 @@ const publicFailureCommon = {
     incidentId: sdkIncidentIdSchema.optional(),
     cause: sdkPublicErrorCauseSchema.optional(),
 };
-const sdkEditConstraintViolationFailureSchema = z.object({
-    ...publicFailureCommon,
-    kind: z.literal("edit_constraint_violation"),
-    code: z.literal("EDIT_CONSTRAINT_VIOLATION"),
-    retrySafe: z.literal(false),
-    possibleMutation: z.literal("none"),
-    usage: z.literal("not_reserved"),
-    recovery: z.array(sdkRecoveryActionSchema.exclude(["retry"])).min(1).max(5),
-    readbackRequired: z.literal(false),
-}).strict();
 const sdkOtherPublicFailureSchema = z.object({
     ...publicFailureCommon,
     kind: sdkFailureKindSchema,
-    code: sdkPublicErrorCodeSchema.exclude(["EDIT_CONSTRAINT_VIOLATION"]),
+    code: sdkPublicErrorCodeSchema,
     retrySafe: z.boolean(),
     retrySafetyProof: sdkRetrySafetyProofSchema.optional(),
     possibleMutation: sdkPossibleMutationStateSchema,
@@ -215,10 +203,7 @@ const sdkOtherPublicFailureSchema = z.object({
         context.addIssue({ code: "custom", path: ["code"], message: "IDEMPOTENCY_CONFLICT requires the original operation and key without a retry claim" });
     }
 });
-export const sdkPublicFailureSchema = z.discriminatedUnion("code", [
-    sdkEditConstraintViolationFailureSchema,
-    sdkOtherPublicFailureSchema,
-]);
+export const sdkPublicFailureSchema = sdkOtherPublicFailureSchema;
 export const sdkVerificationOutcomeSchema = z.enum(["passed", "failed", "partial", "not_performed", "manual_review_required"]);
 export const sdkEvidenceModalitySchema = z.enum(["readback", "structural", "file", "rendered", "visual", "auditioned"]);
 export const sdkVerificationEvidenceSchema = z.object({
@@ -334,6 +319,9 @@ const sdkTerminalFailureSchema = sdkPublicFailureSchema.refine((failure) => (fai
     && failure.executionId !== undefined), { message: "Terminal operation failures require request, operation, and execution correlation" });
 const mediaResultContractExclusions = new Set([
     "cutagent.action.media.append.batch",
+    // Existing-transcription readback is owned by the durable MediaPoolAsset
+    // domain route rather than the generic semantic action result carrier.
+    "cutagent.action.media.transcription",
     "cutagent.action.media.third_party_metadata.bulk_set",
 ]);
 const mediaActionIds = CUTAGENT_SDK_PUBLIC_ACTION_IDS.filter((actionId) => (actionId.startsWith("cutagent.action.media.") && !mediaResultContractExclusions.has(actionId)));
@@ -576,10 +564,20 @@ export const sdkPublicActionResultSchema = z.object({
         }
         return;
     }
+    if (result.actionId === "cutagent.action.fusion.nested_text.batch") {
+        const parsed = sdkFusionNestedTextResultSchema.safeParse(result.value);
+        if (!parsed.success) {
+            for (const issue of parsed.error.issues) {
+                context.addIssue({ ...issue, path: ["value", ...issue.path] });
+            }
+        }
+        return;
+    }
     if (!result.actionId.startsWith("cutagent.action.media."))
         return;
     const semanticMediaResultSchemas = {
         "cutagent.action.media.folders.create": sdkMediaPoolCreateBinResultSchema,
+        "cutagent.action.media.delete": sdkMediaPoolDeleteResultSchema,
         "cutagent.action.media.import": sdkMediaPoolImportResultSchema,
         "cutagent.action.media.relink": sdkMediaPoolRelinkResultSchema,
         "cutagent.action.media.metadata": sdkMediaPoolSetMetadataResultSchema,
@@ -904,7 +902,6 @@ export const sdkOperationSnapshotSchema = z.discriminatedUnion("status", [
             "OPERATION_FAILED",
             "CAPABILITY_UNAVAILABLE",
             "STALE_REVISION",
-            "EDIT_CONSTRAINT_VIOLATION",
             "AUTHENTICATION_REQUIRED",
             "SUBSCRIPTION_REQUIRED",
             "USAGE_EXHAUSTED",
@@ -956,15 +953,41 @@ const markerMutationBase = z.object({
     timelineId: sdkTimelineIdSchema,
     timelineRevision: sdkRevisionSchema,
 }).strict();
-export const sdkMarkerCreateInputSchema = markerMutationBase.extend({ marker: markerValueSchema }).strict();
-export const sdkMarkerUpdateInputSchema = markerMutationBase.extend({ markerId: sdkMarkerIdSchema, marker: markerValueSchema }).strict();
-export const sdkMarkerDeleteInputSchema = markerMutationBase.extend({ markerId: sdkMarkerIdSchema }).strict();
-export const sdkMarkerMutationResultSchema = z.object({
+const markerMutationBatchLimit = 10_000;
+const markerMutationValuesSchema = z.array(markerValueSchema).min(1).max(markerMutationBatchLimit);
+const markerUpdateValueSchema = z.object({ markerId: sdkMarkerIdSchema, marker: markerValueSchema }).strict();
+export const sdkMarkerCreateInputSchema = z.union([
+    markerMutationBase.extend({ marker: markerValueSchema }).strict(),
+    markerMutationBase.extend({ markers: markerMutationValuesSchema }).strict(),
+]);
+export const sdkMarkerUpdateInputSchema = z.union([
+    markerMutationBase.extend({ markerId: sdkMarkerIdSchema, marker: markerValueSchema }).strict(),
+    markerMutationBase.extend({ updates: z.array(markerUpdateValueSchema).min(1).max(markerMutationBatchLimit) }).strict(),
+]);
+export const sdkMarkerDeleteInputSchema = z.union([
+    markerMutationBase.extend({ markerId: sdkMarkerIdSchema }).strict(),
+    markerMutationBase.extend({ markerIds: z.array(sdkMarkerIdSchema).min(1).max(markerMutationBatchLimit) }).strict().superRefine((value, context) => {
+        if (new Set(value.markerIds).size !== value.markerIds.length) {
+            context.addIssue({ code: "custom", path: ["markerIds"], message: "Marker IDs must be unique" });
+        }
+    }),
+]);
+const sdkSingleMarkerMutationResultSchema = z.object({
     action: z.enum(["create", "update", "delete"]),
     marker: z.object({ id: sdkMarkerIdSchema, ...markerValueSchema.shape }).strict().nullable(),
     previousMarker: z.object({ id: sdkMarkerIdSchema, ...markerValueSchema.shape }).strict().nullable(),
     timelineRevision: sdkRevisionSchema,
 }).strict();
+const sdkMarkerMutationBatchResultSchema = z.object({
+    action: z.enum(["create", "update", "delete"]),
+    markers: z.array(z.object({ id: sdkMarkerIdSchema, ...markerValueSchema.shape }).strict()).max(markerMutationBatchLimit),
+    previousMarkers: z.array(z.object({ id: sdkMarkerIdSchema, ...markerValueSchema.shape }).strict()).max(markerMutationBatchLimit),
+    timelineRevision: sdkRevisionSchema,
+}).strict();
+export const sdkMarkerMutationResultSchema = z.union([
+    sdkSingleMarkerMutationResultSchema,
+    sdkMarkerMutationBatchResultSchema,
+]);
 const sdkVoiceModelSchema = z.enum(["multilingual_v2"]);
 const sdkVoiceOutputFormatSchema = z.enum(["mp3_44khz_128kbps"]);
 export const sdkVoiceGenerateInputSchema = z.object({
@@ -1033,7 +1056,7 @@ const timelineMoveBindingSchema = z.object({
     timelineId: sdkTimelineIdSchema,
     timelineRevision: sdkRevisionSchema,
 }).strict();
-export const sdkTimelineItemMoveInputSchema = timelineMoveBindingSchema.extend({
+export const sdkTimelineItemMoveSingleInputSchema = timelineMoveBindingSchema.extend({
     target: timelineMoveItemSchema,
     linkedAudioTargets: z.array(timelineMoveItemSchema).max(256),
     destination: z.object({
@@ -1042,6 +1065,25 @@ export const sdkTimelineItemMoveInputSchema = timelineMoveBindingSchema.extend({
     }).strict(),
     linkedAudio: z.enum(["preserve", "exclude"]),
     collisionPolicy: z.enum(["reject", "allow"]),
+}).strict();
+export const sdkTimelineItemMoveInputSchema = z.union([
+    sdkTimelineItemMoveSingleInputSchema,
+    z.object({ moves: z.array(sdkTimelineItemMoveSingleInputSchema).min(1).max(100) }).strict(),
+]);
+export const sdkTimelineClipColorBatchInputSchema = z.object({
+    projectId: sdkProjectIdSchema,
+    timelineId: sdkTimelineIdSchema,
+    revision: sdkRevisionSchema,
+    updates: z.array(z.object({
+        timelineItemId: sdkTimelineItemIdSchema,
+        snapshotTimelineItemId: sdkSnapshotTimelineItemIdSchema,
+        trackType: z.enum(["video", "audio"]),
+        trackIndex: z.number().int().min(1),
+        recordStartFrame: z.number().int(),
+        recordEndFrame: z.number().int(),
+        name: z.string().min(1).max(1024),
+        color: z.string().min(1).max(64).nullable(),
+    }).strict()).min(1).max(1_000),
 }).strict();
 const timelineMoveObservedItemSchema = z.object({
     id: sdkTimelineItemIdSchema,
@@ -1060,13 +1102,76 @@ const timelineMoveObservedItemSchema = z.object({
     }).strict(),
     sourceRangePreservation: z.enum(["preserved", "not_observable"]),
 }).strict();
-export const sdkTimelineItemMoveResultSchema = z.object({
+export const sdkTimelineItemMoveSingleResultSchema = z.object({
     actionId: z.literal("cutagent.action.timeline.items.move"),
     target: timelineMoveObservedItemSchema,
     linkedAudio: z.enum(["preserved", "excluded", "not_linked"]),
     movedItems: z.array(timelineMoveObservedItemSchema).min(1).max(257),
     timelineRevision: sdkRevisionSchema,
 }).strict();
+export const sdkTimelineItemMoveResultSchema = z.union([
+    sdkTimelineItemMoveSingleResultSchema,
+    z.object({
+        actionId: z.literal("cutagent.action.timeline.items.move"),
+        results: z.array(sdkTimelineItemMoveSingleResultSchema).min(1).max(100),
+        timelineRevision: sdkRevisionSchema,
+    }).strict(),
+]);
+export const sdkBulkClipStateTargetSchema = z.object({
+    snapshotId: sdkSnapshotTimelineItemIdSchema,
+    id: sdkTimelineItemIdSchema,
+    trackType: z.enum(["video", "audio"]),
+    trackIndex: z.number().int().min(1).max(4096),
+    recordStartFrame: z.number().int().safe().nonnegative(),
+    recordEndFrame: z.number().int().safe().positive(),
+    name: z.string().min(1).max(4096),
+    mediaPoolItemId: sdkMediaPoolItemIdSchema.nullable(),
+    linkedItemIds: z.array(sdkTimelineItemIdSchema).max(64),
+}).strict().refine((value) => value.recordEndFrame > value.recordStartFrame, {
+    message: "Bulk clip-state target end must follow its start.",
+    path: ["recordEndFrame"],
+});
+export const sdkBulkClipStateInputSchema = z.object({
+    projectId: sdkProjectIdSchema,
+    timelineId: sdkTimelineIdSchema,
+    timelineRevision: sdkRevisionSchema,
+    targets: z.array(sdkBulkClipStateTargetSchema).min(1).max(1000),
+    failurePolicy: z.literal("stop"),
+}).strict().superRefine((value, context) => {
+    const seen = new Set();
+    value.targets.forEach((target, index) => {
+        if (seen.has(target.id))
+            context.addIssue({
+                code: "custom", path: ["targets", index, "id"], message: "Bulk clip-state targets must be unique.",
+            });
+        seen.add(target.id);
+    });
+});
+const sdkBulkClipStateObservationSchema = z.object({
+    timelineItemId: sdkTimelineItemIdSchema,
+    name: z.string().min(1).max(4096),
+    before: z.boolean(),
+    after: z.boolean(),
+    changed: z.boolean(),
+}).strict().superRefine((value, context) => {
+    if (value.changed !== (value.before !== value.after))
+        context.addIssue({
+            code: "custom", path: ["changed"], message: "Bulk clip-state changed flag contradicts readback.",
+        });
+});
+export const sdkBulkClipStateResultSchema = z.object({
+    actionId: z.enum(["cutagent.action.bulk.enable", "cutagent.action.bulk.disable"]),
+    items: z.array(sdkBulkClipStateObservationSchema).min(1).max(1000),
+    timelineRevision: sdkRevisionSchema,
+}).strict().superRefine((value, context) => {
+    const expected = value.actionId === "cutagent.action.bulk.enable";
+    value.items.forEach((item, index) => {
+        if (item.after !== expected)
+            context.addIssue({
+                code: "custom", path: ["items", index, "after"], message: "Bulk clip-state result contradicts its action.",
+            });
+    });
+});
 const sdkTimelineBladeTargetSchema = z.object({
     snapshotId: sdkSnapshotTimelineItemIdSchema,
     id: sdkTimelineItemIdSchema,
@@ -1116,7 +1221,7 @@ export const sdkTimelineBladeResultSchema = z.object({
     segments: z.array(sdkTimelineBladeSegmentSchema).min(2).max(514),
     protectedStatePreserved: z.literal(true),
 }).strict();
-const sdkClipMotionTargetSchema = z.object({
+export const sdkClipMotionTargetSchema = z.object({
     snapshotId: sdkSnapshotTimelineItemIdSchema,
     id: sdkTimelineItemIdSchema,
     trackType: z.literal("video"),
@@ -1129,10 +1234,12 @@ const sdkClipMotionTargetSchema = z.object({
 }).strict().refine((value) => value.recordEndFrame > value.recordStartFrame, {
     message: "Clip motion target end must follow its start.", path: ["recordEndFrame"],
 });
-const sdkClipMotionBindingSchema = z.object({
+const sdkClipMotionContextSchema = z.object({
     projectId: sdkProjectIdSchema,
     timelineId: sdkTimelineIdSchema,
     timelineRevision: sdkRevisionSchema,
+}).strict();
+const sdkClipMotionBindingSchema = sdkClipMotionContextSchema.extend({
     target: sdkClipMotionTargetSchema,
 }).strict();
 export const sdkClipKeyframePropertySchema = z.enum([
@@ -1164,7 +1271,46 @@ export const sdkClipTransformValuesSchema = z.object({
     cropTop: z.number().finite().optional(), cropBottom: z.number().finite().optional(), distortion: z.number().finite().optional(),
     dynamicZoomEase: z.enum(["linear", "in", "out", "inout"]).optional(),
 }).strict().refine((value) => Object.keys(value).length > 0, { message: "At least one transform value is required." });
-export const sdkClipTransformInputSchema = sdkClipMotionBindingSchema.extend({ transform: sdkClipTransformValuesSchema }).strict();
+const sdkClipTransformSingleInputSchema = sdkClipMotionBindingSchema.extend({ transform: sdkClipTransformValuesSchema }).strict();
+const sdkClipTransformEntrySchema = z.object({
+    target: sdkClipMotionTargetSchema,
+    transform: sdkClipTransformValuesSchema,
+}).strict();
+const sdkClipTransformPluralInputSchema = sdkClipMotionContextSchema.extend({
+    transforms: z.array(sdkClipTransformEntrySchema).min(1).max(100),
+}).strict().superRefine((value, context) => {
+    const targetIds = new Set();
+    value.transforms.forEach((entry, index) => {
+        if (targetIds.has(entry.target.id)) {
+            context.addIssue({ code: "custom", path: ["transforms", index, "target", "id"], message: "Each clip transform target must be unique." });
+        }
+        targetIds.add(entry.target.id);
+    });
+});
+export const sdkClipTransformInputSchema = z.union([
+    sdkClipTransformSingleInputSchema,
+    sdkClipTransformPluralInputSchema,
+]);
+export const sdkBulkClipPropertyItemSchema = z.object({
+    target: sdkClipMotionTargetSchema,
+    properties: sdkClipTransformValuesSchema,
+}).strict();
+export const sdkBulkClipPropertyInputSchema = z.object({
+    projectId: sdkProjectIdSchema,
+    timelineId: sdkTimelineIdSchema,
+    timelineRevision: sdkRevisionSchema,
+    items: z.array(sdkBulkClipPropertyItemSchema).min(1).max(1000),
+    failurePolicy: z.literal("stop"),
+}).strict().superRefine((value, context) => {
+    const seen = new Set();
+    value.items.forEach((item, index) => {
+        if (seen.has(item.target.id))
+            context.addIssue({
+                code: "custom", path: ["items", index, "target", "id"], message: "Bulk clip-property targets must be unique.",
+            });
+        seen.add(item.target.id);
+    });
+});
 const sdkClipKeyframeResultBaseSchema = z.object({
     targetId: sdkTimelineItemIdSchema,
     timelineRevision: sdkRevisionSchema,
@@ -1207,10 +1353,38 @@ export const sdkClipKeyframeAddResultSchema = sdkClipKeyframeResultBaseSchema.ex
 export const sdkClipKeyframeDeleteResultSchema = sdkClipKeyframeResultBaseSchema.extend({ actionId: z.literal("cutagent.action.clip.keyframe.delete") }).strict();
 export const sdkClipKeyframeSetInterpolationResultSchema = sdkClipKeyframeResultBaseSchema.extend({ actionId: z.literal("cutagent.action.clip.keyframe.set_interpolation") }).strict();
 const sdkClipTransformStateSchema = z.object({ values: sdkClipTransformValuesSchema }).strict();
-export const sdkClipTransformResultSchema = z.object({
+const sdkClipTransformSingleResultSchema = z.object({
     actionId: z.literal("cutagent.action.clip.transform"), targetId: sdkTimelineItemIdSchema,
     timelineRevision: sdkRevisionSchema, protectedStatePreserved: z.literal(true),
     before: sdkClipTransformStateSchema, after: sdkClipTransformStateSchema,
+}).strict();
+const sdkClipTransformPluralResultSchema = z.object({
+    actionId: z.literal("cutagent.action.clip.transform"),
+    timelineRevision: sdkRevisionSchema,
+    protectedStatePreserved: z.literal(true),
+    results: z.array(sdkClipTransformSingleResultSchema).min(1).max(100),
+}).strict();
+export const sdkClipTransformResultSchema = z.union([
+    sdkClipTransformSingleResultSchema,
+    sdkClipTransformPluralResultSchema,
+]);
+const sdkBulkClipPropertyObservationSchema = z.object({
+    clipId: sdkTimelineItemIdSchema,
+    before: sdkClipTransformValuesSchema,
+    after: sdkClipTransformValuesSchema,
+    changed: z.boolean(),
+}).strict().superRefine((value, context) => {
+    if (value.changed !== (JSON.stringify(value.before) !== JSON.stringify(value.after)))
+        context.addIssue({
+            code: "custom", path: ["changed"], message: "Bulk clip-property changed flag contradicts readback.",
+        });
+});
+export const sdkBulkClipPropertyResultSchema = z.object({
+    actionId: z.literal("cutagent.action.bulk.property_set"),
+    items: z.array(sdkBulkClipPropertyObservationSchema).min(1).max(1000),
+    timelineRevision: sdkRevisionSchema,
+    protectedStatePreserved: z.literal(true),
+    stoppedAfterFailure: z.literal(false),
 }).strict();
 const sdkRetimeFrameRangeSchema = (domain) => z.object({
     domain: z.literal(domain),
@@ -1638,9 +1812,71 @@ export const sdkRenderExportResultSchema = z.object({
         }).strict(),
     }).strict(),
 }).strict();
+const sdkRenderQueueStartSupportSchema = z.discriminatedUnion("availability", [
+    z.object({ availability: z.literal("supported") }).strict(),
+    z.object({ availability: z.literal("unavailable"), reason: z.enum(["api_unavailable", "edition_unavailable", "temporarily_unavailable"]) }).strict(),
+    z.object({ availability: z.literal("unknown_version"), reason: z.literal("unrecognized_response") }).strict(),
+]);
+const sdkRenderQueueStartStatusSchema = z.discriminatedUnion("kind", [
+    z.object({ kind: z.literal("known"), value: z.enum(["queued", "rendering", "completed", "failed", "cancelled"]) }).strict(),
+    z.object({ kind: z.literal("unknown_version"), value: z.string().min(1).max(128) }).strict(),
+]);
+export const sdkRenderQueueStartInputSchema = z.object({
+    projectId: sdkProjectIdSchema,
+    queueRevision: sdkRevisionSchema,
+    jobIds: z.array(sdkSnapshotRenderJobIdSchema).min(1).max(100),
+}).strict().superRefine((value, context) => {
+    if (new Set(value.jobIds).size !== value.jobIds.length) {
+        context.addIssue({ code: "custom", path: ["jobIds"], message: "Render queue start jobs must be unique" });
+    }
+});
+export const sdkRenderQueueStartResultSchema = z.object({
+    projectId: sdkProjectIdSchema,
+    queueRevision: sdkRevisionSchema,
+    jobs: z.array(z.object({
+        id: sdkSnapshotRenderJobIdSchema,
+        statusSupport: sdkRenderQueueStartSupportSchema,
+        status: sdkRenderQueueStartStatusSchema,
+        progressPercent: z.number().min(0).max(100).nullable(),
+    }).strict()).min(1).max(100),
+}).strict().superRefine((value, context) => {
+    if (new Set(value.jobs.map((job) => job.id)).size !== value.jobs.length) {
+        context.addIssue({ code: "custom", path: ["jobs"], message: "Render queue start results must contain unique jobs" });
+    }
+});
 export const sdkTimelineEditMutationInputSchema = z.object({
     impact: sdkTimelineEditImpactSchema,
 }).strict();
+export const sdkTimelineEditMutationBatchInputSchema = z.object({
+    impacts: z.array(sdkTimelineEditImpactSchema).min(1).max(256),
+}).strict().superRefine(({ impacts }, context) => {
+    const first = impacts[0];
+    const seenImpactIds = new Set();
+    impacts.forEach((impact, index) => {
+        if (seenImpactIds.has(impact.impactId)) {
+            context.addIssue({ code: "custom", path: ["impacts", index, "impactId"], message: "Timeline edit batch impact identities must be unique" });
+        }
+        seenImpactIds.add(impact.impactId);
+        if (impact.action !== first.action || impact.projectId !== first.projectId || impact.timelineId !== first.timelineId
+            || impact.timelineRevision !== first.timelineRevision) {
+            context.addIssue({ code: "custom", path: ["impacts", index], message: "Timeline edit batch impacts must share one action, project, timeline, and base revision" });
+        }
+        for (let previousIndex = 0; previousIndex < index; previousIndex += 1) {
+            const previous = impacts[previousIndex];
+            const sharesTrack = impact.affectedTracks.some((track) => previous.affectedTracks.some((candidate) => candidate.type === track.type && candidate.index === track.index));
+            const overlaps = impact.recordRange.start < previous.recordRange.endExclusive
+                && previous.recordRange.start < impact.recordRange.endExclusive;
+            if (sharesTrack && overlaps) {
+                context.addIssue({ code: "custom", path: ["impacts", index, "recordRange"], message: "Timeline edit batch requested ranges must not overlap on the same track" });
+                break;
+            }
+        }
+    });
+});
+export const sdkTimelineEditMutationRequestSchema = z.union([
+    sdkTimelineEditMutationInputSchema,
+    sdkTimelineEditMutationBatchInputSchema,
+]);
 export const sdkTimelineRemoveMutationInputSchema = z.object({
     operation: z.literal("clip_remove"),
     projectId: sdkProjectIdSchema,
@@ -1655,6 +1891,26 @@ export const sdkTimelineRemoveMutationInputSchema = z.object({
     range: z.object({ start: z.number().int().safe(), endExclusive: z.number().int().safe() }).strict().refine((value) => value.endExclusive > value.start),
     name: z.string().min(1).max(4096),
 }).strict();
+export const sdkTimelineRemoveBatchMutationInputSchema = z.object({
+    operation: z.literal("clip_remove_many"),
+    removals: z.array(sdkTimelineRemoveMutationInputSchema).min(1).max(256),
+}).strict().superRefine(({ removals }, context) => {
+    const first = removals[0];
+    const seenClipIds = new Set();
+    removals.forEach((removal, index) => {
+        if (seenClipIds.has(removal.clipId)) {
+            context.addIssue({ code: "custom", path: ["removals", index, "clipId"], message: "Timeline remove batch clip identities must be unique" });
+        }
+        seenClipIds.add(removal.clipId);
+        if (removal.projectId !== first.projectId || removal.timelineId !== first.timelineId || removal.timelineRevision !== first.timelineRevision) {
+            context.addIssue({ code: "custom", path: ["removals", index], message: "Timeline remove batch entries must share one project, timeline, and base revision" });
+        }
+    });
+});
+export const sdkTimelineRemoveMutationRequestSchema = z.union([
+    sdkTimelineRemoveMutationInputSchema,
+    sdkTimelineRemoveBatchMutationInputSchema,
+]);
 export const sdkTimelineRemoveMutationResultSchema = z.object({
     operation: z.literal("clip_remove"),
     timelineRevision: sdkRevisionSchema,
@@ -1664,6 +1920,14 @@ export const sdkTimelineRemoveMutationResultSchema = z.object({
     outputItemIds: z.array(sdkTimelineItemIdSchema).max(4096),
     protectedStatePreserved: z.literal(true),
 }).strict();
+export const sdkTimelineRemoveBatchMutationResultSchema = z.object({
+    operation: z.literal("clip_remove_many"),
+    results: z.array(sdkTimelineRemoveMutationResultSchema).min(1).max(256),
+}).strict();
+export const sdkTimelineRemoveMutationOutputSchema = z.union([
+    sdkTimelineRemoveMutationResultSchema,
+    sdkTimelineRemoveBatchMutationResultSchema,
+]);
 const sdkTimelineEditMutationClipResultSchema = z.object({
     id: sdkTimelineItemIdSchema,
     trackType: z.enum(["video", "audio", "subtitle"]),
@@ -1692,6 +1956,13 @@ export const sdkTimelineEditMutationResultSchema = z.object({
     protectedItemIds: z.array(sdkTimelineItemIdSchema).max(4096),
     protectedStatePreserved: z.literal(true),
 }).strict();
+export const sdkTimelineEditMutationBatchResultSchema = z.object({
+    results: z.array(sdkTimelineEditMutationResultSchema).min(1).max(256),
+}).strict();
+export const sdkTimelineEditMutationOutputSchema = z.union([
+    sdkTimelineEditMutationResultSchema,
+    sdkTimelineEditMutationBatchResultSchema,
+]);
 export const sdkMulticamSourceSchema = z.object({
     mediaPoolItemId: sdkMediaPoolItemIdSchema,
     name: utf16BoundedTextSchema(1024, "Multicam source name"),
@@ -1810,6 +2081,7 @@ const operationCreateRequestOptions = [
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.project.library.backup"), input: sdkProjectLibraryBackupInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.project.library.restore"), input: sdkProjectLibraryRestoreInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.media.folders.create"), input: sdkMediaPoolCreateBinInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
+    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.media.delete"), input: sdkMediaPoolDeleteInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.media.import"), input: sdkMediaPoolImportInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.media.relink"), input: sdkMediaPoolRelinkInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.media.sync_audio"), input: sdkMediaPoolSyncAudioInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
@@ -1818,6 +2090,10 @@ const operationCreateRequestOptions = [
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.timeline.marker.update"), input: sdkMarkerUpdateInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.timeline.marker.delete"), input: sdkMarkerDeleteInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.timeline.items.move"), input: sdkTimelineItemMoveInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
+    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.bulk.enable"), input: sdkBulkClipStateInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
+    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.bulk.disable"), input: sdkBulkClipStateInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
+    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.bulk.property_set"), input: sdkBulkClipPropertyInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
+    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.timeline.clip_color.batch"), input: sdkTimelineClipColorBatchInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.timeline.subtitle.list"), input: sdkSubtitleListInputSchema, idempotencyKey: sdkIdempotencyKeySchema.optional() }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.timeline.subtitle.insert"), input: sdkSubtitleInsertInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.timeline.subtitle.export"), input: sdkSubtitleExportInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
@@ -1830,10 +2106,11 @@ const operationCreateRequestOptions = [
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.color.grade_apply"), input: sdkColorGradeApplyInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.color.page.resolvefx_add"), input: sdkColorEffectAddInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.render.export"), input: sdkRenderExportInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
-    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.edit.insert"), input: sdkTimelineEditMutationInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
-    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.edit.overwrite"), input: sdkTimelineEditMutationInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
-    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.edit.trim"), input: sdkTimelineEditMutationInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
-    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.timeline.items.delete"), input: sdkTimelineRemoveMutationInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
+    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.render.start"), input: sdkRenderQueueStartInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
+    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.edit.insert"), input: sdkTimelineEditMutationRequestSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
+    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.edit.overwrite"), input: sdkTimelineEditMutationRequestSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
+    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.edit.trim"), input: sdkTimelineEditMutationRequestSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
+    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.timeline.items.delete"), input: sdkTimelineRemoveMutationRequestSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.edit.blade"), input: sdkTimelineBladeInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.audio.voice_generate"), input: sdkVoiceGenerateInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.audio.voice_place"), input: sdkVoicePlacementInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
@@ -1841,6 +2118,8 @@ const operationCreateRequestOptions = [
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.multicam.switch"), input: sdkMulticamSwitchInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.multicam.flatten"), input: sdkMulticamFlattenInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.fusion.apply"), input: sdkFusionGraphApplyInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
+    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.fusion.image.batch"), input: sdkFusionImageReplaceInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
+    operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.fusion.nested_text.batch"), input: sdkFusionNestedTextInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
     operationControlBase.extend({ operation: z.literal("operation.create"), actionId: z.literal("cutagent.action.sdk.fairlight.plan.apply"), input: sdkFairlightPlanInputSchema, idempotencyKey: sdkIdempotencyKeySchema }).strict(),
 ];
 const operationCreateRequestSchema = z.discriminatedUnion("actionId", operationCreateRequestOptions).superRefine((value, context) => {
@@ -1999,9 +2278,7 @@ const sdkWorkflowCreateBindingSchema = z.object({
 const sdkManagedWorkflowCreateBindingSchema = sdkWorkflowCreateBindingSchema.extend({
     managedClaim: sdkManagedWorkflowClaimSchema,
 }).strict();
-const sdkWorkflowBindingSchema = sdkWorkflowCreateBindingSchema.extend({
-    policyRevision: z.string().regex(/^policy_revision_[1-9][0-9]*$/),
-}).strict();
+const sdkWorkflowBindingSchema = sdkWorkflowCreateBindingSchema.extend({}).strict();
 const sdkWorkflowStepSchema = z.object({
     name: z.string().regex(/^[a-z][a-z0-9_-]{0,63}$/),
     idempotencyKey: sdkIdempotencyKeySchema,

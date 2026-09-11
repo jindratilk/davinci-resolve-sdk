@@ -7,7 +7,6 @@ import {
   sdkProjectContextMutationResultSchema,
   sdkProjectCreateInputSchema,
 } from "../contracts/generated/sdk-project-media.js";
-import {resolveSdkDirectMutationScope, sdkMutationScopeCandidates} from "./sdk-direct-mutation-scope.js";
 
 function digest(value) {
   return `sha256:${crypto.createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex")}`;
@@ -26,9 +25,8 @@ function evidence(modality, summary, value) {
 function failure(code, message, context, possibleMutation = "none", usage = possibleMutation === "none" ? "released" : "unknown") {
   return {
     kind: code === "STALE_REVISION" ? "stale_revision"
-      : code === "EDIT_CONSTRAINT_VIOLATION" ? "edit_constraint_violation"
-        : code === "CAPABILITY_UNAVAILABLE" ? "capability_unavailable"
-          : code === "VERIFICATION_FAILED" ? "verification_failed" : "operation_failed",
+      : code === "CAPABILITY_UNAVAILABLE" ? "capability_unavailable"
+        : code === "VERIFICATION_FAILED" ? "verification_failed" : "operation_failed",
     code,
     message,
     retrySafe: false,
@@ -43,40 +41,8 @@ function failure(code, message, context, possibleMutation = "none", usage = poss
   };
 }
 
-function exactLibraryScope(gate, accountFingerprint, inspected, actionId, directScope = null) {
-  const scopes = sdkMutationScopeCandidates(gate, accountFingerprint, directScope).filter((scope) => (
-    scope.binding.level === "account/project-library"
-    && scope.binding.projectLibraryId === inspected.privateExecutionIdentity.projectLibraryId
-    && (scope.constraints.allowedOperations.length === 0 || scope.constraints.allowedOperations.includes(actionId.replace("cutagent.action.", "")))
-  ));
-  if (scopes.length !== 1) {
-    const error = new Error("Exactly one current user-owned project-library constraint scope is required.");
-    error.code = "EDIT_CONSTRAINT_VIOLATION";
-    throw error;
-  }
-  return scopes[0];
-}
-
 function sameLibrary(left, right) {
   return left !== null && right !== null && left.name === right.name && left.kind === right.kind;
-}
-
-function exactProjectScope(gate, accountFingerprint, projectContext, projectId, actionId, directScope = null) {
-  const projectRevision = projectContext.value.projectRevision;
-  const scopes = sdkMutationScopeCandidates(gate, accountFingerprint, directScope).filter((scope) => (
-    scope.binding.level === "project"
-    && scope.binding.projectLibraryId === projectContext.privateExecutionIdentity.projectLibraryId
-    && scope.binding.projectId === projectId
-    && projectRevision.status === "available"
-    && scope.binding.projectRevision === projectRevision.revision
-    && (scope.constraints.allowedOperations.length === 0 || scope.constraints.allowedOperations.includes(actionId.replace("cutagent.action.", "")))
-  ));
-  if (scopes.length !== 1) {
-    const error = new Error("Exactly one current user-owned project constraint scope is required.");
-    error.code = "EDIT_CONSTRAINT_VIOLATION";
-    throw error;
-  }
-  return scopes[0];
 }
 
 async function readAllMedia(liveInspectionService, projectId) {
@@ -154,7 +120,7 @@ async function exactRegularFile(requestedPath) {
     }
     return { canonicalPath, identity: afterIdentity };
   } catch {
-    const error = new Error("This release accepts one existing exact regular file and rejects directories or symbolic-link traversal.");
+    const error = new Error("Media Pool import accepts existing exact regular files and rejects directories or symbolic-link traversal.");
     error.code = "CAPABILITY_UNAVAILABLE";
     throw error;
   }
@@ -208,9 +174,6 @@ function sameImportProtectedEntries(left, right) {
 
 function unchangedExecutionFailure(executionError, context, fallbackMessage) {
   const errorCode = executionError?.cli_error_code ?? executionError?.code;
-  if (errorCode === "EDIT_CONSTRAINT_VIOLATION") {
-    return failure("EDIT_CONSTRAINT_VIOLATION", executionError.message, context, "none", "not_reserved");
-  }
   if (errorCode === "STALE_REVISION") {
     return failure("STALE_REVISION", executionError.message, context);
   }
@@ -232,9 +195,7 @@ function preExecutionFailure(error, context, fallbackMessage) {
 
 function unchangedMediaExecutionFailure(executionError, context) {
   const errorCode = executionError?.cli_error_code ?? executionError?.code;
-  const publicMessage = errorCode === "EDIT_CONSTRAINT_VIOLATION"
-    ? "Media Pool import was denied by the current editing constraints."
-    : errorCode === "STALE_REVISION"
+  const publicMessage = errorCode === "STALE_REVISION"
       ? "Media Pool import was denied because the inspected state changed."
       : errorCode === "CAPABILITY_UNAVAILABLE" || errorCode === "CAPABILITY_NEGOTIATION_FAILED"
         ? "Media Pool import is unavailable in the current DaVinci Resolve environment."
@@ -273,11 +234,10 @@ function readbackUnavailableOutcome({ executionError, executionMayHaveStarted, c
 }
 
 /** Build the accepted exact project/media executors available in this release. */
-export function createSdkProjectMediaActions({ liveInspectionService, resolveService, mutationPolicyGate, directMutationPolicyAuthority = null }) {
+export function createSdkProjectMediaActions({ liveInspectionService, resolveService }) {
   if (typeof liveInspectionService?.readWithMutationGuard !== "function") throw new TypeError("Project actions require guarded live project-context inspection.");
   if (typeof resolveService?.executeSdkProjectCreate !== "function") throw new TypeError("Project actions require the CutAgent CLI mutation boundary.");
   if (typeof resolveService?.executeSdkMediaImport !== "function") throw new TypeError("Media actions require the CutAgent CLI mutation boundary.");
-  if (typeof mutationPolicyGate?.listScopes !== "function") throw new TypeError("Project actions require mutation-policy scope authority.");
 
   return {
     "cutagent.action.project.create": {
@@ -303,33 +263,11 @@ export function createSdkProjectMediaActions({ liveInspectionService, resolveSer
         if (before.library === null || before.library.kind !== "disk") {
           return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("CAPABILITY_UNAVAILABLE", "Project creation currently requires an inspected Disk project library.", context) };
         }
-        let scope;
-        try {
-          const directScope = await resolveSdkDirectMutationScope({directMutationPolicyAuthority, context, liveInspectionService, level: "account/project-library", inspectedProjectContext: inspected});
-          scope = exactLibraryScope(mutationPolicyGate, context.accountFingerprint, inspected, "cutagent.action.project.create", directScope);
-        } catch (error) {
-          return { status: "failed", possibleMutation: "none", usage: "not_reserved", failure: failure("EDIT_CONSTRAINT_VIOLATION", error.message, context, "none", "not_reserved") };
-        }
-        const policyContext = {
-          requestId: context.requestId,
-          operationId: context.operationId,
-          executionId: context.executionId,
-          scopeId: scope.scopeId,
-          scopeRevision: scope.revision,
-          projectLibraryId: inspected.privateExecutionIdentity.projectLibraryId,
-          projectLibraryRevision: input.precondition,
-          resolvedTargets: [{ kind: "project_library", stableId: inspected.privateExecutionIdentity.projectLibraryId, revision: input.precondition }],
-          closedComposition: true,
-          executableStableTargetPrecondition: true,
-        };
-        let authorization = null;
         let executionMayHaveStarted = false;
         let executionError = null;
         try {
           await resolveService.executeSdkProjectCreate(input, {
             mutationGuard: inspected.mutationGuard,
-            policyContext,
-            onAuthorization(value) { authorization = value; },
             onSpawnAttempt() {
               context.reportExecutionStarted();
               executionMayHaveStarted = true;
@@ -350,7 +288,7 @@ export function createSdkProjectMediaActions({ liveInspectionService, resolveSer
             mediaLocationMatched = mediaLocationReadback?.projectMediaLocation === input.mediaLocation;
           } catch {}
         }
-        const matched = executionError === null && authorization?.policyDecision && changed
+        const matched = executionError === null && changed
           && sameLibrary(before.library, after.library)
           && after.project?.name === input.name
           && after.project?.id !== null
@@ -364,7 +302,6 @@ export function createSdkProjectMediaActions({ liveInspectionService, resolveSer
           protectedStatePreserved: sameLibrary(before.library, after.library),
         };
         if (matched) {
-          mutationPolicyGate.assertProtectedStateEvidence(authorization.policyDecision.decisionId, report);
           return { status: "succeeded", possibleMutation: "confirmed", usage: "consumed", verification: report, result: { changed: true, context: after } };
         }
         if (!changed) {
@@ -387,12 +324,12 @@ export function createSdkProjectMediaActions({ liveInspectionService, resolveSer
       idempotency: "required",
       async execute(context, rawInput) {
         const input = sdkMediaPoolImportInputSchema.parse(rawInput);
-        if (input.destination.kind !== "root" || input.paths.length !== 1) {
-          return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("CAPABILITY_UNAVAILABLE", "This release supports one exact file per SDK import operation into the Media Pool root.", context) };
-        }
-        let importFile;
-        try { importFile = await exactRegularFile(input.paths[0]); } catch (error) {
+        let importFiles;
+        try { importFiles = await Promise.all(input.paths.map(exactRegularFile)); } catch (error) {
           return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("CAPABILITY_UNAVAILABLE", error.message, context) };
+        }
+        if (new Set(importFiles.map((file) => file.canonicalPath)).size !== importFiles.length) {
+          return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("CAPABILITY_UNAVAILABLE", "Media Pool import paths must resolve to distinct exact files.", context) };
         }
         let projectContext;
         try {
@@ -412,38 +349,24 @@ export function createSdkProjectMediaActions({ liveInspectionService, resolveSer
         if (before.revision !== input.precondition) {
           return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("STALE_REVISION", "The Media Pool changed after inspection.", context) };
         }
-        let scope;
-        try {
-          const directScope = await resolveSdkDirectMutationScope({directMutationPolicyAuthority, context, liveInspectionService, level: "project", projectId: input.projectId, inspectedProjectContext: projectContext});
-          scope = exactProjectScope(mutationPolicyGate, context.accountFingerprint, projectContext, input.projectId, "cutagent.action.media.import", directScope);
-        } catch (error) {
-          return { status: "failed", possibleMutation: "none", usage: "not_reserved", failure: failure("EDIT_CONSTRAINT_VIOLATION", error.message, context, "none", "not_reserved") };
+        const destination = input.destination.kind === "root"
+          ? before.privateEntries.find((entry) => entry.entryKind === "folder" && JSON.stringify(entry.coordinate) === "[0]")
+          : before.privateEntries.find((entry) => entry.entryKind === "folder" && entry.id === input.destination.id);
+        if (!destination || !Array.isArray(destination.coordinate)
+          || (input.destination.kind === "folder" && !destination.nativeId)) {
+          return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("STALE_REVISION", "The exact destination Media Pool bin is no longer available.", context) };
         }
-        const policyContext = {
-          requestId: context.requestId,
-          operationId: context.operationId,
-          executionId: context.executionId,
-          scopeId: scope.scopeId,
-          scopeRevision: scope.revision,
-          projectLibraryId: scope.binding.projectLibraryId,
-          projectId: input.projectId,
-          projectRevision: scope.binding.projectRevision,
-          resolvedTargets: [{ kind: "project", stableId: input.projectId, revision: scope.binding.projectRevision }],
-          closedComposition: true,
-          executableStableTargetPrecondition: true,
-        };
-        let authorization = null;
         let executionMayHaveStarted = false;
         let executionError = null;
         try {
-          await requireUnchangedRegularFile(importFile);
-          await resolveService.executeSdkMediaImport(importFile.canonicalPath, {
+          await Promise.all(importFiles.map(requireUnchangedRegularFile));
+          liveInspectionService.invalidateMediaPoolSnapshots?.(input.projectId);
+          await resolveService.executeSdkMediaImport(importFiles.map((file) => file.canonicalPath), {
             mutationGuard: before.mutationGuard,
-            policyContext,
             extraEnv: {
-              CUTAGENT_SDK_MEDIA_IMPORT_FILE_IDENTITY: JSON.stringify(importFile.identity),
+              CUTAGENT_SDK_MEDIA_IMPORT_FILES: JSON.stringify(importFiles.map((file) => ({ path: file.canonicalPath, identity: file.identity }))),
+              CUTAGENT_SDK_MEDIA_IMPORT_DESTINATION: JSON.stringify({ coordinate: destination.coordinate, nativeId: destination.nativeId ?? null }),
             },
-            onAuthorization(value) { authorization = value; },
             onSpawnAttempt() {
               context.reportExecutionStarted();
               executionMayHaveStarted = true;
@@ -465,23 +388,27 @@ export function createSdkProjectMediaActions({ liveInspectionService, resolveSer
         const importedPrivate = after.privateEntries.filter((entry) => entry.entryKind === "asset"
           && entry.id !== null
           && !beforeDurableIds.has(entry.id)
-          && entry.sourcePath === importFile.canonicalPath
-          && JSON.stringify(entry.folderCoordinate) === "[0]");
+          && importFiles.some((file) => file.canonicalPath === entry.sourcePath)
+          && JSON.stringify(entry.folderCoordinate) === JSON.stringify(destination.coordinate));
         const importedIds = new Set(importedPrivate.map((entry) => entry.id));
-        const imported = after.assets.filter((asset) => importedIds.has(asset.id));
+        const imported = importFiles.map((file) => {
+          const privateEntry = importedPrivate.find((entry) => entry.sourcePath === file.canonicalPath);
+          return privateEntry ? after.assets.find((asset) => asset.id === privateEntry.id) : undefined;
+        }).filter(Boolean);
         const afterProtectedEntries = after.privateEntries.filter((entry) => !importedIds.has(entry.id));
-        const existingPreserved = importedPrivate.length === 1
-          && after.privateEntries.length === before.privateEntries.length + 1
+        const everyPathImportedOnce = importFiles.every((file) => importedPrivate.filter((entry) => entry.sourcePath === file.canonicalPath).length === 1);
+        const existingPreserved = everyPathImportedOnce
+          && importedPrivate.length === importFiles.length
+          && after.privateEntries.length === before.privateEntries.length + importFiles.length
           && sameImportProtectedEntries(before.privateEntries, afterProtectedEntries);
-        const matched = executionError === null && authorization?.policyDecision && after.revision !== before.revision && existingPreserved && imported.length === 1;
+        const matched = executionError === null && after.revision !== before.revision && existingPreserved && imported.length === importFiles.length;
         const report = {
           outcome: matched ? "passed" : "failed",
-          summary: matched ? "One exact new durable Media Pool item matched the requested file and existing assets were preserved." : "Media Pool import did not match authoritative closed-world readback.",
-          evidence: [evidence("readback", "Correlated the exact private source path, durable item identity, and root-folder membership after import.", { revision: after.revision, imported: importedPrivate }), evidence("structural", "Compared every pre-existing folder and every durable asset field; Media Pool selection changes caused by the import were treated as incidental.", { before: before.privateEntries, after: afterProtectedEntries, existingPreserved })],
+          summary: matched ? "Every exact requested file produced one new durable Media Pool item in the requested bin and existing assets were preserved." : "Media Pool import did not match authoritative closed-world readback.",
+          evidence: [evidence("readback", "Correlated each exact private source path, durable item identity, and requested-folder membership after import.", { revision: after.revision, imported: importedPrivate }), evidence("structural", "Compared every pre-existing folder and every durable asset field; Media Pool selection changes caused by the import were treated as incidental.", { before: before.privateEntries, after: afterProtectedEntries, existingPreserved })],
           protectedStatePreserved: existingPreserved,
         };
         if (matched) {
-          mutationPolicyGate.assertProtectedStateEvidence(authorization.policyDecision.decisionId, report);
           return {
             status: "succeeded",
             possibleMutation: "confirmed",

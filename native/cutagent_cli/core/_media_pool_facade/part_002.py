@@ -163,7 +163,7 @@ def create_subtitles_from_audio(
     return {"success": True, "settings": settings, "audio_tracks": audio_tracks, "verification": verification}
 
 
-def import_media(conn, path: str) -> int:
+def import_media(conn, path: str | list[str]) -> int:
     """
     Import media into the Media Pool.
     
@@ -185,15 +185,15 @@ def import_media(conn, path: str) -> int:
             details={"capability_id": "media.import", "required_method": "MediaPool.ImportMedia"},
         )
 
-    expanded_path = os.path.expanduser(path)
-    if os.path.isdir(expanded_path):
+    requested_paths = path if isinstance(path, list) else [path]
+    expanded_paths = [os.path.expanduser(item) for item in requested_paths]
+    if len(expanded_paths) == 1 and os.path.isdir(expanded_paths[0]):
         # Import all files from directory
-        files = [os.path.join(expanded_path, f) for f in os.listdir(expanded_path)
+        files = [os.path.join(expanded_paths[0], f) for f in os.listdir(expanded_paths[0])
                  if not f.startswith(".")]
-        items = importer(files)
     else:
-        files = [expanded_path]
-        items = importer(files)
+        files = expanded_paths
+    items = importer(files)
 
     if items:
         return len(items)
@@ -202,11 +202,11 @@ def import_media(conn, path: str) -> int:
             f"Failed to import from: {path}",
             details={
                 "path": path,
-                "expanded_path": expanded_path,
-                "exists": os.path.exists(expanded_path),
-                "is_file": os.path.isfile(expanded_path),
-                "is_dir": os.path.isdir(expanded_path),
-                "suffix": Path(expanded_path).suffix.lower(),
+                "expanded_path": expanded_paths[0] if len(expanded_paths) == 1 else None,
+                "exists": all(os.path.exists(item) for item in expanded_paths),
+                "is_file": all(os.path.isfile(item) for item in expanded_paths),
+                "is_dir": len(expanded_paths) == 1 and os.path.isdir(expanded_paths[0]),
+                "suffix": Path(expanded_paths[0]).suffix.lower() if len(expanded_paths) == 1 else None,
                 "payload_count": len(files),
                 "payload": files,
                 "resolve_result_type": type(items).__name__,
@@ -217,51 +217,277 @@ def import_media(conn, path: str) -> int:
         )
 
 
-def delete_clip(conn, name: str) -> bool:
-    """
-    Delete a clip from the Media Pool.
-    
-    Args:
-        conn: ResolveConnection instance
-        name: Clip name
-    
-    Returns:
-        True if successful
-    
-    Raises:
-        APICallFailed: If clip not found or deletion fails
-    """
-    clip = find_clip(conn, name)
-    if not clip:
-        raise APICallFailed(f"Clip '{name}' not found.")
+def delete_clips(conn, names: list[str]) -> list[dict[str, Any]]:
+    """Resolve all names once and delete them with one native API call."""
+    normalized = [str(name).strip() for name in names]
+    if not normalized or any(not name for name in normalized):
+        raise ValidationError("At least one non-empty Media Pool clip name is required.")
+    if len(set(normalized)) != len(normalized):
+        raise ValidationError("Media Pool clip names must be unique.")
 
-    result = conn.media_pool.DeleteClips([clip])
-    if result:
-        return True
-    else:
-        raise APICallFailed(f"Failed to delete clip '{name}'.")
+    current = conn.media_pool.GetCurrentFolder()
+    root = conn.media_pool.GetRootFolder()
+    if not current or not root:
+        raise APICallFailed("Media Pool is unavailable.")
+
+    current_path = _get_folder_path(root, current)
+    all_rows: list[dict[str, Any]] = []
+    _collect_clip_object_matches(root, all_rows)
+
+    selected: list[dict[str, Any]] = []
+    for name in normalized:
+        matches = [
+            row for row in all_rows
+            if row["name"] == name and row["folder"] == current_path
+        ]
+        if not matches:
+            matches = [row for row in all_rows if row["name"] == name]
+        if not matches:
+            raise APICallFailed(f"Clip '{name}' not found.")
+        if len(matches) != 1:
+            raise ValidationError(
+                "Clip name is ambiguous in Media Pool.",
+                details={
+                    "clip": name,
+                    "candidates": [
+                        {"name": row["name"], "folder": row["folder"]}
+                        for row in matches
+                    ],
+                },
+            )
+        selected.append(matches[0])
+
+    deleter = getattr(conn.media_pool, "DeleteClips", None)
+    if not callable(deleter):
+        raise CapabilityNegotiationFailed(
+            "MediaPool.DeleteClips is not available.",
+            details={
+                "capability_id": "media.clip_management",
+                "required_method": "MediaPool.DeleteClips",
+            },
+        )
+    if not deleter([row["clip"] for row in selected]):
+        raise APICallFailed(
+            "Failed to delete Media Pool clips.",
+            details={"names": normalized, "count": len(normalized)},
+        )
+    return [
+        {"name": row["name"], "folder": row["folder"], "deleted": True}
+        for row in selected
+    ]
+
+
+def delete_clip(conn, name: str) -> bool:
+    """Backward-compatible singular wrapper over the plural native operation."""
+    delete_clips(conn, [name])
+    return True
+
+
+def _clip_move_folder_index(root) -> dict[str, Any]:
+    """Index Media Pool folders once for a plural move preflight."""
+    folders: dict[str, Any] = {}
+
+    def visit(folder, parent_path: str = "") -> None:
+        name = folder.GetName() if hasattr(folder, "GetName") else ""
+        folder_path = f"{parent_path}/{name}" if parent_path else str(name)
+        folders[folder_path] = folder
+        for child in folder.GetSubFolderList() or []:
+            visit(child, folder_path)
+
+    visit(root)
+    return folders
+
+
+def validate_clip_moves(conn, moves: list[dict[str, str]]) -> list[dict[str, Any]]:
+    """Resolve every source and destination before any plural move mutation."""
+    if not isinstance(moves, (list, tuple)) or not moves or len(moves) > 1000:
+        raise ValidationError("Media move requires between 1 and 1,000 move items.")
+
+    normalized: list[dict[str, str]] = []
+    for index, item in enumerate(moves):
+        if not isinstance(item, dict) or set(item) != {"name", "target"}:
+            raise ValidationError(
+                "Each media move item requires exactly name and target.",
+                details={"index": index},
+            )
+        name = item.get("name")
+        target = item.get("target")
+        if not isinstance(name, str) or not name.strip() or not isinstance(target, str) or not target.strip():
+            raise ValidationError(
+                "Each media move item requires non-empty name and target strings.",
+                details={"index": index},
+            )
+        normalized.append({"name": name.strip(), "target": target.strip()})
+    names = [item["name"] for item in normalized]
+    if len(set(names)) != len(names):
+        raise ValidationError("Media move contains duplicate clip names.", details={"names": names})
+
+    root = conn.media_pool.GetRootFolder()
+    current = conn.media_pool.GetCurrentFolder()
+    if not root or not current:
+        raise APICallFailed("Media Pool folder context is unavailable.")
+    rows: list[dict[str, Any]] = []
+    _collect_clip_object_matches(root, rows)
+    current_path = _get_folder_path(root, current)
+    current_clips = set(id(clip) for clip in (current.GetClipList() or []))
+    by_name: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        by_name.setdefault(row["name"], []).append(row)
+
+    folder_index = _clip_move_folder_index(root)
+    contexts: list[dict[str, Any]] = []
+    for item in normalized:
+        matches = by_name.get(item["name"], [])
+        preferred = [row for row in matches if id(row["clip"]) in current_clips]
+        if preferred:
+            match = preferred[0]
+        elif len(matches) == 1:
+            match = matches[0]
+        elif not matches:
+            raise APICallFailed(f"Clip '{item['name']}' not found.")
+        else:
+            raise ValidationError(
+                "Clip name is ambiguous in Media Pool.",
+                details={"clip": item["name"], "candidates": [
+                    {"name": row["name"], "folder": row["folder"]} for row in matches
+                ]},
+            )
+
+        segments = _split_folder_path(root, item["target"])
+        root_name = root.GetName() if hasattr(root, "GetName") else ""
+        destination_path = "/".join([root_name, *segments]) if root_name else "/".join(segments)
+        target_folder = folder_index.get(destination_path)
+        if target_folder is None:
+            missing = item["target"]
+            parent = root_name
+            for index, segment in enumerate(segments):
+                prefix = "/".join([root_name, *segments[:index + 1]]) if root_name else "/".join(segments[:index + 1])
+                if prefix not in folder_index:
+                    missing = segment
+                    parent = "/".join([root_name, *segments[:index]]) if root_name else "/".join(segments[:index])
+                    break
+            raise ValidationError(
+                f"Folder '{missing}' not found in '{parent or 'Media Pool root'}'.",
+                details={"path": item["target"], "missing_segment": missing, "parent": parent},
+                recoverability="not_applicable",
+            )
+        contexts.append({
+            "clip": match["clip"],
+            "name": item["name"],
+            "media_id": match.get("media_id"),
+            "source_folder": match.get("folder") or current_path,
+            "source_folder_object": folder_index.get(match.get("folder") or current_path),
+            "target_folder": target_folder,
+            "destination_folder": destination_path,
+        })
+    return contexts
 
 
 def validate_clip_move(conn, name: str, target: str) -> dict[str, Any]:
-    """Validate a clip move and return source/target context without mutating."""
-    match = find_clip_match(conn, name)
-    if not match:
-        raise APICallFailed(f"Clip '{name}' not found.")
+    """Validate one clip move through the shared plural preflight."""
+    return validate_clip_moves(conn, [{"name": name, "target": target}])[0]
 
-    try:
-        target_folder = navigate_folder(conn, target, create=False)
-    except FolderNotFound as exc:
-        raise ValidationError(
-            str(exc),
-            details=getattr(exc, "details", {"target": target}),
-            recoverability="not_applicable",
-        ) from exc
-    destination_path = _get_folder_path(conn.media_pool.GetRootFolder(), target_folder) or target
+
+def move_clips(conn, moves: list[dict[str, str]]) -> dict[str, Any]:
+    """Move clips with one native ``MoveClips`` call per destination folder."""
+    contexts = validate_clip_moves(conn, moves)
+
+    def read_locations() -> tuple[list[dict[str, Any]], dict[str, list[str]]]:
+        rows: list[dict[str, Any]] = []
+        _collect_clip_object_matches(conn.media_pool.GetRootFolder(), rows)
+        locations: dict[str, list[str]] = {}
+        for context in contexts:
+            if context["media_id"]:
+                candidates = [row for row in rows if row.get("media_id") == context["media_id"]]
+            else:
+                candidates = [row for row in rows if row["clip"] is context["clip"]]
+                if not candidates:
+                    candidates = [row for row in rows if row["name"] == context["name"]]
+            locations[context["name"]] = [row["folder"] for row in candidates]
+        return rows, locations
+
+    def rollback_observed_moves(locations: dict[str, list[str]]) -> tuple[bool, dict[str, list[str]]]:
+        rollback_groups: list[tuple[Any, list[dict[str, Any]]]] = []
+        for context in contexts:
+            if context["source_folder"] == context["destination_folder"]:
+                continue
+            if locations.get(context["name"]) != [context["destination_folder"]]:
+                continue
+            source_folder = context.get("source_folder_object")
+            if source_folder is None:
+                continue
+            group = next((rows for folder, rows in rollback_groups if folder is source_folder), None)
+            if group is None:
+                group = []
+                rollback_groups.append((source_folder, group))
+            group.append(context)
+        rollback_accepted = True
+        for source_folder, rows in rollback_groups:
+            if not conn.media_pool.MoveClips([row["clip"] for row in rows], source_folder):
+                rollback_accepted = False
+        _rows, final_locations = read_locations()
+        restored = rollback_accepted and all(
+            final_locations.get(context["name"]) == [context["source_folder"]]
+            for context in contexts
+        )
+        return restored, final_locations
+
+    grouped: list[tuple[Any, list[dict[str, Any]]]] = []
+    for context in contexts:
+        if context["source_folder"] == context["destination_folder"]:
+            continue
+        group = next((rows for folder, rows in grouped if folder is context["target_folder"]), None)
+        if group is None:
+            group = []
+            grouped.append((context["target_folder"], group))
+        group.append(context)
+
+    completed: list[str] = []
+    for target_folder, rows in grouped:
+        if not conn.media_pool.MoveClips([row["clip"] for row in rows], target_folder):
+            _after_rows, locations = read_locations()
+            observed_moved = [
+                context["name"] for context in contexts
+                if context["source_folder"] != context["destination_folder"]
+                and locations.get(context["name"]) == [context["destination_folder"]]
+            ]
+            rolled_back, final_locations = rollback_observed_moves(locations)
+            raise APICallFailed(
+                "DaVinci Resolve rejected the Media Pool move; observed changes were read back and rollback was attempted.",
+                details={
+                    "completed_before_failure": completed,
+                    "failed_group": [row["name"] for row in rows],
+                    "observed_moved": observed_moved,
+                    "rolled_back": rolled_back,
+                    "final_locations": final_locations,
+                },
+            )
+        completed.extend(row["name"] for row in rows)
+
+    _after_rows, locations = read_locations()
+    failures = []
+    for context in contexts:
+        if locations.get(context["name"]) != [context["destination_folder"]]:
+            failures.append({
+                "name": context["name"],
+                "target": context["destination_folder"],
+                "observed": locations.get(context["name"], []),
+            })
+    if failures:
+        rolled_back, final_locations = rollback_observed_moves(locations)
+        raise APICallFailed(
+            "Media Pool move did not match collective destination readback; rollback was attempted.",
+            details={
+                "failures": failures,
+                "completed": completed,
+                "rolled_back": rolled_back,
+                "final_locations": final_locations,
+            },
+        )
     return {
-        "clip": match["clip"],
-        "source_folder": match.get("folder"),
-        "target_folder": target_folder,
-        "destination_folder": destination_path,
+        "moved": completed,
+        "changed_count": len(completed),
+        "items": [{"name": row["name"], "source": row["source_folder"], "target": row["destination_folder"]} for row in contexts],
     }
 
 
@@ -280,12 +506,8 @@ def move_clip(conn, name: str, target: str) -> bool:
     Raises:
         APICallFailed: If clip not found or move fails
     """
-    move_context = validate_clip_move(conn, name, target)
-    result = conn.media_pool.MoveClips([move_context["clip"]], move_context["target_folder"])
-    if result:
-        return True
-    else:
-        raise APICallFailed("Failed to move clip.")
+    move_clips(conn, [{"name": name, "target": target}])
+    return True
 
 
 def duplicate_clip(conn, name: str, new_name: Optional[str] = None) -> Dict[str, Any]:

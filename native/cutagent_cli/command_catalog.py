@@ -103,6 +103,7 @@ _DOCS_TOPIC_BY_ROOT = {
 }
 
 _GROUP_CAPABILITY_HINTS = {
+    ("dctl", "encrypt"): "dctl.encrypt",
     ("burnin", "load"): "render.burnin_preset_import_export",
     ("burnin", "preset"): "render.burnin_preset_import_export",
     ("clip", "burnin"): "render.burnin_preset_import_export",
@@ -281,6 +282,9 @@ _GROUP_CAPABILITY_HINTS = {
     ("project", "preset"): "project.preset_list",
     ("project", "preset", "load"): "project.preset_load",
     ("project", "preset", "save"): "project.preset_save",
+    ("project", "preset", "delete"): "project.preset_delete",
+    ("project", "preset", "export"): "project.preset_import_export",
+    ("project", "preset", "import"): "project.preset_import_export",
     ("project", "settings"): "project.settings_read",
     ("project", "settings_get"): "project.settings_read",
     ("project", "settings_set"): "project.settings_write",
@@ -297,6 +301,7 @@ _GROUP_CAPABILITY_HINTS = {
     ("render", "mode"): "render.mode_set",
     ("render", "preset_delete"): "render.preset_save",
     ("render", "preset_save"): "render.preset_save",
+    ("render", "preset_update"): "render.preset_save",
     ("render", "resolutions"): "render.resolutions",
     ("render", "settings"): "render.settings_read",
     ("render", "settings_get"): "render.settings_read",
@@ -308,6 +313,7 @@ _GROUP_CAPABILITY_HINTS = {
     ("storage", "matte"): "media.clip_management",
     ("storage", "reveal"): "media.import",
     ("system", "keyframe_mode"): "system.keyframe_mode",
+    ("system", "keyboard_preset"): "system.keyboard_preset_read",
     ("timeline", "dolby"): "timeline.dolby_vision",
     ("timeline", "fairlight_preset"): "fairlight.preset",
     ("timeline", "fusion_clip"): "fusion.comp_add_delete_import_export",
@@ -338,6 +344,7 @@ _GROUP_CAPABILITY_HINTS = {
 }
 
 _COMMAND_CAPABILITY_HINTS = {
+    "video.generate": "video.generation",
     "audio.beat_detect": "audio.beat_detection",
     "audio.voice_generate": "audio.voiceover",
     "audio.voice_list": "audio.voiceover",
@@ -377,6 +384,7 @@ _COMMAND_CAPABILITY_HINTS = {
     "fusion.tool.get": "fusion.tool_list_get_set",
     "fusion.tool.inputs": "fusion.tool_list_get_set",
     "fusion.tool.list": "fusion.tool_list_get_set",
+    "fusion.tool.registry": "fusion.tool_list_get_set",
     "fusion.tool.outputs": "fusion.tool_list_get_set",
     "lut.convert": "system.lut_management",
     "lut.generate.identity": "system.lut_management",
@@ -534,6 +542,7 @@ _COMMAND_CAPABILITY_HINTS = {
     "fairlight.export.audio": "fairlight.audio_export",
     "fairlight.fade_in.batch": "fairlight.fade_in_batch",
     "fairlight.fade_out.batch": "fairlight.fade_out_batch",
+    "fairlight.fade_curve": "fairlight.fade_out_batch",
     "fairlight.group.list": "fairlight.group_read",
     "fairlight.info": "fairlight.track_info",
     "fairlight.items": "clip.track_info",
@@ -584,6 +593,10 @@ _COMMAND_CAPABILITY_HINTS = {
     "text.update": "text.update",
     "text.inspect": "text.inspect",
     "text.list_presets": "text.list_presets",
+    "system.keyboard_preset.delete": "system.keyboard_preset_management",
+    "system.keyboard_preset.export": "system.keyboard_preset_management",
+    "system.keyboard_preset.import": "system.keyboard_preset_management",
+    "system.keyboard_preset.load": "system.keyboard_preset_management",
 }
 
 _SOURCE_HANDLER_CONTRACTS: dict[str, dict[str, Any]] = {}
@@ -1511,8 +1524,8 @@ def _synthetic_command_defs(
             help_text="Insert multiple Fusion/Text+ clips from .setting template specs.",
             doc="Compatibility-dispatched public path accepted by `fusion insert-settings batch`.",
             parameters=(
-                ParameterDef("spec_path", "option", cli_names=("--spec",), help_text="Path to JSON spec file"),
-                ParameterDef("spec_json", "option", cli_names=("--spec-json",), help_text="Inline JSON spec"),
+                ParameterDef("spec_path", "option", cli_names=("--spec",), help_text="Path to JSON spec file", annotation="Optional[str]"),
+                ParameterDef("spec_json", "option", cli_names=("--spec-json",), help_text="Inline JSON spec", annotation="Optional[str]"),
             ),
             capability_id="fusion.mutation",
             capability_status=str(fusion_mutation_feature.get("status")) if fusion_mutation_feature else None,

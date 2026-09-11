@@ -27,12 +27,9 @@ class LocalAdmissionTests(unittest.TestCase):
         argv = ['cutagent', '-j', 'timeline', 'marker', 'add', '12f']
         digest = hashlib.sha256(json.dumps(argv[1:],separators=(',',':')).encode()).hexdigest()
         params = {'op':'call','object':'timeline_ref','method':'AddMarker','args':[12,'Blue','Local marker','',1]}
-        env = {'DAVINCI_RESOLVE_SDK_PARENT_PID':str(os.getppid()),'DAVINCI_RESOLVE_SDK_COMMAND_SHA256':digest,
-               'CUTAGENT_MUTATION_POLICY_SCOPE_VALID':'1','CUTAGENT_MUTATION_POLICY_ARGS_SHA256':digest}
+        env = {'DAVINCI_RESOLVE_SDK_PARENT_PID':str(os.getppid()),'DAVINCI_RESOLVE_SDK_COMMAND_SHA256':digest}
         with patch.object(sys,'argv',argv), patch.dict(os.environ,env,clear=True):
             context = embedded_command_context(params)
-            with patch.dict(os.environ,{'CUTAGENT_MUTATION_POLICY_SCOPE_VALID':'0'}):
-                with self.assertRaises(PermissionError): embedded_command_context(params)
         seen = {}
         with self.assertRaises(PermissionError): verify_embedded_command_context(context,{**params,'method':'DeleteMarkersByColor'},seen)
         self.assertEqual(seen,{})

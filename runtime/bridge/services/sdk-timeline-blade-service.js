@@ -3,7 +3,6 @@ import {
   sdkTimelineBladeInputSchema,
   sdkTimelineBladeResultSchema,
 } from "../contracts/generated/sdk-operations.js";
-import {resolveSdkDirectMutationScope, sdkMutationScopeCandidates} from "./sdk-direct-mutation-scope.js";
 
 const ACTION_ID = "cutagent.action.edit.blade";
 
@@ -17,8 +16,7 @@ function evidence(modality, summary, value) {
 
 function failure(code, message, context, possibleMutation = "none", usage = possibleMutation === "none" ? "released" : "unknown") {
   const kind = code === "STALE_REVISION" ? "stale_revision"
-    : code === "EDIT_CONSTRAINT_VIOLATION" ? "edit_constraint_violation"
-      : code === "RECOVERY_FAILED" ? "recovery_failed"
+    : code === "RECOVERY_FAILED" ? "recovery_failed"
         : code === "VERIFICATION_FAILED" ? "verification_failed" : "operation_failed";
   return {
     kind, code, message, retrySafe: false, possibleMutation, usage,
@@ -76,24 +74,6 @@ function protectedState(snapshot, excludedIds = new Set()) {
       })),
     })),
   };
-}
-
-function exactScope(gate, accountFingerprint, input, targets, directScope = null) {
-  const affectedTrackTypes = new Set(targets.map((target) => target.track.type));
-  const scopes = sdkMutationScopeCandidates(gate, accountFingerprint, directScope).filter((scope) => (
-    scope.binding.level === "project+timeline"
-    && scope.binding.projectId === input.projectId
-    && scope.binding.timelineId === input.timelineId
-    && scope.binding.timelineRevision === input.timelineRevision
-    && (scope.constraints.allowedOperations.length === 0 || scope.constraints.allowedOperations.includes("edit.blade"))
-    && [...affectedTrackTypes].every((type) => scope.constraints.allowedTrackTypes.length === 0 || scope.constraints.allowedTrackTypes.includes(type))
-  ));
-  if (scopes.length !== 1) {
-    const error = new Error("Exactly one current user-owned scope must authorize the exact split and every affected track.");
-    error.code = "EDIT_CONSTRAINT_VIOLATION";
-    throw error;
-  }
-  return scopes[0];
 }
 
 function collectClosedTargets(snapshot, target, splitFrame) {
@@ -164,7 +144,7 @@ function segmentResult(before, after, role, side) {
   };
 }
 
-export function createSdkTimelineBladeActions({ liveInspectionService, resolveService, mutationPolicyGate, directMutationPolicyAuthority = null }) {
+export function createSdkTimelineBladeActions({ liveInspectionService, resolveService }) {
   if (typeof liveInspectionService?.readWithMutationGuard !== "function") throw new TypeError("Timeline splits require guarded live inspection.");
   if (typeof resolveService?.executeSdkTimelineBlade !== "function") throw new TypeError("Timeline splits require the CutAgent CLI mutation boundary.");
   return {
@@ -199,46 +179,9 @@ export function createSdkTimelineBladeActions({ liveInspectionService, resolveSe
         if (privateTargets.some((item) => item === null)) {
           return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("STALE_REVISION", "Private execution identity was unavailable for an exact split target.", context) };
         }
-        let scope;
-        try {
-          const directScope = await resolveSdkDirectMutationScope({directMutationPolicyAuthority, context, liveInspectionService, level: "project+timeline", projectId: input.projectId, timelineId: input.timelineId, timelineRevision: input.timelineRevision});
-          scope = exactScope(mutationPolicyGate, context.accountFingerprint, input, targets, directScope);
-        } catch (error) {
-          return { status: "failed", possibleMutation: "none", usage: "not_reserved", failure: failure("EDIT_CONSTRAINT_VIOLATION", error.message, context, "none", "not_reserved") };
-        }
-        const resolvedTargets = targets.flatMap((item) => [
-          { kind: "clip", stableId: item.clip.id, revision: input.timelineRevision, trackType: item.track.type, trackIndex: item.track.index },
-          { kind: "track", stableId: item.track.snapshotId, revision: input.timelineRevision, trackType: item.track.type, trackIndex: item.track.index },
-        ]);
-        const policyContext = {
-          requestId: context.requestId, operationId: context.operationId, executionId: context.executionId,
-          scopeId: scope.scopeId, scopeRevision: scope.revision,
-          projectLibraryId: scope.binding.projectLibraryId, projectId: input.projectId, timelineId: input.timelineId,
-          projectRevision: scope.binding.projectRevision, timelineRevision: input.timelineRevision,
-          resolvedTargets, affectedTrackTypes: [...new Set(targets.map((item) => item.track.type))],
-          closedComposition: true, executableStableTargetPrecondition: true,
-        };
-        let releaseProof;
-        try {
-          releaseProof = mutationPolicyGate.bindVerifiedProtectedTargets({
-            accountFingerprint: context.accountFingerprint, executionId: context.executionId,
-            scopeId: scope.scopeId, scopeRevision: scope.revision, timelineRevision: input.timelineRevision,
-          });
-        } catch (error) {
-          return { status: "failed", possibleMutation: "none", usage: "not_reserved", failure: failure("EDIT_CONSTRAINT_VIOLATION", error.message, context, "none", "not_reserved") };
-        }
-        let authorization = null;
         let executionError = null;
-        try {
-          try {
-            await resolveService.executeSdkTimelineBlade(input, targets, {
-              mutationGuard: inspected.mutationGuard,
-              privateTargets,
-              policyContext,
-              onAuthorization(value) { authorization = value; },
-            });
-          } catch (error) { executionError = error; }
-        } finally { releaseProof(); }
+        try { await resolveService.executeSdkTimelineBlade(input, targets, { mutationGuard: inspected.mutationGuard, privateTargets, onAuthorization() {} }); }
+        catch (error) { executionError = error; }
 
         if (executionError?.cli_error_code === "STALE_REVISION") {
           return {
@@ -285,7 +228,6 @@ export function createSdkTimelineBladeActions({ liveInspectionService, resolveSe
           protectedStatePreserved: protectedPreserved,
         };
         if (expected) {
-          if (authorization?.policyDecision) mutationPolicyGate.assertProtectedStateEvidence(authorization.policyDecision.decisionId, report);
           return {
             status: "succeeded", possibleMutation: "confirmed", usage: "consumed", verification: report,
             result: {
@@ -302,10 +244,9 @@ export function createSdkTimelineBladeActions({ liveInspectionService, resolveSe
         }
         const unchanged = digest(protectedState(before)) === digest(protectedState(after));
         if (unchanged) {
-          const policyDenied = executionError?.cli_error_code === "EDIT_CONSTRAINT_VIOLATION";
           return {
-            status: "failed", possibleMutation: "none", usage: policyDenied ? "not_reserved" : "released",
-            failure: failure(policyDenied ? "EDIT_CONSTRAINT_VIOLATION" : "OPERATION_FAILED", executionError?.message ?? "The split made no verified change.", context, "none", policyDenied ? "not_reserved" : "released"),
+            status: "failed", possibleMutation: "none", usage: "released",
+            failure: failure("OPERATION_FAILED", executionError?.message ?? "The split made no verified change.", context, "none", "released"),
             ...(executionError?.cli_error_code === "EDIT_MUTATION_RESTORED" ? { recovery: { state: "restored", summary: "The original timeline state was restored.", evidence: report.evidence, manualRecoveryRequired: false } } : {}),
           };
         }

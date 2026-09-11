@@ -27,6 +27,32 @@ def _render_preset_name(preset: Any) -> Optional[str]:
     return None
 
 
+def save_render_preset(conn, name: str) -> None:
+    """Create a new preset only when native success and exact catalog delta agree."""
+    project = getattr(conn, "project", None)
+    getter = _get_callable(project, "GetRenderPresetList")
+    saver = _get_callable(project, "SaveAsNewRenderPreset")
+    if getter is None or saver is None:
+        raise APICallFailed("DaVinci Resolve render preset save or readback is unavailable.")
+
+    def catalog():
+        raw = getter()
+        if not isinstance(raw, list):
+            raise APICallFailed("DaVinci Resolve render preset readback is unavailable.")
+        names = [_render_preset_name(value) for value in raw]
+        if any(value is None for value in names) or len(set(names)) != len(names):
+            raise APICallFailed("DaVinci Resolve returned an ambiguous render preset list.")
+        return set(names)
+
+    before = catalog()
+    if name in before:
+        raise ValidationError("Render preset already exists; choose a new name.")
+    if saver(name) is not True:
+        raise APICallFailed("DaVinci Resolve did not confirm the render preset save.")
+    if catalog() != before | {name}:
+        raise APICallFailed("DaVinci Resolve render preset save did not match readback.")
+
+
 def _normalize_render_preset_name(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", str(name).casefold())
 
@@ -132,6 +158,15 @@ def get_render_formats(conn) -> Dict[str, str]:
     return fmt_dict if isinstance(fmt_dict, dict) else {}
 
 
+def get_audio_render_formats(conn) -> Dict[str, str]:
+    """Return the dedicated audio-only render format inventory added in DaVinci Resolve 21.1."""
+    getter = _get_callable(getattr(conn, "project", None), "GetAudioRenderFormats")
+    if getter is None:
+        raise APICallFailed("GetAudioRenderFormats not available.")
+    fmt_dict = getter()
+    return fmt_dict if isinstance(fmt_dict, dict) else {}
+
+
 def get_render_codecs(conn, format_name: str) -> Dict[str, str]:
     getter = _get_callable(getattr(conn, "project", None), "GetRenderCodecs")
     if getter is None:
@@ -144,6 +179,34 @@ def get_render_codecs(conn, format_name: str) -> Dict[str, str]:
 
     for candidate_format in candidate_formats:
         codec_dict = getter(candidate_format)
+        if isinstance(codec_dict, dict) and codec_dict:
+            return codec_dict
+    return {}
+
+
+def get_audio_render_codecs(conn, format_name: str) -> Dict[str, str]:
+    """Return audio codecs for one exact audio render format."""
+    getter = _get_callable(getattr(conn, "project", None), "GetAudioRenderCodecs")
+    if getter is None:
+        raise APICallFailed("GetAudioRenderCodecs not available.")
+    formats = get_audio_render_formats(conn)
+    requested = str(format_name or "").strip()
+    if not requested:
+        raise ValidationError("Audio render format must not be empty.")
+    matches = [
+        (label, extension)
+        for label, extension in formats.items()
+        if requested.casefold() in {str(label).casefold(), str(extension).casefold()}
+    ]
+    if len(matches) != 1:
+        raise ValidationError(
+            "Audio render format not found." if not matches else "Audio render format is ambiguous.",
+            details={"requested_format": requested, "available_formats": sorted(str(label) for label in formats)},
+        )
+    label, extension = matches[0]
+    candidates = [extension, label]
+    for candidate in candidates:
+        codec_dict = getter(str(candidate))
         if isinstance(codec_dict, dict) and codec_dict:
             return codec_dict
     return {}

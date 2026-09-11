@@ -47,6 +47,7 @@ from .commands import (
     timeline,
     transcript,
     utility,
+    video,
     version as version_commands,
     workflow,
 )
@@ -176,34 +177,25 @@ def _authorization_exempt(args: list[str]) -> bool:
     )
 
 
-_REVIEWED_READ_ONLY_EDIT_PREVIEWS = frozenset({
-    "edit.insert",
-    "edit.overwrite",
-    "edit.trim",
-})
-
-
-def _requires_mutation_execution_scope(command_id: str, args: list[str]) -> bool:
-    """Keep real edits gated while allowing reviewed edit previews to stay reads."""
-    option_args = args[:args.index("--")] if "--" in args else args
-    dry_run_requested = any(token in {"--dry-run", "-n"} for token in option_args)
-    return not (dry_run_requested and command_id in _REVIEWED_READ_ONLY_EDIT_PREVIEWS)
-
-
 def _require_command_authorization(args: list[str]) -> None:
     if _SDK_READ_DISPATCH.get():
         return
     if _authorization_exempt(args) and not os.environ.get("CUTAGENT_CLI_AUTH_TOKEN", "").strip():
         return
     command_id = infer_canonical_command_id(args)
+    if command_id in {"audio.voice_list", "audio.voice_generate", "transcript.create", "video.generate"}:
+        from .standalone_hosted import unavailable
+
+        service = {
+            "audio.voice_list": "voice_catalog",
+            "audio.voice_generate": "voice_generation",
+            "transcript.create": "transcription",
+            "video.generate": "video_generation",
+        }[command_id]
+        unavailable(service)
     verify_command_authorization(
         command_id,
         accept_compiled_import_redemption=True,
-    )
-    from .mutation_authority import require_mutation_execution_scope
-    require_mutation_execution_scope(
-        command_id,
-        authorization_is_required=authorization_required() and _requires_mutation_execution_scope(command_id, args),
     )
 
 
@@ -802,13 +794,14 @@ app.add_typer(system.app, name="system", help="DaVinci Resolve system operations
 app.add_typer(page.app, name="page", help="Page navigation")
 app.add_typer(fusion.app, name="fusion", help="Fusion operations")
 app.add_typer(text.app, name="text", help="Agent-facing text and title operations")
-app.add_typer(transcript.app, name="transcript", help="Hosted transcript generation")
+app.add_typer(transcript.app, name="transcript", help="AI transcription in the CutAgent desktop app")
+app.add_typer(video.app, name="video", help="AI video generation in the CutAgent desktop app")
 app.add_typer(fairlight.app, name="fairlight", help="Fairlight audio")
 app.add_typer(edit.app, name="edit", help="Edit operations (blade, insert, trim, transitions, FX)")
 app.add_typer(audio.app, name="audio", help="External audio preprocessing helpers (info, duck, reverb)")
 app.add_typer(batch.app, name="batch", help="Batch/YAML deterministic recipes")
 app.add_typer(auto_edit.app, name="auto-edit", help="One-command auto-edit pipeline")
-app.add_typer(embedded.app, name="embedded", help="DaVinci Resolve 20+ Free embedded bridge")
+app.add_typer(embedded.app, name="embedded", help="Connect to DaVinci Resolve 20+ Free")
 app.add_typer(version_commands.app, name="version", help="Prompt checkpoints and version history")
 app.add_typer(developer.app, name="developer", help="DaVinci Resolve Developer SDK docs and diagnostics")
 app.add_typer(workflow.app, name="workflow", help="Workflow Integration SDK helpers")
@@ -963,9 +956,6 @@ def run() -> None:
         from .prepared_action_host import run_prepared_action_host
 
         run_prepared_action_host()
-        return
-    from .mutation_authority import handle_internal_request
-    if handle_internal_request(sys.argv[1:]):
         return
     try:
         app()

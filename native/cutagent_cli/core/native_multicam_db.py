@@ -19,6 +19,7 @@ from ._native_multicam_db.blob_codec import (
     _decode_optional_bytes,
     _decode_rate_blob,
     _encode_media_timemap_ba,
+    _encode_rate_blob,
     _encode_sequence_media_extents,
     _extract_blob_uuids,
     _normalized_selector_idx,
@@ -77,6 +78,7 @@ from .native_multicam_audit import AuditReferenceConfig, build_multicam_referenc
 _COMPAT_EXPORTS = (
     support_tier_for_angle_count,
     _encode_media_timemap_ba,
+    _encode_rate_blob,
     _encode_sequence_media_extents,
     _extract_blob_uuids,
     _optional_float,

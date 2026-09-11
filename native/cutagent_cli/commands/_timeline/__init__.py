@@ -13,6 +13,7 @@ _PARTS = (
     'part_002.py',
     'part_003.py',
     'part_004.py',
+    'part_005.py',
 )
 
 _facade_module = _facade_sys.modules[__name__]

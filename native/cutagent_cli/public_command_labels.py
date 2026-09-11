@@ -106,6 +106,7 @@ BEHAVIOR_NAMES = frozenset(
 )
 
 COMMAND_LABEL_OVERRIDES = {
+    "dctl encrypt": "Created an encrypted DCTL artifact",
     "audio beat-detect": "Detected musical beats and phrase candidates",
     "asset artifact-index": "Listed recent exports",
     "bulk select": "Previewed which clips match a bulk selector",
@@ -219,6 +220,9 @@ COMMAND_LABEL_OVERRIDES = {
     "project db restore": "Restored a project backup",
     "project db switch": "Switched project storage locations",
     "project preset save": "Saved current project settings as a preset",
+    "project preset delete": "Deleted a project settings preset",
+    "project preset export": "Exported a project settings preset",
+    "project preset import": "Imported a project settings preset",
     "render settings-set-json": "Updated render settings",
     "render settings-set-key": "Updated one render setting",
     "render export-file": "Rendered one exact timeline output with complete validation",
@@ -270,7 +274,7 @@ COMMAND_LABEL_OVERRIDES = {
     "multicam source move": "Moved a source item inside a multicam angle",
     "multicam source remove": "Removed a source item from a multicam angle",
     "multicam source property-set": "Changed a multicam source property",
-    "multicam source grade-cdl": "Applied a source grade inside a multicam angle",
+    "multicam source grade-cdl": "Validated an unavailable multicam source CDL target",
     "multicam source raw-braw-set": "Changed Blackmagic RAW settings inside a multicam angle",
     "multicam smart-switch": "Created a speaker-aware multicam cut",
     "multicam settings": "Checked multicam settings",

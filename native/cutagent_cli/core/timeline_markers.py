@@ -321,9 +321,15 @@ def normalize_marker_batch_entries(
 
         requested_color = raw.get("color")
         color = normalize_timeline_marker_color(requested_color if requested_color is not None else normalized_default_color)
-        title_base = default_title or raw.get("title") or raw.get("label") or raw.get("reason") or "Marker"
+        title_base = (
+            default_title
+            if default_title is not None
+            else raw["title"]
+            if "title" in raw
+            else raw.get("label") or raw.get("reason") or "Marker"
+        )
         title = f"{prefix}{title_base}"
-        note = raw.get("note") or raw.get("sentence") or raw.get("reason") or title
+        note = raw["note"] if "note" in raw else raw.get("sentence") or raw.get("reason") or title
 
         normalized_entries.append(
             {
@@ -529,7 +535,7 @@ def apply_timeline_marker_batch(
             result["error"] = "add_marker_returned_false"
             failed_count += 1
             results.append(result)
-            continue
+            break
         created_count += 1
         result["status"] = "created"
         results.append(result)

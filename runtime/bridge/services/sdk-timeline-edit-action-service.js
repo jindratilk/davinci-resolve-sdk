@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import {
-  sdkTimelineEditMutationInputSchema,
-  sdkTimelineEditMutationResultSchema,
+  sdkTimelineEditMutationOutputSchema,
+  sdkTimelineEditMutationRequestSchema,
 } from "../contracts/generated/sdk-operations.js";
 
 const ACTIONS = Object.freeze({
@@ -26,8 +26,7 @@ function evidence(modality, summary, value) {
 
 function failure(code, message, context, possibleMutation = "none", usage = possibleMutation === "none" ? "released" : "unknown") {
   const kind = code === "STALE_REVISION" ? "stale_revision"
-    : code === "EDIT_CONSTRAINT_VIOLATION" ? "edit_constraint_violation"
-      : code === "CAPABILITY_UNAVAILABLE" ? "capability_unavailable"
+    : code === "CAPABILITY_UNAVAILABLE" ? "capability_unavailable"
       : code === "RECOVERY_FAILED" ? "recovery_failed"
         : code === "VERIFICATION_FAILED" ? "verification_failed" : "operation_failed";
   return {
@@ -44,24 +43,6 @@ function failure(code, message, context, possibleMutation = "none", usage = poss
     operationId: context.operationId,
     executionId: context.executionId,
   };
-}
-
-function exactScope(gate, accountFingerprint, impact, actionId, directScope = null) {
-  const operation = actionId.replace("cutagent.action.", "");
-  const scopes = (directScope === null ? gate.listScopes({ accountFingerprint }) : [directScope]).filter((scope) => (
-    scope.binding.level === "project+timeline"
-    && scope.binding.projectId === impact.projectId
-    && scope.binding.timelineId === impact.timelineId
-    && scope.binding.timelineRevision === impact.timelineRevision
-    && (scope.constraints.allowedOperations.length === 0 || scope.constraints.allowedOperations.includes(operation))
-    && impact.affectedTracks.every((track) => scope.constraints.allowedTrackTypes.length === 0 || scope.constraints.allowedTrackTypes.includes(track.type))
-  ));
-  if (scopes.length !== 1) {
-    const error = new Error("Exactly one current user-owned constraint scope must authorize every affected track and the exact semantic edit.");
-    error.code = "EDIT_CONSTRAINT_VIOLATION";
-    throw error;
-  }
-  return scopes[0];
 }
 
 function clipValue(clip, track) {
@@ -159,127 +140,158 @@ function invariantTimelineState(snapshot) {
 export function createSdkTimelineEditActions({
   liveInspectionService,
   resolveService,
-  mutationPolicyGate,
-  directMutationPolicyAuthority = null,
 }) {
-  if (typeof liveInspectionService?.prepareTimelineEdit !== "function" || typeof liveInspectionService?.readWithMutationGuard !== "function") {
+  const hasStructuralRead = typeof liveInspectionService?.readTimelineStructure === "function";
+  const readTimelineStructure = liveInspectionService?.readTimelineStructure?.bind(liveInspectionService)
+    ?? liveInspectionService?.readWithMutationGuard?.bind(liveInspectionService);
+  if (typeof liveInspectionService?.prepareTimelineEdit !== "function"
+    || typeof liveInspectionService?.readWithMutationGuard !== "function"
+    || typeof readTimelineStructure !== "function"
+    || (hasStructuralRead && typeof liveInspectionService?.readWorkflowBinding !== "function")) {
     throw new TypeError("Timeline edit actions require authoritative impact preparation and guarded readback.");
   }
   if (typeof resolveService?.executeSdkTimelineEdit !== "function") throw new TypeError("Timeline edit actions require the CutAgent CLI mutation boundary.");
-  if (typeof mutationPolicyGate?.bindVerifiedProtectedTargets !== "function") throw new TypeError("Timeline edit actions require protected-target proof binding.");
 
   return Object.fromEntries(Object.entries(ACTIONS).map(([actionId, action]) => [actionId, {
-    inputSchema: sdkTimelineEditMutationInputSchema,
-    resultSchema: sdkTimelineEditMutationResultSchema,
+    inputSchema: sdkTimelineEditMutationRequestSchema,
+    resultSchema: sdkTimelineEditMutationOutputSchema,
     idempotency: "required",
     async execute(context, rawInput) {
-      const input = sdkTimelineEditMutationInputSchema.parse(rawInput);
-      if (input.impact.action !== action) {
+      const input = sdkTimelineEditMutationRequestSchema.parse(rawInput);
+      const batch = "impacts" in input;
+      const impacts = batch ? input.impacts : [input.impact];
+      const audioInsertBatch = batch && action === "insert"
+        && impacts.every((impact) => impact.intent.placement === "audio");
+      const trimBatch = batch && action === "trim";
+      if (impacts.some((impact) => impact.action !== action)) {
         return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("OPERATION_FAILED", "The durable action does not match the immutable edit impact.", context) };
+      }
+      if (batch && action === "insert" && !audioInsertBatch
+        && impacts.some((impact) => impact.intent.placement === "audio")) {
+        return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("OPERATION_FAILED", "Plural timeline inserts must use one homogeneous video or audio placement mode.", context) };
       }
       let prepared;
       try {
-        prepared = await liveInspectionService.prepareTimelineEdit(input.impact.intent, { deadlineAtMs: Date.now() + 60_000 });
+        const preparationOptions = { deadlineAtMs: Date.now() + 60_000, sdkSessionId: context.sdkSessionId, signal: context.signal };
+        prepared = liveInspectionService.takePreparedTimelineEdits?.(impacts, { sdkSessionId: context.sdkSessionId }) ?? null;
+        if (!prepared && !batch) {
+          const retained = liveInspectionService.takePreparedTimelineEdit?.(impacts[0], { sdkSessionId: context.sdkSessionId }) ?? null;
+          if (retained) prepared = { ...retained, impacts: [retained.impact], executionContexts: [retained.executionContext] };
+        }
+        if (!prepared && audioInsertBatch) {
+          if (typeof liveInspectionService.prepareTimelineAudioInserts !== "function") {
+            throw new TypeError("Plural audio inserts require consolidated impact preparation.");
+          }
+          prepared = await liveInspectionService.prepareTimelineAudioInserts(impacts.map((impact) => impact.intent), preparationOptions);
+        } else if (!prepared && batch) {
+          if (typeof liveInspectionService.prepareTimelineEdits !== "function") {
+            throw new TypeError("Plural timeline edits require consolidated impact preparation.");
+          }
+          prepared = await liveInspectionService.prepareTimelineEdits(impacts.map((impact) => impact.intent), preparationOptions);
+        } else if (!prepared) {
+          const single = await liveInspectionService.prepareTimelineEdit(impacts[0].intent, preparationOptions);
+          prepared = { ...single, impacts: [single.impact], executionContexts: [single.executionContext] };
+        }
       } catch (error) {
+        if (context.isCancellationRequested?.()) {
+          const requestedAt = context.cancellationRequestedAt?.() ?? new Date().toISOString();
+          return {
+            status: "cancelled",
+            possibleMutation: "none",
+            usage: "released",
+            cancellation: { state: "confirmed", requestedAt, confirmedAt: new Date().toISOString() },
+            failure: {
+              kind: "cancelled",
+              code: "CANCELLED",
+              message: "The timeline edit was cancelled before native execution.",
+              retrySafe: false,
+              possibleMutation: "none",
+              usage: "released",
+              recovery: ["continue"],
+              recoveryGuidance: ["No project mutation was started."],
+              readbackRequired: false,
+            },
+          };
+        }
         const reportedCode = error?.code ?? error?.cli_error_code;
         const code = ["CAPABILITY_UNAVAILABLE", "STALE_REVISION"].includes(reportedCode) ? reportedCode : "OPERATION_FAILED";
         return { status: "failed", possibleMutation: "none", usage: "released", failure: failure(code, error?.message ?? "The edit impact could not be refreshed.", context) };
       }
-      if (digest(prepared.impact) !== digest(input.impact)) {
+      if (!Array.isArray(prepared.impacts) || prepared.impacts.length !== impacts.length
+        || prepared.impacts.some((impact, index) => digest(impact) !== digest(impacts[index]))) {
         return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("STALE_REVISION", "The timeline or exact edit impact changed after preview.", context) };
       }
-      let directScope = null;
-      if (directMutationPolicyAuthority !== null) {
-        try {
-          const inspected = await liveInspectionService.readWithMutationGuard(
-            { operation: "project.context" },
-            { deadlineAtMs: Date.now() + 60_000 },
-          );
-          const project = inspected.value?.project;
-          const timeline = inspected.value?.timeline;
-          const projectRevision = inspected.value?.projectRevision;
-          const projectLibraryId = inspected.privateExecutionIdentity?.projectLibraryId;
-          if (project?.id !== input.impact.projectId
-            || timeline?.id !== input.impact.timelineId
-            || projectRevision?.status !== "available"
-            || typeof projectRevision.revision !== "string"
-            || typeof projectLibraryId !== "string") {
-            throw Object.assign(new Error("The direct SDK editing-constraint scope lost its exact live project binding."), { code: "STALE_REVISION" });
-          }
-          directScope = await directMutationPolicyAuthority.resolveScope({
-            sdkSessionId: context.sdkSessionId,
-            accountFingerprint: context.accountFingerprint,
-            binding: {
-              level: "project+timeline",
-              projectLibraryId,
-              projectId: input.impact.projectId,
-              projectRevision: projectRevision.revision,
-              timelineId: input.impact.timelineId,
-              timelineRevision: input.impact.timelineRevision,
-            },
-          });
-        } catch (error) {
-          const code = error?.code === "STALE_REVISION" ? "STALE_REVISION" : "EDIT_CONSTRAINT_VIOLATION";
-          return { status: "failed", possibleMutation: "none", usage: "not_reserved", failure: failure(code, error.message, context, "none", "not_reserved") };
-        }
+      if (context.isCancellationRequested?.()) {
+        const requestedAt = context.cancellationRequestedAt?.() ?? new Date().toISOString();
+        return {
+          status: "cancelled",
+          possibleMutation: "none",
+          usage: "not_reserved",
+          cancellation: { state: "confirmed", requestedAt, confirmedAt: new Date().toISOString() },
+          failure: {
+            kind: "cancelled",
+            code: "CANCELLED",
+            message: "The timeline edit was cancelled before native execution.",
+            retrySafe: false,
+            possibleMutation: "none",
+            usage: "not_reserved",
+            recovery: ["continue"],
+            recoveryGuidance: ["Inspect current state before deciding whether to create new work."],
+            readbackRequired: false,
+          },
+        };
       }
-      let scope;
-      try { scope = exactScope(mutationPolicyGate, context.accountFingerprint, input.impact, actionId, directScope); } catch (error) {
-        return { status: "failed", possibleMutation: "none", usage: "not_reserved", failure: failure("EDIT_CONSTRAINT_VIOLATION", error.message, context, "none", "not_reserved") };
-      }
-      const stableTargets = [
-        { kind: "timeline", stableId: input.impact.timelineId, revision: input.impact.timelineRevision },
-        ...input.impact.affectedItems.map((item) => ({ kind: "clip", stableId: item.id, revision: input.impact.timelineRevision, trackType: item.track.type, trackIndex: item.track.index })),
-      ];
-      const policyContext = {
-        requestId: context.requestId,
-        operationId: context.operationId,
-        executionId: context.executionId,
-        scopeId: scope.scopeId,
-        scopeRevision: scope.revision,
-        projectLibraryId: scope.binding.projectLibraryId,
-        projectId: input.impact.projectId,
-        timelineId: input.impact.timelineId,
-        projectRevision: scope.binding.projectRevision,
-        timelineRevision: input.impact.timelineRevision,
-        resolvedTargets: stableTargets,
-        affectedTrackTypes: [...new Set(input.impact.affectedTracks.map((track) => track.type))],
-        semanticEditAction: input.impact.action,
-        closedComposition: true,
-        executableStableTargetPrecondition: true,
-      };
-      let releaseProof;
-      try {
-        releaseProof = mutationPolicyGate.bindVerifiedProtectedTargets({
-          accountFingerprint: context.accountFingerprint,
-          executionId: context.executionId,
-          scopeId: scope.scopeId,
-          scopeRevision: scope.revision,
-          timelineRevision: input.impact.timelineRevision,
-        });
-      } catch (error) {
-        return { status: "failed", possibleMutation: "none", usage: "not_reserved", failure: failure("EDIT_CONSTRAINT_VIOLATION", error.message, context, "none", "not_reserved") };
-      }
-      let authorization = null;
       let executionError = null;
       try {
-        try {
-          await resolveService.executeSdkTimelineEdit(input.impact.intent, prepared.executionContext, {
-            mutationGuard: prepared.mutationGuard,
-            policyContext,
-            onAuthorization(value) { authorization = value; },
-          });
-        } catch (error) { executionError = error; }
-      } finally {
-        releaseProof();
+        const executionOptions = { mutationGuard: prepared.mutationGuard, onAuthorization() {}, signal: context.signal };
+        if (audioInsertBatch) {
+          if (typeof resolveService.executeSdkTimelineAudioInsert !== "function") {
+            throw new TypeError("Plural audio inserts require one consolidated native execution.");
+          }
+          await resolveService.executeSdkTimelineAudioInsert(impacts.map((impact) => impact.intent), prepared.executionContext, executionOptions);
+        } else if (trimBatch) {
+          await resolveService.executeSdkTimelineEdit(
+            impacts.map((impact) => impact.intent),
+            prepared.executionContexts[0],
+            executionOptions,
+          );
+        } else if (batch) {
+          if (typeof resolveService.executeSdkTimelineEdits !== "function") {
+            throw new TypeError("Plural timeline edits require one consolidated native execution.");
+          }
+          await resolveService.executeSdkTimelineEdits(impacts.map((impact) => impact.intent), prepared.executionContexts, executionOptions);
+        } else {
+          await resolveService.executeSdkTimelineEdit(impacts[0].intent, prepared.executionContexts[0], executionOptions);
+        }
       }
+      catch (error) { executionError = error; }
       let after;
+      let canonicalAfterRevision;
       try {
-        after = (await liveInspectionService.readWithMutationGuard({
-          operation: "timeline.snapshot",
-          projectId: input.impact.projectId,
-          timelineId: input.impact.timelineId,
-        }, { deadlineAtMs: Date.now() + 60_000 })).value;
+        if (batch && hasStructuralRead) {
+          const binding = await liveInspectionService.readWorkflowBinding({
+            operation: "timeline.snapshot",
+            projectId: impacts[0].projectId,
+            timelineId: impacts[0].timelineId,
+          }, { deadlineAtMs: Date.now() + 60_000 });
+          if (binding.projectId !== impacts[0].projectId || binding.timelineId !== impacts[0].timelineId) {
+            throw new Error("Canonical post-edit timeline binding changed during grouped verification.");
+          }
+          canonicalAfterRevision = binding.revision;
+          after = (await readTimelineStructure({
+            operation: "timeline.structure",
+            projectId: impacts[0].projectId,
+            timelineId: impacts[0].timelineId,
+            expectedRevision: canonicalAfterRevision,
+          }, { deadlineAtMs: Date.now() + 60_000 })).value;
+        } else {
+          after = (await liveInspectionService.readWithMutationGuard({
+            operation: "timeline.snapshot",
+            projectId: impacts[0].projectId,
+            timelineId: impacts[0].timelineId,
+          }, { deadlineAtMs: Date.now() + 60_000 })).value;
+          canonicalAfterRevision = after.revision;
+        }
       } catch {
         return {
           status: "verification_failed", possibleMutation: "possible", usage: "unknown",
@@ -287,65 +299,90 @@ export function createSdkTimelineEditActions({
           verification: { outcome: "failed", summary: "Post-mutation timeline readback was unavailable.", evidence: [evidence("readback", "Post-mutation timeline readback failed.", { actionId })], protectedStatePreserved: null },
         };
       }
-      const protectedPreserved = input.impact.protectedItems.every((target) => sameProtectedItem(prepared.snapshot, after, target));
-      const expectedResults = input.impact.expectedItems.map((expected) => expectedResult(prepared.snapshot, after, expected));
-      const affectedClips = expectedResults.filter(Boolean).map((match) => match.value);
+      const affectedBeforeIds = new Set(impacts.flatMap((impact) => impact.affectedItems.map((item) => item.id)));
+      const protectedTargets = impacts.flatMap((impact) => impact.protectedItems)
+        .filter((item) => !affectedBeforeIds.has(item.id));
+      const protectedPreserved = protectedTargets.every((target) => sameProtectedItem(prepared.snapshot, after, target));
+      const expectedResults = impacts.map((impact) => impact.expectedItems.map((expected) => expectedResult(prepared.snapshot, after, expected)));
+      const affectedClips = expectedResults.map((matches) => matches.filter(Boolean).map((match) => match.value));
       const beforeIds = new Set(prepared.snapshot.tracks.flatMap((track) => track.clips.map((clip) => clip.id)));
       const afterRows = after.tracks.flatMap((track) => track.clips.map((clip) => ({ track, clip })));
       const afterIds = new Set(afterRows.map(({ clip }) => clip.id));
-      const expectedNewIds = new Set(expectedResults.flatMap((match, index) => (
-        match && ["replacement", "preserved_edge"].includes(input.impact.expectedItems[index].role) ? [match.value.id] : []
-      )));
+      const unrelatedItemsPreserved = prepared.snapshot.tracks
+        .flatMap((track) => track.clips)
+        .filter((clip) => !affectedBeforeIds.has(clip.id))
+        .every((clip) => sameProtectedItem(prepared.snapshot, after, clip));
+      const expectedNewIds = new Set(expectedResults.flatMap((matches, impactIndex) => matches.flatMap((match, itemIndex) => (
+        match && ["replacement", "preserved_edge"].includes(impacts[impactIndex].expectedItems[itemIndex].role) ? [match.value.id] : []
+      ))));
       const actualNewIds = new Set(afterRows.filter(({ clip }) => !beforeIds.has(clip.id)).map(({ clip }) => clip.id));
-      const removedAffectedIds = input.impact.affectedItems
+      const removedAffectedIds = impacts.flatMap((impact) => impact.affectedItems)
         .filter((item) => item.role === "replace")
         .every((item) => !afterIds.has(item.id));
       const invariantStatePreserved = digest(invariantTimelineState(prepared.snapshot)) === digest(invariantTimelineState(after));
       const closedWorld = afterRows.every(({ clip }) => typeof clip.id === "string")
         && invariantStatePreserved
+        && unrelatedItemsPreserved
         && actualNewIds.size === expectedNewIds.size
         && [...actualNewIds].every((id) => expectedNewIds.has(id));
       const revisionChanged = after.revision !== prepared.snapshot.revision;
-      const authorizationProven = Boolean(authorization?.policyDecision);
-      const resultMatches = executionError === null && revisionChanged && authorizationProven
-        && expectedResults.every(Boolean)
+      const resultMatches = executionError === null && revisionChanged
+        && expectedResults.every((matches) => matches.every(Boolean))
         && removedAffectedIds
         && closedWorld
-        && expectedLinksMatch(input.impact, expectedResults);
+        && impacts.every((impact, index) => expectedLinksMatch(impact, expectedResults[index]));
       const report = {
         outcome: resultMatches && protectedPreserved ? "passed" : "failed",
         summary: resultMatches && protectedPreserved ? "Exact semantic edit and declared protected targets matched independent readback." : "Semantic edit readback or a declared protected target did not match.",
         evidence: [
-          evidence("readback", "Read back the complete timeline after execution.", { revision: after.revision, revisionChanged, affectedClips }),
-          evidence("structural", "Confirmed the mutation was authorized before execution.", { authorizationProven }),
-          evidence("structural", "Compared the closed declared post-state and every protected item.", { protectedItemIds: input.impact.protectedItems.map((item) => item.id), protectedPreserved, removedAffectedIds, invariantStatePreserved, closedWorld }),
+          evidence("readback", "Read back the timeline after execution.", { structuralRevision: after.revision, canonicalRevision: canonicalAfterRevision, revisionChanged, affectedClips: affectedClips.flat() }),
+          evidence("structural", "Compared the closed declared post-state and every unrelated and protected item.", { protectedItemIds: protectedTargets.map((item) => item.id), protectedPreserved, unrelatedItemsPreserved, removedAffectedIds, invariantStatePreserved, closedWorld }),
         ],
         protectedStatePreserved: protectedPreserved,
       };
       if (resultMatches && protectedPreserved) {
-        try {
-          mutationPolicyGate.assertProtectedStateEvidence(authorization.policyDecision.decisionId, report);
-        } catch (error) {
-          return {
-            status: "verification_failed", possibleMutation: "confirmed", usage: "consumed",
-            postTimelineRevision: after.revision,
-            failure: failure("VERIFICATION_FAILED", error?.message ?? "Protected-state evidence was rejected after the semantic edit.", context, "confirmed", "consumed"),
-            verification: { ...report, outcome: "failed", summary: "The edit matched readback, but protected-state evidence was rejected." },
-          };
-        }
+        const results = impacts.map((impact, index) => ({
+          action,
+          impactId: impact.impactId,
+          timelineRevision: canonicalAfterRevision,
+          affectedClips: affectedClips[index],
+          protectedItemIds: impact.protectedItems.filter((item) => !affectedBeforeIds.has(item.id)).map((item) => item.id),
+          protectedStatePreserved: true,
+        }));
         return {
           status: "succeeded", possibleMutation: "confirmed", usage: "consumed", verification: report,
-          result: {
-            action,
-            impactId: input.impact.impactId,
-            timelineRevision: after.revision,
-            affectedClips,
-            protectedItemIds: input.impact.protectedItems.map((item) => item.id),
-            protectedStatePreserved: true,
-          },
+          result: batch ? { results } : results[0],
         };
       }
       const unchanged = !revisionChanged;
+      if (unchanged && executionError && context.isCancellationRequested?.()) {
+        const requestedAt = context.cancellationRequestedAt?.() ?? new Date().toISOString();
+        const recoverySummary = "Authoritative timeline readback proved that the pre-mutation state was preserved after Stop interrupted native execution.";
+        return {
+          status: "cancelled",
+          possibleMutation: "none",
+          usage: "released",
+          cancellation: { state: "confirmed", requestedAt, confirmedAt: new Date().toISOString() },
+          failure: {
+            kind: "cancelled",
+            code: "CANCELLED",
+            message: "The timeline edit was cancelled during native execution, and readback confirmed no persisted mutation.",
+            retrySafe: false,
+            possibleMutation: "none",
+            usage: "released",
+            recovery: ["continue"],
+            recoveryGuidance: ["The pre-mutation timeline state was preserved."],
+            recoveryOutcome: { status: "succeeded", summary: recoverySummary },
+            readbackRequired: false,
+          },
+          recovery: {
+            state: "restored",
+            summary: recoverySummary,
+            evidence: report.evidence,
+            manualRecoveryRequired: false,
+          },
+        };
+      }
       if (unchanged && executionError?.cli_error_code === "EDIT_MUTATION_RESTORED") {
         const recoverySummary = "Authoritative timeline readback proved that the pre-mutation state was restored after the overwrite failed.";
         const originalErrorCode = executionError?.cli_error_details?.original_error_code;
@@ -382,9 +419,9 @@ export function createSdkTimelineEditActions({
         return { status: "failed", possibleMutation: "none", usage: "released", failure: failure(executionError?.cli_error_code === "STALE_REVISION" ? "STALE_REVISION" : "OPERATION_FAILED", executionError?.message ?? "The semantic edit made no verified change.", context) };
       }
       if (executionError?.cli_error_code === "EDIT_MUTATION_RECOVERY_FAILED") {
-        return { status: "recovery_failed", possibleMutation: "partial", usage: "consumed", postTimelineRevision: after.revision, failure: failure("RECOVERY_FAILED", executionError.message, context, "partial", "consumed"), verification: report, recovery: { state: "failed", summary: "Automatic edit recovery did not restore the expected timeline.", evidence: report.evidence, manualRecoveryRequired: true } };
+        return { status: "recovery_failed", possibleMutation: "partial", usage: "consumed", postTimelineRevision: canonicalAfterRevision, failure: failure("RECOVERY_FAILED", executionError.message, context, "partial", "consumed"), verification: report, recovery: { state: "failed", summary: "Automatic edit recovery did not restore the expected timeline.", evidence: report.evidence, manualRecoveryRequired: true } };
       }
-      return { status: "verification_failed", possibleMutation: "possible", usage: "consumed", postTimelineRevision: after.revision, failure: failure("VERIFICATION_FAILED", executionError?.message ?? "The semantic edit produced an unexpected timeline state.", context, "possible", "consumed"), verification: report, recovery: { state: "manual_required", summary: "Inspect the current timeline before retrying this semantic edit.", evidence: report.evidence, manualRecoveryRequired: true } };
+      return { status: "verification_failed", possibleMutation: "possible", usage: "consumed", postTimelineRevision: canonicalAfterRevision, failure: failure("VERIFICATION_FAILED", executionError?.message ?? "The semantic edit produced an unexpected timeline state.", context, "possible", "consumed"), verification: report, recovery: { state: "manual_required", summary: "Inspect the current timeline before retrying this semantic edit.", evidence: report.evidence, manualRecoveryRequired: true } };
     },
   }]));
 }

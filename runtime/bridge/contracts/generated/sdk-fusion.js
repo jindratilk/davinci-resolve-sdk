@@ -2,6 +2,10 @@ import { z } from "zod";
 import { sdkFusionCompositionIdSchema, sdkIdempotencyKeySchema, sdkProjectIdSchema, sdkRevisionSchema, sdkTimelineIdSchema, sdkTimelineItemIdSchema, } from "./sdk-identities.js";
 export const CUTAGENT_SDK_FUSION_GRAPH_ACTION_ID = "cutagent.action.fusion.apply";
 export const CUTAGENT_SDK_FUSION_GRAPH_CONTRACT_VERSION = 1;
+export const CUTAGENT_SDK_FUSION_IMAGE_REPLACE_ACTION_ID = "cutagent.action.fusion.image.batch";
+export const CUTAGENT_SDK_FUSION_IMAGE_REPLACE_CONTRACT_VERSION = 1;
+export const CUTAGENT_SDK_FUSION_TEXT_ACTION_ID = "cutagent.action.fusion.text.batch";
+export const CUTAGENT_SDK_FUSION_NESTED_TEXT_ACTION_ID = "cutagent.action.fusion.nested_text.batch";
 const sdkFusionValueSchema = z.union([
     z.number().finite(),
     z.string().max(65_536),
@@ -52,6 +56,45 @@ export const sdkFusionCompositionReferenceSchema = z.object({
     timelineRevision: sdkRevisionSchema,
     revision: sdkRevisionSchema,
     graphDigest: z.string().regex(/^sha256:[0-9a-f]{64}$/),
+}).strict();
+export const sdkFusionTextUpdateSchema = z.object({
+    target: sdkFusionCompositionReferenceSchema,
+    toolName: z.string().min(1).max(1_024),
+    inputName: z.string().min(1).max(1_024),
+    text: z.string().min(1).max(1_024),
+}).strict();
+const sdkFusionTextActionUpdateSchema = z.object({
+    timelineItemId: sdkTimelineItemIdSchema,
+    compositionIndex: z.number().int().positive().max(128),
+    compositionRevision: sdkRevisionSchema,
+    toolName: z.string().min(1).max(1_024),
+    inputName: z.string().min(1).max(1_024),
+    text: z.string().min(1).max(1_024),
+}).strict();
+export const sdkFusionTextActionInputSchema = z.object({
+    projectId: sdkProjectIdSchema,
+    timelineId: sdkTimelineIdSchema,
+    revision: sdkRevisionSchema,
+    updates: z.array(sdkFusionTextActionUpdateSchema).min(1).max(256),
+}).strict();
+const sdkFusionRevisionTransitionSchema = z.object({
+    revisionBefore: sdkRevisionSchema,
+    revisionAfter: sdkRevisionSchema,
+    changed: z.boolean(),
+}).strict();
+export const sdkFusionTextActionResultSchema = z.object({
+    actionId: z.literal(CUTAGENT_SDK_FUSION_TEXT_ACTION_ID),
+    textUpdates: z.object({
+        updates: z.array(z.object({
+            timelineItemId: sdkTimelineItemIdSchema,
+            compositionIndex: z.number().int().positive().max(128),
+            toolName: z.string().min(1).max(1_024),
+            inputName: z.string().min(1).max(1_024),
+            text: z.string().min(1).max(1_024),
+            verified: z.literal(true),
+        }).strict()).min(1).max(256),
+        revision: sdkFusionRevisionTransitionSchema,
+    }).strict(),
 }).strict();
 export const sdkFusionGraphImpactPreviewSchema = z.object({
     kind: z.literal("fusion_graph_replace"),
@@ -113,3 +156,132 @@ export const sdkFusionGraphApplyResultSchema = z.object({
     }).strict(),
     protectedStatePreserved: z.literal(true),
 }).strict();
+const sdkFusionImageReplacementItemSchema = z.object({
+    timelineItemId: sdkTimelineItemIdSchema,
+    compositionIndex: z.number().int().positive(),
+    compositionRevision: sdkRevisionSchema,
+    imageArtifactId: z.string().regex(/^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$/),
+    groupToolName: z.string().min(1).max(1_024).optional(),
+    groupInputName: z.string().min(1).max(1_024).optional(),
+    importMedia: z.boolean().optional(),
+    zoom: z.object({ x: z.number().finite(), y: z.number().finite() }).strict().optional(),
+    position: z.object({ x: z.number().finite(), y: z.number().finite() }).strict().optional(),
+}).strict();
+export const sdkFusionImageReplaceInputSchema = z.object({
+    contractVersion: z.literal(CUTAGENT_SDK_FUSION_IMAGE_REPLACE_CONTRACT_VERSION),
+    projectId: sdkProjectIdSchema,
+    timelineId: sdkTimelineIdSchema,
+    revision: sdkRevisionSchema,
+    items: z.array(sdkFusionImageReplacementItemSchema).min(1).max(512),
+}).strict().superRefine((value, context) => {
+    const ids = new Set();
+    value.items.forEach((item, index) => {
+        const id = `${item.timelineItemId}:fusion:${item.compositionIndex}`;
+        if (ids.has(id)) {
+            context.addIssue({ code: "custom", path: ["items", index], message: "Fusion image targets must be unique" });
+        }
+        ids.add(id);
+    });
+});
+const sdkFusionImageReplacementSuccessSchema = z.object({
+    index: z.number().int().nonnegative().max(511),
+    ok: z.literal(true),
+    timelineItemId: sdkTimelineItemIdSchema,
+    compositionIndex: z.number().int().positive(),
+    imageArtifactId: z.string().regex(/^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$/),
+    durationMs: z.number().finite().nonnegative(),
+    toolName: z.string().min(1).max(1_024),
+    inputName: z.string().min(1).max(1_024),
+    verified: z.literal(true),
+    revisionBefore: sdkRevisionSchema,
+    revisionAfter: sdkRevisionSchema,
+}).strict();
+const sdkFusionImageReplacementFailureSchema = z.object({
+    index: z.number().int().nonnegative().max(511),
+    ok: z.literal(false),
+    timelineItemId: sdkTimelineItemIdSchema,
+    compositionIndex: z.number().int().positive(),
+    imageArtifactId: z.string().regex(/^artifact_[A-Za-z0-9][A-Za-z0-9._~-]*$/),
+    durationMs: z.number().finite().nonnegative(),
+    error: z.object({ code: z.string().min(1).max(128), message: z.string().min(1).max(4_096) }).strict(),
+}).strict();
+export const sdkFusionImageReplaceResultSchema = z.object({
+    actionId: z.literal(CUTAGENT_SDK_FUSION_IMAGE_REPLACE_ACTION_ID),
+    results: z.array(z.discriminatedUnion("ok", [
+        sdkFusionImageReplacementSuccessSchema,
+        sdkFusionImageReplacementFailureSchema,
+    ])).min(1).max(512),
+    successCount: z.number().int().nonnegative().max(512),
+    failureCount: z.number().int().nonnegative().max(512),
+    durationMs: z.number().finite().nonnegative(),
+    protectedStatePreserved: z.literal(true),
+}).strict().superRefine((value, context) => {
+    if (value.successCount !== value.results.filter((row) => row.ok).length
+        || value.failureCount !== value.results.filter((row) => !row.ok).length) {
+        context.addIssue({ code: "custom", path: ["results"], message: "Fusion image result counts must match the per-item results" });
+    }
+    value.results.forEach((row, index) => {
+        if (row.index !== index)
+            context.addIssue({ code: "custom", path: ["results", index, "index"], message: "Fusion image results must preserve request order" });
+    });
+});
+const sdkFusionNestedTextUpdateSchema = z.object({
+    timelineItemId: sdkTimelineItemIdSchema,
+    compositionIndex: z.number().int().positive().max(128),
+    header: z.string().min(1).max(1_024).optional(),
+    body: z.string().min(1).max(1_024).optional(),
+    headerClipName: z.string().min(1).max(1_024).optional(),
+    bodyClipName: z.string().min(1).max(1_024).optional(),
+    headerUppercase: z.boolean().optional(),
+    headerDoubleSpaces: z.boolean().optional(),
+    boldStyle: z.string().min(1).max(1_024).optional(),
+}).strict().refine((value) => value.header !== undefined || value.body !== undefined, {
+    message: "A nested Fusion text update requires header or body text",
+});
+export const sdkFusionNestedTextInputSchema = z.object({
+    projectId: sdkProjectIdSchema,
+    timelineId: sdkTimelineIdSchema,
+    revision: sdkRevisionSchema,
+    updates: z.array(sdkFusionNestedTextUpdateSchema).min(1).max(256),
+}).strict();
+const sdkFusionNestedTextSuccessSchema = z.object({
+    index: z.number().int().nonnegative().max(255),
+    status: z.literal("succeeded"),
+    timelineItemId: sdkTimelineItemIdSchema,
+    headerUpdated: z.boolean(),
+    bodyUpdated: z.boolean(),
+    revisionBefore: sdkRevisionSchema,
+    revisionAfter: sdkRevisionSchema,
+}).strict();
+const sdkFusionNestedTextFailureSchema = z.object({
+    index: z.number().int().nonnegative().max(255),
+    status: z.literal("failed"),
+    timelineItemId: sdkTimelineItemIdSchema,
+    code: z.string().min(1).max(128),
+    message: z.string().min(1).max(4_096),
+}).strict();
+export const sdkFusionNestedTextResultSchema = z.object({
+    actionId: z.literal(CUTAGENT_SDK_FUSION_NESTED_TEXT_ACTION_ID),
+    projectId: sdkProjectIdSchema,
+    timelineId: sdkTimelineIdSchema,
+    revisionBefore: sdkRevisionSchema,
+    revisionAfter: sdkRevisionSchema,
+    changed: z.boolean(),
+    successCount: z.number().int().nonnegative().max(256),
+    failureCount: z.number().int().nonnegative().max(256),
+    results: z.array(z.discriminatedUnion("status", [
+        sdkFusionNestedTextSuccessSchema,
+        sdkFusionNestedTextFailureSchema,
+    ])).min(1).max(256),
+    protectedStatePreserved: z.literal(true),
+}).strict().superRefine((value, context) => {
+    if (value.successCount + value.failureCount !== value.results.length) {
+        context.addIssue({ code: "custom", path: ["results"], message: "Nested Fusion text result counts must match the returned items" });
+    }
+    if (value.results.some((row, index) => row.index !== index)) {
+        context.addIssue({ code: "custom", path: ["results"], message: "Nested Fusion text results must preserve input order" });
+    }
+    if (value.changed !== value.results.some((row) => row.status === "succeeded" && (row.headerUpdated || row.bodyUpdated))) {
+        context.addIssue({ code: "custom", path: ["changed"], message: "Nested Fusion text change truth must match item readback" });
+    }
+});

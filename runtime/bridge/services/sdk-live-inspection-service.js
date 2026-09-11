@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import {
   sdkMediaPoolPageSchema,
+  sdkMediaPoolTranscriptionSchema,
   sdkColorTargetSnapshotSchema,
   sdkMulticamSnapshotSchema,
   sdkFusionCompositionReferenceSchema,
@@ -19,6 +20,11 @@ import { sdkStableMutationTargetSchema } from "../contracts/generated/sdk-mutati
 import { sdkProjectContextObservationSchema } from "../contracts/generated/sdk-project-media.js";
 
 const DEFAULT_INTERNAL_INSPECTION_TIMEOUT_MS = 60_000;
+const PREPARED_TIMELINE_EDIT_TTL_MS = 120_000;
+const MAX_PREPARED_TIMELINE_EDITS = 128;
+const MEDIA_POOL_SNAPSHOT_CACHE_LIMIT = 4;
+const MEDIA_POOL_SNAPSHOT_TTL_MS = 60_000;
+const MEDIA_POOL_SNAPSHOT_MAX_BYTES = 6 * 1024 * 1024;
 
 function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
@@ -70,6 +76,14 @@ function managedMediaEntry(entry) {
   const stable = { ...entry };
   delete stable.selected;
   return stable;
+}
+
+function managedAssetCustody(projectId, entry) {
+  const fingerprint = privateTextDigest(JSON.stringify(canonicalize(managedMediaEntry(entry))));
+  return {
+    fingerprint,
+    revision: digest("revision_", { projectId, id: entry.id, fingerprint }),
+  };
 }
 
 function text(value) {
@@ -188,10 +202,34 @@ function normalizeRenderDiscovery(raw, projectId) {
       codecs,
     };
   });
+  const rawAudioFormats = raw.audio_formats === undefined ? [] : raw.audio_formats;
+  if (!Array.isArray(rawAudioFormats)) return malformed("CutAgent CLI returned malformed audio render format inventory.");
+  const audioFormats = rawAudioFormats.map((format) => {
+    if (!plainObject(format) || !Array.isArray(format.codecs)) return malformed("CutAgent CLI returned a malformed audio render format row.");
+    const extension = publicRenderLabel(format.extension, null);
+    const formatLabel = publicRenderLabel(format.label, extension ?? "unknown");
+    return {
+      format: versionedValue(formatLabel, KNOWN_RENDER_FORMATS),
+      label: formatLabel,
+      extension,
+      codecSupport: renderSupport(format.codec_support),
+      codecs: format.codecs.map((codec) => {
+        if (!plainObject(codec)) return malformed("CutAgent CLI returned a malformed audio render codec row.");
+        const codecApiValue = publicRenderLabel(codec.api_value, "unknown");
+        const codecLabel = publicRenderLabel(codec.label, codecApiValue);
+        return {
+          codec: versionedValue(codecLabel, KNOWN_RENDER_CODECS, KNOWN_RENDER_CODEC_VARIANT_PREFIXES),
+          label: codecLabel,
+        };
+      }),
+    };
+  });
   return parseRuntime(sdkRenderDiscoverySchema, {
     projectId,
     formatSupport: renderSupport(raw?.format_support),
     formats,
+    audioFormatSupport: renderSupport(raw?.audio_format_support ?? "unavailable"),
+    audioFormats,
   }, "CutAgent CLI returned render discovery data that violated the SDK contract.");
 }
 
@@ -797,6 +835,11 @@ function normalizePrivateFairlightPlanReadback(raw, privateTimelineItemNativeIdB
   const publicIdByNativeId = new Map(
     [...privateTimelineItemNativeIdByPublicId.entries()].map(([publicId, nativeId]) => [nativeId, publicId]),
   );
+  const currentRows = planReadback.clips.filter((row) => {
+    const nativeId = text(row?.item_id);
+    if (!nativeId) return malformed("CutAgent CLI returned ambiguous private Fairlight clip-state readback.");
+    return publicIdByNativeId.has(nativeId);
+  });
   const seen = new Set();
   const optionalNumber = (value, minimum, maximum, label) => {
     if (value === null || value === undefined) return null;
@@ -808,13 +851,13 @@ function normalizePrivateFairlightPlanReadback(raw, privateTimelineItemNativeIdB
   };
   const optionalFrames = (value, label) => {
     if (value === null || value === undefined) return null;
-    const normalized = integer(value);
-    if (normalized === null || normalized < 0) {
+    const normalized = value;
+    if (typeof normalized !== 'number' || !Number.isFinite(normalized) || normalized < 0) {
       return malformed(`CutAgent CLI returned an invalid private Fairlight ${label} readback.`);
     }
     return normalized;
   };
-  const clips = planReadback.clips.map((row) => {
+  const clips = currentRows.map((row) => {
     const nativeId = text(row?.item_id);
     const stableId = publicIdByNativeId.get(nativeId);
     const trackIndex = integer(row?.track_index);
@@ -843,6 +886,8 @@ function normalizePrivateFairlightPlanReadback(raw, privateTimelineItemNativeIdB
       pan: optionalNumber(row.pan, -100, 100, "clip pan"),
       fadeInFrames: optionalFrames(row.fade_in_frames, "fade-in"),
       fadeOutFrames: optionalFrames(row.fade_out_frames, "fade-out"),
+      fadeInCurve: row.fade_in_curve ?? null,
+      fadeOutCurve: row.fade_out_curve ?? null,
       effectPluginIds: effectPluginIds?.map((pluginId) => text(pluginId)) ?? null,
     };
   });
@@ -878,6 +923,8 @@ function normalizeSnapshot(
   revisionEvidenceKey,
   privateTimelineItemNativeIdByPublicId = null,
   privateTimelineItemSourcePathByPublicId = null,
+  revisionOverride = null,
+  revisionMetadata = null,
 ) {
   if (!raw || typeof raw !== "object" || !raw.timeline || !Array.isArray(raw.tracks)) {
     return malformed("CutAgent CLI returned malformed timeline snapshot data.");
@@ -996,6 +1043,10 @@ function normalizeSnapshot(
           inspectorStateDigest: text(rawClip.inspector_state_digest),
           ...(recordSubframes === null ? {} : {recordSubframes}),
         }),
+        structuralRevisionEvidence: privateEvidenceDigest(revisionEvidenceKey, {
+          retimeTimeMapDigest: text(rawClip.retime_time_map_digest),
+          ...(recordSubframes === null ? {} : {recordSubframes}),
+        }),
       };
     });
     return {
@@ -1007,6 +1058,7 @@ function normalizeSnapshot(
       locked: booleanSymbol(rawTrack.locked, "locked"),
       clips: clips.map((clip) => clip.value),
       revisionEvidence: clips.map((clip) => clip.revisionEvidence),
+      structuralRevisionEvidence: clips.map((clip) => clip.structuralRevisionEvidence),
     };
   });
   const publicItemIdByNativeIdentity = new Map();
@@ -1063,7 +1115,7 @@ function normalizeSnapshot(
     ? {
         ...normalizedFairlight,
         clips: privateFairlightPlanReadback.status === "available"
-          ? privateFairlightPlanReadback.clips.map(({nativeId: _nativeId, stableId, trackIndex, gainDb, pan, fadeInFrames, fadeOutFrames}) => {
+          ? privateFairlightPlanReadback.clips.map(({nativeId: _nativeId, stableId, trackIndex, gainDb, pan, fadeInFrames, fadeOutFrames, fadeInCurve, fadeOutCurve}) => {
               const observed = (value) => value === null
                 ? {status: "unavailable", reason: "readback_unavailable"}
                 : {status: "available", value};
@@ -1074,6 +1126,8 @@ function normalizeSnapshot(
                 pan: observed(pan === null ? null : pan / 100),
                 fadeInFrames: observed(fadeInFrames),
                 fadeOutFrames: observed(fadeOutFrames),
+                fadeInCurve: observed(fadeInCurve),
+                fadeOutCurve: observed(fadeOutCurve),
               };
             })
           : [],
@@ -1108,7 +1162,7 @@ function normalizeSnapshot(
       customDataEvidence: privateEvidenceDigest(revisionEvidenceKey, customData),
     };
   });
-  const revision = digest("revision_", {
+  const calculatedRevision = digest("revision_", {
     project: before.project,
     timeline: before.timeline,
     frameRate: rate,
@@ -1126,7 +1180,34 @@ function normalizeSnapshot(
     markers: normalizedStateMarkers,
     fairlight: publicFairlight,
     privateFairlightPlanEvidence: privateEvidenceDigest(revisionEvidenceKey, raw.fairlight?.plan_readback ?? null),
+    outputBlankingEvidence: privateEvidenceDigest(revisionEvidenceKey, raw.output_blanking ?? null),
   });
+  const structuralRevision = digest("revision_", {
+    project: before.project,
+    timeline: before.timeline,
+    frameRate: rate,
+    start: { domain: "timeline_record", value: { kind: "frames", value: startFrame } },
+    tracks: normalizedStateTracks.map((track) => ({
+      timelineId: track.timelineId,
+      type: track.type,
+      index: track.index,
+      name: track.name,
+      enabled: track.enabled,
+      locked: track.locked,
+      clips: track.clips,
+      structuralRevisionEvidence: track.structuralRevisionEvidence,
+    })),
+    markers: normalizedStateMarkers,
+  });
+  if (revisionMetadata && typeof revisionMetadata === "object") {
+    revisionMetadata.calculatedRevision = calculatedRevision;
+    revisionMetadata.structuralRevision = structuralRevision;
+  }
+  const revision = revisionOverride === null
+    ? calculatedRevision
+    : typeof revisionOverride === "string" && /^revision_[A-Za-z0-9_-]+$/.test(revisionOverride)
+      ? revisionOverride
+      : malformed("Timeline structural inspection received an invalid expected revision.");
   const snapshotObservation = hasUnkeyedTimelineItems
     ? crypto.randomBytes(16).toString("base64url")
     : revision;
@@ -1368,45 +1449,50 @@ function normalizeMediaPoolPage(raw, project, request) {
     if (id && durableAssetIds.has(id)) throw new SdkLiveInspectionError("AMBIGUOUS_TARGET", "DaVinci Resolve returned duplicate Media Pool asset identities.");
     if (id) durableAssetIds.add(id);
     if (!Array.isArray(entry.metadata)) return malformed("CutAgent CLI returned malformed Media Pool metadata.");
+    if (typeof entry.metadata_available !== "boolean") return malformed("CutAgent CLI omitted Media Pool metadata availability.");
     const assetName = mediaPoolName(entry.name);
     const assetSourceFileName = sourceFileName(entry.source_file_name);
     const sourcePath = mediaPoolNullableText(entry.source_path, 32_768);
     if (sourcePath !== null && assetSourceFileName !== sourcePath.replaceAll("\\", "/").split("/").at(-1)) {
       return malformed("CutAgent CLI returned inconsistent private Media Pool source-path evidence.");
     }
-    const asset = {
-      id,
-      snapshotId: digest("snapshot_media_pool_item_", { revision, coordinate: ownCoordinate }),
-      folderSnapshotId: digest("snapshot_media_pool_folder_", { revision, coordinate: folderCoordinate }),
-      snapshotRevision: revision,
-      name: assetName,
-      kind: entry.kind,
-      selected: entry.selected,
-      sourceFileName: assetSourceFileName,
-      duration: mediaPoolNullableText(entry.duration),
-      resolution: mediaPoolNullableText(entry.resolution),
-      frameRate: mediaPoolNullableText(entry.frame_rate, 256),
-      startTimecode: mediaPoolNullableText(entry.start_timecode, 256),
-      metadata: entry.metadata,
-    };
-    assets.push(asset);
-    privateEntries.push({
+    const privateEntry = {
       entryKind: "asset",
       id,
       nativeId: text(entry.native_id),
       uniqueId,
       folderCoordinate,
       name: assetName,
-      kind: asset.kind,
-      selected: asset.selected,
+      kind: entry.kind,
+      selected: entry.selected,
       sourcePath,
       sourceFileName: assetSourceFileName,
-      duration: asset.duration,
-      resolution: asset.resolution,
-      frameRate: asset.frameRate,
-      startTimecode: asset.startTimecode,
-      metadata: asset.metadata,
-    });
+      duration: mediaPoolNullableText(entry.duration),
+      resolution: mediaPoolNullableText(entry.resolution),
+      frameRate: mediaPoolNullableText(entry.frame_rate, 256),
+      startTimecode: mediaPoolNullableText(entry.start_timecode, 256),
+      metadataAvailable: entry.metadata_available,
+      metadata: entry.metadata,
+    };
+    const asset = {
+      id,
+      snapshotId: digest("snapshot_media_pool_item_", { revision, coordinate: ownCoordinate }),
+      folderSnapshotId: digest("snapshot_media_pool_folder_", { revision, coordinate: folderCoordinate }),
+      snapshotRevision: revision,
+      assetCustodyRevision: managedAssetCustody(project.id, privateEntry).revision,
+      name: assetName,
+      kind: privateEntry.kind,
+      selected: privateEntry.selected,
+      sourceFileName: assetSourceFileName,
+      duration: privateEntry.duration,
+      resolution: privateEntry.resolution,
+      frameRate: privateEntry.frameRate,
+      startTimecode: privateEntry.startTimecode,
+      metadataAvailable: privateEntry.metadataAvailable,
+      metadata: privateEntry.metadata,
+    };
+    assets.push(asset);
+    privateEntries.push(privateEntry);
   }
   const value = parseRuntime(sdkMediaPoolPageSchema, {
     project,
@@ -1490,38 +1576,66 @@ function overlaps(left, right) {
   return left.start < right.endExclusive && right.start < left.endExclusive;
 }
 
-function buildTimelineEditImpact(intent, snapshot, rawPlan) {
-  if (snapshot.revision !== intent.timelineRevision) throw new SdkLiveInspectionError("STALE_REVISION", "The timeline changed before the edit impact could be resolved.");
-  if (intent.action === "remove") {
-    const rows = snapshot.tracks.flatMap((track) => track.clips.map((clip) => ({ track, clip })));
+function buildTimelineRemoveImpacts(intents, snapshot) {
+  if (!Array.isArray(intents) || intents.length === 0) throw new TypeError("Timeline remove preview requires at least one exact target.");
+  const first = intents[0];
+  if (intents.some((intent) => intent.action !== "remove" || intent.projectId !== first.projectId
+    || intent.timelineId !== first.timelineId || intent.timelineRevision !== first.timelineRevision)) {
+    throw new TypeError("Plural timeline remove preview requires one project, timeline, and base revision.");
+  }
+  if (snapshot.revision !== first.timelineRevision) throw new SdkLiveInspectionError("STALE_REVISION", "The timeline changed before the edit impact could be resolved.");
+  const rows = snapshot.tracks.flatMap((track) => track.clips.map((clip) => ({ track, clip })));
+  const resolved = intents.map((intent) => {
     const matches = rows.filter(({ track, clip }) => clip.id === intent.clipId
       && clip.name === intent.clipName
       && track.type === intent.trackType
       && track.index === intent.trackIndex
       && clip.recordRange.start === intent.currentRecordRange.start
       && clip.recordRange.endExclusive === intent.currentRecordRange.endExclusive);
-    if (matches.length === 0) throw new SdkLiveInspectionError("STALE_REVISION", "The exact remove target changed or disappeared after inspection.");
-    if (matches.length !== 1) throw new SdkLiveInspectionError("AMBIGUOUS_TARGET", "The exact remove target is ambiguous.");
-    const { track, clip } = matches[0];
-    if (clip.linkedItemIds === null) throw new SdkLiveInspectionError("INVALID_RESPONSE", "DaVinci Resolve could not prove the remove target's linked-item topology.");
-    const transitions = clip.linkedItemIds.map((linkedId) => {
+    if (matches.length === 0) throw new SdkLiveInspectionError("STALE_REVISION", "An exact remove target changed or disappeared after inspection.");
+    if (matches.length !== 1) throw new SdkLiveInspectionError("AMBIGUOUS_TARGET", "An exact remove target is ambiguous.");
+    if (matches[0].clip.linkedItemIds === null) throw new SdkLiveInspectionError("INVALID_RESPONSE", "DaVinci Resolve could not prove a remove target's linked-item topology.");
+    return { intent, ...matches[0] };
+  });
+  const selectedIds = new Set(resolved.map(({ clip }) => clip.id));
+  if (selectedIds.size !== resolved.length) throw new TypeError("Plural timeline remove preview requires unique target identities.");
+  const transitions = new Map();
+  for (const { clip } of resolved) {
+    for (const linkedId of clip.linkedItemIds) {
+      if (selectedIds.has(linkedId)) continue;
       const linked = rows.find((row) => row.clip.id === linkedId);
       if (!linked || linked.clip.linkedItemIds === null || !linked.clip.linkedItemIds.includes(clip.id)) {
         throw new SdkLiveInspectionError("INVALID_RESPONSE", "Remove requires complete reciprocal linked-item topology.");
       }
-      return { itemId: linkedId, beforeLinkedItemIds: linked.clip.linkedItemIds, afterLinkedItemIds: linked.clip.linkedItemIds.filter((id) => id !== clip.id) };
-    });
-    const transitionIds = new Set(transitions.map((transition) => transition.itemId));
-    const protectedItems = rows.filter((row) => row.clip.id !== clip.id && !transitionIds.has(row.clip.id))
-      .map(({ track: candidateTrack, clip: candidateClip }) => editItemTarget(candidateClip, candidateTrack, "protected_neighbor"));
-    const candidate = {
-      action: "remove", projectId: intent.projectId, timelineId: intent.timelineId, timelineRevision: intent.timelineRevision, intent,
-      recordRange: clip.recordRange, affectedTracks: [editTrackTarget(track)], affectedItems: [editItemTarget(clip, track, "remove")],
-      protectedItems, expectedItems: [], expectedLinkTransitions: transitions,
-      linkedAudio: { behavior: "exclude", topologyProven: true }, capabilityId: "timeline.items_delete",
-      summary: `Remove one exact ${track.type} timeline item while preserving ${protectedItems.length} resolved targets.`,
-    };
-    return finalizeTimelineEditImpact(candidate);
+      const transition = {
+        itemId: linkedId,
+        beforeLinkedItemIds: linked.clip.linkedItemIds,
+        afterLinkedItemIds: linked.clip.linkedItemIds.filter((id) => !selectedIds.has(id)),
+      };
+      const prior = transitions.get(linkedId);
+      if (prior && JSON.stringify(prior) !== JSON.stringify(transition)) {
+        throw new SdkLiveInspectionError("INVALID_RESPONSE", "Plural remove produced inconsistent linked-item transition evidence.");
+      }
+      transitions.set(linkedId, transition);
+    }
+  }
+  const transitionIds = new Set(transitions.keys());
+  const protectedItems = rows.filter((row) => !selectedIds.has(row.clip.id) && !transitionIds.has(row.clip.id))
+    .map(({ track, clip }) => editItemTarget(clip, track, "protected_neighbor"));
+  const expectedLinkTransitions = [...transitions.values()];
+  return resolved.map(({ intent, track, clip }) => finalizeTimelineEditImpact({
+    action: "remove", projectId: intent.projectId, timelineId: intent.timelineId, timelineRevision: intent.timelineRevision, intent,
+    recordRange: clip.recordRange, affectedTracks: [editTrackTarget(track)], affectedItems: [editItemTarget(clip, track, "remove")],
+    protectedItems, expectedItems: [], expectedLinkTransitions,
+    linkedAudio: { behavior: "exclude", topologyProven: true }, capabilityId: "timeline.items_delete",
+    summary: `Remove one of ${resolved.length} exact timeline items while preserving ${protectedItems.length} resolved targets.`,
+  }));
+}
+
+function buildTimelineEditImpact(intent, snapshot, rawPlan) {
+  if (snapshot.revision !== intent.timelineRevision) throw new SdkLiveInspectionError("STALE_REVISION", "The timeline changed before the edit impact could be resolved.");
+  if (intent.action === "remove") {
+    return buildTimelineRemoveImpacts([intent], snapshot)[0];
   }
   const plan = rawPlan?.payload ?? rawPlan;
   if (!plan || typeof plan !== "object" || plan.action !== `edit.${intent.action}`) {
@@ -2301,6 +2415,7 @@ export function createSdkLiveInspectionService({
     throw new TypeError("SDK live inspection default deadline is invalid.");
   }
   const stableIdentityNamespace = identityNamespace.trim();
+  const preparedTimelineEdits = new Map();
   // The namespace is a private, mode-0600 installation/profile secret. Derive
   // a domain-separated key so keyed snapshot revisions survive bridge/runtime
   // restarts without exposing native source evidence in the public revision.
@@ -2316,104 +2431,177 @@ export function createSdkLiveInspectionService({
     .createHmac("sha256", stableIdentityNamespace)
     .update("cutagent-sdk-render-identity-evidence-v1", "utf8")
     .digest();
-  const readSdkLiveInspection = (operation, options = {}) => resolveService.readSdkLiveInspection(
-    operation,
-    options.deadlineAtMs === undefined
+  const structuralRevisionByTimelineRevision = new Map();
+  const rememberStructuralRevision = (timelineRevision, structuralRevision) => {
+    structuralRevisionByTimelineRevision.delete(timelineRevision);
+    structuralRevisionByTimelineRevision.set(timelineRevision, structuralRevision);
+    if (structuralRevisionByTimelineRevision.size > 512) {
+      structuralRevisionByTimelineRevision.delete(structuralRevisionByTimelineRevision.keys().next().value);
+    }
+  };
+  const mediaPoolSnapshots = new Map();
+  // Continuation pages are slices of the first page's immutable listing
+  // snapshot. They retain that observation's original identity bracket even
+  // if the user later switches projects. New first-page reads and known
+  // mutations invalidate the cache; mutation target resolution always starts
+  // with a fresh first-page read.
+  const mediaPoolSnapshotKey = (projectId, revision, pageSize, search) => JSON.stringify([
+    projectId,
+    revision,
+    pageSize,
+    canonicalize(search),
+  ]);
+  const invalidateMediaPoolSnapshots = (projectId = null) => {
+    for (const [key, snapshot] of mediaPoolSnapshots) {
+      if (projectId === null || snapshot.projectId === projectId) mediaPoolSnapshots.delete(key);
+    }
+  };
+  const readSdkLiveInspection = async (operation, options = {}) => {
+    const boundedOptions = options.deadlineAtMs === undefined
       ? { ...options, deadlineAtMs: Date.now() + defaultInternalInspectionTimeoutMs }
-      : options,
-  );
+      : options;
+    const request = boundedOptions.readRequest;
+    const now = Date.now();
+    for (const [key, snapshot] of mediaPoolSnapshots) {
+      if (snapshot.expiresAt <= now) mediaPoolSnapshots.delete(key);
+    }
+    if (operation === "mediaPool.page" && request?.offset > 0 && request.expectedRevision) {
+      const key = mediaPoolSnapshotKey(request.projectId, request.expectedRevision, request.pageSize, request.search);
+      const snapshot = mediaPoolSnapshots.get(key);
+      if (snapshot) {
+        if (request.offset > snapshot.entries.length) {
+          throw new SdkLiveInspectionError("INVALID_REQUEST", "Media Pool offset is beyond the current bounded result set.");
+        }
+        const entries = snapshot.entries.slice(request.offset, request.offset + request.pageSize);
+        return {
+          before: snapshot.before,
+          after: snapshot.after,
+          summary: {
+            ...snapshot.summary,
+            offset: request.offset,
+            page_size: request.pageSize,
+            next_offset: request.offset + entries.length < snapshot.entries.length
+              ? request.offset + entries.length
+              : null,
+            entries,
+          },
+          mutation_guard: snapshot.mutationGuard,
+        };
+      }
+    }
+    const raw = await resolveService.readSdkLiveInspection(operation, boundedOptions);
+    if (operation === "mediaPool.page" && request?.offset === 0) {
+      invalidateMediaPoolSnapshots(request.projectId);
+      const summary = raw?.summary;
+      if (summary?.snapshot_complete === true) {
+        if (!Array.isArray(summary.snapshot_entries)
+          || !Number.isSafeInteger(summary.total)
+          || summary.total !== summary.snapshot_entries.length
+          || Buffer.byteLength(JSON.stringify(summary.snapshot_entries), "utf8") > MEDIA_POOL_SNAPSHOT_MAX_BYTES
+          || JSON.stringify(canonicalize(summary.entries)) !== JSON.stringify(canonicalize(summary.snapshot_entries.slice(0, request.pageSize)))) {
+          return malformed("CutAgent CLI returned a malformed complete Media Pool listing snapshot.");
+        }
+        const project = currentProject(raw.before, stableIdentityNamespace);
+        const revision = digest("revision_", {projectId: project.id, poolDigest: text(summary.pool_digest)});
+        const {snapshot_entries: entries, snapshot_complete: _complete, ...snapshotSummary} = summary;
+        const key = mediaPoolSnapshotKey(project.id, revision, request.pageSize, request.search);
+        mediaPoolSnapshots.set(key, {
+          projectId: project.id,
+          expiresAt: Date.now() + MEDIA_POOL_SNAPSHOT_TTL_MS,
+          before: Object.freeze(structuredClone(raw.before)),
+          after: Object.freeze(structuredClone(raw.after)),
+          entries: Object.freeze(entries),
+          summary: Object.freeze(snapshotSummary),
+          mutationGuard: raw.mutation_guard,
+        });
+        while (mediaPoolSnapshots.size > MEDIA_POOL_SNAPSHOT_CACHE_LIMIT) {
+          mediaPoolSnapshots.delete(mediaPoolSnapshots.keys().next().value);
+        }
+      }
+    }
+    return raw;
+  };
   const inspect = async (request, options = {}) => {
+      if (request.operation === "timeline.structure" && request.expectedRevision
+        && !structuralRevisionByTimelineRevision.has(request.expectedRevision)) {
+        const fallback = await inspect({
+          operation: "timeline.snapshot",
+          projectId: request.projectId,
+          timelineId: request.timelineId,
+        }, options);
+        if (fallback.value.revision !== request.expectedRevision) {
+          throw new SdkLiveInspectionError("STALE_REVISION", "The timeline changed after the authoring snapshot.");
+        }
+        return fallback;
+      }
       if (request.operation === "timeline.edit.preview") {
+        if (Array.isArray(request.intents)) {
+          const prepared = request.intents.every((intent) => intent.action === "insert" && intent.placement === "audio")
+            ? await prepareTimelineAudioInserts(request.intents, options)
+            : await prepareTimelineEdits(request.intents, options);
+          return { value: { impacts: prepared.impacts }, mutationGuard: null };
+        }
         return { value: await previewTimelineEdit(request.intent, options), mutationGuard: null };
       }
       if (request.operation === "timeline.retime") {
-        const initial = await inspect({ operation: "timeline.snapshot", projectId: request.projectId, timelineId: request.timelineId }, options);
-        if (initial.value.revision !== request.timelineRevision) {
-          throw new SdkLiveInspectionError("STALE_REVISION", "The retime target snapshot is stale.");
-        }
-        const initialTarget = exactRetimeTarget(initial.value, request.target);
-        const privateId = initialTarget?.clip.id === null
-          ? null
-          : initial.privateTimelineItemNativeIdByPublicId?.get(initialTarget?.clip.id);
-        if (!initialTarget || typeof privateId !== "string" || !privateId) {
-          throw new SdkLiveInspectionError("STALE_REVISION", "The exact retime target no longer exists at its snapshot coordinate.");
-        }
-        const publicClosureIds = [initialTarget.clip.id, ...initialTarget.clip.linkedItemIds];
-        const publicClosure = publicClosureIds.map((id) => initial.value.tracks.flatMap((track) => track.clips
-          .filter((clip) => clip.id === id).map((clip) => ({track, clip}))));
-        if (new Set(publicClosureIds).size !== publicClosureIds.length || publicClosure.some((matches) => matches.length !== 1)
-          || publicClosure.some(([entry]) => (!entry.clip.sourceRange && !entry.clip.retimeSource?.availableRange)
-            || !Array.isArray(entry.clip.linkedItemIds))) {
-          return malformed("CutAgent CLI omitted exact public linked-item identity for retime inspection.");
-        }
-        const privateTargets = publicClosure.map(([entry]) => ({
-          id: initial.privateTimelineItemNativeIdByPublicId?.get(entry.clip.id),
-          trackType: entry.track.type,
-          trackIndex: entry.track.index,
-          recordStartFrame: entry.clip.recordRange.start,
-          recordEndFrame: entry.clip.recordRange.endExclusive,
-          sourceStartFrame: (entry.clip.sourceRange ?? entry.clip.retimeSource.availableRange).start,
-          sourceEndFrame: (entry.clip.sourceRange ?? entry.clip.retimeSource.availableRange).endExclusive,
-          ...(entry.clip.sourceRange === null ? {sourceOriginFrame: entry.clip.retimeSource.originFrame} : {}),
-          name: entry.clip.name,
-          linkedItemIds: entry.clip.linkedItemIds.map((linkedId) => initial.privateTimelineItemNativeIdByPublicId?.get(linkedId)),
-        }));
-        if (privateTargets.some((target) => typeof target.id !== "string" || !target.id
-          || target.linkedItemIds.some((value) => typeof value !== "string" || !value))) {
-          return malformed("CutAgent CLI omitted exact private linked-item identity for retime inspection.");
-        }
-        const rawRetime = await readSdkLiveInspection("timeline.retime", {
-          ...options,
-          readRequest: request,
-          privateTargets,
-        });
-        if (!rawRetime || typeof rawRetime !== "object") return malformed("CutAgent CLI returned no retime inspection result.");
-        const before = liveIdentity(rawRetime.before, stableIdentityNamespace);
-        const after = readAfterBracket(
-          () => liveIdentity(rawRetime.after, stableIdentityNamespace),
-          "The active project or timeline changed during retime inspection.",
-        );
-        assertExpected(before, request.projectId, request.timelineId);
-        assertExpected(after, request.projectId, request.timelineId);
-        const privateIds = new Map();
-        const snapshot = normalizeSnapshot(rawRetime.summary, before, after, revisionEvidenceKey, privateIds);
-        if (snapshot.revision !== request.timelineRevision || !exactRetimeTarget(snapshot, request.target)) {
-          throw new SdkLiveInspectionError("STALE_REVISION", "The timeline or exact retime target changed during inspection.");
-        }
-        if (privateIds.get(request.target.id) !== privateId) {
-          throw new SdkLiveInspectionError("STALE_REVISION", "The native retime target identity changed during inspection.");
-        }
-        const rows = rawRetime.summary?.retime?.rows;
-        if (!Array.isArray(rows)) return malformed("CutAgent CLI omitted retime database rows.");
-        const matches = rows.filter((row) => String(row?.Sm2TiItem_id ?? "") === privateId);
-        const returnedIds = rows.map((row) => String(row?.Sm2TiItem_id ?? ""));
-        if (rows.length !== privateTargets.length || new Set(returnedIds).size !== returnedIds.length
-          || rows.some((row) => !privateTargets.some((target) => target.id === String(row?.Sm2TiItem_id ?? "")
-            && target.trackType === row?.live_track_type && target.trackIndex === row?.live_track_index
-            && row?.timeline_name === before.timeline.name)) || matches.length !== 1
-          || matches[0].live_track_type !== initialTarget.track.type
-          || matches[0].live_track_index !== initialTarget.track.index
-          || matches[0].timeline_name !== before.timeline.name) {
-          return malformed("CutAgent CLI returned ambiguous or wrong-target retime database evidence.");
-        }
-        const privateToPublicId = new Map(privateTargets.map((target, index) => [target.id, publicClosure[index][0].clip.id]));
-        const retimeStates = rows.map((row) => normalizeRetimeState(row.state, privateToPublicId.get(String(row.Sm2TiItem_id))));
-        const state = retimeStates.find((entry) => entry.timelineItemId === request.target.id);
+        const retime = await inspectRetimeTargets(request, [request.target], options);
+        const state = retime.privateRetimeStates.find((entry) => entry.timelineItemId === request.target.id);
         if (!state) return malformed("CutAgent CLI omitted the requested retime database state.");
         return {
           value: parseRuntime(sdkRetimeReadbackSchema, {
             projectId: request.projectId,
             timelineId: request.timelineId,
-            timelineRevision: snapshot.revision,
+            timelineRevision: retime.timelineRevision,
             ...state,
           }, "CutAgent CLI returned retime state that violated the public SDK contract."),
           mutationGuard: null,
-          privateRetimeStates: Object.freeze(retimeStates),
+          privateRetimeStates: retime.privateRetimeStates,
+        };
+      }
+      if (request.operation === "mediaPool.transcription") {
+        const asset = await resolveMediaPoolPrivateAsset(
+          request.projectId,
+          request.mediaPoolItemId,
+          request.expectedRevision,
+          options,
+        );
+        if (asset.assetRevision !== request.expectedRevision && asset.revision !== request.expectedRevision) {
+          throw new SdkLiveInspectionError("STALE_REVISION", "The Media Pool asset transcription target is stale.");
+        }
+        const rawTranscription = await readSdkLiveInspection("mediaPool.transcription", {
+          ...options,
+          readRequest: request,
+          privateMediaNativeId: asset.nativeId,
+        });
+        if (!rawTranscription || typeof rawTranscription !== "object") {
+          return malformed("CutAgent CLI returned no Media Pool transcription inspection result.");
+        }
+        const beforeProject = currentProject(rawTranscription.before, stableIdentityNamespace);
+        assertExpected({ project: beforeProject }, request.projectId);
+        const afterProject = readAfterBracket(
+          () => currentProject(rawTranscription.after, stableIdentityNamespace),
+          "The active project changed while CutAgent was reading Media Pool transcription.",
+        );
+        if (beforeProject.id !== afterProject.id || beforeProject.name !== afterProject.name) {
+          throw new SdkLiveInspectionError("STALE_REVISION", "The active project changed while CutAgent was reading Media Pool transcription.");
+        }
+        return {
+          value: parseRuntime(sdkMediaPoolTranscriptionSchema, {
+            projectId: request.projectId,
+            assetId: request.mediaPoolItemId,
+            useNestedClipTranscription: request.useNestedClipTranscription,
+            ...rawTranscription.summary,
+          }, "CutAgent CLI returned transcription that violated the public SDK contract."),
+          mutationGuard: null,
         };
       }
       const raw = await readSdkLiveInspection(
-        request.operation === "timeline.list" ? "project.context" : request.operation,
-        { ...options, readRequest: request },
+        request.operation === "timeline.list"
+          ? "project.context"
+          : request.operation === "timeline.structure"
+            ? "timeline.snapshot"
+            : request.operation,
+        { ...options, readRequest: request, structuralOnly: request.operation === "timeline.structure" },
       );
       if (!raw || typeof raw !== "object") return malformed("CutAgent CLI returned no live inspection result.");
       if (request.operation.startsWith("render.")) {
@@ -2601,7 +2789,7 @@ export function createSdkLiveInspectionService({
         return { value: normalized.value, mutationGuard: null, privateMulticamSourceBindings: normalized.privateSourceBindings };
       }
       const before = liveIdentity(raw.before, stableIdentityNamespace);
-      assertExpected(before, request.projectId, new Set(["timeline.snapshot", "color.current", "fusion.compositions"]).has(request.operation) ? request.timelineId : null);
+      assertExpected(before, request.projectId, new Set(["timeline.snapshot", "timeline.structure", "color.current", "fusion.compositions"]).has(request.operation) ? request.timelineId : null);
       const after = readAfterBracket(
         () => liveIdentity(raw.after, stableIdentityNamespace),
         "The active project or timeline changed while CutAgent was reading it.",
@@ -2643,6 +2831,7 @@ export function createSdkLiveInspectionService({
         : malformed("CutAgent CLI omitted the exact marker mutation guard.");
       const privateTimelineItemNativeIdByPublicId = new Map();
       const privateTimelineItemSourcePathByPublicId = new Map();
+      const revisionMetadata = {};
       const value = normalizeSnapshot(
         raw.summary,
         before,
@@ -2650,7 +2839,14 @@ export function createSdkLiveInspectionService({
         revisionEvidenceKey,
         privateTimelineItemNativeIdByPublicId,
         privateTimelineItemSourcePathByPublicId,
+        request.operation === "timeline.structure" ? request.expectedRevision ?? null : null,
+        revisionMetadata,
       );
+      if (request.operation === "timeline.structure" && request.expectedRevision
+        && revisionMetadata.structuralRevision !== structuralRevisionByTimelineRevision.get(request.expectedRevision)) {
+        throw new SdkLiveInspectionError("STALE_REVISION", "The timeline structure changed after the authoring snapshot.");
+      }
+      rememberStructuralRevision(value.revision, revisionMetadata.structuralRevision);
       const inspectorByNativeId = new Map(raw.summary.tracks.flatMap((track) => (track.items ?? [])
         .filter((item) => typeof item.inspector_state_digest === "string" && /^[a-f0-9]{64}$/.test(item.inspector_state_digest))
         .map((item) => [item.timeline_item_unique_id, item.inspector_state_digest])));
@@ -2676,9 +2872,112 @@ export function createSdkLiveInspectionService({
         nativeTimelineId: before.timelineNativeId,
       };
   };
+  const inspectRetimeTargets = async (request, requestedTargets, options = {}, initialSnapshot = null) => {
+    if (requestedTargets.length === 0) {
+      return Object.freeze({timelineRevision: request.timelineRevision, privateRetimeStates: Object.freeze([])});
+    }
+    const initial = initialSnapshot ?? await inspect({
+      operation: "timeline.snapshot",
+      projectId: request.projectId,
+      timelineId: request.timelineId,
+    }, options);
+    if (initial.value.revision !== request.timelineRevision) {
+      throw new SdkLiveInspectionError("STALE_REVISION", "The retime target snapshot is stale.");
+    }
+    const initialTargets = requestedTargets.map((target) => {
+      const resolved = exactRetimeTarget(initial.value, target);
+      const privateId = resolved?.clip.id === null
+        ? null
+        : initial.privateTimelineItemNativeIdByPublicId?.get(resolved?.clip.id);
+      if (!resolved || typeof privateId !== "string" || !privateId) {
+        throw new SdkLiveInspectionError("STALE_REVISION", "The exact retime target no longer exists at its snapshot coordinate.");
+      }
+      return {requested: target, resolved, privateId};
+    });
+    const publicClosure = [];
+    const publicClosureIds = new Set();
+    for (const {resolved} of initialTargets) {
+      const linkedClosureIds = [resolved.clip.id, ...resolved.clip.linkedItemIds];
+      if (new Set(linkedClosureIds).size !== linkedClosureIds.length) {
+        return malformed("CutAgent CLI omitted exact public linked-item identity for retime inspection.");
+      }
+      for (const id of linkedClosureIds) {
+        const matches = initial.value.tracks.flatMap((track) => track.clips
+          .filter((clip) => clip.id === id).map((clip) => ({track, clip})));
+        if (matches.length !== 1 || (!matches[0].clip.sourceRange && !matches[0].clip.retimeSource?.availableRange)
+          || !Array.isArray(matches[0].clip.linkedItemIds)) {
+          return malformed("CutAgent CLI omitted exact public linked-item identity for retime inspection.");
+        }
+        if (!publicClosureIds.has(id)) {
+          publicClosureIds.add(id);
+          publicClosure.push(matches[0]);
+        }
+      }
+    }
+    const privateTargets = publicClosure.map((entry) => ({
+      id: initial.privateTimelineItemNativeIdByPublicId?.get(entry.clip.id),
+      trackType: entry.track.type,
+      trackIndex: entry.track.index,
+      recordStartFrame: entry.clip.recordRange.start,
+      recordEndFrame: entry.clip.recordRange.endExclusive,
+      sourceStartFrame: (entry.clip.sourceRange ?? entry.clip.retimeSource.availableRange).start,
+      sourceEndFrame: (entry.clip.sourceRange ?? entry.clip.retimeSource.availableRange).endExclusive,
+      ...(entry.clip.sourceRange === null ? {sourceOriginFrame: entry.clip.retimeSource.originFrame} : {}),
+      name: entry.clip.name,
+      linkedItemIds: entry.clip.linkedItemIds.map((linkedId) => initial.privateTimelineItemNativeIdByPublicId?.get(linkedId)),
+    }));
+    if (privateTargets.some((target) => typeof target.id !== "string" || !target.id
+      || target.linkedItemIds.some((value) => typeof value !== "string" || !value))) {
+      return malformed("CutAgent CLI omitted exact private linked-item identity for retime inspection.");
+    }
+    const rawRetime = await readSdkLiveInspection("timeline.retime", {
+      ...options,
+      readRequest: request,
+      privateTargets,
+    });
+    if (!rawRetime || typeof rawRetime !== "object") return malformed("CutAgent CLI returned no retime inspection result.");
+    const before = liveIdentity(rawRetime.before, stableIdentityNamespace);
+    const after = readAfterBracket(
+      () => liveIdentity(rawRetime.after, stableIdentityNamespace),
+      "The active project or timeline changed during retime inspection.",
+    );
+    assertExpected(before, request.projectId, request.timelineId);
+    assertExpected(after, request.projectId, request.timelineId);
+    const privateIds = new Map();
+    const snapshot = normalizeSnapshot(rawRetime.summary, before, after, revisionEvidenceKey, privateIds);
+    if (snapshot.revision !== request.timelineRevision
+      || initialTargets.some(({requested}) => !exactRetimeTarget(snapshot, requested))) {
+      throw new SdkLiveInspectionError("STALE_REVISION", "The timeline or exact retime target changed during inspection.");
+    }
+    if (initialTargets.some(({requested, privateId}) => privateIds.get(requested.id) !== privateId)) {
+      throw new SdkLiveInspectionError("STALE_REVISION", "The native retime target identity changed during inspection.");
+    }
+    const rows = rawRetime.summary?.retime?.rows;
+    if (!Array.isArray(rows)) return malformed("CutAgent CLI omitted retime database rows.");
+    const returnedIds = rows.map((row) => String(row?.Sm2TiItem_id ?? ""));
+    if (rows.length !== privateTargets.length || new Set(returnedIds).size !== returnedIds.length
+      || rows.some((row) => !privateTargets.some((target) => target.id === String(row?.Sm2TiItem_id ?? "")
+        && target.trackType === row?.live_track_type && target.trackIndex === row?.live_track_index
+        && row?.timeline_name === before.timeline.name))
+      || initialTargets.some(({resolved, privateId}) => {
+        const matches = rows.filter((row) => String(row?.Sm2TiItem_id ?? "") === privateId);
+        return matches.length !== 1 || matches[0].live_track_type !== resolved.track.type
+          || matches[0].live_track_index !== resolved.track.index || matches[0].timeline_name !== before.timeline.name;
+      })) {
+      return malformed("CutAgent CLI returned ambiguous or wrong-target retime database evidence.");
+    }
+    const privateToPublicId = new Map(privateTargets.map((target, index) => [target.id, publicClosure[index].clip.id]));
+    return Object.freeze({
+      timelineRevision: snapshot.revision,
+      privateRetimeStates: Object.freeze(rows.map((row) => normalizeRetimeState(
+        row.state,
+        privateToPublicId.get(String(row.Sm2TiItem_id)),
+      ))),
+    });
+  };
   const resolveMediaPoolPrivateAsset = async (projectId, publicItemId, expectedRevision, options) => {
     let offset = 0;
-    let observedRevision = expectedRevision;
+    let observedRevision = null;
     for (let pages = 0; pages < 31_250; pages += 1) {
       const readRequest = { operation: "mediaPool.page", projectId, offset, pageSize: 32, expectedRevision: offset === 0 ? null : observedRevision, search: null };
       const raw = await readSdkLiveInspection("mediaPool.page", { ...options, readRequest });
@@ -2691,7 +2990,7 @@ export function createSdkLiveInspectionService({
       if (project.id !== afterProject.id || project.name !== afterProject.name) {
         throw new SdkLiveInspectionError("STALE_REVISION", "The active project changed while CutAgent was resolving the selected Media Pool item.");
       }
-      const { value: page } = normalizeMediaPoolPage(raw.summary, project, readRequest);
+      const { value: page, privateMediaPoolState } = normalizeMediaPoolPage(raw.summary, project, readRequest);
       if (observedRevision === null) observedRevision = page.revision;
       if (page.revision !== observedRevision) throw new SdkLiveInspectionError("STALE_REVISION", "The Media Pool changed after source selection.");
       const publicAsset = page.assets.find((asset) => asset.id === publicItemId);
@@ -2699,6 +2998,14 @@ export function createSdkLiveInspectionService({
         const rawAsset = raw.summary.entries.find((entry) => entry.entry_kind === "asset"
           && text(entry.native_id)
           && digest("media_pool_item_", { projectId, nativeId: text(entry.native_id) }) === publicItemId);
+        const privateAssets = privateMediaPoolState.entries.filter((entry) => entry.entryKind === "asset" && entry.id === publicItemId);
+        if (privateAssets.length !== 1) {
+          throw new SdkLiveInspectionError("AMBIGUOUS_TARGET", "The selected Media Pool item lost its unique authoritative identity.");
+        }
+        const custody = managedAssetCustody(projectId, privateAssets[0]);
+        if (expectedRevision !== null && expectedRevision !== page.revision && expectedRevision !== custody.revision) {
+          throw new SdkLiveInspectionError("STALE_REVISION", "The selected Media Pool item changed after source selection.");
+        }
         const nativeId = text(rawAsset?.native_id);
         if (!nativeId) throw new SdkLiveInspectionError("INVALID_RESPONSE", "The selected Media Pool item lost its authoritative native identity.");
         const sourcePath = text(rawAsset?.source_path);
@@ -2707,14 +3014,68 @@ export function createSdkLiveInspectionService({
           name: publicAsset.name,
           sourcePath: sourcePath || null,
           revision: page.revision,
+          assetRevision: custody.revision,
           poolDigest: raw.summary.pool_digest,
           kind: publicAsset.kind,
+          fingerprint: custody.fingerprint,
         });
       }
       if (page.nextOffset === null) break;
       offset = page.nextOffset;
     }
     throw new SdkLiveInspectionError("TARGET_NOT_FOUND", "The selected Media Pool item is no longer present.");
+  };
+  const resolveMediaPoolNativeIdentities = async (projectId, sources, options) => {
+    const requested = new Map();
+    for (const source of sources) {
+      const existing = requested.get(source.id);
+      if (existing !== undefined && existing !== source.snapshotRevision) {
+        throw new SdkLiveInspectionError("STALE_REVISION", "Grouped Media Pool sources disagree about their authoring revision.");
+      }
+      requested.set(source.id, source.snapshotRevision);
+    }
+    let offset = 0;
+    let observedRevision = null;
+    const nativeIds = new Map();
+    for (let pages = 0; pages < 31_250 && nativeIds.size < requested.size; pages += 1) {
+      const readRequest = { operation: "mediaPool.page", projectId, offset, pageSize: 32, expectedRevision: offset === 0 ? null : observedRevision, search: null };
+      const raw = await readSdkLiveInspection("mediaPool.page", { ...options, readRequest });
+      const project = currentProject(raw.before, stableIdentityNamespace);
+      assertExpected({ project }, projectId);
+      const afterProject = readAfterBracket(
+        () => currentProject(raw.after, stableIdentityNamespace),
+        "The active project changed while CutAgent was resolving grouped Media Pool items.",
+      );
+      if (project.id !== afterProject.id || project.name !== afterProject.name) {
+        throw new SdkLiveInspectionError("STALE_REVISION", "The active project changed while CutAgent was resolving grouped Media Pool items.");
+      }
+      const { value: page, privateMediaPoolState } = normalizeMediaPoolPage(raw.summary, project, readRequest);
+      observedRevision ??= page.revision;
+      if (page.revision !== observedRevision) throw new SdkLiveInspectionError("STALE_REVISION", "The Media Pool changed after source selection.");
+      for (const publicAsset of page.assets) {
+        if (!requested.has(publicAsset.id) || nativeIds.has(publicAsset.id)) continue;
+        const rawAsset = raw.summary.entries.find((entry) => entry.entry_kind === "asset"
+          && text(entry.native_id)
+          && digest("media_pool_item_", { projectId, nativeId: text(entry.native_id) }) === publicAsset.id);
+        const privateAssets = privateMediaPoolState.entries.filter((entry) => entry.entryKind === "asset" && entry.id === publicAsset.id);
+        if (privateAssets.length !== 1) {
+          throw new SdkLiveInspectionError("AMBIGUOUS_TARGET", "A grouped Media Pool item lost its unique authoritative identity.");
+        }
+        const custody = managedAssetCustody(projectId, privateAssets[0]);
+        const expectedRevision = requested.get(publicAsset.id);
+        if (expectedRevision !== page.revision && expectedRevision !== custody.revision) {
+          throw new SdkLiveInspectionError("STALE_REVISION", "A grouped Media Pool source changed after selection.");
+        }
+        const nativeId = text(rawAsset?.native_id);
+        if (!nativeId) throw new SdkLiveInspectionError("INVALID_RESPONSE", "A grouped Media Pool item lost its authoritative native identity.");
+        nativeIds.set(publicAsset.id, nativeId);
+      }
+      if (nativeIds.size === requested.size || page.nextOffset === null) break;
+      offset = page.nextOffset;
+    }
+    const missing = [...requested.keys()].filter((id) => !nativeIds.has(id));
+    if (missing.length) throw new SdkLiveInspectionError("TARGET_NOT_FOUND", "A selected grouped Media Pool item is no longer present.");
+    return sources.map((source) => nativeIds.get(source.id));
   };
   const resolveMediaPoolPrivateFolder = async (projectId, nativeFolderId, expectedRevision, options) => {
     const expectedNativeId = text(nativeFolderId);
@@ -2818,14 +3179,40 @@ export function createSdkLiveInspectionService({
     const stableInventory = privateEntries
       .filter((entry) => entry.id !== ownedTimelineAssetId)
       .map(managedMediaEntry);
+    const capturedAssets = uniqueAssetIds.map((id) => Object.freeze({
+      id,
+      ...managedAssetCustody(projectId, matches.get(id)),
+    }));
     return Object.freeze({
       revision,
       stableInventoryDigest: privateTextDigest(JSON.stringify(canonicalize(stableInventory))),
-      assets: Object.freeze(uniqueAssetIds.map((id) => Object.freeze({
-        id,
-        revision,
-        fingerprint: privateTextDigest(JSON.stringify(canonicalize(managedMediaEntry(matches.get(id))))),
-      }))),
+      assets: Object.freeze(capturedAssets),
+    });
+  };
+  const refreshManagedTimelineAsset = async ({ projectId, timelineId, assetId, expectedFingerprint }, options = {}) => {
+    if (![projectId, timelineId, assetId, expectedFingerprint].every((value) => text(value))) {
+      throw new TypeError("Managed Timeline asset refresh requires exact project, Timeline, asset, and admitted fingerprint identities.");
+    }
+    const timeline = await inspect({ operation: "timeline.current", projectId }, options);
+    if (timeline.value.id !== timelineId) {
+      throw new SdkLiveInspectionError("STALE_REVISION", "The managed Timeline is no longer current while refreshing its source asset.");
+    }
+    const nativeTimelineId = text(timeline.privateExecutionIdentity?.nativeTimelineId);
+    const nativeTimelineMediaPoolItemId = text(timeline.privateExecutionIdentity?.nativeTimelineMediaPoolItemId);
+    if (!nativeTimelineId || !nativeTimelineMediaPoolItemId) return malformed("CutAgent CLI omitted the exact native current Timeline binding.");
+    const asset = await resolveMediaPoolPrivateAsset(projectId, assetId, null, options);
+    if (asset.fingerprint !== expectedFingerprint) {
+      throw new SdkLiveInspectionError("STALE_REVISION", "The managed Timeline source asset changed after admission.");
+    }
+    const afterTimeline = await inspect({ operation: "timeline.current", projectId }, options);
+    if (afterTimeline.value.id !== timelineId
+      || afterTimeline.privateExecutionIdentity?.nativeTimelineId !== nativeTimelineId
+      || afterTimeline.privateExecutionIdentity?.nativeTimelineMediaPoolItemId !== nativeTimelineMediaPoolItemId) {
+      throw new SdkLiveInspectionError("STALE_REVISION", "The current Timeline changed while CutAgent was refreshing a managed Timeline source asset.");
+    }
+    return Object.freeze({
+      revision: asset.revision,
+      asset: Object.freeze({ id: assetId, revision: asset.revision, fingerprint: asset.fingerprint }),
     });
   };
   const resolveMediaPoolNativeIdentity = async (projectId, publicItemId, expectedRevision, options) => (
@@ -2864,38 +3251,102 @@ export function createSdkLiveInspectionService({
     }
     throw new SdkLiveInspectionError("TARGET_NOT_FOUND", "The referenced multicam clip is no longer present.");
   };
-  const prepareTimelineEdit = async (intent, options) => {
+  const retainPreparedTimelineEdits = (prepared, options = {}) => {
+    const sdkSessionId = text(options.sdkSessionId);
+    if (!sdkSessionId) return prepared;
+    const now = Date.now();
+    for (const [key, retained] of preparedTimelineEdits) {
+      if (retained.expiresAt <= now) preparedTimelineEdits.delete(key);
+    }
+    const impactDigests = prepared.impacts.map((impact) => digest("prepared_timeline_edit_", impact));
+    const key = `${sdkSessionId}\0${digest("prepared_timeline_edit_group_", impactDigests)}`;
+    if (!preparedTimelineEdits.has(key) && preparedTimelineEdits.size >= MAX_PREPARED_TIMELINE_EDITS) {
+      preparedTimelineEdits.delete(preparedTimelineEdits.keys().next().value);
+    }
+    preparedTimelineEdits.set(key, {
+      sdkSessionId, prepared, impactDigests, expiresAt: now + PREPARED_TIMELINE_EDIT_TTL_MS,
+    });
+    return prepared;
+  };
+  const prepareTimelineEdits = async (intents, options = {}) => {
     if (typeof resolveService?.previewSdkTimelineEdit !== "function" || typeof resolveService?.readSdkCapability !== "function") {
       throw new TypeError("SDK timeline editing requires the CutAgent CLI-backed capability and preview boundaries.");
     }
-    const capabilityId = intent.action === "trim" ? "edit.trim_workaround"
-      : intent.action === "remove" ? "timeline.items_delete" : "edit.insert_overwrite";
-    const capability = await resolveService.readSdkCapability(capabilityId, options);
-    if (!capability.supported) {
-      throw new SdkLiveInspectionError("CAPABILITY_UNAVAILABLE", capability.reason
-        ? `The required CutAgent capability is unavailable: ${capability.reason}.`
-        : "The required CutAgent capability is unavailable in the current DaVinci Resolve runtime.");
+    if (!Array.isArray(intents) || intents.length === 0) {
+      throw new TypeError("SDK timeline edit preparation requires at least one intent.");
     }
-    const snapshotRead = await inspect({ operation: "timeline.snapshot", projectId: intent.projectId, timelineId: intent.timelineId }, options);
+    const [binding] = intents;
+    if (intents.some((intent) => intent.projectId !== binding.projectId
+      || intent.timelineId !== binding.timelineId || intent.timelineRevision !== binding.timelineRevision)) {
+      throw new TypeError("Grouped SDK timeline edits require one exact project, timeline, and authoring revision.");
+    }
+    const capabilityIds = [...new Set(intents.map((intent) => intent.action === "trim" ? "edit.trim_workaround"
+      : intent.action === "remove" ? "timeline.items_delete" : "edit.insert_overwrite"))];
+    for (const capabilityId of capabilityIds) {
+      const capability = await resolveService.readSdkCapability(capabilityId, options);
+      if (!capability.supported) {
+        throw new SdkLiveInspectionError("CAPABILITY_UNAVAILABLE", capability.reason
+          ? `The required CutAgent capability is unavailable: ${capability.reason}.`
+          : "The required CutAgent capability is unavailable in the current DaVinci Resolve runtime.");
+      }
+    }
+    const structuralRequest = {
+      operation: "timeline.structure",
+      projectId: binding.projectId,
+      timelineId: binding.timelineId,
+      expectedRevision: binding.timelineRevision,
+    };
+    const snapshotRead = await inspect(structuralRequest, options);
     const snapshot = snapshotRead.value;
-    if (snapshot.revision !== intent.timelineRevision) throw new SdkLiveInspectionError("STALE_REVISION", "The timeline changed after the authoring snapshot.");
+    if (snapshot.revision !== binding.timelineRevision) throw new SdkLiveInspectionError("STALE_REVISION", "The timeline changed after the authoring snapshot.");
     const projectNativeId = text(snapshotRead.privateExecutionIdentity?.nativeProjectId);
     const timelineNativeId = text(snapshotRead.privateExecutionIdentity?.nativeTimelineId);
     if (!projectNativeId || !timelineNativeId) return malformed("CutAgent CLI omitted exact native execution identity from the bracketed timeline snapshot.");
-    const context = {
-      timelineName: snapshot.timeline.name,
-      projectNativeId,
-      timelineNativeId,
-      frameRate: snapshot.frameRate,
-      timelineStartFrame: snapshot.start.value.value,
-      sourceNativeId: intent.action === "trim" || intent.action === "remove"
-        ? null
-        : await resolveMediaPoolNativeIdentity(intent.projectId, intent.source.id, intent.source.snapshotRevision, options),
+    const collectivePlacement = intents.length > 1
+      && intents.every((intent) => ["insert", "overwrite"].includes(intent.action) && intent.placement !== "audio");
+    if (collectivePlacement && typeof resolveService?.previewSdkTimelineEdits !== "function") {
+      throw new TypeError("Plural video insert and overwrite preparation requires one consolidated preview boundary.");
+    }
+    const collectiveSourceNativeIds = collectivePlacement
+      ? await resolveMediaPoolNativeIdentities(binding.projectId, intents.map((intent) => intent.source), options)
+      : null;
+    const executionContexts = [];
+    for (const [index, intent] of intents.entries()) {
+      executionContexts.push({
+        timelineName: snapshot.timeline.name,
+        projectNativeId,
+        timelineNativeId,
+        frameRate: snapshot.frameRate,
+        timelineStartFrame: snapshot.start.value.value,
+        sourceNativeId: intent.action === "trim" || intent.action === "remove"
+          ? null
+          : collectiveSourceNativeIds?.[index]
+            ?? await resolveMediaPoolNativeIdentity(intent.projectId, intent.source.id, intent.source.snapshotRevision, options),
+        executionRevision: null,
+      });
+    }
+    const rawPlans = [];
+    const preview = async () => {
+      if (collectivePlacement) {
+        const raw = await resolveService.previewSdkTimelineEdits(intents, executionContexts, options);
+        const plans = raw?.items ?? raw?.payload?.items;
+        if (!Array.isArray(plans) || plans.length !== intents.length) {
+          return malformed("The consolidated timeline edit preview omitted ordered per-item plans.");
+        }
+        return plans;
+      }
+      const plans = [];
+      for (const [index, intent] of intents.entries()) {
+        plans.push(intent.action === "remove"
+          ? null
+          : await resolveService.previewSdkTimelineEdit(intent, executionContexts[index], options));
+      }
+      return plans;
     };
-    let rawPlan;
     try {
-      rawPlan = intent.action === "remove" ? null : await resolveService.previewSdkTimelineEdit(intent, context, options);
+      rawPlans.push(...await preview());
     } catch (error) {
+      const intent = intents[Number(error?.cli_error_details?.change_index) || 0] ?? binding;
       if (isLinkedAudioTrimReleaseGate(error, intent)) {
         throw new SdkLiveInspectionError(
           "CAPABILITY_UNAVAILABLE",
@@ -2934,19 +3385,111 @@ export function createSdkLiveInspectionService({
       }
       throw error;
     }
-    const after = (await inspect({ operation: "timeline.snapshot", projectId: intent.projectId, timelineId: intent.timelineId }, options)).value;
+    for (const [index, rawPlan] of rawPlans.entries()) {
+      executionContexts[index].executionRevision = (rawPlan?.payload ?? rawPlan)?.precondition?.revision ?? null;
+    }
+    const after = (await inspect(structuralRequest, options)).value;
     if (after.revision !== snapshot.revision) throw new SdkLiveInspectionError("STALE_REVISION", "The timeline changed while resolving edit impact.");
+    const prepared = {
+      impacts: intents.every((intent) => intent.action === "remove")
+        ? buildTimelineRemoveImpacts(intents, snapshot)
+        : intents.map((intent, index) => buildTimelineEditImpact(intent, snapshot, rawPlans[index])),
+      mutationGuard: snapshotRead.mutationGuard,
+      snapshot,
+      executionContexts,
+    };
+    return retainPreparedTimelineEdits(prepared, options);
+  };
+  const prepareTimelineEdit = async (intent, options = {}) => {
+    const prepared = await prepareTimelineEdits([intent], options);
     return {
-      impact: buildTimelineEditImpact(intent, snapshot, rawPlan),
+      impact: prepared.impacts[0], snapshot: prepared.snapshot, mutationGuard: prepared.mutationGuard,
+      executionContext: prepared.executionContexts[0],
+    };
+  };
+  const previewTimelineEdit = async (intent, options = {}) => (await prepareTimelineEdit(intent, options)).impact;
+  const takePreparedTimelineEdits = (impacts, options = {}) => {
+    const sdkSessionId = text(options.sdkSessionId);
+    if (!sdkSessionId || !Array.isArray(impacts) || impacts.length === 0) return null;
+    const requestedDigests = impacts.map((impact) => digest("prepared_timeline_edit_", impact));
+    for (const [key, retained] of preparedTimelineEdits) {
+      if (retained.expiresAt <= Date.now()) {
+        preparedTimelineEdits.delete(key);
+        continue;
+      }
+      if (retained.sdkSessionId !== sdkSessionId
+        || retained.impactDigests.length !== requestedDigests.length
+        || retained.impactDigests.some((value, index) => value !== requestedDigests[index])) continue;
+      preparedTimelineEdits.delete(key);
+      return retained.prepared;
+    }
+    return null;
+  };
+
+  const prepareTimelineAudioInserts = async (intents, options) => {
+    if (!Array.isArray(intents) || intents.length < 1 || intents.length > 256
+      || intents.some((intent) => intent.action !== "insert" || intent.placement !== "audio")) {
+      throw new SdkLiveInspectionError("INVALID_REQUEST", "Plural audio preview requires between 1 and 256 audio-only insert intents.");
+    }
+    if (typeof resolveService?.previewSdkTimelineAudioInsert !== "function"
+      || typeof resolveService?.readSdkCapability !== "function") {
+      throw new TypeError("Plural SDK audio insertion requires the CutAgent CLI-backed preview boundary.");
+    }
+    const first = intents[0];
+    if (intents.some((intent) => intent.projectId !== first.projectId
+      || intent.timelineId !== first.timelineId || intent.timelineRevision !== first.timelineRevision)) {
+      throw new SdkLiveInspectionError("INVALID_REQUEST", "Plural audio insertion must target one exact timeline revision.");
+    }
+    const capability = await resolveService.readSdkCapability("edit.insert_overwrite", options);
+    if (!capability.supported) {
+      throw new SdkLiveInspectionError("CAPABILITY_UNAVAILABLE", capability.reason
+        ? `The required CutAgent capability is unavailable: ${capability.reason}.`
+        : "The required CutAgent capability is unavailable in the current DaVinci Resolve runtime.");
+    }
+    const structuralRequest = {
+      operation: "timeline.structure",
+      projectId: first.projectId,
+      timelineId: first.timelineId,
+      expectedRevision: first.timelineRevision,
+    };
+    const snapshotRead = await inspect(structuralRequest, options);
+    const snapshot = snapshotRead.value;
+    if (snapshot.revision !== first.timelineRevision) {
+      throw new SdkLiveInspectionError("STALE_REVISION", "The timeline changed after the authoring snapshot.");
+    }
+    const projectNativeId = text(snapshotRead.privateExecutionIdentity?.nativeProjectId);
+    const timelineNativeId = text(snapshotRead.privateExecutionIdentity?.nativeTimelineId);
+    if (!projectNativeId || !timelineNativeId) return malformed("CutAgent CLI omitted exact native execution identity from the bracketed timeline snapshot.");
+    const sourceNativeIds = await Promise.all(intents.map((intent) => resolveMediaPoolNativeIdentity(
+      intent.projectId,
+      intent.source.id,
+      intent.source.snapshotRevision,
+      options,
+    )));
+    const context = {
+      projectNativeId,
+      timelineNativeId,
+      sourceNativeIds,
+      timelineStartFrame: snapshot.start.value.value,
+    };
+    const raw = await resolveService.previewSdkTimelineAudioInsert(intents, context, options);
+    const plans = raw?.items;
+    if (!Array.isArray(plans) || plans.length !== intents.length) {
+      throw new SdkLiveInspectionError("INVALID_RESPONSE", "CutAgent CLI returned an incomplete plural audio preview.");
+    }
+    const after = (await inspect(structuralRequest, options)).value;
+    if (after.revision !== snapshot.revision) throw new SdkLiveInspectionError("STALE_REVISION", "The timeline changed while resolving edit impact.");
+    return retainPreparedTimelineEdits({
+      impacts: intents.map((intent, index) => buildTimelineEditImpact(intent, snapshot, plans[index])),
       mutationGuard: snapshotRead.mutationGuard,
       snapshot,
       executionContext: {
         ...context,
-        executionRevision: (rawPlan?.payload ?? rawPlan)?.precondition?.revision ?? null,
+        executionRevision: raw?.precondition?.revision ?? null,
       },
-    };
+    }, options);
   };
-  const previewTimelineEdit = async (intent, options) => (await prepareTimelineEdit(intent, options)).impact;
+  const previewTimelineAudioInserts = async (intents, options) => (await prepareTimelineAudioInserts(intents, options)).impacts;
 
   const resolveFairlightPreparedTargets = async (callback, exchangeContext = {}) => {
     const parentRequest = exchangeContext?.originalRequest
@@ -3680,6 +4223,7 @@ export function createSdkLiveInspectionService({
   };
   return {
     async read(request, options = {}) { return (await inspect(request, options)).value; },
+    invalidateMediaPoolSnapshots,
     async readProjectInventory(options = {}) {
       const before = await inspect({ operation: "project.folder_context" }, options);
       const rows = await resolveService.listProjects({ ...options, strictSdkInventory: true });
@@ -3801,6 +4345,7 @@ export function createSdkLiveInspectionService({
     resolveMediaPoolPrivateAsset,
     resolveMediaPoolPrivateFolder,
     captureManagedTimelineAssets,
+    refreshManagedTimelineAsset,
     async readCurrentTimelineBinding(request, options = {}) {
       if (request.operation !== "timeline.current") {
         throw new TypeError("Current Timeline binding requires timeline.current.");
@@ -3820,8 +4365,28 @@ export function createSdkLiveInspectionService({
       if (typeof inspected.mutationGuard !== "string") return malformed("CutAgent CLI omitted the exact mutation guard.");
       return inspected;
     },
+    async readTimelineStructure(request, options = {}) {
+      if (!request || request.operation !== "timeline.structure"
+        || typeof request.projectId !== "string" || typeof request.timelineId !== "string") {
+        throw new TypeError("Timeline structural inspection requires an exact project and timeline.");
+      }
+      const inspected = await inspect(request, options);
+      if (typeof inspected.mutationGuard !== "string") return malformed("CutAgent CLI omitted the structural timeline mutation guard.");
+      return inspected;
+    },
     async previewTimelineEdit(intent, options = {}) { return previewTimelineEdit(intent, options); },
     async prepareTimelineEdit(intent, options = {}) { return prepareTimelineEdit(intent, options); },
+    async prepareTimelineEdits(intents, options = {}) { return prepareTimelineEdits(intents, options); },
+    takePreparedTimelineEdits(impacts, options = {}) { return takePreparedTimelineEdits(impacts, options); },
+    takePreparedTimelineEdit(impact, options = {}) {
+      const prepared = takePreparedTimelineEdits([impact], options);
+      return prepared === null ? null : {
+        impact: prepared.impacts[0], snapshot: prepared.snapshot, mutationGuard: prepared.mutationGuard,
+        executionContext: prepared.executionContexts[0],
+      };
+    },
+    async previewTimelineAudioInserts(intents, options = {}) { return previewTimelineAudioInserts(intents, options); },
+    async prepareTimelineAudioInserts(intents, options = {}) { return prepareTimelineAudioInserts(intents, options); },
     async prepareMulticamCreate(input, options = {}) {
       const project = (await inspect({ operation: "project.current" }, options)).value;
       if (project.id !== input.projectId) throw new SdkLiveInspectionError("STALE_REVISION", "The active project changed after multicam authoring.");
@@ -4139,12 +4704,12 @@ export function createSdkLiveInspectionService({
         .filter((track) => track.type === "video")
         .flatMap((track) => track.clips.map((clip) => ({...clip, trackType: track.type, trackIndex: track.index})))
         .filter((clip) => affectedIds.includes(clip.id));
-      const retimeStates = [];
-      for (const target of affectedVideoClips) {
-        const inspectedRetime = await inspect({operation: "timeline.retime", projectId: request.projectId,
-          timelineId: request.timelineId, timelineRevision: request.timelineRevision, target}, options);
-        retimeStates.push(...inspectedRetime.privateRetimeStates);
-      }
+      const retimeStates = (await inspectRetimeTargets(
+        request,
+        affectedVideoClips,
+        options,
+        inspected,
+      )).privateRetimeStates;
       const retimeEmpty = retimeStates.every(isDefaultManagedRetime);
       const affectedStateDigest = `sha256:${crypto.createHash("sha256").update(JSON.stringify(canonicalize({
         protectedFamilies: attestation.affected_state_digest,
@@ -4210,6 +4775,37 @@ export function createSdkLiveInspectionService({
         }),
       });
     },
+    async readFusionCompositionTargets(requests, options = {}) {
+      if (!Array.isArray(requests) || requests.length < 1 || requests.length > 512) {
+        throw new TypeError("Grouped Fusion target inspection requires 1 through 512 exact requests.");
+      }
+      const first = requests[0];
+      if (requests.some((request) => request?.operation !== "fusion.compositions"
+        || request.projectId !== first.projectId
+        || request.timelineId !== first.timelineId
+        || request.expectedRevision !== first.expectedRevision)) {
+        throw new TypeError("Grouped Fusion target inspection requires one project, timeline, and snapshot revision.");
+      }
+      const uniqueRequests = new Map();
+      for (const request of requests) uniqueRequests.set(request.timelineItemId, request);
+      const raw = await readSdkLiveInspection("fusion.compositions", {
+        ...options,
+        readRequest: first,
+        privateFusionInspectionAll: true,
+      });
+      const before = liveIdentity(raw?.before, stableIdentityNamespace);
+      const after = readAfterBracket(
+        () => liveIdentity(raw?.after, stableIdentityNamespace),
+        "The active project or timeline changed during grouped Fusion composition inspection.",
+      );
+      assertExpected(before, first.projectId, first.timelineId);
+      assertExpected(after, first.projectId, first.timelineId);
+      const snapshot = normalizeSnapshot(raw?.summary?.timeline, before, after, revisionEvidenceKey);
+      return new Map([...uniqueRequests].map(([timelineItemId, request]) => [
+        timelineItemId,
+        Object.freeze(normalizeFusionCompositions(raw?.summary, before, after, request, revisionEvidenceKey, snapshot)),
+      ]));
+    },
     async refreshFusionMutationTarget(request, options = {}) {
       if (request?.operation !== "fusion.compositions") {
         throw new TypeError("Fusion mutation target refresh requires the exact composition read contract.");
@@ -4225,6 +4821,41 @@ export function createSdkLiveInspectionService({
         throw new SdkLiveInspectionError("STALE_REVISION", "The exact Fusion composition identity changed after mutation.");
       }
       return refreshed;
+    },
+    async resolveRenderJobSelections({ projectId, queueRevision, jobIds }, options = {}) {
+      if (typeof projectId !== "string" || !projectId || typeof queueRevision !== "string" || !queueRevision
+        || !Array.isArray(jobIds) || jobIds.length < 1 || jobIds.length > 100
+        || jobIds.some((jobId) => typeof jobId !== "string" || !jobId)
+        || new Set(jobIds).size !== jobIds.length) {
+        throw new TypeError("Render job selection requires one exact project, queue revision, and unique job identities.");
+      }
+      const raw = await readSdkLiveInspection("render.queue", {
+        ...options,
+        readRequest: { operation: "render.queue", projectId, pageSize: 100, cursor: null },
+      });
+      if (!raw || typeof raw !== "object" || raw.context_unchanged !== true) {
+        throw new SdkLiveInspectionError("STALE_REVISION", "The DaVinci Resolve project or render queue changed while resolving selected render jobs.");
+      }
+      const beforeProject = renderProject(raw.before, stableIdentityNamespace);
+      const afterProject = renderProject(raw.after, stableIdentityNamespace);
+      if (beforeProject.id !== afterProject.id || beforeProject.name !== afterProject.name || beforeProject.id !== projectId) {
+        throw new SdkLiveInspectionError("STALE_REVISION", "The referenced DaVinci Resolve project changed while resolving selected render jobs.");
+      }
+      const queue = queueState(raw.jobs, beforeProject.id, renderIdentityEvidenceKey);
+      if (queue.queueRevision !== queueRevision) {
+        throw new SdkLiveInspectionError("STALE_REVISION", "The render queue changed after the selected jobs were observed.");
+      }
+      return Object.freeze(jobIds.map((jobId) => {
+        const indexes = queue.jobs
+          .map((job, index) => (job.id === jobId ? index : -1))
+          .filter((index) => index >= 0);
+        if (indexes.length === 0) throw new SdkLiveInspectionError("TARGET_NOT_FOUND", "A selected render job is no longer present.");
+        if (indexes.length > 1) throw new SdkLiveInspectionError("AMBIGUOUS_TARGET", "A selected render job identity is ambiguous.");
+        const index = indexes[0];
+        const nativeJobId = nullableRenderText(raw.jobs.jobs[index]?.native_id, 1024);
+        if (!nativeJobId) return malformed("CutAgent CLI omitted a selected render job's authoritative native identity.");
+        return Object.freeze({ job: Object.freeze({ ...queue.jobs[index] }), nativeJobId });
+      }));
     },
     async resolveRenderJobBinding({ projectId, nativeJobId }, options = {}) {
       if (typeof projectId !== "string" || !projectId || typeof nativeJobId !== "string" || !nativeJobId) {

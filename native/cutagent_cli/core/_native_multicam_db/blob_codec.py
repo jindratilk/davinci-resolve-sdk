@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import math
 import re
 import struct
 from typing import Any
@@ -18,6 +19,17 @@ def _decode_rate_blob(blob: bytes | None) -> float | None:
         return float(struct.unpack("<d", blob[:8])[0])
     except Exception:
         return None
+
+
+def _encode_rate_blob(fps: float, template: bytes | None = None) -> bytes:
+    safe_fps = float(fps)
+    if not math.isfinite(safe_fps) or safe_fps <= 0:
+        raise ValidationError(
+            "Native multicam frame rate must be a finite positive number.",
+            details={"fps": fps},
+        )
+    suffix = bytes(template[8:]) if template and len(template) >= 8 else b"\x00" * 8
+    return struct.pack("<d", safe_fps) + suffix
 
 
 def _encode_media_timemap_ba(duration_frames: int, fps: float) -> bytes:

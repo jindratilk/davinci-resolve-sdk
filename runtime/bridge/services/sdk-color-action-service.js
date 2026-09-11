@@ -9,7 +9,6 @@ import {
   sdkColorNodeLabelSetInputSchema,
   sdkColorPrimarySetInputSchema,
 } from "../contracts/generated/sdk-operations.js";
-import {resolveSdkDirectMutationScope, sdkMutationScopeCandidates} from "./sdk-direct-mutation-scope.js";
 
 const ACTIONS = Object.freeze({
   "cutagent.action.color.page.primary_set": { kind: "primary_set", schema: sdkColorPrimarySetInputSchema },
@@ -107,22 +106,12 @@ function colorExecutionDiagnostic(error, actionId, context) {
 
 function failure(code, message, context, possibleMutation = "none", usage = possibleMutation === "none" ? "released" : "unknown") {
   return {
-    kind: code === "STALE_REVISION" ? "stale_revision" : code === "EDIT_CONSTRAINT_VIOLATION" ? "edit_constraint_violation" : code === "CAPABILITY_UNAVAILABLE" ? "capability_unavailable" : code === "VERIFICATION_FAILED" ? "verification_failed" : "operation_failed",
+    kind: code === "STALE_REVISION" ? "stale_revision" : code === "CAPABILITY_UNAVAILABLE" ? "capability_unavailable" : code === "VERIFICATION_FAILED" ? "verification_failed" : "operation_failed",
     code, message, retrySafe: false, possibleMutation, usage,
     recovery: possibleMutation === "none" ? ["inspect_state"] : ["inspect_state", "manual_recovery"],
     recoveryGuidance: [possibleMutation === "none" ? "Inspect Color state and create a fresh impact preview." : "Inspect the exact Color target before any further mutation."],
     readbackRequired: possibleMutation !== "none", requestId: context.requestId, operationId: context.operationId, executionId: context.executionId,
   };
-}
-
-function exactScope(gate, accountFingerprint, input, actionId, directScope = null) {
-  const operation = actionId.replace("cutagent.action.", "");
-  const scopes = sdkMutationScopeCandidates(gate, accountFingerprint, directScope).filter((scope) => scope.binding.level === "project+timeline"
-    && scope.binding.projectId === input.projectId && scope.binding.timelineId === input.timelineId
-    && scope.binding.timelineRevision === input.timelineRevision
-    && (scope.constraints.allowedOperations.length === 0 || scope.constraints.allowedOperations.includes(operation)));
-  if (scopes.length !== 1) { const error = new Error("Exactly one current user-owned Color constraint scope is required."); error.code = "EDIT_CONSTRAINT_VIOLATION"; throw error; }
-  return scopes[0];
 }
 
 function targetMatches(snapshot, input) {
@@ -220,10 +209,9 @@ function checkpointFromExecution(execution) {
   return { availability: hasDbBackup ? "available" : "unavailable", restored: false };
 }
 
-export function createSdkColorActions({ liveInspectionService, resolveService, mutationPolicyGate, colorAssetService, directMutationPolicyAuthority = null, incidentReporterService = null }) {
+export function createSdkColorActions({ liveInspectionService, resolveService, colorAssetService, incidentReporterService = null }) {
   if (typeof liveInspectionService?.readWithMutationGuard !== "function") throw new TypeError("Color actions require guarded live inspection.");
   if (typeof resolveService?.executeSdkColorMutation !== "function") throw new TypeError("Color actions require the CutAgent CLI mutation boundary.");
-  if (typeof mutationPolicyGate?.assertProtectedStateEvidence !== "function") throw new TypeError("Color actions require consumed-decision protected-state proof.");
   return Object.fromEntries(Object.entries(ACTIONS).map(([actionId, definition]) => [actionId, {
     inputSchema: definition.schema, resultSchema: sdkColorMutationResultSchema, idempotency: "required",
     async execute(context, rawInput) {
@@ -254,13 +242,6 @@ export function createSdkColorActions({ liveInspectionService, resolveService, m
         return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("STALE_REVISION", "The inspected Color node already contains an effect; replacement is not exposed by this SDK slice.", context) };
       }
       const beforeTimeline = await liveInspectionService.read(timelineRequest, { deadlineAtMs: Date.now() + 60_000 });
-      let scope;
-      try {
-        const directScope = await resolveSdkDirectMutationScope({directMutationPolicyAuthority, context, liveInspectionService, level: "project+timeline", projectId: input.projectId, timelineId: input.timelineId, timelineRevision: input.timelineRevision});
-        scope = exactScope(mutationPolicyGate, context.accountFingerprint, input, actionId, directScope);
-      } catch (error) {
-        return { status: "failed", possibleMutation: "none", usage: "not_reserved", failure: failure("EDIT_CONSTRAINT_VIOLATION", error.message, context, "none", "not_reserved") };
-      }
       let assetPath;
       if (definition.extension) {
         try {
@@ -271,15 +252,8 @@ export function createSdkColorActions({ liveInspectionService, resolveService, m
           return { status: "failed", possibleMutation: "none", usage: "released", failure: failure("OPERATION_FAILED", `The requested ${definition.extension} Color Library asset could not be prepared.`, context) };
         }
       }
-      const policyContext = { requestId: context.requestId, operationId: context.operationId, executionId: context.executionId, scopeId: scope.scopeId,
-        scopeRevision: scope.revision, projectLibraryId: scope.binding.projectLibraryId, projectId: input.projectId, timelineId: input.timelineId,
-        projectRevision: scope.binding.projectRevision, timelineRevision: input.timelineRevision,
-        resolvedTargets: [{ kind: "clip", stableId: input.clipId, revision: input.timelineRevision, trackType: "video", trackIndex: input.trackIndex }], closedComposition: true, executableStableTargetPrecondition: true };
-      let release;
-      try { release = mutationPolicyGate.bindVerifiedProtectedTargets({ accountFingerprint: context.accountFingerprint, executionId: context.executionId, scopeId: scope.scopeId, scopeRevision: scope.revision, timelineRevision: input.timelineRevision }); }
-      catch (error) { return { status: "failed", possibleMutation: "none", usage: "not_reserved", failure: failure("EDIT_CONSTRAINT_VIOLATION", error.message, context, "none", "not_reserved") }; }
-      let execution; let executionError; let authorization;
-      try { execution = await resolveService.executeSdkColorMutation(definition.kind, input, { mutationGuard: beforeRead.mutationGuard, policyContext, assetPath, timelineStartFrame: exactTimelineStartFrame(beforeTimeline), onAuthorization(value) { authorization = value; } }); }
+      let execution; let executionError;
+      try { execution = await resolveService.executeSdkColorMutation(definition.kind, input, { mutationGuard: beforeRead.mutationGuard, assetPath, timelineStartFrame: exactTimelineStartFrame(beforeTimeline) }); }
       catch (error) {
         executionError = error;
         const diagnostic = colorExecutionDiagnostic(error, actionId, context);
@@ -290,7 +264,6 @@ export function createSdkColorActions({ liveInspectionService, resolveService, m
           metadata: diagnostic,
         });
       }
-      finally { release(); }
       let afterRead; let after; let afterTimeline;
       for (let attempt = 0; attempt < 3 && !afterRead; attempt += 1) {
         try {
@@ -315,17 +288,9 @@ export function createSdkColorActions({ liveInspectionService, resolveService, m
       const report = { outcome: semantic.ok && protectedPreserved ? "passed" : "failed", summary: semantic.ok && protectedPreserved ? "The exact requested Color effect and protected timeline structure were independently verified." : "Exact Color effect proof or protected timeline structure did not match the impact preview.",
         evidence: [evidence("readback", "Validated action-specific CutAgent CLI proof and independently read back the exact stable Color target.", { kind: definition.kind, revision: after.revision, clipId: after.clip.id, nodeGraph: after.nodeGraph, privateColorState: afterRead.privateColorState, execution }), evidence("structural", "Compared non-Color timeline structure before and after execution.", { before: structuralTimeline(beforeTimeline), after: structuralTimeline(afterTimeline) }), ...(semantic.rendered ? [evidence("rendered", "CutAgent CLI returned verified before/after render proof for this Color route.", execution?.render_proof)] : [])], protectedStatePreserved: protectedPreserved };
       if (semantic.ok && protectedPreserved && !executionError) {
-        try {
-          if (!authorization?.policyDecision) throw new Error("Color mutation authorization did not return a consumed policy decision.");
-          mutationPolicyGate.assertProtectedStateEvidence(authorization.policyDecision.decisionId, report);
-          return { status: "succeeded", possibleMutation: "confirmed", usage: "consumed", verification: report,
-            result: { kind: definition.kind, colorRevision: after.revision, timelineRevision: after.timelineRevision, nodeStackLayerIndex: after.nodeStackLayerIndex, clipId: after.clip.id, nodeCount: after.nodeGraph.nodeCount,
-            affectedNodeIndex: definition.kind === "node_add" ? before.nodeGraph.nodeCount + 1 : input.nodeIndex ?? null, checkpoint: checkpointFromExecution(execution) } };
-        } catch {
-          return { status: "verification_failed", possibleMutation: "possible", usage: "consumed", failure: failure("VERIFICATION_FAILED", "The Color mutation changed state, but its consumed policy evidence could not be attached.", context, "possible", "consumed"), verification: { ...report, outcome: "failed", summary: "Color state matched, but consumed-decision protected-state evidence was unavailable." },
-            postTimelineRevision: after.timelineRevision,
-            recovery: { state: "manual_required", summary: "Inspect the exact Color target and policy evidence before continuing.", evidence: report.evidence, manualRecoveryRequired: true } };
-        }
+        return { status: "succeeded", possibleMutation: "confirmed", usage: "consumed", verification: report,
+          result: { kind: definition.kind, colorRevision: after.revision, timelineRevision: after.timelineRevision, nodeStackLayerIndex: after.nodeStackLayerIndex, clipId: after.clip.id, nodeCount: after.nodeGraph.nodeCount,
+          affectedNodeIndex: definition.kind === "node_add" ? before.nodeGraph.nodeCount + 1 : input.nodeIndex ?? null, checkpoint: checkpointFromExecution(execution) } };
       }
       const unchanged = before.revision === after.revision && digest(before.nodeGraph) === digest(after.nodeGraph) && protectedPreserved;
       if (unchanged) return { status: "failed", possibleMutation: "none", usage: "released", failure: failure(executionError?.cli_error_code === "STALE_REVISION" ? "STALE_REVISION" : "OPERATION_FAILED", executionError ? safeExecutionMessage(executionError) : "The Color mutation made no verified change.", context) };

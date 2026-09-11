@@ -11,6 +11,7 @@ import {
 } from "../contracts/generated/sdk-prepared-action.js";
 
 const MAX_FRAME_BYTES = CUTAGENT_PREPARED_ACTION_MAX_RESULT_BYTES;
+const MACOS_PREPARED_HOST_REQUIREMENT = 'anchor apple generic and certificate leaf[subject.OU] = "P65VQHHXCB" and identifier "ai.cutagent.cutagent-cli-runtime.cutagent-sdk-session-host"';
 const MACOS_SIGNED_SPAWN_BROKER = String.raw`
 ObjC.import("Foundation"); ObjC.import("Security"); ObjC.import("CoreFoundation");
 ObjC.bindFunction("posix_spawnattr_init", ["int", ["void **"]]);
@@ -28,11 +29,12 @@ if ($.posix_spawnattr_setflags(attr, 0x0082) !== 0 || $.posix_spawnattr_setpgrou
 const pid = Ref(); const rc = $.posix_spawn(pid, executable, null, attr, [executable, mode, null], $._NSGetEnviron()[0]);
 if (rc !== 0) throw new Error("signed child spawn failed");
 const childPid = Number(pid[0]);
+const expectedPublisher = ${JSON.stringify(MACOS_PREPARED_HOST_REQUIREMENT)};
 try {
   const pidValue = Ref("int"); pidValue[0] = childPid; const pidNumber = $.CFNumberCreate(null, 3, pidValue);
   const attributes = $.CFDictionaryCreateMutable(null, 0, null, null); $.CFDictionarySetValue(attributes, $.kSecGuestAttributePid, pidNumber);
   const guest = Ref(); if ($.SecCodeCopyGuestWithAttributes(null, attributes, 0, guest) !== 0) throw new Error("running code unavailable");
-  const requirement = Ref(); if ($.SecRequirementCreateWithString($("cdhash H\"" + expected + "\""), 0, requirement) !== 0
+  const requirement = Ref(); if ($.SecRequirementCreateWithString($(expectedPublisher + " and cdhash H\"" + expected + "\""), 0, requirement) !== 0
     || $.SecCodeCheckValidity(guest[0], 0, requirement[0]) !== 0) throw new Error("running CDHash mismatch");
   $.NSFileHandle.fileHandleWithStandardOutput.writeData($("CUTAGENT_BROKER_READY_V1:" + childPid + "\n").dataUsingEncoding($.NSUTF8StringEncoding));
   if ($.kill(childPid, 19) !== 0) throw new Error("signed child resume failed");
@@ -86,6 +88,7 @@ const HOST_EXCHANGE_TIMEOUT_MS = 30 * 60_000;
 const HOST_LONG_RUNNING_EXCHANGE_TIMEOUT_MS = 24 * 60 * 60_000;
 const HOST_SHUTDOWN_TIMEOUT_MS = 2_000;
 const HOST_EXIT_TIMEOUT_MS = 2_000;
+const installedRuntimeVerificationCache = new Map();
 
 const LONG_RUNNING_ACTIONS = new Set([
   "cutagent.action.auto_edit.multicam",
@@ -265,7 +268,7 @@ async function startOwnerWatchdog(targetPid) {
   };
 }
 
-function assertTrustedInstalledRuntime(absolute, resourcesDir) {
+function trustedInstalledRuntimePath(absolute, resourcesDir) {
   const configuredRoot = path.resolve(resourcesDir ?? "");
   const trustedRoot = fs.realpathSync.native(configuredRoot);
   const real = fs.realpathSync.native(absolute);
@@ -279,11 +282,17 @@ function assertTrustedInstalledRuntime(absolute, resourcesDir) {
     current = path.join(current, component);
     if (fs.lstatSync(current).isSymbolicLink()) throw new Error("Prepared-action resource path contains a symbolic link.");
   }
+  return real;
+}
+
+function assertTrustedInstalledRuntime(real, spawnSyncProcess) {
   if (process.platform === "darwin") {
-    const signature = spawnSync("/usr/bin/codesign", ["-dv", "--verbose=4", real], {encoding: "utf8"});
+    const verified = spawnSyncProcess("/usr/bin/codesign", ["--verify", "--strict", "--all-architectures", "-R", `=${MACOS_PREPARED_HOST_REQUIREMENT}`, real], {encoding: "utf8", timeout: HOST_BOOTSTRAP_TIMEOUT_MS, maxBuffer: 64 * 1024});
+    if (verified.status !== 0) throw new Error("Prepared-action installed host signature is invalid.");
+    const signature = spawnSyncProcess("/usr/bin/codesign", ["-dv", "--verbose=4", real], {encoding: "utf8", timeout: HOST_BOOTSTRAP_TIMEOUT_MS, maxBuffer: 64 * 1024});
     const detail = `${signature.stdout ?? ""}\n${signature.stderr ?? ""}`;
-    if (signature.status !== 0 || !detail.includes("TeamIdentifier=P65VQHHXCB")
-      || !detail.includes("Identifier=ai.cutagent.cutagent-cli-runtime.cutagent-sdk-session-host")) {
+    if (signature.status !== 0 || !/^TeamIdentifier=P65VQHHXCB$/m.test(detail)
+      || !/^Identifier=ai\.cutagent\.cutagent-cli-runtime\.cutagent-sdk-session-host$/m.test(detail)) {
       throw new Error("Prepared-action installed host signature is invalid.");
     }
     const cdhash = detail.match(/\bCDHash=([a-fA-F0-9]+)\b/)?.[1]?.toLowerCase();
@@ -292,7 +301,7 @@ function assertTrustedInstalledRuntime(absolute, resourcesDir) {
   }
   if (process.platform === "win32") {
     const escaped = real.replaceAll("'", "''");
-    const signature = spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `$s=Get-AuthenticodeSignature -LiteralPath '${escaped}'; Write-Output $s.Status; Write-Output $s.SignerCertificate.Subject`], {encoding: "utf8", windowsHide: true});
+    const signature = spawnSyncProcess("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `$s=Get-AuthenticodeSignature -LiteralPath '${escaped}'; Write-Output $s.Status; Write-Output $s.SignerCertificate.Subject`], {encoding: "utf8", windowsHide: true});
     const detail = signature.stdout.trim().split(/\r?\n/);
     if (signature.status !== 0 || detail[0] !== "Valid" || !detail.slice(1).join(" ").includes("Tilkovsk")) throw new Error("Prepared-action installed host signature is invalid.");
     return {path: real, cdhash: null};
@@ -300,59 +309,118 @@ function assertTrustedInstalledRuntime(absolute, resourcesDir) {
   return null;
 }
 
-function openVerifiedExecutable(executablePath, bootstrap, {testMutableRoot = false, resourcesDir = null} = {}) {
+function fileIdentity(stat) {
+  return [stat.dev, stat.ino, stat.mode, stat.nlink, stat.size, stat.mtimeNs, stat.ctimeNs]
+    .map(String)
+    .join(":");
+}
+
+function openReadOnlyNoFollow(filePath) {
+  return fs.openSync(filePath, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
+}
+
+function openVerifiedExecutable(executablePath, bootstrap, {
+  testMutableRoot = false,
+  resourcesDir = null,
+  spawnSyncProcess = spawnSync,
+  observeInstallationVerificationForTest = null,
+} = {}) {
   const absolute = path.resolve(executablePath);
-  const noFollow = fs.constants.O_NOFOLLOW ?? 0;
-  const fd = fs.openSync(absolute, fs.constants.O_RDONLY | noFollow);
+  const fd = openReadOnlyNoFollow(absolute);
   let launchDirectory = null;
+  let manifestFd = null;
+  let runtimeFd = null;
   try {
-    const stat = fs.fstatSync(fd);
+    const stat = fs.fstatSync(fd, {bigint: true});
     if (!stat.isFile()) throw new Error("Signed prepared-action host is not a regular file.");
-    const manifestBytes = fs.readFileSync(path.join(path.dirname(absolute), ".cutagent-runtime-manifest.json"));
+    const directory = path.dirname(absolute);
+    const manifestPath = path.join(directory, ".cutagent-runtime-manifest.json");
+    const runtimeName = process.platform === "win32" ? "cutagent-runtime.exe" : "cutagent-runtime";
+    const runtimePath = path.join(directory, runtimeName);
+    manifestFd = openReadOnlyNoFollow(manifestPath);
+    runtimeFd = openReadOnlyNoFollow(runtimePath);
+    const manifestStat = fs.fstatSync(manifestFd, {bigint: true});
+    const runtimeStat = fs.fstatSync(runtimeFd, {bigint: true});
+    if (!manifestStat.isFile() || !runtimeStat.isFile()) throw new Error("Proprietary prepared-action runtime files are invalid.");
+    const trustedInstalledPath = testMutableRoot ? null : trustedInstalledRuntimePath(absolute, resourcesDir);
+    const installedPath = ["darwin", "win32"].includes(process.platform) ? trustedInstalledPath : null;
+    const cacheKey = installedPath ? `${installedPath}\0${bootstrap?.payload?.runtimeManifestDigest ?? ""}` : null;
+    const identities = {
+      host: fileIdentity(stat),
+      manifest: fileIdentity(manifestStat),
+      runtime: fileIdentity(runtimeStat),
+    };
+    const cached = cacheKey ? installedRuntimeVerificationCache.get(cacheKey) : null;
+    if (cached && cached.identities.host === identities.host
+      && cached.identities.manifest === identities.manifest
+      && cached.identities.runtime === identities.runtime) {
+      observeInstallationVerificationForTest?.({cacheHit: true, hashedFiles: 0, signatureChecks: 0});
+      return {
+        fd,
+        executable: cached.installedExecutable.path,
+        installedCdHash: cached.installedExecutable.cdhash,
+        expectedSha256: cached.entry.sha256,
+        expectedSize: cached.entry.size,
+        cleanup() {},
+      };
+    }
+    if (cacheKey) installedRuntimeVerificationCache.delete(cacheKey);
+    const manifestBytes = fs.readFileSync(manifestFd);
     const manifestDigest = crypto.createHash("sha256").update(manifestBytes).digest("hex");
     if (manifestDigest !== bootstrap?.payload?.runtimeManifestDigest) throw new Error("Signed prepared-action host manifest drifted.");
     const manifest = JSON.parse(manifestBytes);
     const entry = manifest?.entries?.find((candidate) => candidate?.path === path.basename(absolute));
     const bytes = fs.readFileSync(fd);
-    if (entry?.kind !== "file" || entry.size !== bytes.length
+    if (entry?.kind !== "file" || BigInt(entry.size ?? -1) !== stat.size || entry.size !== bytes.length
       || entry.sha256 !== crypto.createHash("sha256").update(bytes).digest("hex")) {
       throw new Error("Signed prepared-action host failed manifest custody.");
     }
-    const installedExecutable = testMutableRoot ? null : assertTrustedInstalledRuntime(absolute, resourcesDir);
-    let launchPath = installedExecutable?.path ?? null;
-    if (!installedExecutable) {
+    let installedExecutable = null;
+    let launchPath = null;
+    if (!installedPath) {
       launchDirectory = fs.mkdtempSync(path.join(path.dirname(absolute), ".cutagent-signed-host-"));
       launchPath = path.join(launchDirectory, path.basename(absolute));
       fs.linkSync(absolute, launchPath);
-      const launchStat = fs.lstatSync(launchPath);
+      const launchStat = fs.lstatSync(launchPath, {bigint: true});
       if (launchStat.dev !== stat.dev || launchStat.ino !== stat.ino || launchStat.isSymbolicLink()) {
         throw new Error("Signed prepared-action host launch custody changed.");
       }
     }
-    const runtimeName = process.platform === "win32" ? "cutagent-runtime.exe" : "cutagent-runtime";
-    const runtimePath = path.join(path.dirname(absolute), runtimeName);
     const runtimeEntry = manifest?.entries?.find((candidate) => candidate?.path === runtimeName);
-    const runtimeFd = fs.openSync(runtimePath, fs.constants.O_RDONLY | noFollow);
-    try {
-      const runtimeStat = fs.fstatSync(runtimeFd);
-      const runtimeBytes = fs.readFileSync(runtimeFd);
-      if (!runtimeStat.isFile() || runtimeEntry?.kind !== "file" || runtimeEntry.size !== runtimeBytes.length
-        || runtimeEntry.sha256 !== crypto.createHash("sha256").update(runtimeBytes).digest("hex")) {
-        throw new Error("Proprietary prepared-action runtime failed manifest custody.");
+    const runtimeBytes = fs.readFileSync(runtimeFd);
+    if (runtimeEntry?.kind !== "file" || BigInt(runtimeEntry.size ?? -1) !== runtimeStat.size
+      || runtimeEntry.size !== runtimeBytes.length
+      || runtimeEntry.sha256 !== crypto.createHash("sha256").update(runtimeBytes).digest("hex")) {
+      throw new Error("Proprietary prepared-action runtime failed manifest custody.");
+    }
+    if (launchDirectory) {
+      const launchRuntime = path.join(launchDirectory, runtimeName);
+      fs.linkSync(runtimePath, launchRuntime);
+      const linkedRuntime = fs.lstatSync(launchRuntime, {bigint: true});
+      if (linkedRuntime.dev !== runtimeStat.dev || linkedRuntime.ino !== runtimeStat.ino || linkedRuntime.isSymbolicLink()) {
+        throw new Error("Proprietary prepared-action runtime launch custody changed.");
       }
-      if (launchDirectory) {
-        const launchRuntime = path.join(launchDirectory, runtimeName);
-        fs.linkSync(runtimePath, launchRuntime);
-        const linkedRuntime = fs.lstatSync(launchRuntime);
-        if (linkedRuntime.dev !== runtimeStat.dev || linkedRuntime.ino !== runtimeStat.ino || linkedRuntime.isSymbolicLink()) {
-          throw new Error("Proprietary prepared-action runtime launch custody changed.");
-        }
-      }
-    } finally { fs.closeSync(runtimeFd); }
+    }
     if (launchDirectory) {
       fs.writeFileSync(path.join(launchDirectory, ".cutagent-runtime-manifest.json"), manifestBytes, {mode: 0o400});
       fs.chmodSync(launchDirectory, 0o700);
     }
+    if (installedPath) {
+      installedExecutable = assertTrustedInstalledRuntime(installedPath, spawnSyncProcess);
+      launchPath = installedExecutable?.path ?? null;
+    }
+    if (cacheKey) {
+      installedRuntimeVerificationCache.set(cacheKey, {
+        identities,
+        installedExecutable,
+        entry: {sha256: entry.sha256, size: entry.size},
+      });
+    }
+    observeInstallationVerificationForTest?.({
+      cacheHit: false,
+      hashedFiles: 3,
+      signatureChecks: process.platform === "darwin" ? 2 : process.platform === "win32" ? 1 : 0,
+    });
     return {
       fd,
       executable: launchPath,
@@ -369,6 +437,9 @@ function openVerifiedExecutable(executablePath, bootstrap, {testMutableRoot = fa
       removeLaunchDirectory(launchDirectory);
     }
     throw error;
+  } finally {
+    if (manifestFd !== null) fs.closeSync(manifestFd);
+    if (runtimeFd !== null) fs.closeSync(runtimeFd);
   }
 }
 
@@ -456,20 +527,22 @@ export async function createSdkPreparedActionRuntimeClient({
   bootstrap,
   initialization,
   redeemAuthorization,
-  assertProtectedState,
   inspectPreparedActionTimeline = null,
   resolveLiveTargets = null,
   originalRequest = null,
   spawnProcess = spawn,
+  spawnSyncProcess = spawnSync,
+  verifyInstalledRuntimeForTest = false,
   resourcesDir = process.env.CUTAGENT_APP_RESOURCES_DIR,
   observeSpawnedChildForTest = null,
+  observeInstallationVerificationForTest = null,
   onCallbackError = null,
   privateEvaluatorDiagnostics = false,
   runtimeEnv = {},
   exchangeTimeoutFor = preparedActionExchangeTimeoutMs,
 } = {}) {
-  if (typeof redeemAuthorization !== "function" || typeof assertProtectedState !== "function") {
-    throw new TypeError("Prepared-action runtime callbacks are required.");
+  if (typeof redeemAuthorization !== "function") {
+    throw new TypeError("Prepared-action authorization callback is required.");
   }
   if (onCallbackError !== null && typeof onCallbackError !== "function") {
     throw new TypeError("Prepared-action callback diagnostic sink is invalid.");
@@ -566,7 +639,6 @@ export async function createSdkPreparedActionRuntimeClient({
             try {
               let value;
               if (response.method === "redeemAuthorization") value = await redeemAuthorization(response.payload);
-              else if (response.method === "assertProtectedState") value = await assertProtectedState(response.payload);
               else if (response.method === "inspectPreparedActionTimeline" && typeof inspectPreparedActionTimeline === "function") value = await inspectPreparedActionTimeline(response.payload);
               else if (response.method === "resolveLiveTargets" && typeof resolveLiveTargets === "function") {
                 const request = method === "prepare" ? payload?.request : receiptRequests.get(payload?.receipt) ?? originalRequest;
@@ -652,7 +724,6 @@ export async function createSdkPreparedActionRuntimeClient({
     advertisedActionIds: Object.freeze([...advertised].sort()),
     hasAction(actionId) { return advertised.has(actionId); },
     prepare(payload) { return exchange("prepare", payload); },
-    acceptPolicy(payload) { return exchange("acceptPolicy", payload); },
     admit(payload) { return exchange("admit", payload); },
     execute(payload) { return exchange("execute", payload); },
     recoverTerminal(payload) { return exchange("recoverTerminal", payload); },

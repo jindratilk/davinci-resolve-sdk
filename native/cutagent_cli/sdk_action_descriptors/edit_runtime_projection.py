@@ -111,7 +111,10 @@ def _target(snapshot: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _base(action_id, value, after, details, evidence):
-    request = value.get("linkedAudio", value.get("scope"))
+    request = value.get(
+        "linkedAudio",
+        value.get("scope", "video" if "transitions" in value else None),
+    )
     requested = (
         "linked"
         if request in {"preserve", "linked"}
@@ -412,6 +415,87 @@ def project_edit_result(
                 }
             },
         }
+    elif command == "edit.transition.batch":
+        native = verified.get("nativeTransition")
+        native_results = native.get("results") if isinstance(native, Mapping) else None
+        requested_transitions = value.get("transitions")
+        requested_transitions = (
+            requested_transitions
+            if isinstance(requested_transitions, list)
+            else [requested_transitions]
+        )
+        if not isinstance(native_results, list) or len(native_results) != len(
+            requested_transitions
+        ):
+            raise ValidationError(
+                "Transition batch projection lacks verified per-seam results."
+            )
+        results = []
+        for index, transition in enumerate(requested_transitions):
+            if not isinstance(transition, Mapping):
+                raise ValidationError(
+                    "Transition batch projection lacks a valid requested seam."
+                )
+            matches = [
+                row
+                for row in native_results
+                if isinstance(row, Mapping) and row.get("index") == index
+            ]
+            if len(matches) != 1:
+                raise ValidationError(
+                    "Transition batch projection lacks one exact result per seam."
+                )
+            native_result = matches[0]
+            native_rows = native_result.get("inserted") or native_result.get(
+                "skipped_existing"
+            ) or []
+            target_id = (
+                transition["outgoing"]["id"]
+                if transition["placement"] == "end"
+                else transition["incoming"]["id"]
+            )
+            target = post.get(target_id)
+            if target is None:
+                raise ValidationError(
+                    "Transition batch lacks exact target-item readback."
+                )
+            transitions = {}
+            for row in native_rows:
+                native_identity = row.get("item_id") if isinstance(row, Mapping) else None
+                transition_id = "transition_" + hashlib.sha256(
+                    json.dumps(
+                        {
+                            "native": native_identity,
+                            "index": index,
+                            "frame": transition["editFrame"],
+                            "revision": after["revision"],
+                        },
+                        sort_keys=True,
+                    ).encode()
+                ).hexdigest()[:32]
+                transitions[transition_id] = {
+                    "name": transition["transitionType"],
+                    "placement": transition["placement"],
+                    "durationFrames": transition["durationFrames"],
+                }
+            results.append(
+                {
+                    "index": index,
+                    "status": "completed"
+                    if native_result.get("inserted")
+                    else "no_op",
+                    "targetItem": target,
+                    "transitions": transitions,
+                }
+            )
+        if native.get("noOp") is True:
+            projected = _base(action_id, value, after, None, evidence)
+            projected.update(status="no_op", details=None)
+            projected["affected"]["linkedAudio"].update(
+                preserved=True, changed=False
+            )
+            return projected
+        details = {"results": results}
     else:
         raise ValidationError("Residual Edit action lacks a typed result projector.")
     return _base(action_id, value, after, details, evidence)

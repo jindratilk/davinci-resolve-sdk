@@ -455,6 +455,16 @@ class ResidualMediaMutationDescriptor:
         return PREPARED_ACTION_ACTION_METADATA[self.action_id]["capabilityId"]
 
     def validate_input(self, value: Any) -> dict[str, Any]:
+        if self.action_id == "cutagent.action.media.delete" and isinstance(value, Mapping) and "assetIds" in value:
+            required = {"projectId", "precondition", "assetIds"}
+            asset_ids = value.get("assetIds")
+            if (set(value) != required
+                    or any(not isinstance(value.get(key), str) or not value[key] for key in {"projectId", "precondition"})
+                    or not isinstance(asset_ids, list) or not asset_ids or len(asset_ids) > 1000
+                    or any(not isinstance(item, str) or not item for item in asset_ids)
+                    or len(set(asset_ids)) != len(asset_ids)):
+                raise ValidationError("Prepared semantic Media deletion input is malformed.")
+            return _canonical(value)
         if self.action_id == "cutagent.action.media.relink" and isinstance(value, Mapping) and "assetId" in value:
             required = {"projectId", "precondition", "assetId", "path"}
             if set(value) != required or any(not isinstance(value.get(key), str) or not value[key] for key in required):
@@ -622,8 +632,13 @@ class ResidualMediaMutationDescriptor:
             and isinstance(added_asset_rows[0].get("folderId"), str)
         ):
             folder_count_deltas[added_asset_rows[0]["folderId"]] = 1
-        elif self.action_id == "cutagent.action.media.delete" and len(asset_target_ids) == 1:
-            folder_count_deltas[assets_before[asset_target_ids[0]]["folderId"]] = -1
+        elif self.action_id == "cutagent.action.media.delete":
+            folder_count_deltas.update(
+                Counter(assets_before[target_id]["folderId"] for target_id in asset_target_ids)
+            )
+            folder_count_deltas = {
+                folder_id: -count for folder_id, count in folder_count_deltas.items()
+            }
         elif self.action_id == "cutagent.action.media.duplicate" and len(asset_target_ids) == 1:
             destination_id = (before["media"].get("currentFolderId")
                               if isinstance(raw, Mapping) and raw.get("fallback_import") is True
@@ -634,12 +649,16 @@ class ResidualMediaMutationDescriptor:
             if len(asset_target_ids) == 2:
                 right_folder = assets_before[asset_target_ids[1]]["folderId"]
                 folder_count_deltas[right_folder] = -1
-        elif self.action_id == "cutagent.action.media.move" and len(asset_target_ids) == 1:
-            source_id = assets_before[asset_target_ids[0]]["folderId"]
-            destination = _bound_folder_for_path(binding, prepared["lowering"]["input"]["target"])
-            if destination and destination["id"] != source_id:
-                folder_count_deltas[source_id] = -1
-                folder_count_deltas[destination["id"]] = 1
+        elif self.action_id == "cutagent.action.media.move":
+            value = prepared["lowering"]["input"]
+            moves = value.get("moves") or [{"name": value["name"], "target": value["target"]}]
+            assets_by_name = {row["name"]: row for row in assets_before.values() if row["id"] in asset_target_ids}
+            for move in moves:
+                asset = assets_by_name.get(move["name"])
+                destination = _bound_folder_for_path(binding, move["target"])
+                if asset and destination and destination["id"] != asset["folderId"]:
+                    folder_count_deltas[asset["folderId"]] = folder_count_deltas.get(asset["folderId"], 0) - 1
+                    folder_count_deltas[destination["id"]] = folder_count_deltas.get(destination["id"], 0) + 1
         elif self.action_id == "cutagent.action.media.folders.move":
             value = prepared["lowering"]["input"]
             source = _bound_folder_for_path(binding, value["path"])
@@ -734,8 +753,9 @@ class ResidualMediaMutationDescriptor:
             exact = bool(target and target["name"] == value["new"] and property_value(target, "Clip Name") == value["new"])
             target_fields_preserved = target_maps_preserved("properties", {"Clip Name"})
         elif self.action_id == "cutagent.action.media.delete":
-            target_id = next(row["id"] for row in binding["targets"] if row["kind"] == "asset")
-            exact = all(row["id"] != target_id for row in after["media"]["assets"])
+            exact = bool(asset_target_ids) and all(
+                target_id not in assets_after for target_id in asset_target_ids
+            )
         elif self.action_id == "cutagent.action.media.selected.set":
             target_id = next(row["id"] for row in binding["targets"] if row["kind"] == "asset")
             exact = after["media"]["selectedIds"] == [target_id]
@@ -910,9 +930,14 @@ class ResidualMediaMutationDescriptor:
             else:
                 exact = isinstance(markers, Mapping) and not markers
         elif self.action_id == "cutagent.action.media.move":
-            destination = _bound_folder_for_path(binding, value["target"])
-            target = assets_after.get(asset_target_ids[0]) if len(asset_target_ids) == 1 else None
-            exact = bool(destination and target and target.get("folderId") == destination["id"])
+            moves = value.get("moves") or [{"name": value["name"], "target": value["target"]}]
+            assets_by_name = {row["name"]: row for row in assets_after.values() if row["id"] in asset_target_ids}
+            exact = len(assets_by_name) == len(moves) and all(
+                (destination := _bound_folder_for_path(binding, move["target"]))
+                and (target := assets_by_name.get(move["name"]))
+                and target.get("folderId") == destination["id"]
+                for move in moves
+            )
         elif self.action_id == "cutagent.action.media.folders.move":
             source = _bound_folder_for_path(binding, value["path"])
             destination = _bound_folder_for_path(binding, value["targetPath"])
@@ -1126,6 +1151,15 @@ class ResidualMediaMutationDescriptor:
         ids = [row["stableId"] for row in prepared["targets"]]
         value = prepared["lowering"]["input"]
         after = result.get("after", {}).get("media", {})
+        if self.action_id == "cutagent.action.media.delete" and "assetIds" in value:
+            return _assert_public({
+                "projectId": project["projectId"],
+                "items": [
+                    {"assetId": asset_id, "status": "deleted"}
+                    for asset_id in value["assetIds"]
+                ],
+                "revision": after["revision"],
+            })
         if self.action_id == "cutagent.action.media.relink" and "assetId" in value:
             asset = next(row for row in after["assets"] if row["id"] == value["assetId"])
             revision = after["revision"]
@@ -1189,6 +1223,8 @@ class ResidualMediaMutationDescriptor:
 
     def validate_public_result(self, value: Any) -> bool:
         try:
+            if self.action_id == "cutagent.action.media.delete" and isinstance(value, Mapping) and "items" in value:
+                return set(value) == {"projectId", "items", "revision"}
             if self.action_id == "cutagent.action.media.relink" and isinstance(value, Mapping) and "asset" in value:
                 return set(value) == {"projectId", "asset", "sourceFileName", "revision"}
             if self.action_id == "cutagent.action.media.sync_audio" and isinstance(value, Mapping) and "videoAssetId" in value:

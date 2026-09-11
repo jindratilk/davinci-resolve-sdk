@@ -46,8 +46,8 @@ EMBEDDED_PROTOCOL_VERSION = 4
 EMBEDDED_BRIDGE_VERSION = "1.3.0"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 18764
-SCRIPT_NAME = "DaVinciResolveSDK.lua"
-LEGACY_AUTOSTART_SCRIPT_NAME = "DaVinciResolveSDK.scriptlib"
+SCRIPT_NAME = "CutAgentSDK.lua"
+LEGACY_AUTOSTART_SCRIPT_NAME = "CutAgentSDK.scriptlib"
 AUTH_FILE_NAME = "embedded-bridge-auth.json"
 FOCUS_DEEP_LINK = ""
 WINDOWS_SOCKET_TRANSPORT_ASSET = "windows-luasocket/socket.dll"
@@ -60,7 +60,7 @@ SPOOL_POLL_INTERVAL_SECONDS = 0.05
 SPOOL_AUTH_CONFIG_NAME = "auth.lua"
 SPOOL_REQUEST_NAME = "request.lua"
 SPOOL_RESPONSE_NAME = "response.prefs"
-SPOOL_RESPONSE_KEY = "DaVinciResolveSdkEmbeddedResponse"
+SPOOL_RESPONSE_KEY = "CutAgentSdkEmbeddedResponse"
 DEFAULT_REQUEST_TIMEOUT_SECONDS = 300.0
 REQUEST_TIMEOUT_ENV = "DAVINCI_RESOLVE_SDK_EMBEDDED_REQUEST_TIMEOUT_S"
 CLIENT_LOCAL_PORT_START = 18200
@@ -207,6 +207,7 @@ def _embedded_timeout_details(
 
 READ_ONLY_RESOLVE_METHODS = frozenset(
     {
+        "CopySettings",
         "FindTool",
         "Fusion",
         "GetAttrs",
@@ -278,6 +279,28 @@ READ_ONLY_RESOLVE_METHODS = frozenset(
         "GetProjectListInCurrentFolder",
         "GetProjectManager",
         "GetProperty",
+        # Native readback used by SDK discovery and detailed Color inspection.
+        "GetType",
+        "GetQuickExportRenderPresets",
+        "GetKeyboardPresetList",
+        "GetCurrentKeyboardPreset",
+        "GetAudioRenderFormats",
+        "GetAudioRenderCodecs",
+        "GetTranscription",
+        "GetNodeCacheMode",
+        "GetPreClipNodeGraph",
+        "GetPostClipNodeGraph",
+        "GetGallery",
+        "GetAlbumName",
+        "ValidateDCTL",
+        # DaVinci Resolve 21.1 native inspector and fade readback.
+        "GetProjectSettingsPresetList",
+        "GetProperties",
+        "GetFades",
+        "GetNormalizeAudioModes",
+        "GetOutputBlanking",
+        "GetUseTimelineForOutputBlanking",
+        "GetSpeed",
         "GetPropertyAtKeyframeIndex",
         "GetRenderJobList",
         "GetRenderJobStatus",
@@ -286,6 +309,7 @@ READ_ONLY_RESOLVE_METHODS = frozenset(
         "GetRenderSettings",
         "GetRightOffset",
         "GetRootFolder",
+        "GetSelectedClips",
         "GetSelectedTakeIndex",
         "GetSetting",
         "GetSourceAudioChannelMapping",
@@ -296,6 +320,7 @@ READ_ONLY_RESOLVE_METHODS = frozenset(
         "GetSubFolderList",
         "GetTakeByIndex",
         "GetTakesCount",
+        "GetTimeline",
         "GetTimelineByIndex",
         "GetTimelineCount",
         "GetTool",
@@ -310,6 +335,7 @@ READ_ONLY_RESOLVE_METHODS = frozenset(
         "GetTrackName",
         "GetTrackSubType",
         "GetTrackTypeAndIndex",
+        "GetThirdPartyMetadata",
         "GetUniqueId",
         "GetVersion",
         "GetVersionNameList",
@@ -415,6 +441,7 @@ MUTATING_RESOLVE_METHODS = frozenset(
         "AddSubFolder",
         "AddTool",
         "AddTrack",
+        "AddTransition",
         "AddVersion",
         "AppendToTimeline",
         "ApplyFairlightPresetToCurrentTimeline",
@@ -439,6 +466,8 @@ MUTATING_RESOLVE_METHODS = frozenset(
         "DeleteMarkersByColor",
         "DeleteAllRenderJobs",
         "DeleteProject",
+        "DeleteProjectSettingsPreset",
+        "DeleteRenderPreset",
         "DeleteRenderJob",
         "DeleteTimelines",
         "DeleteVersionByName",
@@ -446,15 +475,20 @@ MUTATING_RESOLVE_METHODS = frozenset(
         "Export",
         "ExportFusionComp",
         "ExportProject",
+        "ExportProjectSettingsPreset",
+        "ExportRenderPreset",
         "ExportToFile",
         "GotoParentFolder",
         "GrabStill",
         "ImportFusionComp",
         "ImportMedia",
         "ImportProject",
+        "ImportProjectSettingsPreset",
+        "ImportRenderPreset",
         "ImportTimelineFromFile",
         "InsertAudioToCurrentTrackAtPlayhead",
         "LoadProject",
+        "LoadRenderPreset",
         "LoadVersionByName",
         "MoveClips",
         "OpenFolder",
@@ -466,6 +500,7 @@ MUTATING_RESOLVE_METHODS = frozenset(
         "Render",
         "RestoreProject",
         "SaveAsNewRenderPreset",
+        "UpdateRenderPreset",
         "SaveProject",
         "AddRenderJob",
         "SetActiveTool",
@@ -485,6 +520,19 @@ MUTATING_RESOLVE_METHODS = frozenset(
         "SetMetadata",
         "SetName",
         "SetProperty",
+        # Declared transport methods, not a claim of edition capability.
+        "SetProjectSettingsPreset",
+        "SaveCurrentProjectSettingsAsNewPreset",
+        "SetProperties",
+        "SetFades",
+        "NormalizeAudioLevel",
+        "SetOutputBlanking",
+        "SetUseTimelineForOutputBlanking",
+        "SetSpeed",
+        "CreateMulticamClip",
+        "FlattenMulticam",
+        "SetAudioMapping",
+        "SetSourceAudioChannelMapping",
         "SetRenderSettings",
         "SetSetting",
         "SetColorOutputCache",
@@ -514,6 +562,8 @@ DESTRUCTIVE_RESOLVE_METHODS = frozenset(
         "DeleteMarkersByColor",
         "DeleteAllRenderJobs",
         "DeleteProject",
+        "DeleteProjectSettingsPreset",
+        "DeleteRenderPreset",
         "DeleteRenderJob",
         "DeleteTrack",
         "DeleteTimelines",
@@ -596,9 +646,9 @@ def _windows_roaming_appdata_dir(home: Path | None = None) -> Path:
 
 def _cutagent_app_support_dir(home: Path | None = None) -> Path:
     if sys.platform == "win32":
-        return _windows_roaming_appdata_dir(home) / "DaVinciResolveSDK"
+        return _windows_roaming_appdata_dir(home) / "CutAgentSDK"
     root = home or Path.home()
-    return root / "Library" / "Application Support" / "DaVinciResolveSDK"
+    return root / "Library" / "Application Support" / "CutAgentSDK"
 
 
 def embedded_spool_dir(*, home: Path | None = None, auth_path: Path | None = None) -> Path:
@@ -989,7 +1039,7 @@ def install_windows_socket_transport(home: Path | None = None) -> dict[str, Any]
                     "required_hash": next_hash,
                 },
                 recoverability="manual",
-                suggested_fix="Close DaVinci Resolve, run `cutagent embedded install` again, then reopen DaVinci Resolve and run Workspace > Scripts > CutAgent.",
+                suggested_fix="Close DaVinci Resolve, run `cutagent embedded install` again, then reopen DaVinci Resolve and run Workspace > Scripts > CutAgentSDK.",
             ) from exc
     return {
         **windows_socket_transport_status(home),

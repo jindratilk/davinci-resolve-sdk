@@ -7,8 +7,8 @@ def clip_audio_normalize(
     target_dbfs: float = typer.Option(-9.0, "--target-dbfs", help="Peak normalization target in dBFS"),
     at: Optional[str] = typer.Option(None, "--at", help="Record-domain position for deterministic clip selection"),
 ):
-    """Normalize linked audio clip peak level through DaVinci Resolve render analysis + DB-backed gain write."""
-    enforce_mutation_policy("clip.audio_normalize", intended_engine="db_workaround", mutating=not is_dry_run())
+    """Normalize linked audio peak level natively on 21.1; preserve the older-runtime route."""
+    enforce_mutation_policy("clip.audio_normalize", intended_engine="api_native", mutating=not is_dry_run())
     if is_dry_run():
         set_verification_status("not_requested")
         set_recoverability("not_applicable")
@@ -26,17 +26,33 @@ def clip_audio_normalize(
         dry_run_message(f"Would normalize audio on '{target_name}' to {validated_target_dbfs} dBFS")
         return
 
+    conn = get_connection(require_timeline=True)
+    if resolve_api_version.at_least(conn, 21, 1):
+        from ..core.native_audio_normalization import normalize_peak
+        selection = db_timeline_selection.resolve_audio_group(conn, clip_name=name, at=at_value)
+        output(normalize_peak(conn, selection["audio"], validated_target_dbfs), title="Clip Audio Normalize")
+        return
+
+    enforce_mutation_policy("clip.audio_normalize", intended_engine="db_workaround")
     iterations: list[dict[str, float | int | None]] = []
     data: dict[str, object] | None = None
+    selection = db_timeline_selection.resolve_audio_group(conn, clip_name=name, at=at_value)
+    preferred_render_route = None
 
     for pass_index in range(1, max_passes + 1):
-        conn = get_connection(require_timeline=True)
-        selection = db_timeline_selection.resolve_audio_group(conn, clip_name=name, at=at_value)
+        if pass_index > 1:
+            conn = get_connection(require_timeline=True)
+            selection = db_timeline_selection.resolve_audio_group(conn, clip_name=name, at=at_value)
         analysis = audio_normalize.measure_peak_normalization(
             conn,
             audio_item=selection["audio"],
             target_dbfs=validated_target_dbfs,
+            preferred_render_route=preferred_render_route,
         )
+        render_format = analysis.get("render_format")
+        render_codec = analysis.get("render_codec")
+        if isinstance(render_format, str) and isinstance(render_codec, str):
+            preferred_render_route = (render_format, render_codec)
         timeline_name = _timeline_name(conn)
         correction_db = float(analysis["gain_db"])
 
@@ -60,6 +76,24 @@ def clip_audio_normalize(
                     }
                 ],
                 "stabilized": True,
+            }
+            break
+
+        if pass_index == max_passes:
+            data = {
+                **(data or {}),
+                "peak_dbfs": analysis["peak_dbfs"],
+                "analysis": analysis,
+                "iterations": iterations + [
+                    {
+                        "pass": pass_index,
+                        "peak_dbfs": analysis["peak_dbfs"],
+                        "correction_db": correction_db,
+                        "resulting_gain_db": data.get("resulting_gain_db") if isinstance(data, dict) else None,
+                        "within_tolerance": False,
+                    }
+                ],
+                "stabilized": False,
             }
             break
 
@@ -108,10 +142,6 @@ def clip_audio_normalize(
 
     if data is None:
         raise RuntimeError("audio normalize produced no result")
-
-    if "iterations" not in data:
-        data["iterations"] = iterations
-        data["stabilized"] = False
 
     output(data, title="Clip Audio Normalize")
 
@@ -198,8 +228,8 @@ def clip_audio_pan(
     value: float = typer.Option(..., "--value", help="Pan value"),
     at: Optional[str] = typer.Option(None, "--at", help="Record-domain position for deterministic clip selection"),
 ):
-    """Set linked audio pan via archive-backed EffectFiltersBA payload."""
-    enforce_mutation_policy("clip.audio_pan", intended_engine="db_workaround", mutating=not is_dry_run())
+    """Set clip audio pan natively on 21.1, with the Disk DB route on older runtimes."""
+    enforce_mutation_policy("clip.audio_pan", intended_engine="api_native", mutating=not is_dry_run())
     if is_dry_run():
         set_verification_status("not_requested")
         set_recoverability("not_applicable")
@@ -217,6 +247,10 @@ def clip_audio_pan(
 
     conn = get_connection(require_timeline=True)
     selection = db_timeline_selection.resolve_audio_group(conn, clip_name=name, at=at_value)
+    if native_clip_audio.available(conn):
+        output(native_clip_audio.set_audio(conn, selection["audio"], kind="audio-pan", values={"AudioPan": validated_value}), title="Clip Audio Pan")
+        return
+    enforce_mutation_policy("clip.audio_pan", intended_engine="db_workaround")
     timeline_name = _timeline_name(conn)
     data = db_session.execute_sqlite_disk_db_mutation(
         conn,
@@ -244,8 +278,8 @@ def clip_audio_pitch(
     cents: int = typer.Option(0, "--cents", help="Cent offset"),
     at: Optional[str] = typer.Option(None, "--at", help="Record-domain position for deterministic clip selection"),
 ):
-    """Set linked audio pitch via archive-backed EffectFiltersBA payload."""
-    enforce_mutation_policy("clip.audio_pitch", intended_engine="db_workaround", mutating=not is_dry_run())
+    """Set clip audio pitch natively on 21.1, with the Disk DB route on older runtimes."""
+    enforce_mutation_policy("clip.audio_pitch", intended_engine="api_native", mutating=not is_dry_run())
     if is_dry_run():
         set_verification_status("not_requested")
         set_recoverability("not_applicable")
@@ -265,6 +299,10 @@ def clip_audio_pitch(
 
     conn = get_connection(require_timeline=True)
     selection = db_timeline_selection.resolve_audio_group(conn, clip_name=name, at=at_value)
+    if native_clip_audio.available(conn):
+        output(native_clip_audio.set_audio(conn, selection["audio"], kind="audio-pitch", values={"AudioPitchSemiTones": semitone_value, "AudioPitchCents": cents_value}), title="Clip Audio Pitch")
+        return
+    enforce_mutation_policy("clip.audio_pitch", intended_engine="db_workaround")
     timeline_name = _timeline_name(conn)
     data = db_session.execute_sqlite_disk_db_mutation(
         conn,
@@ -295,8 +333,8 @@ def clip_fade_in(
     video_duration: Optional[str] = typer.Option(None, "--video-duration", help="Override fade duration for video"),
     audio_duration: Optional[str] = typer.Option(None, "--audio-duration", help="Override fade duration for audio"),
 ):
-    """Apply archive-backed fade payloads to linked video/audio rows."""
-    enforce_mutation_policy("clip.fade_in", intended_engine="db_workaround", mutating=not is_dry_run())
+    """Set exact video/audio fader durations natively on 21.1, with the Disk DB route on older runtimes."""
+    enforce_mutation_policy("clip.fade_in", intended_engine="api_native", mutating=not is_dry_run())
     if is_dry_run():
         set_verification_status("not_requested")
         set_recoverability("not_applicable")
@@ -319,7 +357,12 @@ def clip_fade_in(
     conn = get_connection(require_timeline=True) if needs_connection else None
     selection = None
     if conn is not None and (not is_dry_run() or name is not None or at_value is not None):
-        selection = db_timeline_selection.resolve_linked_av_group(conn, clip_name=name, at=at_value)
+        if normalized_scope == "audio":
+            selection = {"video": None, **db_timeline_selection.resolve_audio_group(conn, clip_name=name, at=at_value)}
+        elif normalized_scope == "video":
+            selection = {"audio": None, **db_timeline_selection.resolve_video_group(conn, clip_name=name, at=at_value)}
+        else:
+            selection = db_timeline_selection.resolve_linked_av_group(conn, clip_name=name, at=at_value)
     fps_conn = conn
     if fps_conn is None:
         class _DefaultFps:
@@ -357,6 +400,13 @@ def clip_fade_in(
 
     assert conn is not None
     assert selection is not None
+    if native_clip_audio.available(conn):
+        output(native_clip_audio.set_fades(conn, selection, scope=normalized_scope, edge=normalized_edge,
+                                          video_frames=resolved_video_frames, audio_frames=resolved_audio_frames), title="Clip Fade")
+        return
+    if os.environ.get("CUTAGENT_SDK_TIMELINE_GUARD"):
+        raise CapabilityNegotiationFailed("SDK clip fades require DaVinci Resolve 21.1 native readback; the older-runtime fallback remains available through CutAgent CLI.")
+    enforce_mutation_policy("clip.fade_in", intended_engine="db_workaround")
     timeline_name = _timeline_name(conn)
 
     data = db_session.execute_sqlite_disk_db_mutation(
@@ -1484,7 +1534,7 @@ def fusion_tools(
     track: Optional[int] = typer.Option(None, "--track", min=1, help="Video track index selector"),
     record_frame: Optional[str] = typer.Option(None, "--record-frame", "--at", help="Record-domain frame/time selector"),
 ):
-    """List tools in a Fusion composition."""
+    """List tools and their addressable native names in a Fusion composition."""
     enforce_mutation_policy("clip.fusion_comp", intended_engine="api_native", mutating=False)
     track_value = _option_value(track)
     record_frame_value = _option_value(record_frame)

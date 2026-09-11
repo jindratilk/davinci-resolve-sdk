@@ -1,7 +1,7 @@
 {
   "$schema": "./compatibility.schema.json",
   "manifestVersion": 1,
-  "packageName": "davinci-resolve-sdk",
+  "packageName": "cutagent",
   "sdkVersion": "0.2.0",
   "sdkApiVersion": "0.2",
   "wireProtocol": 1,
