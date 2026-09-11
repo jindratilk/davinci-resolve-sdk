@@ -1,6 +1,6 @@
 # Source preview — 2026-09-11
 
-The standalone TypeScript SDK and selected native implementation are synchronized from source checkpoint `4b01646d7`. This includes plural editing operations, reduced repeated inspection, media identity fixes, retime fixes, installed Fusion artifact binding and larger SDK read requests. Account-free local admission remains separate from the commercial application.
+The standalone TypeScript SDK and selected native implementation are synchronized from source checkpoint `4b01646d7`. This includes plural editing operations, reduced repeated inspection, media identity fixes, retime fixes, installed Fusion artifact binding and larger SDK read requests.
 
 Source is published at https://github.com/jindratilk/davinci-resolve-sdk under MIT. npm publishing remains disabled; no installer or vendor binary is distributed.
 

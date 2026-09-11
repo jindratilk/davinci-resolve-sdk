@@ -4,7 +4,7 @@ Public source preview: https://github.com/jindratilk/davinci-resolve-sdk. The lo
 
 The complete inherited API and explicit subpaths are preserved at the 0.2.0 authoring baseline. Internal compatibility fields retain their historical names; the active distribution is `standalone_local`. Runtime negotiation still validates protocol, source identity and compatible version ranges.
 
-A release requires standalone Free acceptance, an exact reviewed source/package inventory, reproducible source builds, dependency license notices and a deliberate public repository/package release decision. The root npm tarball includes the client and companion Python/native runtime source. Local editing works without an account or subscription.
+A release requires standalone Free acceptance, an exact reviewed source/package inventory, reproducible source builds, dependency license notices and a deliberate public repository/package release decision. The root npm tarball includes the client and companion Python/native runtime source.
 
 Historical platform baselines: Studio marker create/readback/delete passed at commit fb4ad93 and the Free marker flow passed at commit 172232a. Those retained records do not qualify the current candidate head. Current-candidate Studio revalidation awaits the exclusive native lane, current-candidate Free revalidation awaits the remote handoff, and broader native behaviors remain pending. Windows is explicitly deferred and startup deliberately rejects until private ACL validation and required local Free runtime prerequisites are implemented. DaVinci Resolve and third-party binaries are supplied by the user's installation, not this package.
 

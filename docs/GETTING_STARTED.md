@@ -44,7 +44,7 @@ For DaVinci Resolve Free, install the independent embedded script during setup:
 npx cutagent setup --free
 ```
 
-No setup command opens a browser, signs in, uploads media, or contacts CutAgent Cloud. Package dependency installation may contact the configured npm and Python package indexes.
+Package dependency installation may contact the configured npm and Python package indexes.
 
 ## Import the SDK
 

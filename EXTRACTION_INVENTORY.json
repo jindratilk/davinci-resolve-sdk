@@ -726,14 +726,14 @@
       "source": "sdk/README.md",
       "destination": "sdk/README.md",
       "sourceSha256": "6af46ca5b1e81aece1c86abf784108ccb196854f91898c90ddbe15c1073625f9",
-      "sha256": "a3279780a7e173a86c93382e4841d441174c7b2cc0c70ea011321d16f73a672b",
+      "sha256": "6dcbae3ebb227eb58509bc80758b9ab8be600a8dbea30af09c26883a73e3bb7f",
       "transformed": true
     },
     {
       "source": "sdk/LIFECYCLE.md",
       "destination": "sdk/LIFECYCLE.md",
       "sourceSha256": "8f06d36159beda1513b3be230c1ca1ed4ad9db7cf0b2a22d6d3b57072c19b4a7",
-      "sha256": "d3948169a36152e093888126b8468edb3f9420b585ed5dab82da6869e1da0b10",
+      "sha256": "b69e64b05717cfb78b68e0cd2d49f4c53dd3c14776408998924d25ef9054d6bc",
       "transformed": true
     },
     {

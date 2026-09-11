@@ -5,7 +5,7 @@
 ### Give your AI agent the keys to DaVinci Resolve.
 
 An open-source connection between your agent and your editing timeline.<br>
-**Works with DaVinci Resolve Free and Studio. No CutAgent account required.**
+**Works with DaVinci Resolve Free and Studio.**
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![DaVinci Resolve Free](https://img.shields.io/badge/DaVinci_Resolve-Free_%26_Studio-ff5a2b)](#-yes-it-works-with-davinci-resolve-free)
@@ -52,7 +52,7 @@ Studio is supported too. Features that require Studio inside DaVinci Resolve sti
 
 - **Bring your own agent.** Use a coding agent that can run local commands and TypeScript scripts.
 - **Keep editing in DaVinci Resolve.** Work with timelines, clips, audio, and Fusion compositions in the editor you already use.
-- **Work locally.** Local editing doesn't require a CutAgent account, subscription, or desktop app.
+- **Work locally.** Run editing scripts on your computer, directly in DaVinci Resolve.
 - **Make it yours.** MIT licensed, so you can build your own tools and workflows on top.
 
 Your agent provider has its own data handling and billing. CutAgent SDK supplies the local editing connection, not an AI model or a library of creative skills.
