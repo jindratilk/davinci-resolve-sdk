@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🎬 CutAgent SDK
+# 🎬 CutAgent SDK & CLI
 
 ### Give your AI agent the keys to DaVinci Resolve.
 
