@@ -10,7 +10,6 @@ An open-source connection between your agent and your editing timeline.<br>
 [![AGPL-3.0 License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![DaVinci Resolve Free](https://img.shields.io/badge/DaVinci_Resolve-Free_%26_Studio-ff5a2b)](#-yes-it-works-with-davinci-resolve-free)
 [![TypeScript](https://img.shields.io/badge/TypeScript-SDK-3178C6)](docs/package/README.md)
-[![GitHub stars](https://img.shields.io/github/stars/jindratilk/davinci-resolve-sdk?style=social)](https://github.com/jindratilk/davinci-resolve-sdk)
 
 [Get started](#-get-started) · [Examples](examples/) · [Documentation](docs/GETTING_STARTED.md) · [CutAgent desktop app](https://cutagent.ai)
 
