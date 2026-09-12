@@ -47,6 +47,19 @@ Studio is supported too. Features that require Studio inside DaVinci Resolve sti
 
 **Current platform: macOS.** Windows setup is not available yet. Free and Studio have passed native marker tests on earlier releases; the latest Studio source has also passed a marker create/read/delete test. See [current verification and limitations](RELEASE_STATUS.md) for what has been tested.
 
+## 🛠️ Beyond the scripting API
+
+CutAgent SDK & CLI extends the DaVinci Resolve scripting API with additional editing controls and workflows.
+
+- **Animate directly on the timeline.** Add, inspect, update, and delete clip keyframes, with control over interpolation.
+- **Shape your speed ramps.** Create variable-speed changes with explicit timing and interpolation, beyond a single playback-speed setting.
+- **Go deeper into the Color page.** Adjust primary grades, custom and hue curves, HDR controls, qualifiers, Power Windows, Color Warper pins, and color-space transforms.
+- **Shape your color node graph.** Create serial, parallel, and layer structures, configure layer blending, and connect alpha outputs.
+- **Take control of Fairlight.** Work with track EQ, dynamics, and audio automation beyond the API’s clip-level audio properties.
+- **Shape your audio fades.** Adjust fade-in and fade-out curves independently, with control over their shape—not just their duration.
+- **Make precise timeline edits.** Split and trim existing clips, and remove through edits.
+- **Direct your multicam edit.** Define angle names, order, source offsets, and exact switching points. Restructure angles, replace sources, and create repeatable podcast cutting plans.
+
 ## 🤖 Built for agents. Useful for people.
 
 - **Bring your own agent.** Use a coding agent that can run local commands and TypeScript scripts.
