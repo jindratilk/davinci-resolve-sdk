@@ -52,7 +52,6 @@ Studio is supported too. Features that require Studio inside DaVinci Resolve sti
 - **Bring your own agent.** Use a coding agent that can run local commands and TypeScript scripts.
 - **Keep editing in DaVinci Resolve.** Work with timelines, clips, audio, and Fusion compositions in the editor you already use.
 - **Work locally.** Run editing scripts on your computer, directly in DaVinci Resolve.
-- **Make it yours.** AGPL-3.0 licensed, so you can inspect, modify, and build on the source under the license terms.
 
 Your agent provider has its own data handling and billing. CutAgent SDK supplies the local editing connection, not an AI model or a library of creative skills.
 
