@@ -60,6 +60,16 @@ CutAgent SDK & CLI extends the DaVinci Resolve scripting API with additional edi
 - **Make precise timeline edits.** Split and trim existing clips, and remove through edits.
 - **Direct your multicam edit.** Define angle names, order, source offsets, and exact switching points. Restructure angles, replace sources, and create repeatable podcast cutting plans.
 
+## ⚡ Faster and cheaper
+
+Two ways in: write TypeScript with the SDK, or run commands with the CLI.
+
+- **Turn code into a timeline.** Let your agent express an editing workflow as code, using variables, loops, and reusable functions.
+- **Script the workflow, not every conversation turn.** Run a multi-step editing script without asking the model to generate a separate tool call for each step.
+- **Keep more context for the edit.** Use SDK code or CLI commands without loading a large catalog of individual editing tools into your agent’s context.
+- **Spend fewer tokens on orchestration.** Code-driven workflows can reduce model round trips and repeated tool-call overhead, leaving more room for your footage, instructions, and creative decisions.
+- **Use whichever fits.** Reach for the CLI for a quick operation, or the SDK for a reusable editing workflow.
+
 ## 🤖 Built for agents. Useful for people.
 
 - **Bring your own agent.** Use a coding agent that can run local commands and TypeScript scripts.
