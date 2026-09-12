@@ -35,7 +35,7 @@ Use the TypeScript SDK for editing scripts, or CutAgent CLI when your agent work
 | Your own motion graphics | Build editable Fusion text, node graphs, and keyframe animations. |
 | A custom editing assistant | Read the current timeline and let your agent make changes through code. |
 
-These are workflows you can build with the SDK, not one-prompt presets. The agent supplies the editing decisions and script; the SDK connects them to DaVinci Resolve.
+Your agent supplies the editing decisions and scripts for these workflows. The SDK connects them to DaVinci Resolve.
 
 ## 🆓 Yes, it works with DaVinci Resolve Free
 
@@ -43,7 +43,7 @@ You don't need to buy DaVinci Resolve Studio to get started.
 
 CutAgent SDK includes a local script that connects to the free edition. Install it, open it from **Workspace → Scripts → CutAgentSDK**, and your agent can work with your project.
 
-Studio is supported too. Features that require Studio inside DaVinci Resolve still require Studio; the SDK doesn't unlock paid effects.
+DaVinci Resolve Studio is supported too. Studio-only features require a DaVinci Resolve Studio license.
 
 **Current platform: macOS.** Windows setup is not available yet. Free and Studio have passed native marker tests on earlier releases; the latest Studio source has also passed a marker create/read/delete test. See [current verification and limitations](RELEASE_STATUS.md) for what has been tested.
 
@@ -56,7 +56,7 @@ CutAgent SDK & CLI extends the DaVinci Resolve scripting API with additional edi
 - **Go deeper into the Color page.** Adjust primary grades, custom and hue curves, HDR controls, qualifiers, Power Windows, Color Warper pins, and color-space transforms.
 - **Shape your color node graph.** Create serial, parallel, and layer structures, configure layer blending, and connect alpha outputs.
 - **Take control of Fairlight.** Work with track EQ, dynamics, and audio automation beyond the API’s clip-level audio properties.
-- **Shape your audio fades.** Adjust fade-in and fade-out curves independently, with control over their shape—not just their duration.
+- **Shape your audio fades.** Adjust fade-in and fade-out curves independently using their control points.
 - **Make precise timeline edits.** Split and trim existing clips, and remove through edits.
 - **Direct your multicam edit.** Define angle names, order, source offsets, and exact switching points. Restructure angles, replace sources, and create repeatable podcast cutting plans.
 
@@ -65,7 +65,7 @@ CutAgent SDK & CLI extends the DaVinci Resolve scripting API with additional edi
 Two ways in: write TypeScript with the SDK, or run commands with the CLI.
 
 - **Turn code into a timeline.** Let your agent express an editing workflow as code, using variables, loops, and reusable functions.
-- **Script the workflow, not every conversation turn.** Run a multi-step editing script without asking the model to generate a separate tool call for each step.
+- **Run multi-step editing scripts.** Your agent can combine several editing operations in a single script execution.
 - **Keep more context for the edit.** Use SDK code or CLI commands without loading a large catalog of individual editing tools into your agent’s context.
 - **Spend fewer tokens on orchestration.** Code-driven workflows can reduce model round trips and repeated tool-call overhead, leaving more room for your footage, instructions, and creative decisions.
 - **Use whichever fits.** Reach for the CLI for a quick operation, or the SDK for a reusable editing workflow.
@@ -76,13 +76,13 @@ Two ways in: write TypeScript with the SDK, or run commands with the CLI.
 - **Keep editing in DaVinci Resolve.** Work with timelines, clips, audio, and Fusion compositions in the editor you already use.
 - **Work locally.** Run editing scripts on your computer, directly in DaVinci Resolve.
 
-Your agent provider has its own data handling and billing. CutAgent SDK supplies the local editing connection, not an AI model or a library of creative skills.
+Bring your own AI model and creative skills. CutAgent SDK supplies the local editing connection. Your agent provider handles its own data policies and billing.
 
 ## 🚀 Get started
 
 You'll need macOS, DaVinci Resolve, Node.js 22.12+ or 24.x, and Python 3.12. Install FFmpeg and FFprobe for media inspection and export workflows.
 
-The SDK is currently installed from source, not npm:
+Install the SDK from source:
 
 ```sh
 git clone https://github.com/jindratilk/davinci-resolve-sdk.git
