@@ -143,6 +143,8 @@ Start with the [examples](examples/), including a marker workflow that creates a
 
 [CutAgent](https://cutagent.ai) brings the editing experience into a desktop app, including its AI transcription, voice generation, and video generation services.
 
+The app includes editing skills that teach the agent how to carry out complete workflows in DaVinci Resolve. General-purpose coding agents often need repeated attempts to get an edit right. These skills give them detailed editing instructions and reusable workflows, reducing trial and error and helping them create a complete video from a single prompt.
+
 ## Help make it better
 
 Found a bug? [Open an issue](https://github.com/jindratilk/davinci-resolve-sdk/issues) with your operating system, DaVinci Resolve version and edition, and a small script that reproduces it. Leave out credentials and private footage.
