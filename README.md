@@ -141,7 +141,7 @@ Start with the [examples](examples/), including a marker workflow that creates a
 
 ## Want the full editing app?
 
-[CutAgent](https://cutagent.ai) brings the editing experience into a desktop app, including its AI transcription, voice generation, and video generation services. The open-source SDK is for building your own local tools and agent workflows.
+[CutAgent](https://cutagent.ai) brings the editing experience into a desktop app, including its AI transcription, voice generation, and video generation services.
 
 ## Help make it better
 
