@@ -5,7 +5,7 @@
 ### Give your AI agent the keys to DaVinci Resolve.
 
 An open-source connection between your agent and your editing timeline.<br>
-**Works with DaVinci Resolve Free and Studio.**
+**Works with DaVinci Resolve 21.1+ Free and Studio.**
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![DaVinci Resolve Free](https://img.shields.io/badge/DaVinci_Resolve-Free_%26_Studio-ff5a2b)](#-yes-it-works-with-davinci-resolve-free)
