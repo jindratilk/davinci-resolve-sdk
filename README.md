@@ -25,7 +25,7 @@ CutAgent SDK lets agents and scripts organize media, build timelines, edit clips
 
 Use the TypeScript SDK for editing scripts, or CutAgent CLI when your agent works through a terminal. Bring an agent that can run local code and give it the SDK documentation and examples to work from.
 
-## ✨ What you can build
+## ✨ What you can create
 
 | Your next project | What the SDK brings |
 | --- | --- |
